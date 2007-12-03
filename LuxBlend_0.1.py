@@ -658,13 +658,7 @@ class luxExport:
 									else:
 										v.extend(face.no)
 								if (uvFltr[shape]) and (mesh.faceUV):
-									print v
-									uv = face.uv[index]
-									#v.append(uv[0])
-									#v.append(uv[1])
-									v.extend(uv)
-									print v
-									
+									v.extend(face.uv[index])
 								blenderVIndex = vertex.index
 								newExportVIndex = -1
 								length = len(v)
@@ -708,7 +702,6 @@ class luxExport:
 							if (uvFltr[shape]) and (mesh.faceUV):
 								file.write("\t] \"float uv\" [\n")
 								for vertex in exportVerts:
-									print vertex
 									file.write("%f %f\n"%(vertex[3], vertex[4]))
 						file.write("\t]\n")
 						print "  shape(%s): %d vertices, %d faces"%(shapeText[shape], len(exportVerts), len(exportFaces))
