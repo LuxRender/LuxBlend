@@ -696,7 +696,6 @@ class luxExport:
 							if (uvFltr[shape]) and (mesh.faceUV):
 								file.write("\t] \"float uv\" [\n")
 								for vertex in exportVerts:
-									print vertex
 									file.write("%f %f\n"%(vertex[6], vertex[7]))
 						else:			
 							if (uvFltr[shape]) and (mesh.faceUV):
