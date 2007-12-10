@@ -1,6 +1,6 @@
 #!BPY
 """Registration info for Blender menus:
-Name: 'LuxBlend-v0.1-alpha14...'
+Name: 'LuxBlend-v0.1-alphaCVS...'
 Blender: 240
 Group: 'Export'
 Tooltip: 'Export to LuxRender v0.1 scene format (.lxs)'
@@ -9,7 +9,7 @@ Tooltip: 'Export to LuxRender v0.1 scene format (.lxs)'
 # ***** BEGIN GPL LICENSE BLOCK *****
 #
 # --------------------------------------------------------------------------
-# LuxBlend v0.1 alpha14 exporter
+# LuxBlend v0.1 alphaCVS exporter
 # --------------------------------------------------------------------------
 #
 # Authors:
@@ -290,6 +290,12 @@ def rg(col):
 	else:
 		gamma = 1.0
 	ncol = col**gamma
+	if ColClamp.val == True:
+		ncol = ncol * 0.9
+		if ncol > 0.9:
+			ncol = 0.9
+		if ncol < 0.0:
+			ncol = 0.0
 	return ncol
 
 def exportMaterial(mat):
@@ -300,7 +306,7 @@ def exportMaterial(mat):
 
 	def write_color_imagemap( chan, name, filename, scaleR, scaleG, scaleB ):
 		om = "Texture \"%s-map-%s\" \"color\" \"imagemap\" \"string filename\" [\"%s\"] \"float vscale\" [-1.0]\n" %(chan, name, filename)
-		om += "Texture \"%s-scale-%s\" \"color\" \"constant\" \"color value\" [%f %f %f]\n" %(chan, name, scaleR, scaleG, scaleB)
+		om += "Texture \"%s-scale-%s\" \"color\" \"constant\" \"color value\" [%f %f %f]\n" %(chan, name, rg(scaleR), rg(scaleG), rg(scaleB))
 		om += "Texture \"%s-%s\" \"color\" \"scale\" \"texture tex1\" [\"%s-map-%s\"] \"texture tex2\" [\"%s-scale-%s\"]\n" %(chan, name, chan, name, chan, name)
 		return om
 
@@ -382,7 +388,10 @@ def exportMaterial(mat):
 		### 'plastic' material ### COMPLETE
 		str += "# Type: 'plastic'\n"
 		str += write_color_param( mat, "Kd", 'COL', mat.R, mat.G, mat.B )
-		str += write_color_param( mat, "Ks", 'SPEC', mat.specR * mat.getSpec(), mat.specG * mat.getSpec(), mat.specB * mat.getSpec() )
+		spec = mat.getSpec()
+		if spec > 1.0:
+			spec = 0
+		str += write_color_param( mat, "Ks", 'SPEC', mat.specR * spec, mat.specG * spec, mat.specB * spec )
 		str += write_float_param( mat, "roughness", 'HARD', HardtoMicro(mat.hard) )
 		str += write_float_param( mat, "bumpmap", 'NOR', 0.0 )
 
@@ -390,7 +399,10 @@ def exportMaterial(mat):
 		### 'shinymetal' material ### COMPLETE
 		str += "# Type: 'shinymetal'\n"
 		str += write_color_param( mat, "Ks", 'COL', mat.R, mat.G, mat.B )
-		str += write_color_param( mat, "Kr", 'SPEC',mat.specR * mat.getSpec(), mat.specG * mat.getSpec(), mat.specB * mat.getSpec() )
+		spec = mat.getSpec()
+		if spec > 1.0:
+			spec = 0
+		str += write_color_param( mat, "Kr", 'SPEC', mat.specR * spec, mat.specG * spec, mat.specB * spec )
 		str += write_float_param( mat, "roughness", 'HARD', HardtoMicro(mat.hard) )
 		str += write_float_param( mat, "bumpmap", 'NOR', 0.0 )
 
@@ -409,7 +421,10 @@ def exportMaterial(mat):
 		### 'substrate' material ### COMPLETE
 		str += "# Type: 'substrate'\n"
 		str += write_color_param( mat, "Kd", 'COL', mat.R, mat.G, mat.B )
-		str += write_color_param( mat, "Ks", 'SPEC', mat.specR * mat.getSpec(), mat.specG * mat.getSpec(), mat.specB * mat.getSpec() )
+		spec = mat.getSpec()
+		if spec > 1.0:
+			spec = 0
+		str += write_color_param( mat, "Ks", 'SPEC', mat.specR * spec, mat.specG * spec, mat.specB * spec )
 		# TODO: add different inputs for both u/v roughenss for aniso effect
 		str += write_float_param( mat, "uroughness", 'HARD', HardtoMicro(mat.hard) )
 		str += write_float_param( mat, "vroughness", 'HARD', HardtoMicro(mat.hard) )
@@ -812,7 +827,7 @@ def save_lux(filename, unindexedname):
 	if ExportScene.val == True:
 		##### Write Header ######
 		file.write("# Lux Render v0.1 Scene File\n")
-		file.write("# Exported by LuxBlend_01_alpha14\n")
+		file.write("# Exported by LuxBlend_01_alphaCVS\n")
 	
 		file.write("\n")
 	
@@ -890,11 +905,6 @@ def save_lux(filename, unindexedname):
 	
 		file.write("\"integer maxconsecrejects\" [%f] " %(pathMetropolisMaxRejects.val))
 		file.write("\"float largemutationprob\" [%f] " %(pathMetropolisLMProb.val))
-	
-		if(pathRRforcetransmit.val == 1):
-			file.write("\"bool rrforcetransmit\" [\"true\"] ")
-		else:
-			file.write("\"bool rrforcetransmit\" [\"false\"] ")
 	
 		file.write("\"float rrcontinueprob\" [%f]\n" %(pathRRcontinueprob.val))
 		file.write("\n")
@@ -1143,9 +1153,8 @@ IntegratorTypeV[0] = "path"
 pathMetropolis = Draw.Create(1)
 pathMetropolisMaxRejects = Draw.Create(128)
 pathMetropolisLMProb = Draw.Create(0.25)
-pathRRforcetransmit = Draw.Create(0)
 pathRRcontinueprob = Draw.Create(0.5)
-pathMaxDepth = Draw.Create(512)
+pathMaxDepth = Draw.Create(16)
 
 ## Tonemapping
 strToneMapType = "ToneMap type %t | Reinhard %x1"
@@ -1157,6 +1166,7 @@ ToneMapBurn = Draw.Create(6.0)
 # output gamma
 OutputGamma = Draw.Create(2.2)
 RGC = Draw.Create(1)
+ColClamp = Draw.Create(1)
 
 # output dither
 OutputDither = Draw.Create(0.0)
@@ -1198,6 +1208,7 @@ def update_Registry():
 	d['tonemappostscale'] = ToneMapPostScale.val
 	d['outputgamma'] = OutputGamma.val
 	d['reversegamma'] = RGC.val
+	d['colclamp'] = ColClamp.val
 	d['outputdither'] = OutputDither.val
 	d['tonemapburn'] = ToneMapBurn.val
 	d['envtype'] = EnvType.val
@@ -1233,6 +1244,7 @@ if rdict:
 		ToneMapPostScale.val = rdict['tonemappostscale']
 		OutputGamma.val = rdict['outputgamma']
 		RGC.val = rdict['reversegamma']
+		ColClamp.val = rdict['colclamp']
 		OutputDither.val = rdict['outputdither']
 		ToneMapBurn.val = rdict['tonemapburn']
 		EnvType.val = rdict['envtype']
@@ -1301,7 +1313,7 @@ def drawSettings():
 	global textcol, strEnvType, EnvType, EnvFile, strEnvMapType, EnvMapType, EnvGain, Turbidity, SkyGain
 	global Screen, ExecuteLux
 	global IntegratorType, SamplerType, FilterType, SamplerProgressive, SamplerPixelsamples, Filterxwidth, Filterywidth
-	global pathMaxDepth, pathRRcontinueprob, pathRRforcetransmit, pathMetropolis, pathMetropolisMaxRejects, pathMetropolisLMProb
+	global pathMaxDepth, pathRRcontinueprob, pathMetropolis, pathMetropolisMaxRejects, pathMetropolisLMProb
 
 	drawButtons()
 	
@@ -1315,7 +1327,6 @@ def drawSettings():
 	pathMetropolisLMProb = Draw.Number("LMprob:", evtNoEvt,300,150,120,18, pathMetropolisLMProb.val,0,1, "Probability of using a large mutation for Metropolis")
 	pathMaxDepth = Draw.Number("Maxdepth:", evtNoEvt,120,130,120,18, pathMaxDepth.val,1,1024, "Maximum path depth (bounces)")
 	pathRRcontinueprob = Draw.Number("RRprob:", evtNoEvt,240,130,120,18, pathRRcontinueprob.val,0.01,1.0, "Russian Roulette continue probability")
-	pathRRforcetransmit = Draw.Toggle("RRfTrans", evtNoEvt, 360, 130, 70, 18, pathRRforcetransmit.val, "Russian Roulette force transmission")
 
 	SamplerType = Draw.Menu(strSamplerType, evtNoEvt, 10, 100, 120, 18, SamplerType.val, "Engine Sampler type")
 	SamplerProgressive = Draw.Toggle("Progressive", evtNoEvt, 140, 100, 120, 18, SamplerProgressive.val, "Sample film progressively or linearly")
@@ -1327,7 +1338,7 @@ def drawSettings():
 
 ##################  Draw RSettings  #########################	
 def drawSystem():
-	global OutputGamma, RGC, SaveEXR, SaveEXRint, SaveIGI, SaveIGIint, SaveTGA, SaveTGAint, Displayint, OutputDither
+	global OutputGamma, RGC, SaveEXR, SaveEXRint, SaveIGI, SaveIGIint, SaveTGA, SaveTGAint, Displayint, OutputDither, ColClamp
 	
 	drawButtons()
 	
@@ -1346,7 +1357,8 @@ def drawSystem():
 
 	OutputGamma = Draw.Number("Output Gamma: ", evtNoEvt, 10, 60, 170, 18, OutputGamma.val, 0.0, 6.0, "Output and RGC Gamma")
 	RGC = Draw.Toggle("RGC", evtNoEvt, 180, 60, 30, 18, RGC.val, "Use reverse gamma correction for rgb values")
-	OutputDither = Draw.Number("Output Dither: ", evtNoEvt, 220, 60, 150, 18, OutputDither.val, 0.0, 1.0, "Output Image Dither")
+	ColClamp = Draw.Toggle("ColClamp", evtNoEvt, 210, 60, 60, 18, RGC.val, "Scale/Clamp all colours to 0.0 - 0.9")
+	OutputDither = Draw.Number("Output Dither: ", evtNoEvt, 270, 60, 150, 18, OutputDither.val, 0.0, 1.0, "Output Image Dither")
 
 #################  Draw Tonemapping  #########################
 def drawTonemap():
@@ -1398,7 +1410,7 @@ def drawButtons():
 	
 	BGL.glColor3f(0.2,0.2,0.2)
 	BGL.glRectf(0,0,440,230)
-	BGL.glColor3f(0.9,0.9,0.9);BGL.glRasterPos2i(10,205) ; Draw.Text("LuxBlend v0.1alpha14", "small")
+	BGL.glColor3f(0.9,0.9,0.9);BGL.glRasterPos2i(10,205) ; Draw.Text("LuxBlend v0.1alphaCVS", "small")
 	
 	Draw.Button("Render", evtExport, 10, 25, 100, 30, "Open file dialog and export")
 	if ExecuteLux.val == 0:
