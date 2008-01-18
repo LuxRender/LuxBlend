@@ -886,13 +886,14 @@ def save_lux(filename, unindexedname):
 			file.write("Sampler \"random\" ")
 		else:
 			file.write("Sampler \"lowdiscrepancy\" ")
-			
-		file.write("\"bool progressive\" [\"true\"] ")
 	
-		if(SamplerProgressive.val == 1):
-			file.write("\"string pixelsamplers\" [\"random\"] ")
-		else:
-			file.write("\"string pixelsamplers\" [\"vegas\"] ")
+		if(PixelSamplerType.val == 0):
+			file.write("\"string pixelsampler\" [\"vegas\"] ")
+		if(PixelSamplerType.val == 1):
+			file.write("\"string pixelsampler\" [\"random\"] ")
+		if(PixelSamplerType.val == 2):
+			file.write("\"string pixelsampler\" [\"linear\"] ")
+
 		
 		file.write("\"integer pixelsamples\" [%i]\n" %(SamplerPixelsamples.val))
 		file.write("\n")
@@ -1112,7 +1113,7 @@ FocalDistance = Draw.Create(2.0)
 
 ## Environment Type
 strEnvType = "Env Type %t | Background Color %x0 | Physical Sky %x1 | Texture Map %x2 | None %x3"
-EnvType = Draw.Create(3)
+EnvType = Draw.Create(0)
 
 ##  <turbidity>2.0</turbidity>
 Turbidity = Draw.Create(2.0)
@@ -1144,11 +1145,14 @@ SamplerType = Draw.Create(1)
 SamplerTypeV = {}
 SamplerTypeV[0] = "lowdiscrepancy"
 SamplerTypeV[1] = "random"
-strSamplerProgressive = "PixelSampler %t | vegas %x0 | random %x1"
-SamplerProgressive = Draw.Create(0)
-SamplerProgressiveV = {}
-SamplerProgressiveV[0] = "vegas"
-SamplerProgressiveV[1] = "random"
+
+strPixelSamplerType = "PixelSampler %t | vegas %x0 | random %x1 | linear %x2"
+PixelSamplerType = Draw.Create(0)
+PixelSamplerTypeV = {}
+PixelSamplerTypeV[0] = "vegas"
+PixelSamplerTypeV[1] = "random"
+PixelSamplerTypeV[2] = "linear"
+
 SamplerPixelsamples = Draw.Create(4)
 
 # engine
@@ -1172,7 +1176,7 @@ ToneMapBurn = Draw.Create(6.0)
 # output gamma
 OutputGamma = Draw.Create(2.2)
 RGC = Draw.Create(1)
-ColClamp = Draw.Create(1)
+ColClamp = Draw.Create(0)
 
 # output dither
 OutputDither = Draw.Create(0.0)
@@ -1318,7 +1322,7 @@ def drawSettings():
 	global ToneMapType, ToneMapPreScale, ToneMapPostScale, ToneMapBurn, OutputGamma
 	global textcol, strEnvType, EnvType, EnvFile, strEnvMapType, EnvMapType, EnvGain, Turbidity, SkyGain
 	global Screen, ExecuteLux
-	global IntegratorType, SamplerType, FilterType, SamplerProgressive, SamplerPixelsamples, Filterxwidth, Filterywidth
+	global IntegratorType, PixelSamplerType, SamplerType, FilterType, SamplerPixelsamples, Filterxwidth, Filterywidth
 	global pathMaxDepth, pathRRcontinueprob, pathMetropolis, pathMetropolisMaxRejects, pathMetropolisLMProb
 
 	drawButtons()
@@ -1335,7 +1339,7 @@ def drawSettings():
 	pathRRcontinueprob = Draw.Number("RRprob:", evtNoEvt,240,130,120,18, pathRRcontinueprob.val,0.01,1.0, "Russian Roulette continue probability")
 
 	SamplerType = Draw.Menu(strSamplerType, evtNoEvt, 10, 100, 120, 18, SamplerType.val, "Engine Sampler type")
-	SamplerProgressive = Draw.Menu(strSamplerProgressive, evtNoEvt, 140, 100, 120, 18, SamplerProgressive.val, "Sample film progressively or linearly")
+	PixelSamplerType = Draw.Menu(strPixelSamplerType, evtNoEvt, 140, 100, 120, 18, PixelSamplerType.val, "Engine PixelSampler type")
 	SamplerPixelsamples = Draw.Number("Pixelsamples:", evtNoEvt,260,100,150,18, SamplerPixelsamples.val,1,512, "Number of samples per pixel")
 
 	FilterType = Draw.Menu(strFilterType, evtNoEvt, 10, 70, 120, 18, FilterType.val, "Engine pixel reconstruction filter type")
@@ -1363,7 +1367,7 @@ def drawSystem():
 
 	OutputGamma = Draw.Number("Output Gamma: ", evtNoEvt, 10, 60, 170, 18, OutputGamma.val, 0.0, 6.0, "Output and RGC Gamma")
 	RGC = Draw.Toggle("RGC", evtNoEvt, 180, 60, 30, 18, RGC.val, "Use reverse gamma correction for rgb values")
-	ColClamp = Draw.Toggle("ColClamp", evtNoEvt, 210, 60, 60, 18, RGC.val, "Scale/Clamp all colours to 0.0 - 0.9")
+	ColClamp = Draw.Toggle("ColClamp", evtNoEvt, 210, 60, 60, 18, ColClamp.val, "Scale/Clamp all colours to 0.0 - 0.9")
 	OutputDither = Draw.Number("Output Dither: ", evtNoEvt, 270, 60, 150, 18, OutputDither.val, 0.0, 1.0, "Output Image Dither")
 
 #################  Draw Tonemapping  #########################
