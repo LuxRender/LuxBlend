@@ -536,6 +536,7 @@ class luxExport:
 		self.camera = scene.objects.camera
 		self.objects = []
 		self.portals = []
+		self.lights = []
 		self.meshes = {}
 		self.materials = []
 
@@ -550,22 +551,23 @@ class luxExport:
 				for o, m in obj.DupObjects:
 					self.analyseObject(o, m, "%s.%s"%(name, o.getName()))	
 			elif (obj_type == "Mesh") or (obj_type == "Surf") or (obj_type == "Curve") or (obj_type == "Text"):
-				mesh_name = obj.getData(name_only=True)
-				try:
-					self.meshes[mesh_name] += [obj]
-				except KeyError:
-					self.meshes[mesh_name] = [obj]				
 				mats = getMaterials(obj)
-				if (len(mats)>0) and (mats[0]!=None):
-					if (mats[0].name == "PORTAL"):
-						self.portals.append([obj, matrix])
-					else:
-						self.objects.append([obj, matrix])
-						for mat in mats:
-							if (mat!=None) and (mat not in self.materials):
-								self.materials.append(mat)
+				if (len(mats)>0) and (mats[0]!=None) and (mats[0].name=="PORTAL"):
+					self.portals.append([obj, matrix])
 				else:
-					print "WARNING: object \"%s\" has no materials assigned"%(obj.getName())
+					for mat in mats:
+						if (mat!=None) and (mat not in self.materials):
+							self.materials.append(mat)
+					if (len(mats)>0) and (mats[0]!=None) and (mats[0].emit>0.0):
+						self.lights.append([obj, matrix])
+					else:
+						mesh_name = obj.getData(name_only=True)
+						try:
+							self.meshes[mesh_name] += [obj]
+						except KeyError:
+							self.meshes[mesh_name] = [obj]				
+						self.objects.append([obj, matrix])
+
 
 	#-------------------------------------------------
 	# analyseScene(self)
@@ -743,28 +745,6 @@ class luxExport:
 				file.write("ObjectEnd # %s\n\n"%mesh_name)
 
 	#-------------------------------------------------
-	# exportPortals(self, file)
-	# exports objects to the file
-	#-------------------------------------------------
-	def exportPortals(self, file):
-		mesh_optimizing = True # getLuxProp(self.scene, "mesh_optimizing", False)
-		mesh = Mesh.New('')
-		for [obj, matrix] in self.portals:
-			print "portal: %s"%(obj.getName())
-			file.write("\tTransform [%s %s %s %s  %s %s %s %s  %s %s %s %s  %s %s %s %s]\n"\
-				%(matrix[0][0], matrix[0][1], matrix[0][2], matrix[0][3],\
-				  matrix[1][0], matrix[1][1], matrix[1][2], matrix[1][3],\
-				  matrix[2][0], matrix[2][1], matrix[2][2], matrix[2][3],\
-		  		  matrix[3][0], matrix[3][1], matrix[3][2], matrix[3][3]))
-			mesh_name = obj.getData(name_only=True)
-			mesh.getFromObject(obj, 0, 1)
-			mats = getMaterials(obj) # mats = obj.getData().getMaterials()
-			if (mesh_optimizing):
-				self.exportMeshOpt(file, mesh, mats, mesh_name, True)
-			else:
-				self.exportMesh(file, mesh, mats, mesh_name, True)
-
-	#-------------------------------------------------
 	# exportObjects(self, file)
 	# exports objects to the file
 	#-------------------------------------------------
@@ -793,6 +773,52 @@ class luxExport:
 				file.write("\tObjectInstance \"%s\"\n"%mesh_name)
 			file.write("AttributeEnd\n\n")
 
+	#-------------------------------------------------
+	# exportPortals(self, file)
+	# exports portals objects to the file
+	#-------------------------------------------------
+	def exportPortals(self, file):
+		mesh_optimizing = True # getLuxProp(self.scene, "mesh_optimizing", False)
+		mesh = Mesh.New('')
+		for [obj, matrix] in self.portals:
+			print "portal: %s"%(obj.getName())
+			file.write("\tTransform [%s %s %s %s  %s %s %s %s  %s %s %s %s  %s %s %s %s]\n"\
+				%(matrix[0][0], matrix[0][1], matrix[0][2], matrix[0][3],\
+				  matrix[1][0], matrix[1][1], matrix[1][2], matrix[1][3],\
+				  matrix[2][0], matrix[2][1], matrix[2][2], matrix[2][3],\
+		  		  matrix[3][0], matrix[3][1], matrix[3][2], matrix[3][3]))
+			mesh_name = obj.getData(name_only=True)
+			mesh.getFromObject(obj, 0, 1)
+			mats = getMaterials(obj) # mats = obj.getData().getMaterials()
+			if (mesh_optimizing):
+				self.exportMeshOpt(file, mesh, mats, mesh_name, True)
+			else:
+				self.exportMesh(file, mesh, mats, mesh_name, True)
+
+	#-------------------------------------------------
+	# exportLights(self, file)
+	# exports light objects to the file
+	#-------------------------------------------------
+	def exportLights(self, file):
+		mesh_optimizing = True # getLuxProp(self.scene, "mesh_optimizing", False)
+		mesh = Mesh.New('')
+		for [obj, matrix] in self.lights:
+			print "light: %s"%(obj.getName())
+			file.write("AttributeBegin # %s\n"%obj.getName())
+			file.write("\tTransform [%s %s %s %s  %s %s %s %s  %s %s %s %s  %s %s %s %s]\n"\
+				%(matrix[0][0], matrix[0][1], matrix[0][2], matrix[0][3],\
+				  matrix[1][0], matrix[1][1], matrix[1][2], matrix[1][3],\
+				  matrix[2][0], matrix[2][1], matrix[2][2], matrix[2][3],\
+		  		  matrix[3][0], matrix[3][1], matrix[3][2], matrix[3][3]))
+			mesh_name = obj.getData(name_only=True)
+			mesh.getFromObject(obj, 0, 1)
+			mats = getMaterials(obj) # mats = obj.getData().getMaterials()
+			print "  blender-mesh: %s (%d vertices, %d faces)"%(mesh_name, len(mesh.verts), len(mesh.faces))
+			if (mesh_optimizing):
+				self.exportMeshOpt(file, mesh, mats, mesh_name)
+			else:
+				self.exportMesh(file, mesh, mats, mesh_name)
+			file.write("AttributeEnd\n\n")
 
 
 ######################################################
@@ -980,7 +1006,6 @@ def save_lux(filename, unindexedname):
 		mat_file.write("")
 		mat_file.write("# Dummy Material 'Default'\n")
 		mat_file.write("Texture \"Kd-Default\" \"color\" \"constant\" \"color value\" [0.5 0.5 0.5]\n\n")
-	
 		export.exportMaterials(mat_file)
 		mat_file.write("")
 		mat_file.close()
@@ -991,7 +1016,7 @@ def save_lux(filename, unindexedname):
 		geom_file = open(geom_filename, 'w')
 		meshlist = []
 		geom_file.write("")
-	
+		export.exportLights(geom_file)
 		export.exportMeshes(geom_file)
 		export.exportObjects(geom_file)
 		geom_file.write("")
