@@ -64,6 +64,9 @@ def luxMatrix(matrix):
 	return ostr
 
 
+# dummy material used for all objects/meshes that haven't a material assigned
+dummyMat = Material.New('default')
+
 def getMaterials(obj): # retrives materials from object or data dependent of obj.colbits
 	mats = [None]*16
 	colbits = obj.colbits
@@ -78,13 +81,17 @@ def getMaterials(obj): # retrives materials from object or data dependent of obj
 			dataMats = []
 			colbits = 0xffff
 	m = max(len(objMats), len(dataMats))
-	objMats.extend([None]*16)
-	dataMats.extend([None]*16)
-	for i in range(m):
-		if (colbits & (1<<i) > 0):
-			mats[i] = objMats[i]
-		else:
-			mats[i] = dataMats[i]
+	if m>0:
+		objMats.extend([None]*16)
+		dataMats.extend([None]*16)
+		for i in range(m):
+			if (colbits & (1<<i) > 0):
+				mats[i] = objMats[i]
+			else:
+				mats[i] = dataMats[i]
+	else:
+		print "Warning: object %s has no material assigned"%(obj.getName())
+		mats = [dummyMat]
 	return mats
 
 	
