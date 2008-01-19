@@ -63,37 +63,6 @@ def luxMatrix(matrix):
 		  matrix[3][0], matrix[3][1], matrix[3][2], matrix[3][3]) 
 	return ostr
 
-
-# dummy material used for all objects/meshes that haven't a material assigned
-dummyMat = Material.New('default')
-
-def getMaterials(obj): # retrives materials from object or data dependent of obj.colbits
-	mats = [None]*16
-	colbits = obj.colbits
-	objMats = obj.getMaterials(1)
-	data = obj.getData()
-	try:
-		dataMats = data.materials
-	except:
-		try:
-			dataMats = data.getMaterials(1)
-		except:
-			dataMats = []
-			colbits = 0xffff
-	m = max(len(objMats), len(dataMats))
-	if m>0:
-		objMats.extend([None]*16)
-		dataMats.extend([None]*16)
-		for i in range(m):
-			if (colbits & (1<<i) > 0):
-				mats[i] = objMats[i]
-			else:
-				mats[i] = dataMats[i]
-	else:
-		print "Warning: object %s has no material assigned"%(obj.getName())
-		mats = [dummyMat]
-	return mats
-
 	
 #################### Export Material Texture ###
 
@@ -533,6 +502,9 @@ def exportMaterialGeomTag(mat):
 ######################################################
 # luxExport class
 ######################################################
+
+dummyMat = 2394723948 # random identifier for dummy material
+
 class luxExport:
 	#-------------------------------------------------
 	# __init__
@@ -543,9 +515,39 @@ class luxExport:
 		self.camera = scene.objects.camera
 		self.objects = []
 		self.portals = []
-		self.lights = []
 		self.meshes = {}
 		self.materials = []
+
+	#-------------------------------------------------
+	# getMaterials(obj)
+	# helper function to get the material list of an object in respect of obj.colbits
+	#-------------------------------------------------
+	def getMaterials(self, obj):
+		mats = [None]*16
+		colbits = obj.colbits
+		objMats = obj.getMaterials(1)
+		data = obj.getData()
+		try:
+			dataMats = data.materials
+		except:
+			try:
+				dataMats = data.getMaterials(1)
+			except:
+				dataMats = []
+				colbits = 0xffff
+		m = max(len(objMats), len(dataMats))
+		if m>0:
+			objMats.extend([None]*16)
+			dataMats.extend([None]*16)
+			for i in range(m):
+				if (colbits & (1<<i) > 0):
+					mats[i] = objMats[i]
+				else:
+					mats[i] = dataMats[i]
+		else:
+			print "Warning: object %s has no material assigned"%(obj.getName())
+			mats = []
+		return mats
 
 	#-------------------------------------------------
 	# analyseObject(self, obj, matrix, name)
@@ -558,22 +560,19 @@ class luxExport:
 				for o, m in obj.DupObjects:
 					self.analyseObject(o, m, "%s.%s"%(name, o.getName()))	
 			elif (obj_type == "Mesh") or (obj_type == "Surf") or (obj_type == "Curve") or (obj_type == "Text"):
-				mats = getMaterials(obj)
+				mats = self.getMaterials(obj)
 				if (len(mats)>0) and (mats[0]!=None) and (mats[0].name=="PORTAL"):
 					self.portals.append([obj, matrix])
 				else:
 					for mat in mats:
 						if (mat!=None) and (mat not in self.materials):
 							self.materials.append(mat)
-					if (len(mats)>0) and (mats[0]!=None) and (mats[0].emit>0.0):
-						self.lights.append([obj, matrix])
-					else:
-						mesh_name = obj.getData(name_only=True)
-						try:
-							self.meshes[mesh_name] += [obj]
-						except KeyError:
-							self.meshes[mesh_name] = [obj]				
-						self.objects.append([obj, matrix])
+					mesh_name = obj.getData(name_only=True)
+					try:
+						self.meshes[mesh_name] += [obj]
+					except KeyError:
+						self.meshes[mesh_name] = [obj]				
+					self.objects.append([obj, matrix])
 
 
 	#-------------------------------------------------
@@ -590,7 +589,16 @@ class luxExport:
 	# exports material link. LuxRender "Material" 
 	#-------------------------------------------------
 	def exportMaterialLink(self, file, mat):
-		file.write("\t%s"%exportMaterialGeomTag(mat)) # use original methode
+		if mat == dummyMat:
+			file.write("\tMaterial \"matte\" # dummy material\n")
+		else:
+			file.write("\t%s"%exportMaterialGeomTag(mat)) # use original methode
+
+
+
+
+
+
 
 	#-------------------------------------------------
 	# exportMaterial(self, file, mat)
@@ -613,6 +621,8 @@ class luxExport:
 	# exports mesh to the file without any optimization
 	#-------------------------------------------------
 	def exportMesh(self, file, mesh, mats, name, portal=False):
+		if mats == []:
+			mats = [dummyMat]
 		for matIndex in range(len(mats)):
 			if (mats[matIndex] != None):
 				if (portal):
@@ -662,6 +672,8 @@ class luxExport:
 			uvFltr, normalFltr, shapeText = [1], [1], ["mixed with normals"] # normals and UVs
 			if optNormals: # one pass for flat faces without normals and another pass for smoothed faces with normals, all with UVs
 				shapeList, smoothFltr, normalFltr, uvFltr, shapeText = [0,1], [[0],[1]], [0,1], [1,1], ["flat w/o normals", "smoothed with normals"]
+		if mats == []:
+			mats = [dummyMat]
 		for matIndex in range(len(mats)):
 			if (mats[matIndex] != None):
 				if not(portal):
@@ -738,11 +750,18 @@ class luxExport:
 		mesh_optimizing = True # getLuxProp(self.scene, "mesh_optimizing", False)
 		mesh = Mesh.New('')
 		for (mesh_name, objs) in self.meshes.items():
-			if (len(objs) >= instancing_threshold):
+			allow_instancing = True
+			mats = self.getMaterials(objs[0]) # mats = obj.getData().getMaterials()
+			for mat in mats: # don't instance if one of the materials is emissive
+				if (mat!=None) and (mat.emit > 0.0):
+					allow_instancing = False
+			for obj in objs: # don't instance if the objects with same mesh uses different materials
+				ms = self.getMaterials(obj)
+				if ms <> mats:
+					allow_instancing = False
+			if allow_instancing and (len(objs) >= instancing_threshold):
 				del self.meshes[mesh_name]
-				obj = objs[0]
-				mesh.getFromObject(obj, 0, 1)
-				mats = getMaterials(obj) # mats = obj.getData().getMaterials()
+				mesh.getFromObject(objs[0], 0, 1)
 				print "blender-mesh: %s (%d vertices, %d faces)"%(mesh_name, len(mesh.verts), len(mesh.faces))
 				file.write("ObjectBegin \"%s\"\n"%mesh_name)
 				if (mesh_optimizing):
@@ -769,7 +788,7 @@ class luxExport:
 			mesh_name = obj.getData(name_only=True)
 			if mesh_name in self.meshes:
 				mesh.getFromObject(obj, 0, 1)
-				mats = getMaterials(obj)
+				mats = self.getMaterials(obj)
 				print "  blender-mesh: %s (%d vertices, %d faces)"%(mesh_name, len(mesh.verts), len(mesh.faces))
 				if (mesh_optimizing):
 					self.exportMeshOpt(file, mesh, mats, mesh_name)
@@ -796,36 +815,12 @@ class luxExport:
 		  		  matrix[3][0], matrix[3][1], matrix[3][2], matrix[3][3]))
 			mesh_name = obj.getData(name_only=True)
 			mesh.getFromObject(obj, 0, 1)
-			mats = getMaterials(obj) # mats = obj.getData().getMaterials()
+			mats = self.getMaterials(obj) # mats = obj.getData().getMaterials()
 			if (mesh_optimizing):
 				self.exportMeshOpt(file, mesh, mats, mesh_name, True)
 			else:
 				self.exportMesh(file, mesh, mats, mesh_name, True)
 
-	#-------------------------------------------------
-	# exportLights(self, file)
-	# exports light objects to the file
-	#-------------------------------------------------
-	def exportLights(self, file):
-		mesh_optimizing = True # getLuxProp(self.scene, "mesh_optimizing", False)
-		mesh = Mesh.New('')
-		for [obj, matrix] in self.lights:
-			print "light: %s"%(obj.getName())
-			file.write("AttributeBegin # %s\n"%obj.getName())
-			file.write("\tTransform [%s %s %s %s  %s %s %s %s  %s %s %s %s  %s %s %s %s]\n"\
-				%(matrix[0][0], matrix[0][1], matrix[0][2], matrix[0][3],\
-				  matrix[1][0], matrix[1][1], matrix[1][2], matrix[1][3],\
-				  matrix[2][0], matrix[2][1], matrix[2][2], matrix[2][3],\
-		  		  matrix[3][0], matrix[3][1], matrix[3][2], matrix[3][3]))
-			mesh_name = obj.getData(name_only=True)
-			mesh.getFromObject(obj, 0, 1)
-			mats = getMaterials(obj) # mats = obj.getData().getMaterials()
-			print "  blender-mesh: %s (%d vertices, %d faces)"%(mesh_name, len(mesh.verts), len(mesh.faces))
-			if (mesh_optimizing):
-				self.exportMeshOpt(file, mesh, mats, mesh_name)
-			else:
-				self.exportMesh(file, mesh, mats, mesh_name)
-			file.write("AttributeEnd\n\n")
 
 
 ######################################################
@@ -1011,8 +1006,6 @@ def save_lux(filename, unindexedname):
 		print("Exporting materials to '" + mat_filename + "'...\n")
 		mat_file = open(mat_filename, 'w')
 		mat_file.write("")
-		mat_file.write("# Dummy Material 'Default'\n")
-		mat_file.write("Texture \"Kd-Default\" \"color\" \"constant\" \"color value\" [0.5 0.5 0.5]\n\n")
 		export.exportMaterials(mat_file)
 		mat_file.write("")
 		mat_file.close()
@@ -1023,7 +1016,6 @@ def save_lux(filename, unindexedname):
 		geom_file = open(geom_filename, 'w')
 		meshlist = []
 		geom_file.write("")
-		export.exportLights(geom_file)
 		export.exportMeshes(geom_file)
 		export.exportObjects(geom_file)
 		geom_file.write("")
@@ -1551,16 +1543,18 @@ def setFocus(target):
 	global FocalDistance
 	currentscene = Scene.GetCurrent()
 	camObj = currentscene.getCurrentCamera()
-	loc1 = camObj.getLocation()
 	if target == "S":
-		selObj = Object.GetSelected()[0]
-		try:	
-			loc2 = selObj.getLocation()
+		try:
+			refLoc = (Object.GetSelected()[0]).getLocation()
 		except:
 			print "select an object to focus\n"
 	if target == "C":
-		loc2 = Window.GetCursorPos()
-	FocalDistance.val = (((loc1[0]-loc2[0])**2)+((loc1[1]-loc2[1])**2)+((loc1[2]-loc2[2])**2))**0.5
+		refLoc = Window.GetCursorPos()
+	dist = Mathutils.Vector(refLoc) - Mathutils.Vector(camObj.getLocation())
+	print camObj.getMatrix(), camObj.getMatrix()[2]
+	camDir = camObj.getMatrix()[2]*(-1.0)
+	FocalDistance.val = (camDir[0]*dist[0]+camDir[1]*dist[1]+camDir[2]*dist[2])/camDir.length
+
 
 Screen = 0
 Draw.Register(drawGUI, event, buttonEvt)
