@@ -882,7 +882,7 @@ def save_lux(filename, unindexedname):
 	
 		##### Write film ######
 		file.write("Film \"multiimage\"\n") 
-		file.write("     \"integer xresolution\" [%d] \"integer yresolution\" [%d]\n" % (scn.getRenderingContext().sizeX*getProp(scn, "ScaleSize", 100)/100, scn.getRenderingContext().sizeX*getProp(scn, "ScaleSize", 100)/100) )
+		file.write("     \"integer xresolution\" [%d] \"integer yresolution\" [%d]\n" % (scn.getRenderingContext().sizeX*getProp(scn, "ScaleSize", 100)/100, scn.getRenderingContext().sizeY*getProp(scn, "ScaleSize", 100)/100) )
 		if(getProp(scn, "SaveIGI", 0)):
 			file.write("	 \"string igi_filename\" [\"out.igi\"]\n")
 			file.write("	 	\"integer igi_writeinterval\" [%i]\n" %(getProp(scn, "SaveIGIInterval", 120)))
@@ -970,6 +970,7 @@ def save_lux(filename, unindexedname):
 					if obj.data.getType() == 1: # sun object
 						invmatrix = Mathutils.Matrix(obj.getInverseMatrix())
 						file.write("AttributeBegin\n")
+						file.write("Rotate %d 0 0 1\n"%(getProp(scn, "EnvRotation", 0)))
 						file.write("LightSource \"sunsky\" \"integer nsamples\" [1]\n")
 						file.write("            \"vector sundir\" [%f %f %f]\n" %(invmatrix[0][2], invmatrix[1][2], invmatrix[2][2]))
 						file.write("		\"color L\" [%f %f %f]\n" %(getProp(scn, "SkyGain", 1.0), getProp(scn, "SkyGain", 1.0), getProp(scn, "SkyGain", 1.0)))
@@ -983,6 +984,7 @@ def save_lux(filename, unindexedname):
 		if getProp(scn, "EnvType", 0) == 2:
 			if getProp(scn, "EnvFile", "") != "":
 				file.write("AttributeBegin\n")
+				file.write("Rotate %d 0 0 1\n"%(getProp(scn, "EnvRotation", 0)))
 				file.write("LightSource \"infinite\" \"integer nsamples\" [1]\n")
 				file.write("            \"string mapname\" [\"%s\"]\n" %(getProp(scn, "EnvFile", "")) )
 	
@@ -1044,19 +1046,23 @@ def launchLux(filename):
 #	ic=f.readline()
 #	f.close()
 
-	ic = getProp(Scene.GetCurrent(), "LuxPath", "")
+	scn = Scene.GetCurrent()
+	ic = getProp(scn, "LuxPath", "")
+	threads = getProp(scn, "Threads", 1)
 		
 	if ostype == "win32":
 		
-		# create 'LuxWrapper.cmd' and write two lines of code into it
-		f = open(datadir + "\LuxWrapper.cmd", 'w')
-		f.write("cd /d " + sys.dirname(ic) + "\n")
-		f.write("start /b /belownormal " + sys.basename(ic) + " %1 \n")
-		f.close()
+#		# create 'LuxWrapper.cmd' and write two lines of code into it
+#		f = open(datadir + "\LuxWrapper.cmd", 'w')
+#		f.write("cd /d " + sys.dirname(ic) + "\n")
+#		f.write("start /b /belownormal " + sys.basename(ic) + " %1 \n")
+#		f.close()
 		
-		# call external shell script to start Lux
-		cmd= "\"" + datadir + "\LuxWrapper.cmd " + filename + "\""
-		
+#		# call external shell script to start Lux
+#		cmd= "\"" + datadir + "\LuxWrapper.cmd " + filename + "\""
+
+		cmd = "start /b /belownormal %s \"%s\" --threads=%d"%(ic, filename, threads)		
+
 	if ostype == "darwin":
 		
 		#create 'LuxWrapper.cmd' and write two lines of code into it
@@ -1068,6 +1074,10 @@ def launchLux(filename):
 		os.system(com)
 		
 		cmd	= datadir + "/LuxWrapper.command"
+
+	if ostype == "linux2":
+		cmd = "(%s --threads=%d %s)&"%(ic, threads, filename)
+
 	# call external shell script to start Lux	
 	print("Running Luxrender:\n"+cmd)
 	os.system(cmd)
@@ -1218,14 +1228,16 @@ def drawEnv():
 	BGL.glRectf(90,182,170,183)
 	BGL.glColor3f(0.9,0.9,0.9)
 	scn = Scene.GetCurrent()
-	Draw.Menu(strEnvType, evtRedraw, 10, 150, 150, 18, getProp(scn, "EnvType", 0), "Set the Enviroment type", CBsetProp(scn, "EnvType"))
+	Draw.Menu(strEnvType, evtRedraw, 10, 150, 150, 18, getProp(scn, "EnvType", 0), "Set the Environment type", CBsetProp(scn, "EnvType"))
 	if getProp(scn, "EnvType", 0) == 2:
 		Draw.String("Image: ", evtNoEvt, 10, 130, 255, 18, getProp(scn, "EnvFile", ""), 50, "the file name of the EXR latlong map", CBsetProp(scn, "EnvFile"))
-		Draw.Menu(strEnvMapType, evtNoEvt, 10, 110, 100, 18, getProp(scn, "EnvMapType", 0), "Set the map type of the probe", CBsetProp(scn, "EnvMapType"))
-		Draw.Button("Load", evtloadimg, 225, 110, 40,18,"Load Env Map")
+		Draw.Button("...", evtloadimg, 270, 130, 20, 18, "Load Env Map")
+		Draw.Menu(strEnvMapType, evtNoEvt, 10, 110, 150, 18, getProp(scn, "EnvMapType", 0), "Set the map type of the probe", CBsetProp(scn, "EnvMapType"))
+		Draw.Number("Rotation", evtNoEvt, 10, 90, 150, 18, getProp(scn, "EnvRotation", 0), 0.0, 360.0, "Set Environment rotation", CBsetProp(scn, "EnvRotation"))
 	if getProp(scn, "EnvType", 0) == 1:
 		Draw.Number("Sky Turbidity", evtNoEvt, 10, 130, 150, 18, getProp(scn, "Turbidity", 2.0), 1.5, 5.0, "Sky Turbidity", CBsetProp(scn, "Turbidity"))
 		Draw.Number("Sky Gain", evtNoEvt, 10, 110, 150, 18, getProp(scn, "SkyGain", 1.0), 0.0, 5.0, "Sky Gain", CBsetProp(scn, "SkyGain"))
+		Draw.Number("Rotation", evtNoEvt, 10, 90, 150, 18, getProp(scn, "EnvRotation", 0), 0.0, 360.0, "Set Environment rotation", CBsetProp(scn, "EnvRotation"))
 	
 ###############  Draw Rendersettings   ###################################
 def drawSettings():
@@ -1258,7 +1270,8 @@ def drawSystem():
 	scn = Scene.GetCurrent()
 	Draw.String("Lux: ", evtNoEvt, 10, 160, 380, 18, getProp(scn, "LuxPath", ""), 50, "the file name of the Lux executable", CBsetProp(scn, "LuxPath"))
 	Draw.Button("...", evtbrowselux, 392, 160, 20, 18, "Browse for the Lux executable")
-	Draw.Button("Save Defaults", evtSaveDefaults, 292, 110, 120, 38, "Save current settings as defaults for new scenes")
+	Draw.Number("Threads", evtNoEvt, 292, 130, 120, 18, getProp(scn, "Threads", 1), 1, 16, "Number of Threads used in Lux", CBsetProp(scn, "Threads"))
+	Draw.Button("Save Defaults", evtSaveDefaults, 292, 80, 120, 38, "Save current settings as defaults for new scenes")
 	Draw.Toggle("Save IGI", evtNoEvt, 10, 130, 80, 18, getProp(scn, "SaveIGI", 0), "Save untonemapped IGI file", CBsetProp(scn, "SaveIGI"))
 	Draw.Number("Interval", evtNoEvt, 100, 130, 150, 18, getProp(scn, "SaveIGIInterval", 120), 20, 10000, "Set Interval for IGI file write (seconds)", CBsetProp(scn, "SaveIGIInterval"))
 	Draw.Toggle("Save EXR", evtNoEvt, 10, 110, 80, 18, getProp(scn, "SaveEXR", 0), "Save untonemapped EXR file", CBsetProp(scn, "SaveEXR"))
