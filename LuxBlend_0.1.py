@@ -872,12 +872,28 @@ def save_lux(filename, unindexedname):
 			lens = camObj.data.getLens() 
 	    		context = Blender.Scene.getCurrent().getRenderingContext()
 	    		ratio = float(context.imageSizeY())/float(context.imageSizeX())
+			ctype = getProp(camObj.data, "CameraType", 0)
+			scale = 1.0
 			if (ratio < 1.0):
 				fov = 2*math.atan(16/lens*ratio) * (180 / 3.141592653)
+				if ctype==1: # ortho scale
+					scale = camObj.data.scale/2 * ratio
+				screenwindow = [((2*camObj.data.shiftX)-1)/ratio*scale, ((2*camObj.data.shiftX)+1)/ratio*scale, ((2*camObj.data.shiftY/ratio)-1)*scale, ((2*camObj.data.shiftY/ratio)+1)*scale]
 			else:
 				fov = 2*math.atan(16/lens/ratio) * (180 / 3.141592653)
+				if ctype==1: # ortho scale
+					scale = camObj.data.scale/2 / ratio
+				screenwindow = [((2*camObj.data.shiftX*ratio)-1)*scale, ((2*camObj.data.shiftX*ratio)+1)*scale, ((2*camObj.data.shiftY)-1)*ratio*scale, ((2*camObj.data.shiftY)+1)*ratio*scale]
 			file.write("LookAt %f %f %f   %f %f %f %f %f %f\n" % ( pos[0], pos[1], pos[2], target[0], target[1], target[2], up[0], up[1], up[2] ))
-			file.write("Camera \"perspective\" \"float fov\" [%f] \"float lensradius\" [%f] \"float focaldistance\" [%f] \n" % (fov,getProp(camObj, "LensRadius", 0.0),getProp(camObj, "FocalDistance", 2.0)))
+			if ctype==0:
+				file.write("Camera \"perspective\" \"float fov\" [%f] \"float lensradius\" [%f] \"float focaldistance\" [%f] \"float screenwindow\" [%f, %f, %f, %f] \"float shutteropen\" [%f] \"float shutterclose\" [%f]\n"\
+					% (fov, getProp(camObj.data, "LensRadius", 0.0), getProp(camObj.data, "FocalDistance", 2.0), screenwindow[0], screenwindow[1], screenwindow[2], screenwindow[3], getProp(camObj.data, "ShutterOpen", 0.0), getProp(camObj.data, "ShutterClose", 1.0)))
+			if ctype==1:
+				file.write("Camera \"orthographic\" \"float lensradius\" [%f] \"float focaldistance\" [%f] \"float screenwindow\" [%f, %f, %f, %f] \"float shutteropen\" [%f] \"float shutterclose\" [%f]\n"\
+					% (getProp(camObj.data, "LensRadius", 0.0),getProp(camObj.data, "FocalDistance", 2.0), screenwindow[0], screenwindow[1], screenwindow[2], screenwindow[3], getProp(camObj.data, "ShutterOpen", 0.0), getProp(camObj.data, "ShutterClose", 1.0)))
+			if ctype==2:
+				file.write("Camera \"environment\" \"float shutteropen\" [%f] \"float shutterclose\" [%f]\n"\
+					% (getProp(camObj.data, "ShutterOpen", 0.0), getProp(camObj.data, "ShutterClose", 1.0)))
 		file.write("\n")
 	
 		##### Write film ######
@@ -1205,21 +1221,37 @@ def drawCamera():
 	BGL.glColor3f(1.0,0.5,0.4)
 	BGL.glRectf(10,182,90,183)
 	scn = Scene.GetCurrent()
-	try:
-		cam = scn.getCurrentCamera()
-	except:
-		cam = None
-	if cam:	
-		BGL.glColor3f(0.9,0.9,0.9) ; BGL.glRasterPos2i(10,165) ; Draw.Text("Dof Settings:")
-		Draw.Number("Lens Radius: ", evtNoEvt, 10, 140, 200, 18, getProp(cam, "LensRadius", 0.0), 0.0, 3.0, "Defines the lens radius. Values higher than 0. enable DOF and control the amount", CBsetProp(cam, "LensRadius"))
-		Draw.Number("Focal Distance: ", evtNoEvt, 10, 120, 200, 18, getProp(cam, "FocalDistance", 2.0), 0.0, 100, "Distance from the camera at which objects will be in focus. Has no effect if Lens Radius is 0.", CBsetProp(cam, "FocalDistance"))
-		Draw.Button("S", evtFocusS, 215, 120, 20, 18, "Get the distance from the selected object")
-		Draw.Button("C", evtFocusC, 235, 120, 20, 18, "Get the distance from the 3d cursor")
+#	try:
+	cam = scn.getCurrentCamera().data
+	if cam:
+		BGL.glColor3f(0.9,0.9,0.9); BGL.glRasterPos2i(10,165); Draw.Text("Camera-Type:")
+		Draw.Menu("Camera %t| perspective %x0| orthographic %x1| environment %x2", evtRedraw, 110, 160, 140, 18, getProp(cam, "CameraType", 0), "camera type", CBsetProp(cam, "CameraType"))
+		BGL.glColor3f(0.9,0.9,0.9); BGL.glRasterPos2i(10,145); Draw.Text("Clipping:")
+		Draw.Number("hither: ", evtNoEvt, 110, 140, 140, 18, cam.clipStart, 0.0, 100.0, "near clip distance", CBsetAttr(cam, "clipStart"))
+		Draw.Number("yon: ", evtNoEvt, 260, 140, 140, 18, cam.clipEnd, 1.0, 5000.0, "far clip distance", CBsetAttr(cam, "clipEnd"))
+		BGL.glColor3f(0.9,0.9,0.9); BGL.glRasterPos2i(10,125); Draw.Text("DOF Settings:")
+		Draw.Number("Lens Radius: ", evtNoEvt, 110, 120, 140, 18, getProp(cam, "LensRadius", 0.0), 0.0, 3.0, "Defines the lens radius. Values higher than 0. enable DOF and control the amount", CBsetProp(cam, "LensRadius"))
+		Draw.Number("Focal Distance: ", evtNoEvt, 260, 120, 140, 18, cam.dofDist, 0.0, 5000.0, "Distance from the camera at which objects will be in focus. Has no effect if Lens Radius is 0.", CBsetAttr(cam, "dofDist"))
+		Draw.Button("S", evtFocusS, 400, 120, 20, 18, "Get the distance from the selected object")
+		Draw.Button("C", evtFocusC, 420, 120, 20, 18, "Get the distance from the 3d cursor")
+		BGL.glColor3f(0.9,0.9,0.9); BGL.glRasterPos2i(10,105); Draw.Text("Shutter:")
+		Draw.Number("Open: ", evtNoEvt, 110, 100, 140, 18, getProp(cam, "ShutterOpen", 0.0), 0.0, 100.0, "The time in seconds at which the virtual shutter opens", CBsetProp(cam, "ShutterOpen"))
+		Draw.Number("Close: ", evtNoEvt, 260, 100, 140, 18, getProp(cam, "ShutterClose", 1.0), 0.0, 100.0, "The time in seconds at which the virtual shutter closes", CBsetProp(cam, "ShutterClose"))
+		t = getProp(cam, "CameraType", 0)
+		if t==0: # perspective
+			BGL.glColor3f(0.9,0.9,0.9); BGL.glRasterPos2i(10,85); Draw.Text("Perspective:")
+			Draw.Number("FOV: ", evtNoEvt, 110, 80, 140, 18, cam.angle, 7.323871, 172.847331, "Field Of View", CBsetAttr(cam, "angle"))
+		elif t==1: # orthographic
+			BGL.glColor3f(0.9,0.9,0.9); BGL.glRasterPos2i(10,85); Draw.Text("Orthographic:")
+			Draw.Number("Scale: ", evtNoEvt, 110, 80, 140, 18, cam.scale, 0.01, 1000.00, "Orthographic scale", CBsetAttr(cam, "scale"))
 
-	BGL.glColor3f(0.9,0.9,0.9) ; BGL.glRasterPos2i(10,100) ; Draw.Text("Size:")
-	Draw.Number("X: ", evtNoEvt, 10, 75, 95, 18, Scene.GetCurrent().getRenderingContext().sizeX, 1, 4096, "Width of the render", CBsetAttr(Scene.GetCurrent().getRenderingContext(), "sizeX"))
-	Draw.Number("Y: ", evtNoEvt, 115, 75, 95, 18, Scene.GetCurrent().getRenderingContext().sizeY, 1, 3072, "Height of the render", CBsetAttr(Scene.GetCurrent().getRenderingContext(), "sizeY"))
-	Draw.Menu(strScaleSize, evtNoEvt, 215, 75, 65, 18, getProp(scn, "ScaleSize", 100), "Scale Image Size of ...", CBsetProp(scn, "ScaleSize"))
+#	except:
+#		pass
+
+#	BGL.glColor3f(0.9,0.9,0.9) ; BGL.glRasterPos2i(10,100) ; Draw.Text("Size:")
+#	Draw.Number("X: ", evtNoEvt, 10, 75, 95, 18, scn.getRenderingContext().sizeX, 1, 4096, "Width of the render", CBsetAttr(scn.getRenderingContext(), "sizeX"))
+#	Draw.Number("Y: ", evtNoEvt, 115, 75, 95, 18, scn.getRenderingContext().sizeY, 1, 3072, "Height of the render", CBsetAttr(scn.getRenderingContext(), "sizeY"))
+#	Draw.Menu(strScaleSize, evtNoEvt, 215, 75, 65, 18, getProp(scn, "ScaleSize", 100), "Scale Image Size of ...", CBsetProp(scn, "ScaleSize"))
 
 ##############  Draw Environment  #######################################
 def drawEnv():
@@ -1434,7 +1466,7 @@ def setFocus(target):
 		refLoc = Window.GetCursorPos()
 	dist = Mathutils.Vector(refLoc) - Mathutils.Vector(camObj.getLocation())
 	camDir = camObj.getMatrix()[2]*(-1.0)
-	setProp(camObj, "FocalDistance", (camDir[0]*dist[0]+camDir[1]*dist[1]+camDir[2]*dist[2])/camDir.length)
+	camObj.data.dofDist = (camDir[0]*dist[0]+camDir[1]*dist[1]+camDir[2]*dist[2])/camDir.length
 
 
 Screen = 0
