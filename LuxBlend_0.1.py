@@ -899,14 +899,15 @@ def save_lux(filename, unindexedname):
 		##### Write film ######
 		file.write("Film \"multiimage\"\n") 
 		file.write("     \"integer xresolution\" [%d] \"integer yresolution\" [%d]\n" % (scn.getRenderingContext().sizeX*getProp(scn, "ScaleSize", 100)/100, scn.getRenderingContext().sizeY*getProp(scn, "ScaleSize", 100)/100) )
+		filenamebase = sys.splitext(sys.basename(filename))[0]
 		if(getProp(scn, "SaveIGI", 0)):
-			file.write("	 \"string igi_filename\" [\"out.igi\"]\n")
+			file.write("	 \"string igi_filename\" [\"%s.igi\"]\n" %(filenamebase))
 			file.write("	 	\"integer igi_writeinterval\" [%i]\n" %(getProp(scn, "SaveIGIInterval", 120)))
 		if(getProp(scn, "SaveEXR", 0)):
-			file.write("	 \"string hdr_filename\" [\"out.exr\"]\n")
+			file.write("	 \"string hdr_filename\" [\"%s.exr\"]\n" %(filenamebase))
 			file.write("	 	\"integer hdr_writeinterval\" [%i]\n" %(getProp(scn, "SaveEXRInterval", 120)))
 		if(getProp(scn, "SaveTGA", 0)):
-			file.write("	 \"string ldr_filename\" [\"out.tga\"]\n")
+			file.write("	 \"string ldr_filename\" [\"%s.tga\"]\n" %(filenamebase))
 			file.write("		\"integer ldr_writeinterval\" [%i]\n" %(getProp(scn, "SaveTGAInterval", 120)))
 		file.write("		\"integer ldr_displayinterval\" [%i]\n" %(getProp(scn, "DisplayInterval", 12)))
 		file.write("		\"string tonemapper\" [\"reinhard\"]\n")
