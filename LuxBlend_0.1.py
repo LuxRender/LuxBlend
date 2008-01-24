@@ -1135,7 +1135,7 @@ from types import *
 
 # get defaults
 try:
-	rdict = Blender.Registry.GetKey('BlenderLux', False)
+	rdict = Blender.Registry.GetKey('BlenderLux', True)
 	if not(type(rdict) is DictType):
 		rdict = {}
 except:
@@ -1472,7 +1472,9 @@ def setFocus(target):
 
 Screen = 0
 Draw.Register(drawGUI, event, buttonEvt)
-if sys.exists(getProp(Scene.GetCurrent(), "LuxPath", ""))<=0:
+luxpath = getProp(Scene.GetCurrent(), "LuxPath", "")
+if sys.exists(luxpath)<=0:
+	print "WARNING: LuxPath \"%s\" is not valid\n"%(luxpath)
 	Screen = 3
 	Draw.Redraw()
 	Draw.PupMenu("Please setup path to the lux render software and press \"save defaults\" button%t|Ok")
