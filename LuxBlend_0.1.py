@@ -886,14 +886,14 @@ def save_lux(filename, unindexedname):
 				screenwindow = [((2*camObj.data.shiftX*ratio)-1)*scale, ((2*camObj.data.shiftX*ratio)+1)*scale, ((2*camObj.data.shiftY)-1)*ratio*scale, ((2*camObj.data.shiftY)+1)*ratio*scale]
 			file.write("LookAt %f %f %f   %f %f %f %f %f %f\n" % ( pos[0], pos[1], pos[2], target[0], target[1], target[2], up[0], up[1], up[2] ))
 			if ctype==0:
-				file.write("Camera \"perspective\" \"float fov\" [%f] \"float lensradius\" [%f] \"float focaldistance\" [%f] \"float screenwindow\" [%f, %f, %f, %f] \"float shutteropen\" [%f] \"float shutterclose\" [%f]\n"\
-					% (fov, getProp(camObj.data, "LensRadius", 0.0), getProp(camObj.data, "FocalDistance", 2.0), screenwindow[0], screenwindow[1], screenwindow[2], screenwindow[3], getProp(camObj.data, "ShutterOpen", 0.0), getProp(camObj.data, "ShutterClose", 1.0)))
+				file.write("Camera \"perspective\" \"float fov\" [%f] \"float lensradius\" [%f] \"float focaldistance\" [%f] \"float hither\" [%f] \"float yon\" [%f] \"float screenwindow\" [%f, %f, %f, %f] \"float shutteropen\" [%f] \"float shutterclose\" [%f]\n"\
+					% (fov, getProp(camObj.data, "LensRadius", 0.0), getProp(camObj.data, "FocalDistance", 2.0), camObj.data.clipStart, camObj.data.clipEnd, screenwindow[0], screenwindow[1], screenwindow[2], screenwindow[3], getProp(camObj.data, "ShutterOpen", 0.0), getProp(camObj.data, "ShutterClose", 1.0)))
 			if ctype==1:
-				file.write("Camera \"orthographic\" \"float lensradius\" [%f] \"float focaldistance\" [%f] \"float screenwindow\" [%f, %f, %f, %f] \"float shutteropen\" [%f] \"float shutterclose\" [%f]\n"\
-					% (getProp(camObj.data, "LensRadius", 0.0),getProp(camObj.data, "FocalDistance", 2.0), screenwindow[0], screenwindow[1], screenwindow[2], screenwindow[3], getProp(camObj.data, "ShutterOpen", 0.0), getProp(camObj.data, "ShutterClose", 1.0)))
+				file.write("Camera \"orthographic\" \"float lensradius\" [%f] \"float focaldistance\" [%f] \"float hither\" [%f] \"float yon\" [%f] \"float screenwindow\" [%f, %f, %f, %f] \"float shutteropen\" [%f] \"float shutterclose\" [%f]\n"\
+					% (getProp(camObj.data, "LensRadius", 0.0), getProp(camObj.data, "FocalDistance", 2.0), camObj.data.clipStart, camObj.data.clipEnd, screenwindow[0], screenwindow[1], screenwindow[2], screenwindow[3], getProp(camObj.data, "ShutterOpen", 0.0), getProp(camObj.data, "ShutterClose", 1.0)))
 			if ctype==2:
-				file.write("Camera \"environment\" \"float shutteropen\" [%f] \"float shutterclose\" [%f]\n"\
-					% (getProp(camObj.data, "ShutterOpen", 0.0), getProp(camObj.data, "ShutterClose", 1.0)))
+				file.write("Camera \"environment\" \"float hither\" [%f] \"float yon\" [%f] \"float shutteropen\" [%f] \"float shutterclose\" [%f]\n"\
+					% (camObj.data.clipStart, camObj.data.clipEnd, getProp(camObj.data, "ShutterOpen", 0.0), getProp(camObj.data, "ShutterClose", 1.0)))
 		file.write("\n")
 	
 		##### Write film ######
