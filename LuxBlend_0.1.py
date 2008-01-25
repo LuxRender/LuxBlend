@@ -885,15 +885,19 @@ def save_lux(filename, unindexedname):
 					scale = camObj.data.scale/2 / ratio
 				screenwindow = [((2*camObj.data.shiftX*ratio)-1)*scale, ((2*camObj.data.shiftX*ratio)+1)*scale, ((2*camObj.data.shiftY)-1)*ratio*scale, ((2*camObj.data.shiftY)+1)*ratio*scale]
 			file.write("LookAt %f %f %f   %f %f %f %f %f %f\n" % ( pos[0], pos[1], pos[2], target[0], target[1], target[2], up[0], up[1], up[2] ))
-			if ctype==0:
-				file.write("Camera \"perspective\" \"float fov\" [%f] \"float lensradius\" [%f] \"float focaldistance\" [%f] \"float hither\" [%f] \"float yon\" [%f] \"float screenwindow\" [%f, %f, %f, %f] \"float shutteropen\" [%f] \"float shutterclose\" [%f]\n"\
-					% (fov, getProp(camObj.data, "LensRadius", 0.0), getProp(camObj.data, "FocalDistance", 2.0), camObj.data.clipStart, camObj.data.clipEnd, screenwindow[0], screenwindow[1], screenwindow[2], screenwindow[3], getProp(camObj.data, "ShutterOpen", 0.0), getProp(camObj.data, "ShutterClose", 1.0)))
-			if ctype==1:
-				file.write("Camera \"orthographic\" \"float lensradius\" [%f] \"float focaldistance\" [%f] \"float hither\" [%f] \"float yon\" [%f] \"float screenwindow\" [%f, %f, %f, %f] \"float shutteropen\" [%f] \"float shutterclose\" [%f]\n"\
-					% (getProp(camObj.data, "LensRadius", 0.0), getProp(camObj.data, "FocalDistance", 2.0), camObj.data.clipStart, camObj.data.clipEnd, screenwindow[0], screenwindow[1], screenwindow[2], screenwindow[3], getProp(camObj.data, "ShutterOpen", 0.0), getProp(camObj.data, "ShutterClose", 1.0)))
-			if ctype==2:
-				file.write("Camera \"environment\" \"float hither\" [%f] \"float yon\" [%f] \"float shutteropen\" [%f] \"float shutterclose\" [%f]\n"\
-					% (camObj.data.clipStart, camObj.data.clipEnd, getProp(camObj.data, "ShutterOpen", 0.0), getProp(camObj.data, "ShutterClose", 1.0)))
+
+			if ctype == 0:
+				file.write("Camera \"perspective\" \"float fov\" [%f]"%(fov))
+			if ctype == 1:
+				file.write("Camera \"orthographic\"")
+			if ctype == 2:
+				file.write("Camera \"environment\"")
+			if ctype in [0,1,2]:
+				file.write(" \"float hither\" [%f] \"float yon\" [%f] \"float shutteropen\" [%f] \"float shutterclose\" [%f] \"float screenwindow\" [%f, %f, %f, %f]"\
+					%(camObj.data.clipStart, camObj.data.clipEnd, getProp(camObj.data, "ShutterOpen", 0.0), getProp(camObj.data, "ShutterClose", 1.0), screenwindow[0], screenwindow[1], screenwindow[2], screenwindow[3])) 
+			if ctype in [0,1]:
+				file.write(" \"float lensradius\" [%f] \"float focaldistance\" [%f]"%(getProp(camObj.data, "LensRadius", 0.0), getProp(camObj.data, "FocalDistance", 2.0)))
+			file.write("\n")
 		file.write("\n")
 	
 		##### Write film ######
@@ -920,43 +924,62 @@ def save_lux(filename, unindexedname):
 			file.write("		\"float bloomwidth\" [%f]\n" %(getProp(scn, "BloomWidth", 0.1)))
 			file.write("		\"float bloomradius\" [%f]\n" %(getProp(scn, "BloomRadius", 0.1)))
 	
-		if(getProp(scn, "FilterType", 0) == 1):
-			file.write("PixelFilter \"mitchell\" \"float xwidth\" [%f] \"float ywidth\" [%f]\n" %(getProp(scn, "FilterXWidth", 2.0), getProp(scn, "FilterYWidth", 2.0)))
-		else:
-			file.write("PixelFilter \"gaussian\" \"float xwidth\" [%f] \"float ywidth\" [%f]\n" %(getProp(scn, "FilterXWidth", 2.0), getProp(scn, "FilterYWidth", 2.0)))
+
 		file.write("\n")
+		##### Write Filter ######
+		tfilter = getProp(scn, "FilterType", 0)
+		if tfilter==0: # box
+			file.write("PixelFilter \"box\"");
+		if tfilter==1: # triangle
+			file.write("PixelFilter \"triangle\"");
+		if tfilter==2: # gaussian
+			file.write("PixelFilter \"gaussian\" \"float alpha\" [%f]"%(getProp(scn, "FilterGaussianAlpha", 2.0)))
+		if tfilter==3: # mitchell
+			file.write("PixelFilter \"mitchell\" \"float B\" [%f] \"float C\" [%f]"%(getProp(scn, "FilterMitchellB", 0.3333), getProp(scn, "FilterMitchellC", 0.3333)))
+		if tfilter==4: # sinc
+			file.write("PixelFilter \"sinc\" \"float tau\" [%f]"%(getProp(scn, "FilterSincTau", 3.0)))
+		file.write(" \"float xwidth\" [%f] \"float ywidth\" [%f]"%(getProp(scn, "FilterXWidth", 1), getProp(scn, "FilterYWidth", 1)))
+		file.write("\n")
+		file.write("\n")
+
 	
 		##### Write Pixel Sampler ######
-		if(getProp(scn, "SamplerType", 1) == 1):
-			file.write("Sampler \"random\" ")
-		else:
-			file.write("Sampler \"lowdiscrepancy\" ")
-	
-		if(getProp(scn, "PixelSamplerType", 0) == 0):
-			file.write("\"string pixelsampler\" [\"vegas\"] ")
-		if(getProp(scn, "PixelSamplerType", 0) == 1):
-			file.write("\"string pixelsampler\" [\"random\"] ")
-		if(getProp(scn, "PixelSamplerType", 0) == 2):
-			file.write("\"string pixelsampler\" [\"linear\"] ")
-
-		
-		file.write("\"integer pixelsamples\" [%i]\n" %(getProp(scn, "SamplerPixelsamples", 4)))
+		stype = getProp(scn, "SamplerType", 1)
+		if stype == 0:
+			file.write("Sampler \"lowdiscrepancy\"")
+		if stype == 1:
+			file.write("Sampler \"random\"")
+		ptype = getProp(scn, "PixelSamplerType", 0)
+		if ptype == 0:
+			file.write(" \"string pixelsampler\" [\"vegas\"]")
+		if ptype == 1:
+			file.write(" \"string pixelsampler\" [\"random\"]")
+		if ptype == 2:
+			file.write(" \"string pixelsampler\" [\"linear\"]")
+		file.write(" \"integer pixelsamples\" [%i]\n" %(getProp(scn, "SamplerPixelsamples", 4)))
 		file.write("\n")
 	
 		##### Write Integrator ######
-		file.write("SurfaceIntegrator \"path\" \"integer maxdepth\" [%i] " %(getProp(scn, "MaxDepth", 16)))
-	
-		if(getProp(scn, "Metropolis", 0) == 1):
-			file.write("\"bool metropolis\" [\"true\"] ")
-		else:
-			file.write("\"bool metropolis\" [\"false\"] ")
-	
-		file.write("\"integer maxconsecrejects\" [%f] " %(getProp(scn, "MetropolisMaxRejects", 128)))
-		file.write("\"float largemutationprob\" [%f] " %(getProp(scn, "MetropolisLMProb", 0.25)))
-	
-		file.write("\"float rrcontinueprob\" [%f]\n" %(getProp(scn, "RRContinueProb", 0.5)))
+
+		itype = getProp(scn, "IntegratorType", 0)
+		if itype == 0:
+			file.write("SurfaceIntegrator \"directlightning\" \"string strategy\" [\"%s\"]"%(["one", "all", "weighted"][getProp(scn, "DirectlightningStrategy", 0)]))
+		if itype == 1:
+			file.write("SurfaceIntegrator \"path\"")
+			if(getProp(scn, "Metropolis", 0) == 1):
+				file.write(" \"bool metropolis\" [\"true\"]")
+			else:
+				file.write(" \"bool metropolis\" [\"false\"]")
+		if itype == 2:
+			file.write("SurfaceIntegrator \"mltpath\"")
+		file.write(" \"integer maxdepth\" [%i]"%(getProp(scn, "MaxDepth", 16)))
+		if itype in [1,2]:
+			file.write(" \"integer maxconsecrejects\" [%f] \"float largemutationprob\" [%f] \"float rrcontinueprob\" [%f]"\
+				%(getProp(scn, "MetropolisMaxRejects", 256), getProp(scn, "MetropolisLMProb", 0.4), getProp(scn, "RRContinueProb", 0.65)))
 		file.write("\n")
-	
+		file.write("\n")
+
+		
 		##### Write Acceleration ######
 		file.write("Accelerator \"kdtree\"\n")
 		file.write("\n")
@@ -1205,13 +1228,13 @@ strEnvType = "Env Type %t | Background Color %x0 | Physical Sky %x1 | Texture Ma
 
 strEnvMapType = "Map type %t | LatLong %x0"
 
-strFilterType = "Filter %t | gaussian %x0 | mitchell %x1"
+strFilterType = "Filter %t| sinc %x4| mitchell %x3| gaussian %x2| triangle %x1| box %x0"
 
-strSamplerType = "Sampler %t | lowdiscrepancy %x0 | random %x1"
+strSamplerType = "Sampler %t| random %x1| lowdiscrepancy %x0"
 
-strPixelSamplerType = "PixelSampler %t | vegas %x0 | random %x1 | linear %x2"
+strPixelSamplerType = "PixelSampler %t| linear %x2| random %x1| vegas %x0"
 
-strIntegratorType = "Integrator %t | path %x0"
+strIntegratorType = "Integrator %t| MLT-path %x2| path %x1| directlighting %x0"
 
 strToneMapType = "ToneMap type %t | Reinhard %x1"
 
@@ -1220,122 +1243,135 @@ strToneMapType = "ToneMap type %t | Reinhard %x1"
 def drawCamera():
 	drawButtons()
 	BGL.glColor3f(1.0,0.5,0.4)
-	BGL.glRectf(10,182,90,183)
+	BGL.glRectf(10,222,90,223)
 	scn = Scene.GetCurrent()
 #	try:
 	cam = scn.getCurrentCamera().data
 	if cam:
-		BGL.glColor3f(0.9,0.9,0.9); BGL.glRasterPos2i(10,165); Draw.Text("Camera-Type:")
-		Draw.Menu("Camera %t| perspective %x0| orthographic %x1| environment %x2", evtRedraw, 110, 160, 140, 18, getProp(cam, "CameraType", 0), "camera type", CBsetProp(cam, "CameraType"))
-		BGL.glColor3f(0.9,0.9,0.9); BGL.glRasterPos2i(10,145); Draw.Text("Clipping:")
-		Draw.Number("hither: ", evtNoEvt, 110, 140, 140, 18, cam.clipStart, 0.0, 100.0, "near clip distance", CBsetAttr(cam, "clipStart"))
-		Draw.Number("yon: ", evtNoEvt, 260, 140, 140, 18, cam.clipEnd, 1.0, 5000.0, "far clip distance", CBsetAttr(cam, "clipEnd"))
-		BGL.glColor3f(0.9,0.9,0.9); BGL.glRasterPos2i(10,125); Draw.Text("DOF Settings:")
-		Draw.Number("Lens Radius: ", evtNoEvt, 110, 120, 140, 18, getProp(cam, "LensRadius", 0.0), 0.0, 3.0, "Defines the lens radius. Values higher than 0. enable DOF and control the amount", CBsetProp(cam, "LensRadius"))
-		Draw.Number("Focal Distance: ", evtNoEvt, 260, 120, 140, 18, cam.dofDist, 0.0, 5000.0, "Distance from the camera at which objects will be in focus. Has no effect if Lens Radius is 0.", CBsetAttr(cam, "dofDist"))
-		Draw.Button("S", evtFocusS, 400, 120, 20, 18, "Get the distance from the selected object")
-		Draw.Button("C", evtFocusC, 420, 120, 20, 18, "Get the distance from the 3d cursor")
-		BGL.glColor3f(0.9,0.9,0.9); BGL.glRasterPos2i(10,105); Draw.Text("Shutter:")
-		Draw.Number("Open: ", evtNoEvt, 110, 100, 140, 18, getProp(cam, "ShutterOpen", 0.0), 0.0, 100.0, "The time in seconds at which the virtual shutter opens", CBsetProp(cam, "ShutterOpen"))
-		Draw.Number("Close: ", evtNoEvt, 260, 100, 140, 18, getProp(cam, "ShutterClose", 1.0), 0.0, 100.0, "The time in seconds at which the virtual shutter closes", CBsetProp(cam, "ShutterClose"))
+		BGL.glColor3f(0.9,0.9,0.9); BGL.glRasterPos2i(10,205); Draw.Text("Camera-Type:")
+		Draw.Menu("Camera %t| environment %x2| orthographic %x1| perspective %x0", evtRedraw, 110, 200, 140, 18, getProp(cam, "CameraType", 0), "camera type", CBsetProp(cam, "CameraType"))
 		t = getProp(cam, "CameraType", 0)
 		if t==0: # perspective
-			BGL.glColor3f(0.9,0.9,0.9); BGL.glRasterPos2i(10,85); Draw.Text("Perspective:")
-			Draw.Number("FOV: ", evtNoEvt, 110, 80, 140, 18, cam.angle, 7.323871, 172.847331, "Field Of View", CBsetAttr(cam, "angle"))
+			Draw.Number("FOV: ", evtNoEvt, 260, 200, 140, 18, cam.angle, 7.323871, 172.847331, "Field Of View", CBsetAttr(cam, "angle"))
 		elif t==1: # orthographic
-			BGL.glColor3f(0.9,0.9,0.9); BGL.glRasterPos2i(10,85); Draw.Text("Orthographic:")
-			Draw.Number("Scale: ", evtNoEvt, 110, 80, 140, 18, cam.scale, 0.01, 1000.00, "Orthographic scale", CBsetAttr(cam, "scale"))
+			Draw.Number("Scale: ", evtNoEvt, 260, 200, 140, 18, cam.scale, 0.01, 1000.00, "Orthographic scale", CBsetAttr(cam, "scale"))
+		BGL.glColor3f(0.9,0.9,0.9); BGL.glRasterPos2i(10,180); Draw.Text("Clipping:")
+		Draw.Number("hither: ", evtNoEvt, 110, 175, 140, 18, cam.clipStart, 0.0, 100.0, "near clip distance", CBsetAttr(cam, "clipStart"))
+		Draw.Number("yon: ", evtNoEvt, 260, 175, 140, 18, cam.clipEnd, 1.0, 5000.0, "far clip distance", CBsetAttr(cam, "clipEnd"))
+		BGL.glColor3f(0.9,0.9,0.9); BGL.glRasterPos2i(10,155); Draw.Text("DOF Settings:")
+		Draw.Number("Lens Radius: ", evtNoEvt, 110, 150, 140, 18, float(getProp(cam, "LensRadius", 0.0)), 0.0, 3.0, "Defines the lens radius. Values higher than 0. enable DOF and control the amount", CBsetProp(cam, "LensRadius"))
+		Draw.Number("Focal Distance: ", evtNoEvt, 260, 150, 140, 18, cam.dofDist, 0.0, 5000.0, "Distance from the camera at which objects will be in focus. Has no effect if Lens Radius is 0.", CBsetAttr(cam, "dofDist"))
+		Draw.Button("S", evtFocusS, 400, 150, 20, 18, "Get the distance from the selected object")
+		Draw.Button("C", evtFocusC, 420, 150, 20, 18, "Get the distance from the 3d cursor")
+		BGL.glColor3f(0.9,0.9,0.9); BGL.glRasterPos2i(10,130); Draw.Text("Shutter:")
+		Draw.Number("Open: ", evtNoEvt, 110, 125, 140, 18, float(getProp(cam, "ShutterOpen", 0.0)), 0.0, 100.0, "The time in seconds at which the virtual shutter opens", CBsetProp(cam, "ShutterOpen"))
+		Draw.Number("Close: ", evtNoEvt, 260, 125, 140, 18, float(getProp(cam, "ShutterClose", 1.0)), 0.0, 100.0, "The time in seconds at which the virtual shutter closes", CBsetProp(cam, "ShutterClose"))
 
 #	except:
 #		pass
-
-#	BGL.glColor3f(0.9,0.9,0.9) ; BGL.glRasterPos2i(10,100) ; Draw.Text("Size:")
-#	Draw.Number("X: ", evtNoEvt, 10, 75, 95, 18, scn.getRenderingContext().sizeX, 1, 4096, "Width of the render", CBsetAttr(scn.getRenderingContext(), "sizeX"))
-#	Draw.Number("Y: ", evtNoEvt, 115, 75, 95, 18, scn.getRenderingContext().sizeY, 1, 3072, "Height of the render", CBsetAttr(scn.getRenderingContext(), "sizeY"))
-#	Draw.Menu(strScaleSize, evtNoEvt, 215, 75, 65, 18, getProp(scn, "ScaleSize", 100), "Scale Image Size of ...", CBsetProp(scn, "ScaleSize"))
+	BGL.glColor3f(0.9,0.9,0.9) ; BGL.glRasterPos2i(10,105) ; Draw.Text("Size:")
+	Draw.Number("X: ", evtNoEvt, 110, 100, 140, 18, scn.getRenderingContext().sizeX, 1, 4096, "Width of the render", CBsetAttr(scn.getRenderingContext(), "sizeX"))
+	Draw.Number("Y: ", evtNoEvt, 260, 100, 140, 18, scn.getRenderingContext().sizeY, 1, 3072, "Height of the render", CBsetAttr(scn.getRenderingContext(), "sizeY"))
+	Draw.Menu(strScaleSize, evtNoEvt, 110, 80, 140, 18, getProp(scn, "ScaleSize", 100), "Scale Image Size of ...", CBsetProp(scn, "ScaleSize"))
 
 ##############  Draw Environment  #######################################
 def drawEnv():
 	drawButtons()
 	BGL.glColor3f(1.0,0.5,0.4)
-	BGL.glRectf(90,182,170,183)
+	BGL.glRectf(90,222,170,223)
 	BGL.glColor3f(0.9,0.9,0.9)
 	scn = Scene.GetCurrent()
-	Draw.Menu(strEnvType, evtRedraw, 10, 150, 150, 18, getProp(scn, "EnvType", 0), "Set the Environment type", CBsetProp(scn, "EnvType"))
+	Draw.Menu(strEnvType, evtRedraw, 10, 190, 150, 18, getProp(scn, "EnvType", 0), "Set the Environment type", CBsetProp(scn, "EnvType"))
 	if getProp(scn, "EnvType", 0) == 2:
-		Draw.String("Image: ", evtNoEvt, 10, 130, 255, 18, getProp(scn, "EnvFile", ""), 50, "the file name of the EXR latlong map", CBsetProp(scn, "EnvFile"))
-		Draw.Button("...", evtloadimg, 270, 130, 20, 18, "Load Env Map")
-		Draw.Menu(strEnvMapType, evtNoEvt, 10, 110, 150, 18, getProp(scn, "EnvMapType", 0), "Set the map type of the probe", CBsetProp(scn, "EnvMapType"))
-		Draw.Number("Rotation", evtNoEvt, 10, 90, 150, 18, getProp(scn, "EnvRotation", 0), 0.0, 360.0, "Set Environment rotation", CBsetProp(scn, "EnvRotation"))
+		Draw.String("Image: ", evtNoEvt, 10, 170, 255, 18, getProp(scn, "EnvFile", ""), 50, "the file name of the EXR latlong map", CBsetProp(scn, "EnvFile"))
+		Draw.Button("...", evtloadimg, 270, 170, 20, 18, "Load Env Map")
+		Draw.Menu(strEnvMapType, evtNoEvt, 10, 150, 150, 18, getProp(scn, "EnvMapType", 0), "Set the map type of the probe", CBsetProp(scn, "EnvMapType"))
+		Draw.Number("Rotation", evtNoEvt, 10, 130, 150, 18, getProp(scn, "EnvRotation", 0), 0.0, 360.0, "Set Environment rotation", CBsetProp(scn, "EnvRotation"))
 	if getProp(scn, "EnvType", 0) == 1:
-		Draw.Number("Sky Turbidity", evtNoEvt, 10, 130, 150, 18, getProp(scn, "Turbidity", 2.0), 1.5, 5.0, "Sky Turbidity", CBsetProp(scn, "Turbidity"))
-		Draw.Number("Sky Gain", evtNoEvt, 10, 110, 150, 18, getProp(scn, "SkyGain", 1.0), 0.0, 5.0, "Sky Gain", CBsetProp(scn, "SkyGain"))
-		Draw.Number("Rotation", evtNoEvt, 10, 90, 150, 18, getProp(scn, "EnvRotation", 0), 0.0, 360.0, "Set Environment rotation", CBsetProp(scn, "EnvRotation"))
+		Draw.Number("Sky Turbidity", evtNoEvt, 10, 170, 150, 18, getProp(scn, "Turbidity", 2.0), 1.5, 5.0, "Sky Turbidity", CBsetProp(scn, "Turbidity"))
+		Draw.Number("Sky Gain", evtNoEvt, 10, 150, 150, 18, getProp(scn, "SkyGain", 1.0), 0.0, 5.0, "Sky Gain", CBsetProp(scn, "SkyGain"))
+		Draw.Number("Rotation", evtNoEvt, 10, 130, 150, 18, getProp(scn, "EnvRotation", 0), 0.0, 360.0, "Set Environment rotation", CBsetProp(scn, "EnvRotation"))
 	
 ###############  Draw Rendersettings   ###################################
 def drawSettings():
 	drawButtons()
 	BGL.glColor3f(1.0,0.5,0.4)
-	BGL.glRectf(170,182,250,183)
+	BGL.glRectf(170,222,250,223)
 	BGL.glColor3f(0.9,0.9,0.9)
 	scn = Scene.GetCurrent()
-	Draw.Menu(strIntegratorType, evtNoEvt, 10, 150, 100, 18, getProp(scn, "IntegratorType", 0), "Engine Integrator type", CBsetProp(scn, "IntegratorType"))
-	Draw.Toggle("MLT", evtNoEvt, 120, 150, 60, 18, getProp(scn, "Metropolis", 0), "use Metropolis Light Transport", CBsetProp(scn, "Metropolis"))
-	Draw.Number("MaxRejects:", evtNoEvt, 180, 150, 120, 18, getProp(scn, "MetropolisMaxRejects", 128), 1, 1024, "Maximum nr of consecutive rejections for Metropolis accept", CBsetProp(scn, "MetropolisMaxRejects"))
-	Draw.Number("LMprob:", evtNoEvt, 300, 150, 120, 18, getProp(scn, "MetropolisLMProb", 0.25), 0, 1, "Probability of using a large mutation for Metropolis", CBsetProp(scn, "MetropolisLMProb"))
-	Draw.Number("Maxdepth:", evtNoEvt, 120, 130, 120, 18, getProp(scn, "MaxDepth", 16), 1, 1024, "Maximum path depth (bounces)", CBsetProp(scn, "MaxDepth"))
-	Draw.Number("RRprob:", evtNoEvt, 240, 130, 120, 18, getProp(scn, "RRContinueProb", 0.5), 0.01, 1.0, "Russian Roulette continue probability", CBsetProp(scn, "RRContinueProp"))
+	BGL.glColor3f(0.9,0.9,0.9); BGL.glRasterPos2i(10,205); Draw.Text("Integrator:")
+	Draw.Menu(strIntegratorType, evtRedraw, 110, 200, 140, 18, getProp(scn, "IntegratorType", 0), "Engine Integrator type", CBsetProp(scn, "IntegratorType"))
+	t = getProp(scn, "IntegratorType", 0)
+	if t==0: # directlightning
+		Draw.Menu(" Strategy %t| one %x0| all %x1| weighted %x2", evtNoEvt, 260, 200, 140, 18, getProp(scn, "DirectlightningStrategy", 0), "Strategy", CBsetProp(scn, "DirectlightningStrategy"))
+	if t==1: # path
+		Draw.Toggle("MLT", evtNoEvt, 260, 200, 140, 18, getProp(scn, "PathMLT", 0), "use Metropolis Light Transport", CBsetProp(scn, "PathMLT"))
+	Draw.Number("Maxdepth:", evtNoEvt, 110, 180, 140, 18, getProp(scn, "MaxDepth", 16), 1, 1024, "Maximum path depth (bounces)", CBsetProp(scn, "MaxDepth"))
+	if t in [1,2]: # path or MLTpath
+		Draw.Number("RRprob:", evtNoEvt, 260, 180, 140, 18, float(getProp(scn, "RRContinueProb", 0.65)), 0.01, 1.0, "Russian Roulette continue probability", CBsetProp(scn, "RRContinueProb"))
+		Draw.Number("MaxRejects:", evtNoEvt, 110, 160, 140, 18, float(getProp(scn, "MetropolisMaxRejects", 256)), 1, 1024, "Maximum nr of consecutive rejections for Metropolis accept", CBsetProp(scn, "MetropolisMaxRejects"))
+		Draw.Number("LMprob:", evtNoEvt, 260, 160, 140, 18, float(getProp(scn, "MetropolisLMProb", 0.4)), 0, 1, "Probability of using a large mutation for Metropolis", CBsetProp(scn, "MetropolisLMProb"))
 
-	Draw.Menu(strSamplerType, evtNoEvt, 10, 100, 120, 18, getProp(scn, "SamplerType", 1), "Engine Sampler type", CBsetProp(scn, "SamplerType"))
-	Draw.Menu(strPixelSamplerType, evtNoEvt, 140, 100, 120, 18, getProp(scn, "PixelSamplerType", 0), "Engine PixelSampler type", CBsetProp(scn, "PixelSamplerType"))
-	Draw.Number("Pixelsamples:", evtNoEvt, 260, 100, 150, 18, getProp(scn, "SamplerPixelsamples", 4), 1, 512, "Number of samples per pixel", CBsetProp(scn, "SamplerPixelsamples"))
+	BGL.glColor3f(0.9,0.9,0.9); BGL.glRasterPos2i(10,140); Draw.Text("Sampler:")
+	Draw.Menu(strSamplerType, evtRedraw, 110, 135, 70, 18, getProp(scn, "SamplerType", 1), "Engine Sampler type", CBsetProp(scn, "SamplerType"))
+	Draw.Menu(strPixelSamplerType, evtNoEvt, 180, 135, 70, 18, getProp(scn, "PixelSamplerType", 0), "Engine PixelSampler type", CBsetProp(scn, "PixelSamplerType"))
+	Draw.Number("P.samples:", evtNoEvt, 260, 135, 140, 18, getProp(scn, "SamplerPixelsamples", 4), 1, 512, "Number of samples per pixel", CBsetProp(scn, "SamplerPixelsamples"))
 
-	Draw.Menu(strFilterType, evtNoEvt, 10, 70, 120, 18, getProp(scn, "FilterType", 0), "Engine pixel reconstruction filter type", CBsetProp(scn, "FilterType"))
-	Draw.Number("X width:", evtNoEvt, 140, 70, 120, 18, getProp(scn, "FilterXWidth", 2), 1, 4, "Horizontal filter width", CBsetProp(scn, "FilterXWidth"))
-	Draw.Number("Y width:", evtNoEvt, 260, 70, 120, 18, getProp(scn, "FilterYWidth", 2), 1, 4, "Vertical filter width", CBsetProp(scn, "FilterYWidth"))
+	BGL.glColor3f(0.9,0.9,0.9); BGL.glRasterPos2i(10,115); Draw.Text("Filter:")
+	Draw.Menu(strFilterType, evtRedraw, 110, 110, 140, 18, getProp(scn, "FilterType", 0), "Engine pixel reconstruction filter type", CBsetProp(scn, "FilterType"))
+	t = getProp(scn, "FilterType", 0)
+	if t==2: # gaussian
+		Draw.Number("alpha:", evtNoEvt, 260, 110, 140, 18, float(getProp(scn, "FilterGaussianAlpha", 2.0)), 0.0, 10.0, "Gaussian rate of falloff. Lower values give blurrier images", CBsetProp(scn, "FilterGaussianAlpha"))
+	if t==3: # mitchell
+		Draw.Number("B:", evtNoEvt, 260, 110, 70, 18, float(getProp(scn, "FilterMitchellB", 0.3333)), 0.0, 10.0, "Specify the shape of the Mitchell filter. Often best result is when B + 2C = 1", CBsetProp(scn, "FilterMitchellB"))
+		Draw.Number("C:", evtNoEvt, 330, 110, 70, 18, float(getProp(scn, "FilterMitchellC", 0.3333)), 0.0, 10.0, "Specify the shape of the Mitchell filter. Often best result is when B + 2C = 1", CBsetProp(scn, "FilterMitchellC"))
+	if t==4: # sinc
+		Draw.Number("tau:", evtNoEvt, 260, 110, 140, 18, float(getProp(scn, "FilterSincTau", 3.0)), 0.0, 10.0, "Permitted number of cycles of the sinc function before it is clamped to zero", CBsetProp(scn, "FilterSincTau"))
+	Draw.Number("X width:", evtNoEvt, 110, 90, 140, 18, float(getProp(scn, "FilterXWidth", 1.0)), 0.0, 10.0, "Horizontal filter width", CBsetProp(scn, "FilterXWidth"))
+	Draw.Number("Y width:", evtNoEvt, 260, 90, 140, 18, float(getProp(scn, "FilterYWidth", 1.0)), 0.0, 10.0, "Vertical filter width", CBsetProp(scn, "FilterYWidth"))
 
 ##################  Draw RSettings  #########################	
 def drawSystem():
 	drawButtons()
 	BGL.glColor3f(1.0,0.5,0.4)
-	BGL.glRectf(330,182,410,183)
+	BGL.glRectf(330,222,410,223)
 	BGL.glColor3f(0.9,0.9,0.9)
 	scn = Scene.GetCurrent()
-	Draw.String("Lux: ", evtNoEvt, 10, 160, 380, 18, getProp(scn, "LuxPath", ""), 50, "the file name of the Lux executable", CBsetProp(scn, "LuxPath"))
-	Draw.Button("...", evtbrowselux, 392, 160, 20, 18, "Browse for the Lux executable")
-	Draw.Number("Threads", evtNoEvt, 292, 130, 120, 18, getProp(scn, "Threads", 1), 1, 16, "Number of Threads used in Lux", CBsetProp(scn, "Threads"))
-	Draw.Button("Save Defaults", evtSaveDefaults, 292, 80, 120, 38, "Save current settings as defaults for new scenes")
-	Draw.Toggle("Save IGI", evtNoEvt, 10, 130, 80, 18, getProp(scn, "SaveIGI", 0), "Save untonemapped IGI file", CBsetProp(scn, "SaveIGI"))
-	Draw.Number("Interval", evtNoEvt, 100, 130, 150, 18, getProp(scn, "SaveIGIInterval", 120), 20, 10000, "Set Interval for IGI file write (seconds)", CBsetProp(scn, "SaveIGIInterval"))
-	Draw.Toggle("Save EXR", evtNoEvt, 10, 110, 80, 18, getProp(scn, "SaveEXR", 0), "Save untonemapped EXR file", CBsetProp(scn, "SaveEXR"))
-	Draw.Number("Interval", evtNoEvt, 100,110,150,18, getProp(scn, "SaveEXRInterval", 120), 20, 10000, "Set Interval for EXR file write (seconds)", CBsetProp(scn, "SaveEXRInterval"))
-	Draw.Toggle("Save TGA", evtNoEvt, 10, 90, 80, 18, getProp(scn, "SaveTGA", 0), "Save tonemapped TGA file", CBsetProp(scn, "SaveTGA"))
-	Draw.Number("Interval", evtNoEvt, 100,90,150,18, getProp(scn, "SaveTGAInterval", 120), 20, 10000, "Set Interval for TGA file write (seconds)", CBsetProp(scn, "SaveTGAInterval"))
-	BGL.glRasterPos2i(10, 70); Draw.Text("Display:", "small")	
-	Draw.Number("Interval", evtNoEvt, 100, 70, 150, 18, getProp(scn, "DisplayInterval", 12), 5, 10000, "Set Interval for Display (seconds)", CBsetProp(scn, "DisplayInterval"))
+	Draw.String("Lux: ", evtNoEvt, 10, 200, 380, 18, getProp(scn, "LuxPath", ""), 50, "the file name of the Lux executable", CBsetProp(scn, "LuxPath"))
+	Draw.Button("...", evtbrowselux, 392, 200, 20, 18, "Browse for the Lux executable")
+	Draw.Number("Threads", evtNoEvt, 292, 170, 120, 18, getProp(scn, "Threads", 1), 1, 16, "Number of Threads used in Lux", CBsetProp(scn, "Threads"))
+	Draw.Button("Save Defaults", evtSaveDefaults, 292, 120, 120, 38, "Save current settings as defaults for new scenes")
+	Draw.Toggle("Save IGI", evtNoEvt, 10, 170, 80, 18, getProp(scn, "SaveIGI", 0), "Save untonemapped IGI file", CBsetProp(scn, "SaveIGI"))
+	Draw.Number("Interval", evtNoEvt, 100, 170, 150, 18, getProp(scn, "SaveIGIInterval", 120), 20, 10000, "Set Interval for IGI file write (seconds)", CBsetProp(scn, "SaveIGIInterval"))
+	Draw.Toggle("Save EXR", evtNoEvt, 10, 150, 80, 18, getProp(scn, "SaveEXR", 0), "Save untonemapped EXR file", CBsetProp(scn, "SaveEXR"))
+	Draw.Number("Interval", evtNoEvt, 100,150,150,18, getProp(scn, "SaveEXRInterval", 120), 20, 10000, "Set Interval for EXR file write (seconds)", CBsetProp(scn, "SaveEXRInterval"))
+	Draw.Toggle("Save TGA", evtNoEvt, 10, 130, 80, 18, getProp(scn, "SaveTGA", 0), "Save tonemapped TGA file", CBsetProp(scn, "SaveTGA"))
+	Draw.Number("Interval", evtNoEvt, 100,130,150,18, getProp(scn, "SaveTGAInterval", 120), 20, 10000, "Set Interval for TGA file write (seconds)", CBsetProp(scn, "SaveTGAInterval"))
+	BGL.glRasterPos2i(10, 110); Draw.Text("Display:", "small")	
+	Draw.Number("Interval", evtNoEvt, 100, 110, 150, 18, getProp(scn, "DisplayInterval", 12), 5, 10000, "Set Interval for Display (seconds)", CBsetProp(scn, "DisplayInterval"))
 
 
 #################  Draw Tonemapping  #########################
 def drawTonemap():
 	drawButtons()
 	BGL.glColor3f(1.0,0.5,0.4)
-	BGL.glRectf(250,182,330,183)
+	BGL.glRectf(250,222,330,223)
 	BGL.glColor3f(0.9,0.9,0.9)
 	scn = Scene.GetCurrent()
-	Draw.Menu(strToneMapType, evtRedraw, 10, 150, 85, 18, getProp(scn, "ToneMapType", 1), "Set the type of the tonemapping", CBsetProp(scn, "ToneMapType"))
+	Draw.Menu(strToneMapType, evtRedraw, 10, 190, 85, 18, getProp(scn, "ToneMapType", 1), "Set the type of the tonemapping", CBsetProp(scn, "ToneMapType"))
 	if getProp(scn, "ToneMapType", 1) == 1:
-		Draw.Number("Burn: ", evtNoEvt, 95, 150, 135, 18, getProp(scn, "ToneMapBurn", 6.0), 0.1, 12.0, "12.0: no burn out, 0.1 lot of burn out", CBsetProp(scn, "ToneMapBurn"))
-		Draw.Number("PreS: ", evtNoEvt, 10, 130, 110, 18, getProp(scn, "ToneMapPreScale", 1.0), 0.01,100.0, "Pre Scale: See Lux Manual ;)", CBsetProp(scn, "ToneMapPreScale"))
-		Draw.Number("PostS: ", evtNoEvt, 120, 130, 110, 18, getProp(scn, "ToneMapPostScale", 1.0), 0.01,100.0, "Post Scale: See Lux Manual ;)", CBsetProp(scn, "ToneMapPostScale"))
+		Draw.Number("Burn: ", evtNoEvt, 95, 190, 135, 18, getProp(scn, "ToneMapBurn", 6.0), 0.1, 12.0, "12.0: no burn out, 0.1 lot of burn out", CBsetProp(scn, "ToneMapBurn"))
+		Draw.Number("PreS: ", evtNoEvt, 10, 170, 110, 18, getProp(scn, "ToneMapPreScale", 1.0), 0.01,100.0, "Pre Scale: See Lux Manual ;)", CBsetProp(scn, "ToneMapPreScale"))
+		Draw.Number("PostS: ", evtNoEvt, 120, 170, 110, 18, getProp(scn, "ToneMapPostScale", 1.0), 0.01,100.0, "Post Scale: See Lux Manual ;)", CBsetProp(scn, "ToneMapPostScale"))
 	
-	Draw.Number("Output Gamma: ", evtNoEvt, 10, 100, 170, 18, getProp(scn, "OutputGamma", 2.2), 0.0, 6.0, "Output and RGC Gamma", CBsetProp(scn, "OutputGamma"))
-	Draw.Toggle("RGC", evtNoEvt, 180, 100, 30, 18, getProp(scn, "RGC", 1), "Use reverse gamma correction for rgb values", CBsetProp(scn, "RGC"))
-	Draw.Toggle("ColClamp", evtNoEvt, 210, 100, 60, 18, getProp(scn, "ColClamp", 0), "Scale/Clamp all colours to 0.0 - 0.9", CBsetProp(scn, "ColClamp"))
-	Draw.Number("Output Dither: ", evtNoEvt, 270, 100, 150, 18, getProp(scn, "OutputDither", 0.0), 0.0, 1.0, "Output Image Dither", CBsetProp(scn, "OutputDither"))
+	Draw.Number("Output Gamma: ", evtNoEvt, 10, 140, 170, 18, getProp(scn, "OutputGamma", 2.2), 0.0, 6.0, "Output and RGC Gamma", CBsetProp(scn, "OutputGamma"))
+	Draw.Toggle("RGC", evtNoEvt, 180, 140, 30, 18, getProp(scn, "RGC", 1), "Use reverse gamma correction for rgb values", CBsetProp(scn, "RGC"))
+	Draw.Toggle("ColClamp", evtNoEvt, 210, 140, 60, 18, getProp(scn, "ColClamp", 0), "Scale/Clamp all colours to 0.0 - 0.9", CBsetProp(scn, "ColClamp"))
+	Draw.Number("Output Dither: ", evtNoEvt, 270, 140, 150, 18, getProp(scn, "OutputDither", 0.0), 0.0, 1.0, "Output Image Dither", CBsetProp(scn, "OutputDither"))
 
-	Draw.Toggle("Bloom", evtNoEvt, 10, 70, 80, 18, getProp(scn, "Bloom", 0), "Enable HDR Bloom", CBsetProp(scn, "Bloom"))
-	Draw.Number("Width: ", evtNoEvt, 90, 70, 120, 18, getProp(scn, "BloomWidth", 0.1), 0.1, 2.0, "Amount of bloom", CBsetProp(scn, "BloomWidth"))
-	Draw.Number("Radius: ", evtNoEvt, 210, 70, 120, 18, getProp(scn, "BloomRadius", 0.1), 0.1, 2.0, "Radius of the bloom filter", CBsetProp(scn, "BloomRadius"))
+	Draw.Toggle("Bloom", evtNoEvt, 10, 110, 80, 18, getProp(scn, "Bloom", 0), "Enable HDR Bloom", CBsetProp(scn, "Bloom"))
+	Draw.Number("Width: ", evtNoEvt, 90, 110, 120, 18, getProp(scn, "BloomWidth", 0.1), 0.1, 2.0, "Amount of bloom", CBsetProp(scn, "BloomWidth"))
+	Draw.Number("Radius: ", evtNoEvt, 210, 110, 120, 18, getProp(scn, "BloomRadius", 0.1), 0.1, 2.0, "Radius of the bloom filter", CBsetProp(scn, "BloomRadius"))
 
 	
 ##############
@@ -1361,18 +1397,18 @@ def drawButtons():
 
       ## buttons
 	BGL.glColor3f(0.2,0.2,0.2)
-	BGL.glRectf(0,0,440,230)
-	BGL.glColor3f(0.9,0.9,0.9);BGL.glRasterPos2i(10,205); Draw.Text("LuxBlend v0.1alphaCVS", "small")
+	BGL.glRectf(0,0,440,270)
+	BGL.glColor3f(0.9,0.9,0.9);BGL.glRasterPos2i(10,245); Draw.Text("LuxBlend v0.1alphaCVS", "small")
 	scn = Scene.GetCurrent()
 	
 	Draw.Button("Render", evtExport, 10, 25, 100, 30, "Open file dialog and export")
 	if getProp(scn, "ExecuteLux", 0) == 0:
 		Draw.Button("Export Anim", evtExportAnim, 112, 25, 100, 30, "Open file dialog and export animation (careful: takes a lot of diskspace!!!)")
-	Draw.Button("Camera", openCamera, 10, 185, 80, 13, "Open Camera Dialog")
-	Draw.Button("Environment", openEnv, 90, 185, 80, 13, "Open Environment Dialog")
-	Draw.Button("Renderer", openRSet, 170, 185, 80, 13, "Open Rendersettings Dialog")
-	Draw.Button("Tonemap", openTmap, 250, 185, 80, 13, "open Tonemap Settings")
-	Draw.Button("System", openSSet, 330, 185, 80, 13, "open System Settings")
+	Draw.Button("Camera", openCamera, 10, 225, 80, 13, "Open Camera Dialog")
+	Draw.Button("Environment", openEnv, 90, 225, 80, 13, "Open Environment Dialog")
+	Draw.Button("Renderer", openRSet, 170, 225, 80, 13, "Open Rendersettings Dialog")
+	Draw.Button("Tonemap", openTmap, 250, 225, 80, 13, "open Tonemap Settings")
+	Draw.Button("System", openSSet, 330, 225, 80, 13, "open System Settings")
 	
 	Draw.Toggle("Run", evtRedraw, 10, 5, 30, 13, getProp(scn, "ExecuteLux", 0), "Execute Lux after saving", CBsetProp(scn, "ExecuteLux"))
 	Draw.Toggle("def",evtNoEvt,41,5,30,13, getProp(scn, "DefaultExport", 0), "Save as default.lxs to a temporary directory", CBsetProp(scn, "DefaultExport"))
