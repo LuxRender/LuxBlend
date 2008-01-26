@@ -43,7 +43,7 @@ import math
 import os
 import sys as osys
 import Blender
-from Blender import Mesh, Scene, Object, Material, Texture, Window, sys, Draw, BGL, Mathutils
+from Blender import Mesh, Scene, Object, Material, Texture, Window, sys, Draw, BGL, Mathutils, Lamp
 
 
 ######################################################
@@ -518,6 +518,7 @@ class luxExport:
 		self.portals = []
 		self.meshes = {}
 		self.materials = []
+		self.lights = []
 
 	#-------------------------------------------------
 	# getMaterials(obj)
@@ -574,7 +575,8 @@ class luxExport:
 					except KeyError:
 						self.meshes[mesh_name] = [obj]				
 					self.objects.append([obj, matrix])
-
+			elif (obj_type == "Lamp"):
+				self.lights.append([obj, matrix])
 
 	#-------------------------------------------------
 	# analyseScene(self)
@@ -822,6 +824,32 @@ class luxExport:
 			else:
 				self.exportMesh(file, mesh, mats, mesh_name, True)
 
+	#-------------------------------------------------
+	# exportLights(self, file)
+	# exports lights to the file
+	#-------------------------------------------------
+	def exportLights(self, file):
+		for [obj, matrix] in self.lights:
+			ltype = obj.data.getType()
+			if (ltype == Lamp.Types["Lamp"]) or (ltype == Lamp.Types["Spot"]):
+				print "light: %s"%(obj.getName())
+				file.write("TransformBegin # %s\n"%obj.getName())
+				file.write("\tTransform [%s %s %s %s  %s %s %s %s  %s %s %s %s  %s %s %s %s]\n"\
+					%(matrix[0][0], matrix[0][1], matrix[0][2], matrix[0][3],\
+					  matrix[1][0], matrix[1][1], matrix[1][2], matrix[1][3],\
+					  matrix[2][0], matrix[2][1], matrix[2][2], matrix[2][3],\
+			  		  matrix[3][0], matrix[3][1], matrix[3][2], matrix[3][3]))
+				col = obj.data.col
+				energy = obj.data.energy
+				if ltype == Lamp.Types["Lamp"]:
+					file.write("LightSource \"point\"")
+				if ltype == Lamp.Types["Spot"]:
+					file.write("LightSource \"spot\" \"point from\" [0 0 0] \"point to\" [0 0 -1] \"float coneangle\" [%f] \"float conedeltaangle\" [%f]"\
+						%(obj.data.spotSize*0.5, obj.data.spotSize*0.5*obj.data.spotBlend))
+				file.write(" \"color I\" [%f %f %f]\n"%(col[0]*energy, col[1]*energy, col[2]*energy))
+				file.write("TransformEnd # %s\n"%obj.getName())
+				file.write("\n")
+
 
 
 ######################################################
@@ -1058,6 +1086,7 @@ def save_lux(filename, unindexedname):
 		geom_file = open(geom_filename, 'w')
 		meshlist = []
 		geom_file.write("")
+		export.exportLights(geom_file)
 		export.exportMeshes(geom_file)
 		export.exportObjects(geom_file)
 		geom_file.write("")
