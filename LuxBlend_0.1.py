@@ -921,10 +921,10 @@ def save_lux(filename, unindexedname):
 			if ctype == 2:
 				file.write("Camera \"environment\"")
 			if ctype in [0,1,2]:
-				file.write(" \"float hither\" [%f] \"float yon\" [%f] \"float shutteropen\" [%f] \"float shutterclose\" [%f] \"float screenwindow\" [%f, %f, %f, %f]"\
+				file.write(" \"float hither\" [%f] \"float yon\" [%f] \"float shutteropen\" [%f] \"float shutterclose\" [%f] \"float screenwindow\" [%f %f %f %f]"\
 					%(camObj.data.clipStart, camObj.data.clipEnd, getProp(camObj.data, "ShutterOpen", 0.0), getProp(camObj.data, "ShutterClose", 1.0), screenwindow[0], screenwindow[1], screenwindow[2], screenwindow[3])) 
 			if ctype in [0,1]:
-				file.write(" \"float lensradius\" [%f] \"float focaldistance\" [%f]"%(getProp(camObj.data, "LensRadius", 0.0), getProp(camObj.data, "FocalDistance", 2.0)))
+				file.write(" \"float lensradius\" [%f] \"float focaldistance\" [%f]"%(getProp(camObj.data, "LensRadius", 0.0), camObj.data.dofDist))
 			file.write("\n")
 		file.write("\n")
 	
@@ -989,7 +989,7 @@ def save_lux(filename, unindexedname):
 	
 		##### Write Integrator ######
 
-		itype = getProp(scn, "IntegratorType", 0)
+		itype = getProp(scn, "IntegratorType", 1)
 		if itype == 0:
 			file.write("SurfaceIntegrator \"directlightning\" \"string strategy\" [\"%s\"]"%(["one", "all", "weighted"][getProp(scn, "DirectlightningStrategy", 0)]))
 		if itype == 1:
@@ -1274,9 +1274,9 @@ def drawCamera():
 	BGL.glColor3f(1.0,0.5,0.4)
 	BGL.glRectf(10,222,90,223)
 	scn = Scene.GetCurrent()
-#	try:
-	cam = scn.getCurrentCamera().data
+	cam = scn.getCurrentCamera()
 	if cam:
+		cam = cam.data
 		BGL.glColor3f(0.9,0.9,0.9); BGL.glRasterPos2i(10,205); Draw.Text("Camera-Type:")
 		Draw.Menu("Camera %t| environment %x2| orthographic %x1| perspective %x0", evtRedraw, 110, 200, 140, 18, getProp(cam, "CameraType", 0), "camera type", CBsetProp(cam, "CameraType"))
 		t = getProp(cam, "CameraType", 0)
@@ -1295,9 +1295,6 @@ def drawCamera():
 		BGL.glColor3f(0.9,0.9,0.9); BGL.glRasterPos2i(10,130); Draw.Text("Shutter:")
 		Draw.Number("Open: ", evtNoEvt, 110, 125, 140, 18, float(getProp(cam, "ShutterOpen", 0.0)), 0.0, 100.0, "The time in seconds at which the virtual shutter opens", CBsetProp(cam, "ShutterOpen"))
 		Draw.Number("Close: ", evtNoEvt, 260, 125, 140, 18, float(getProp(cam, "ShutterClose", 1.0)), 0.0, 100.0, "The time in seconds at which the virtual shutter closes", CBsetProp(cam, "ShutterClose"))
-
-#	except:
-#		pass
 	BGL.glColor3f(0.9,0.9,0.9) ; BGL.glRasterPos2i(10,105) ; Draw.Text("Size:")
 	Draw.Number("X: ", evtNoEvt, 110, 100, 140, 18, scn.getRenderingContext().sizeX, 1, 4096, "Width of the render", CBsetAttr(scn.getRenderingContext(), "sizeX"))
 	Draw.Number("Y: ", evtNoEvt, 260, 100, 140, 18, scn.getRenderingContext().sizeY, 1, 3072, "Height of the render", CBsetAttr(scn.getRenderingContext(), "sizeY"))
@@ -1329,7 +1326,7 @@ def drawSettings():
 	BGL.glColor3f(0.9,0.9,0.9)
 	scn = Scene.GetCurrent()
 	BGL.glColor3f(0.9,0.9,0.9); BGL.glRasterPos2i(10,205); Draw.Text("Integrator:")
-	Draw.Menu(strIntegratorType, evtRedraw, 110, 200, 140, 18, getProp(scn, "IntegratorType", 0), "Engine Integrator type", CBsetProp(scn, "IntegratorType"))
+	Draw.Menu(strIntegratorType, evtRedraw, 110, 200, 140, 18, getProp(scn, "IntegratorType", 1), "Engine Integrator type", CBsetProp(scn, "IntegratorType"))
 	t = getProp(scn, "IntegratorType", 0)
 	if t==0: # directlightning
 		Draw.Menu(" Strategy %t| one %x0| all %x1| weighted %x2", evtNoEvt, 260, 200, 140, 18, getProp(scn, "DirectlightningStrategy", 0), "Strategy", CBsetProp(scn, "DirectlightningStrategy"))
