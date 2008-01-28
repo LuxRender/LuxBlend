@@ -991,7 +991,7 @@ def save_lux(filename, unindexedname):
 
 		itype = getProp(scn, "IntegratorType", 1)
 		if itype == 0:
-			file.write("SurfaceIntegrator \"directlightning\" \"string strategy\" [\"%s\"]"%(["one", "all", "weighted"][getProp(scn, "DirectlightningStrategy", 0)]))
+			file.write("SurfaceIntegrator \"directlighting\" \"string strategy\" [\"%s\"]"%(["one", "all", "weighted"][getProp(scn, "DirectlightingStrategy", 0)]))
 		if itype == 1:
 			file.write("SurfaceIntegrator \"path\"")
 			if(getProp(scn, "Metropolis", 0) == 1):
@@ -1022,7 +1022,8 @@ def save_lux(filename, unindexedname):
 		export.analyseScene()
 	
 		##### Write World Background, Sunsky or Env map ######
-		if getProp(scn, "EnvType", 0) == 0:
+		etype = getProp(scn, "EnvType", 0)
+		if etype == 0:
 			worldcolor = Blender.World.Get('World').getHor()
 			file.write("AttributeBegin\n")
 			file.write("LightSource \"infinite\" \"color L\" [%g %g %g] \"integer nsamples\" [1]\n" %(worldcolor[0], worldcolor[1], worldcolor[2]))
@@ -1032,7 +1033,7 @@ def save_lux(filename, unindexedname):
 	
 	
 			file.write("AttributeEnd\n")
-		if getProp(scn, "EnvType", 0) == 1:
+		if etype == 1:
 			for obj in scn.objects:
 				if obj.getType() == "Lamp":
 					if obj.data.getType() == 1: # sun object
@@ -1049,7 +1050,7 @@ def save_lux(filename, unindexedname):
 	
 	
 						file.write("AttributeEnd\n")
-		if getProp(scn, "EnvType", 0) == 2:
+		if etype == 2:
 			if getProp(scn, "EnvFile", "") != "":
 				file.write("AttributeBegin\n")
 				file.write("Rotate %d 0 0 1\n"%(getProp(scn, "EnvRotation", 0)))
@@ -1328,8 +1329,8 @@ def drawSettings():
 	BGL.glColor3f(0.9,0.9,0.9); BGL.glRasterPos2i(10,205); Draw.Text("Integrator:")
 	Draw.Menu(strIntegratorType, evtRedraw, 110, 200, 140, 18, getProp(scn, "IntegratorType", 1), "Engine Integrator type", CBsetProp(scn, "IntegratorType"))
 	t = getProp(scn, "IntegratorType", 0)
-	if t==0: # directlightning
-		Draw.Menu(" Strategy %t| one %x0| all %x1| weighted %x2", evtNoEvt, 260, 200, 140, 18, getProp(scn, "DirectlightningStrategy", 0), "Strategy", CBsetProp(scn, "DirectlightningStrategy"))
+	if t==0: # directlighting
+		Draw.Menu(" Strategy %t| one %x0| all %x1| weighted %x2", evtNoEvt, 260, 200, 140, 18, getProp(scn, "DirectlightingStrategy", 0), "Strategy", CBsetProp(scn, "DirectlightingStrategy"))
 	if t==1: # path
 		Draw.Toggle("MLT", evtNoEvt, 260, 200, 140, 18, getProp(scn, "PathMLT", 0), "use Metropolis Light Transport", CBsetProp(scn, "PathMLT"))
 	Draw.Number("Maxdepth:", evtNoEvt, 110, 180, 140, 18, getProp(scn, "MaxDepth", 16), 1, 1024, "Maximum path depth (bounces)", CBsetProp(scn, "MaxDepth"))
