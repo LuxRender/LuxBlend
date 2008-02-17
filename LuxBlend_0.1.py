@@ -36,6 +36,8 @@ Tooltip: 'Export to LuxRender v0.1 scene format (.lxs)'
 # --------------------------------------------------------------------------
 
 
+
+
 ######################################################
 # Importing modules
 ######################################################
@@ -97,7 +99,7 @@ def getMaterials(obj, compress=False):
 	mats = [None]*16
 	colbits = obj.colbits
 	objMats = obj.getMaterials(1)
-	data = obj.getData()
+	data = obj.getData(mesh=1)
 	try:
 		dataMats = data.materials
 	except:
@@ -227,31 +229,28 @@ class luxExport:
 					self.exportMaterialLink(file, mats[matIndex])
 					file.write("\tPortalShape \"trianglemesh\" \"integer indices\" [\n")
 				index = 0
-				for face in mesh.faces:
-					if (face.mat == matIndex):
-						file.write("%d %d %d\n"%(index, index+1, index+2))
-						if (len(face.verts)==4):
-							file.write("%d %d %d\n"%(index, index+2, index+3))
-						index += len(face.verts)
+				ffaces = [f for f in mesh.faces if f.mat == matIndex]
+				for face in ffaces:
+					file.write("%d %d %d\n"%(index, index+1, index+2))
+					if (len(face)==4):
+						file.write("%d %d %d\n"%(index, index+2, index+3))
+					index += len(face.verts)
 				file.write("\t] \"point P\" [\n");
-				for face in mesh.faces:
-					if (face.mat == matIndex):
-						for vertex in face.verts:
-							file.write("%f %f %f\n"%(vertex.co[0], vertex.co[1], vertex.co[2]))
+				for face in ffaces:
+					for vertex in face:
+						file.write("%f %f %f\n"% tuple(vertex.co))
 				file.write("\t] \"normal N\" [\n")
-				for face in mesh.faces:
-					if (face.mat == matIndex):
-						normal = face.no
-						for vertex in face.verts:
-							if (face.smooth):
-								normal = vertex.no
-							file.write("%f %f %f\n"%(normal[0], normal[1], normal[2]))
+				for face in ffaces:
+					normal = face.no
+					for vertex in face:
+						if (face.smooth):
+							normal = vertex.no
+						file.write("%f %f %f\n"% tuple(normal))
 				if (mesh.faceUV):
 					file.write("\t] \"float uv\" [\n")
-					for face in mesh.faces:
-						if (face.mat == matIndex):
-							for uv in face.uv:
-								file.write("%f %f\n"%(uv[0], uv[1]))
+					for face in ffaces:
+						for uv in face.uv:
+							file.write("%f %f\n"% tuple(uv))
 				file.write("\t]\n")
 
 	#-------------------------------------------------
@@ -278,37 +277,37 @@ class luxExport:
 					blenderExportVertexMap = []
 					exportVerts = []
 					exportFaces = []
-					for face in mesh.faces:
-						if (face.mat == matIndex) and (face.smooth in smoothFltr[shape]):
-							exportVIndices = []
-							index = 0
-							for vertex in face.verts:
-								v = [vertex.co[0], vertex.co[1], vertex.co[2]]
-								if normalFltr[shape]:
-									if (face.smooth):
-										v.extend(vertex.no)
-									else:
-										v.extend(face.no)
-								if (uvFltr[shape]) and (mesh.faceUV):
-									v.extend(face.uv[index])
-								blenderVIndex = vertex.index
-								newExportVIndex = -1
-								length = len(v)
-								if (blenderVIndex < len(blenderExportVertexMap)):
-									for exportVIndex in blenderExportVertexMap[blenderVIndex]:
-										v2 = exportVerts[exportVIndex]
-										if (length==len(v2)) and (v == v2):
-											newExportVIndex = exportVIndex
-											break
-								if (newExportVIndex < 0):
-									newExportVIndex = len(exportVerts)
-									exportVerts.append(v)
-									while blenderVIndex >= len(blenderExportVertexMap):
-										blenderExportVertexMap.append([])
-									blenderExportVertexMap[blenderVIndex].append(newExportVIndex)
-								exportVIndices.append(newExportVIndex)
-								index += 1
-							exportFaces.append(exportVIndices)
+					ffaces = [f for f in mesh.faces if (f.mat == matIndex) and (f.smooth in smoothFltr[shape])]
+					for face in ffaces:
+						exportVIndices = []
+						index = 0
+						for vertex in face:
+							v = [vertex.co[0], vertex.co[1], vertex.co[2]]
+							if normalFltr[shape]:
+								if (face.smooth):
+									v.extend(vertex.no)
+								else:
+									v.extend(face.no)
+							if (uvFltr[shape]) and (mesh.faceUV):
+								v.extend(face.uv[index])
+							blenderVIndex = vertex.index
+							newExportVIndex = -1
+							length = len(v)
+							if (blenderVIndex < len(blenderExportVertexMap)):
+								for exportVIndex in blenderExportVertexMap[blenderVIndex]:
+									v2 = exportVerts[exportVIndex]
+									if (length==len(v2)) and (v == v2):
+										newExportVIndex = exportVIndex
+										break
+							if (newExportVIndex < 0):
+								newExportVIndex = len(exportVerts)
+								exportVerts.append(v)
+								while blenderVIndex >= len(blenderExportVertexMap):
+									blenderExportVertexMap.append([])
+								blenderExportVertexMap[blenderVIndex].append(newExportVIndex)
+							exportVIndices.append(newExportVIndex)
+							index += 1
+						exportFaces.append(exportVIndices)
 					if (len(exportVerts)>0):
 						if (portal):
 							file.write("\tPortalShape \"trianglemesh\" \"integer indices\" [\n")
@@ -423,7 +422,7 @@ class luxExport:
 	#-------------------------------------------------
 	def exportLights(self, file):
 		for [obj, matrix] in self.lights:
-			ltype = obj.data.getType()
+			ltype = obj.getData(mesh=1).getType() # data
 			if (ltype == Lamp.Types["Lamp"]) or (ltype == Lamp.Types["Spot"]):
 				print "light: %s"%(obj.getName())
 				file.write("TransformBegin # %s\n"%obj.getName())
@@ -432,13 +431,13 @@ class luxExport:
 					  matrix[1][0], matrix[1][1], matrix[1][2], matrix[1][3],\
 					  matrix[2][0], matrix[2][1], matrix[2][2], matrix[2][3],\
 			  		  matrix[3][0], matrix[3][1], matrix[3][2], matrix[3][3]))
-				col = obj.data.col
-				energy = obj.data.energy
+				col = obj.getData(mesh=1).col # data
+				energy = obj.getData(mesh=1).energy # data
 				if ltype == Lamp.Types["Lamp"]:
 					file.write("LightSource \"point\"")
 				if ltype == Lamp.Types["Spot"]:
 					file.write("LightSource \"spot\" \"point from\" [0 0 0] \"point to\" [0 0 -1] \"float coneangle\" [%f] \"float conedeltaangle\" [%f]"\
-						%(obj.data.spotSize*0.5, obj.data.spotSize*0.5*obj.data.spotBlend))
+						%(obj.getData(mesh=1).spotSize*0.5, obj.getData(mesh=1).spotSize*0.5*obj.getData(mesh=1).spotBlend)) # data
 				file.write(" \"color I\" [%f %f %f]\n"%(col[0]*energy, col[1]*energy, col[2]*energy))
 				file.write("TransformEnd # %s\n"%obj.getName())
 				file.write("\n")
@@ -659,6 +658,15 @@ def save_still(filename):
 
 from types import *
 
+evtLuxGui = 99
+evtSavePreset = 98
+evtDeletePreset = 97
+evtSaveMaterial = 96
+evtLoadMaterial = 95
+evtDeleteMaterial = 94
+evtPreviewMaterial = 93
+
+
 # default settings
 try:
 	luxdefaults = Blender.Registry.GetKey('luxblend', True)
@@ -675,10 +683,59 @@ def saveluxdefaults():
 	except: pass
 
 
+
+
+
+# *** PRESETS **************************************
+presetsExclude = ['preset','lux','threads','filename','page','RGC','film.gamma','colorclamp','link']
+def getPresets(key):
+	presets = Blender.Registry.GetKey(key, True)
+	if not(type(presets) is DictType):
+		presets = {}
+	return presets
+def getScenePresets():
+	presets = getPresets('luxblend_presets').copy()
+# radiance hardcoded render presets:
+#	presets['indoor'] = {'pixelfilter.type':'gaussian','env.type':'none','sampler.type':'erpt','sintegrator.type':'mltpath'}
+#	presets['indoor2'] = {'pixelfilter.type':'gaussian','env.type':'none','sampler.type':'erpt','sintegrator.type':'path'}
+	return presets
+def getMaterialPresets():
+	return getPresets('luxblend_materials')
+
+def savePreset(key, name, d):
+	try:
+		presets = getPresets(key)
+		if d:
+			presets[name] = d.copy()
+		else:
+			del presets[name]
+		Blender.Registry.SetKey(key, presets, True)
+	except: pass	
+def saveScenePreset(name, d):
+	try:
+		for n in presetsExclude:
+			try: del d[n];
+			except: pass
+		savePreset('luxblend_presets', name, d)
+	except: pass
+def saveMaterialPreset(name, d):
+	try:
+		for n in presetsExclude:
+			try: del d[n];
+			except: pass
+		savePreset('luxblend_materials', name, d)
+	except: pass
+
+# **************************************************
+
+
 # some helpers
 def luxstr(str):
 	return str.replace("\\", "\\\\") # todo: do encode \ and " signs by a additional backslash
 
+
+
+usedproperties = {} # global variable to collect used properties for storing presets
 
 # class to access properties (for lux settings)
 class luxProp:
@@ -687,15 +744,22 @@ class luxProp:
 		self.name = name
 		self.default = default
 	def get(self):
+		global usedproperties
 		if self.obj:
 			try:
-				return self.obj.properties['luxblend'][self.name]
+				value = self.obj.properties['luxblend'][self.name]
+				usedproperties[self.name] = value
+				return value
 			except KeyError:
 				if self.obj.__class__.__name__ == "Scene": # luxdefaults only for global setting
 					try:
-						return luxdefaults[self.name]
+						value = luxdefaults[self.name]
+						usedproperties[self.name] = value
+						return value
 					except KeyError:
+						usedproperties[self.name] = self.default
 						return self.default
+				usedproperties[self.name] = self.default
 				return self.default
 		return None
 	def set(self, value):
@@ -712,7 +776,11 @@ class luxProp:
 				except:
 					pass
 			if self.obj.__class__.__name__ == "Scene": # luxdefaults only for global setting
-				newluxdefaults[self.name] = value									
+				# value has changed, so this are user settings, remove preset reference
+				if not(self.name in presetsExclude):
+					newluxdefaults[self.name] = value
+					try: del self.obj.properties['luxblend']['preset']
+					except: pass
 	def getRGB(self):
 		l = self.get().split(" ")
 		if len(l) != 3: l = self.default.split(" ")
@@ -737,6 +805,7 @@ class luxAttr:
 	def set(self, value):
 		if self.obj:
 			setattr(self.obj, self.name, value)
+			Window.QRedrawAll()
 
 
 # class for dynamic gui
@@ -766,7 +835,6 @@ class luxGui:
 		
 
 # lux parameter types
-evtLuxGui = 99
 def luxOption(name, lux, options, caption, hint, gui, width=1.0):
 	if gui:
 		menustr = caption+": %t"
@@ -1057,7 +1125,7 @@ def luxEnvironment(scn, gui=None):
 				sun = None
 				for obj in scn.objects:
 					if obj.getType() == "Lamp":
-						if obj.data.getType() == 1: # sun object
+						if obj.getData(mesh=1).getType() == 1: # sun object # data
 							sun = obj
 				if sun:
 					invmatrix = Mathutils.Matrix(sun.getInverseMatrix())
@@ -1285,20 +1353,43 @@ def setactivemat(mat):
 # gui main draw
 def luxDraw():
 	BGL.glClear(BGL.GL_COLOR_BUFFER_BIT)
-	y = 400
+	y = 420
 	BGL.glColor3f(0.2,0.2,0.2); BGL.glRectf(0,0,440,y)
-	BGL.glColor3f(0.9,0.9,0.9); BGL.glRasterPos2i(10,y-25); Draw.Text("LuxBlend v0.1RC4alpha-MatEditor :::...")
+	BGL.glColor3f(0.9,0.9,0.9); BGL.glRasterPos2i(10,y-15); Draw.Text("LuxBlend v0.1RC4alpha-MatEditor :::...")
 	scn = Scene.GetCurrent()
 	if scn:
 		luxpage = luxProp(scn, "page", 0)
-		Draw.Button("Material", evtLuxGui, 10, y-50, 80, 16, "", lambda e,v:luxpage.set(0))
-		Draw.Button("Cam/Env", evtLuxGui, 90, y-50, 80, 16, "", lambda e,v:luxpage.set(1))
-		Draw.Button("Render", evtLuxGui, 170, y-50, 80, 16, "", lambda e,v:luxpage.set(2))
-		Draw.Button("Output", evtLuxGui, 250, y-50, 80, 16, "", lambda e,v:luxpage.set(3))
-		Draw.Button("System", evtLuxGui, 330, y-50, 80, 16, "", lambda e,v:luxpage.set(4))
-		gui = luxGui(y-50)
+		gui = luxGui(y-70)
+
+		# render presets
+		BGL.glRasterPos2i(70,y-45); Draw.Text("render presets:")
+		luxpreset = luxProp(scn, "preset", "")
+		presets = getScenePresets()
+		presetskeys = presets.keys()
+		presetskeys.sort()
+		presetskeys.insert(0, "")
+		presetsstr = "presets: %t"
+		for i, v in enumerate(presetskeys): presetsstr = "%s %%x%d|%s"%(v, i, presetsstr)
+		try: i = presetskeys.index(luxpreset.get())
+		except ValueError: i = 0
+		Draw.Menu(presetsstr, evtLuxGui, 170, y-50, 160, 18, i, "", lambda e,v: luxpreset.set(presetskeys[v]))
+		Draw.Button("save", evtSavePreset, 330, y-50, 40, 18, "create a render-settings preset")
+		Draw.Button("del", evtDeletePreset, 370, y-50, 40, 18, "delete a render-settings preset")
+
+		# if preset is selected load values
+		if luxpreset.get() != "":
+			try:
+				d = presets[luxpreset.get()]
+				for k,v in d.items(): scn.properties['luxblend'][k] = v
+			except: pass
+
+		Draw.Button("Material", evtLuxGui, 10, y-70, 80, 16, "", lambda e,v:luxpage.set(0))
+		Draw.Button("Cam/Env", evtLuxGui, 90, y-70, 80, 16, "", lambda e,v:luxpage.set(1))
+		Draw.Button("Render", evtLuxGui, 170, y-70, 80, 16, "", lambda e,v:luxpage.set(2))
+		Draw.Button("Output", evtLuxGui, 250, y-70, 80, 16, "", lambda e,v:luxpage.set(3))
+		Draw.Button("System", evtLuxGui, 330, y-70, 80, 16, "", lambda e,v:luxpage.set(4))
 		if luxpage.get() == 0:
-			BGL.glColor3f(1.0,0.5,0.4);BGL.glRectf(10,y-54,90,y-50);BGL.glColor3f(0.9,0.9,0.9)
+			BGL.glColor3f(1.0,0.5,0.4);BGL.glRectf(10,y-74,90,y-70);BGL.glColor3f(0.9,0.9,0.9)
 			obj = scn.objects.active
 			if obj:
 				matfilter = luxProp(scn, "matlistfilter", "false")
@@ -1314,31 +1405,35 @@ def luxDraw():
 				menustr = "Material: %t"
 				for i, v in enumerate(matnames): menustr = "%s %%x%d|%s"%(v, i, menustr)
 				gui.newline("MATERIAL:", 8) 
-				r = gui.getRect(1.5, 1)
+				r = gui.getRect(1.1, 1)
 				Draw.Menu(menustr, evtLuxGui, r[0], r[1], r[2], r[3], matindex, "", lambda e,v: setactivemat(mats[v]))
-				luxBool("", matfilter, "filter", "only show active object materials", gui, 0.5)
+				luxBool("", matfilter, "filter", "only show active object materials", gui, 0.3)
+				Draw.Button("Preview", evtPreviewMaterial, gui.x, gui.y-gui.h, 50, gui.h, "preview material")
+				Draw.Button("L", evtLoadMaterial, gui.x+50, gui.y-gui.h, gui.h, gui.h, "load a material preset")
+				Draw.Button("S", evtSaveMaterial, gui.x+50+gui.h, gui.y-gui.h, gui.h, gui.h, "save a material preset")
+				Draw.Button("D", evtDeleteMaterial, gui.x+50+gui.h*2, gui.y-gui.h, gui.h, gui.h, "delete a material preset")
 				if len(mats) > 0:
 					setactivemat(mats[matindex])
 					luxMaterial(activemat, gui)
 		if luxpage.get() == 1:
-			BGL.glColor3f(1.0,0.5,0.4);BGL.glRectf(90,y-54,170,y-50);BGL.glColor3f(0.9,0.9,0.9)
+			BGL.glColor3f(1.0,0.5,0.4);BGL.glRectf(90,y-74,170,y-70);BGL.glColor3f(0.9,0.9,0.9)
 			cam = scn.getCurrentCamera()
 			if cam:
 				luxCamera(cam.data, scn.getRenderingContext(), gui)
 			gui.newline("", 10)
 			luxEnvironment(scn, gui)
 		if luxpage.get() == 2:
-			BGL.glColor3f(1.0,0.5,0.4);BGL.glRectf(170,y-54,250,y-50);BGL.glColor3f(0.9,0.9,0.9)
+			BGL.glColor3f(1.0,0.5,0.4);BGL.glRectf(170,y-74,250,y-70);BGL.glColor3f(0.9,0.9,0.9)
 			luxSurfaceIntegrator(scn, gui)
 			gui.newline("", 10)
 			luxSampler(scn, gui)
 			gui.newline("", 10)
 			luxPixelFilter(scn, gui)
 		if luxpage.get() == 3:
-			BGL.glColor3f(1.0,0.5,0.4);BGL.glRectf(250,y-54,330,y-50);BGL.glColor3f(0.9,0.9,0.9)
+			BGL.glColor3f(1.0,0.5,0.4);BGL.glRectf(250,y-74,330,y-70);BGL.glColor3f(0.9,0.9,0.9)
 			luxFilm(scn, gui)
 		if luxpage.get() == 4:
-			BGL.glColor3f(1.0,0.5,0.4);BGL.glRectf(330,y-54,410,y-50);BGL.glColor3f(0.9,0.9,0.9)
+			BGL.glColor3f(1.0,0.5,0.4);BGL.glRectf(330,y-74,410,y-70);BGL.glColor3f(0.9,0.9,0.9)
 			luxSystem(scn, gui)
 			gui.newline("", 10)
 			luxAccelerator(scn, gui)
@@ -1380,8 +1475,92 @@ def luxEvent(evt, val):  # function that handles keyboard and mouse events
 
 	
 def luxButtonEvt(evt):  # function that handles button events
+	global usedproperties
 	if evt == evtLuxGui:
-		Window.QRedrawAll()
+		Draw.Redraw()
+		# Window.QRedrawAll() # moved to luxAttr.set()
+	if evt == evtSavePreset:
+		scn = Scene.GetCurrent()
+		if scn:
+			name = Draw.PupStrInput("preset name: ", "")
+			if name != "":
+				usedproperties = {}
+				luxSurfaceIntegrator(scn)
+				luxSampler(scn)
+				luxPixelFilter(scn)
+				# luxFilm(scn)
+				luxAccelerator(scn)
+				# luxEnvironment(scn)
+				saveScenePreset(name, usedproperties.copy())
+				luxProp(scn, "preset", "").set(name)
+				Draw.Redraw()
+	if evt == evtDeletePreset:
+		presets = getScenePresets().keys()
+		presets.sort()
+		presetsstr = "delete preset: %t"
+		for i, v in enumerate(presets): presetsstr += "|%s %%x%d"%(v, i)
+		r = Draw.PupMenu(presetsstr, 20)
+		if r >= 0:
+			saveScenePreset(presets[r], None)
+			Draw.Redraw()
+
+	if evt == evtLoadMaterial:
+		if activemat:
+			mats = getMaterialPresets()
+			matskeys = mats.keys()
+			matskeys.sort()
+			matsstr = "delete preset: %t"
+			for i, v in enumerate(matskeys): matsstr += "|%s %%x%d"%(v, i)
+			r = Draw.PupMenu(matsstr, 20)
+			if r >= 0:
+				name = matskeys[r]
+				try:
+					for k,v in mats[name].items(): activemat.properties['luxblend'][k] = v
+				except: pass
+				Draw.Redraw()
+	if evt == evtSaveMaterial:
+		if activemat:
+			name = Draw.PupStrInput("preset name: ", "")
+			if name != "":
+				usedproperties = {}
+				luxMaterial(activemat)
+				saveMaterialPreset(name, usedproperties.copy())
+				Draw.Redraw()
+	if evt == evtDeleteMaterial:
+		matskeys = getMaterialPresets().keys()
+		matskeys.sort()
+		matsstr = "delete preset: %t"
+		for i, v in enumerate(matskeys): matsstr += "|%s %%x%d"%(v, i)
+		r = Draw.PupMenu(matsstr, 20)
+		if r >= 0:
+			saveMaterialPreset(matskeys[r], None)
+			Draw.Redraw()
+	if evt == evtPreviewMaterial:
+		if activemat:
+			datadir = Blender.Get("datadir")
+			filename = datadir + os.sep + "preview.lxs"
+			file = open(filename, 'w')
+			file.write('LookAt 0.0 -5.0 1.0 0.0 -4.0 1.0 0.0 0.0 1.0\nCamera "perspective" "float fov" [22.5] "float screenwindow" [-1.0 1.0 -1.21 0.29]\n')
+			file.write('Film "multiimage" "integer xresolution" [400] "integer yresolution" [300] "integer ldr_displayinterval" [10] "integer ldr_writeinterval" [3600] "string tonemapper" ["reinhard"]\n')
+			file.write('Sampler "erpt"\nSurfaceIntegrator "mltpath"\n')
+			file.write('WorldBegin\n')
+			file.write(luxMaterial(activemat))
+			file.write('AttributeBegin\nTransform [0.5 0.0 0.0 0.0  0.0 0.5 0.0 0.0  0.0 0.0 0.5 0.0  0.0 0.0 0.5 1.0]\n')
+			file.write(luxProp(activemat,"link","").get()+'\n')
+			file.write('Shape "sphere" "float radius" [1.0]\nAttributeEnd\n')
+			file.write('AttributeBegin\nTransform [5.0 0.0 0.0 0.0  0.0 5.0 0.0 0.0  0.0 0.0 5.0 0.0  0.0 0.0 0.0 1.0]\n')
+			file.write('Material "matte" "float Kd" [0.8 0.8 0.8]\n')
+			file.write('Shape "disk" "float radius" [1.0]\nAttributeEnd\n')
+			file.write('AttributeBegin\nTransform [0.5 0.0 0.0 0.0  0.0 0.5 0.0 0.0  0.0 0.0 -0.5 0.0  0.5 -0.5 2.0 1.0]\n')
+			file.write('AreaLightSource "area" "color L" [1.0 1.0 1.0]\n')
+#			file.write('Shape "trianglemesh" "integer indices" [0 1 2 0 2 3] "point P" [-1.0 1.0 0.0 1.0 1.0 0.0 1.0 -1.0 0.0 -1.0 -1.0 0.0]\nAttributeEnd\n')
+			file.write('Shape "disk" "float radius" [1.0]\nAttributeEnd\n')
+			file.write('WorldEnd\n')
+			file.close()
+			launchLux(filename)
+
+
+
 
 Draw.Register(luxDraw, luxEvent, luxButtonEvt)
 
@@ -1397,7 +1576,7 @@ def setFocus(target):
 		refLoc = Window.GetCursorPos()
 	dist = Mathutils.Vector(refLoc) - Mathutils.Vector(camObj.getLocation())
 	camDir = camObj.getMatrix()[2]*(-1.0)
-	camObj.data.dofDist = (camDir[0]*dist[0]+camDir[1]*dist[1]+camDir[2]*dist[2])/camDir.length
+	camObj.getData(mesh=1).dofDist = (camDir[0]*dist[0]+camDir[1]*dist[1]+camDir[2]*dist[2])/camDir.length # data
 
 
 
