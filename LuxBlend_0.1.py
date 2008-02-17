@@ -1,6 +1,6 @@
 #!BPY
 """Registration info for Blender menus:
-Name: 'LuxBlend-v0.1-alphaCVS...'
+Name: 'LuxBlend-v0.1-alpha-MatEditor...'
 Blender: 240
 Group: 'Export'
 Tooltip: 'Export to LuxRender v0.1 scene format (.lxs)'
@@ -9,7 +9,7 @@ Tooltip: 'Export to LuxRender v0.1 scene format (.lxs)'
 # ***** BEGIN GPL LICENSE BLOCK *****
 #
 # --------------------------------------------------------------------------
-# LuxBlend v0.1 alphaCVS exporter
+# LuxBlend v0.1 alpha-MatEditor exporter
 # --------------------------------------------------------------------------
 #
 # Authors:
@@ -35,6 +35,7 @@ Tooltip: 'Export to LuxRender v0.1 scene format (.lxs)'
 # ***** END GPL LICENCE BLOCK *****
 # --------------------------------------------------------------------------
 
+
 ######################################################
 # Importing modules
 ######################################################
@@ -46,6 +47,7 @@ import Blender
 from Blender import Mesh, Scene, Object, Material, Texture, Window, sys, Draw, BGL, Mathutils, Lamp
 
 
+
 ######################################################
 # Functions
 ######################################################
@@ -54,220 +56,16 @@ from Blender import Mesh, Scene, Object, Material, Texture, Window, sys, Draw, B
 def newFName(ext):
 	return Blender.Get('filename')[: -len(Blender.Get('filename').split('.', -1)[-1]) ] + ext
 
-def luxMatrix(matrix):
-	ostr = ""
-	ostr += "Transform [%s %s %s %s  %s %s %s %s  %s %s %s %s  %s %s %s %s]\n"\
-		%(matrix[0][0], matrix[0][1], matrix[0][2], matrix[0][3],\
-		  matrix[1][0], matrix[1][1], matrix[1][2], matrix[1][3],\
-		  matrix[2][0], matrix[2][1], matrix[2][2], matrix[2][3],\
-		  matrix[3][0], matrix[3][1], matrix[3][2], matrix[3][3]) 
-	return ostr
-
-	
-#################### Export Material Texture ###
-
-# MATERIAL TYPES enum
-# 0 = 'glass'
-# 1 = 'roughglass'
-# 2 = 'mirror'
-# 3 = 'plastic'
-# 4 = 'shinymetal'
-# 5 = 'substrate'
-# 6 = 'matte' (Oren-Nayar)
-# 7 = 'matte' (Lambertian)
-
-# 8 = 'metal'
-metal_names = [None]*100
-metal_names[0] = "ALUMINIUM"
-metal_names[1] = "AMORPHOUS_CARBON"
-metal_names[2] = "SILVER"
-metal_names[3] = "GOLD"
-metal_names[4] = "COBALT"
-metal_names[5] = "COPPER"
-metal_names[6] = "CHROMIUM"
-metal_names[7] = "LITHIUM"
-metal_names[8] = "MERCURY"
-metal_names[9] = "NICKEL"
-metal_names[10] = "POTASSIUM"
-metal_names[11] = "PLATIUM"
-metal_names[12] = "IRIDIUM"
-metal_names[13] = "SILICON"
-metal_names[14] = "AMORPHOUS_SILICON"
-metal_names[15] = "SODIUM"
-metal_names[16] = "RHODIUM"
-metal_names[17] = "TUNGSTEN"
-metal_names[18] = "VANADIUM"
-
-# 9 = 'carpaint'
-carpaint_names = [None]*100
-carpaint_names[0] = "CAR_FORD_F8"
-carpaint_names[1] = "CAR_POLARIS_SILBER"
-carpaint_names[2] = "CAR_OPEL_TITAN"
-carpaint_names[3] = "CAR_BMW339"
-carpaint_names[4] = "CAR_2K_ACRYLACK"
-carpaint_names[5] = "CAR_WHITE"
-carpaint_names[6] = "CAR_BLUE"
-carpaint_names[7] = "CAR_BLUE_MATTE"
-
-
-def makeCarpaintName(name):
-	if (name == carpaint_names[0]):
-		return "ford f8"
-	if (name == carpaint_names[1]):
-		return "polaris silber"
-	if (name == carpaint_names[2]):
-		return "opel titan"
-	if (name == carpaint_names[3]):
-		return "bmw339"
-	if (name == carpaint_names[4]):
-		return "2k acrylack"
-	if (name == carpaint_names[5]):
-		return "white"
-	if (name == carpaint_names[6]):
-		return "blue"
-	if (name == carpaint_names[7]):
-		return "blue matte"
-
-def makeMetalName(name):
-	if (name == metal_names[0]):
-		return "aluminum"
-	if (name == metal_names[1]):
-		return "amorphous carbon"
-	if (name == metal_names[2]):
-		return "silver"
-	if (name == metal_names[3]):
-		return "gold"
-	if (name == metal_names[4]):
-		return "cobalt"
-	if (name == metal_names[5]):
-		return "copper"
-	if (name == metal_names[6]):
-		return "chromium"
-	if (name == metal_names[7]):
-		return "lithium"
-	if (name == metal_names[8]):
-		return "mercury"
-	if (name == metal_names[9]):
-		return "nickel"
-	if (name == metal_names[10]):
-		return "potassium"
-	if (name == metal_names[11]):
-		return "platium"
-	if (name == metal_names[12]):
-		return "iridium"
-	if (name == metal_names[13]):
-		return "silicon"
-	if (name == metal_names[14]):
-		return "amorphous silicon"
-	if (name == metal_names[15]):
-		return "sodium"
-	if (name == metal_names[16]):
-		return "rhodium"
-	if (name == metal_names[17]):
-		return "tungsten"
-	if (name == metal_names[18]):
-		return "vanadium"
-
-### Determine the type of material ###
-def getMaterialType(mat):
-	# default to matte (Lambertian)
-	mat_type = 7
-
-	# test for metal material
-	if (mat.name in metal_names):
-		mat_type = 8
-		return mat_type
-
-	# test for carpaint material
-	if (mat.name in carpaint_names):
-		mat_type = 9
-		return mat_type
-
-	# test for emissive material
-	if (mat.emit > 0):
-		### emitter material ###
-		mat_type = 100
-		return mat_type
-
-	# test for Transmissive (transparent) Materials
-	elif (mat.mode & Material.Modes.RAYTRANSP):
-		if(mat.getTranslucency() < 1.0):
-			### 'glass' material ###
-			mat_type = 0	
-		else:
-			### 'roughglass' material ###
-			mat_type = 1
-
-	# test for Mirror Material
-	elif(mat.mode & Material.Modes.RAYMIRROR):
-		### 'mirror' material ###
-		mat_type = 2
-
-	# test for Diffuse / Specular Reflective materials
-	else:
-		if (mat.getSpec() > 0.0001):
-			# Reflective 
-			if (mat.getSpecShader() == 2):			# Blinn
-				### 'plastic' material ###
-				mat_type = 3
-			elif (mat.getSpecShader() == 1):		# Phong
-				### 'shinymetal' material ###
-				mat_type = 4
-			else:						# CookTor/other
-				### 'substrate' material ###
-				mat_type = 5
-		else:
-			### 'matte' material ### 
-			if (mat.getDiffuseShader() == 1):	# Oren-Nayar
-				# oren-nayar sigma
-				mat_type = 6
-			else:					# Lambertian/other
-				# lambertian sigma
-				mat_type = 7
-
-	return mat_type
-
-
-# Determine the type of material / returns filename or 'NONE' 
-def getTextureChannel(mat, channel):
-	for t in mat.getTextures():
-		if (t != None) and (t.texco & Blender.Texture.TexCo['UV']) and\
-				(t.tex.type == Blender.Texture.Types.IMAGE):
-			if t.mapto & Blender.Texture.MapTo[channel]:
-				(imagefilepath, imagefilename) = os.path.split(t.tex.getImage().getFilename())
-				return imagefilename
-	return 'NONE'
-
-def getTextureforChannel(mat, channel):
-	for t in mat.getTextures():
-		if (t != None) and (t.texco & Blender.Texture.TexCo['UV']) and\
-				(t.tex.type == Blender.Texture.Types.IMAGE):
-			if t.mapto & Blender.Texture.MapTo[channel]:
-				return t
-	return 0
-
-# MATERIAL TYPES enum
-# 0 = 'glass'
-# 1 = 'roughglass'
-# 2 = 'mirror'
-# 3 = 'plastic'
-# 4 = 'shinymetal'
-# 5 = 'substrate'
-# 6 = 'matte' (Oren-Nayar)
-# 7 = 'matte' (Lambertian)
-# 8 = 'metal'
-#
-# 100 = emissive (area light source / trianglemesh)
 
 ###### RGC ##########################
 def rg(col):
 	scn = Scene.GetCurrent()
-	if getProp(scn, "RGC", 1):
-		gamma = getProp(scn, "OutputGamma", 2.2)
+	if luxProp(scn, "RGC", "true").get()=="true":
+		gamma = luxProp(scn, "film.gamma", 2.2).get()
 	else:
 		gamma = 1.0
 	ncol = col**gamma
-	if getProp(scn, "ColClamp", 0):
+	if luxProp(scn, "colorclamp", "true").get()=="true":
 		ncol = ncol * 0.9
 		if ncol > 0.9:
 			ncol = 0.9
@@ -277,226 +75,52 @@ def rg(col):
 
 def exportMaterial(mat):
 	str = "# Material '%s'\n" %mat.name
+	return str+luxMaterial(mat)+"\n"
 
-	def write_color_constant( chan, name, r, g, b ):
-		return "Texture \"%s-%s\" \"color\" \"constant\" \"color value\" [%.3f %.3f %.3f]\n" %(chan, name, rg(r), rg(g), rg(b))
-
-	def write_color_imagemap( chan, name, filename, scaleR, scaleG, scaleB ):
-		om = "Texture \"%s-map-%s\" \"color\" \"imagemap\" \"string filename\" [\"%s\"] \"float vscale\" [-1.0]\n" %(chan, name, filename)
-		om += "Texture \"%s-scale-%s\" \"color\" \"constant\" \"color value\" [%f %f %f]\n" %(chan, name, rg(scaleR), rg(scaleG), rg(scaleB))
-		om += "Texture \"%s-%s\" \"color\" \"scale\" \"texture tex1\" [\"%s-map-%s\"] \"texture tex2\" [\"%s-scale-%s\"]\n" %(chan, name, chan, name, chan, name)
-		return om
-
-	def write_float_constant( chan, name, v ):
-		return "Texture \"%s-%s\" \"float\" \"constant\" \"float value\" [%f]\n" %(chan, name, v)
-
-	def write_float_imagemap( chan, name, filename, scale ):
-		om = "Texture \"%s-map-%s\" \"float\" \"imagemap\" \"string filename\" [\"%s\"] \"float vscale\" [-1.0]\n" %(chan, name, filename)
-		om += "Texture \"%s-scale-%s\" \"float\" \"constant\" \"float value\" [%f]\n" %(chan, name, scale)
-		om += "Texture \"%s-%s\" \"float\" \"scale\" \"texture tex1\" [\"%s-map-%s\"] \"texture tex2\" [\"%s-scale-%s\"]\n" %(chan, name, chan, name, chan, name)
-		return om
-
-	def write_color_param( m, param, chan, r, g, b ):
-		chan_file = getTextureChannel(m, chan)
-		if (chan_file == 'NONE'):
-			return write_color_constant( param, m.name, r, g, b )
-		else:
-			tc = getTextureforChannel(m, chan)
-			if(tc == 0):
-				ss = 1.0
-			else:
-				ss = tc.colfac
-			return write_color_imagemap( param, m.name, chan_file, r * ss, g * ss, b * ss )
-
-	def write_float_param( m, param, chan, v ):
-		chan_file = getTextureChannel(m, chan)
-		if (chan_file == 'NONE'):
-			return write_float_constant( param, m.name, v )
-		else:
-			tc = getTextureforChannel(m, chan)
-			if (chan == 'NOR'):
-				ss = tc.norfac * 0.1
-			else:
-				ss = v
-			return write_float_imagemap( param, m.name, chan_file, ss )
-
-	# translates blender mat.hard (range: 1-511) 
-	# to lux microfacet shinyness value (0.00001 = nearly specular - 1.0 = diffuse)
-	def HardtoMicro(hard):
-		micro = 1.0 / (float(hard) *5)
-		if( micro < 0.00001 ):
-			micro = 0.00001
-		if( micro > 1.0 ):
-			micro = 1.0
-		return micro
-
-	mat_type = getMaterialType(mat)
-
-	if (mat_type == 100):
-		### emitter material ### COMPLETE
-		str += "# Type: emitter\n"
-		str += "# See geometry block.\n\n"
-
-	elif (mat_type == 0):
-		### 'glass' material ### COMPLETE
-		str += "# Type: 'glass'\n"
-		str += write_color_param( mat, "Kr", 'SPEC', mat.specR, mat.specG, mat.specB )
-		str += write_color_param( mat, "Kt", 'COL', mat.R, mat.G, mat.B )
-		str += write_float_param( mat, "index", 'REF', mat.IOR )
-		str += write_float_param( mat, "bumpmap", 'NOR', 0.0 )
-
-	elif (mat_type == 1):
-		### 'roughglass' material ###
-		str += "# Type: 'roughglass'\n"
-		str += write_color_param( mat, "Kr", 'SPEC', mat.specR, mat.specG, mat.specB )
-		str += write_color_param( mat, "Kt", 'COL', mat.R, mat.G, mat.B )
-		str += write_float_param( mat, "uroughness", 'HARD', HardtoMicro(mat.hard) )
-		str += write_float_param( mat, "vroughness", 'HARD', HardtoMicro(mat.hard) )
-		str += write_float_param( mat, "index", 'REF', mat.IOR )
-		str += write_float_param( mat, "bumpmap", 'NOR', 0.0 )
-
-	elif (mat_type == 2):
-		### 'mirror' material ### COMPLETE
-		str += "# Type: 'mirror'\n"
-		str += write_color_param( mat, "Kr", 'COL', mat.R, mat.G, mat.B )
-		str += write_float_param( mat, "bumpmap", 'NOR', 0.0 )
-
-	elif (mat_type == 3):
-		### 'plastic' material ### COMPLETE
-		str += "# Type: 'plastic'\n"
-		str += write_color_param( mat, "Kd", 'COL', mat.R, mat.G, mat.B )
-		spec = mat.getSpec()
-		if spec > 1.0:
-			spec = 0
-		str += write_color_param( mat, "Ks", 'SPEC', mat.specR * spec, mat.specG * spec, mat.specB * spec )
-		str += write_float_param( mat, "roughness", 'HARD', HardtoMicro(mat.hard) )
-		str += write_float_param( mat, "bumpmap", 'NOR', 0.0 )
-
-	elif (mat_type == 4):
-		### 'shinymetal' material ### COMPLETE
-		str += "# Type: 'shinymetal'\n"
-		str += write_color_param( mat, "Ks", 'COL', mat.R, mat.G, mat.B )
-		spec = mat.getSpec()
-		if spec > 1.0:
-			spec = 0
-		str += write_color_param( mat, "Kr", 'SPEC', mat.specR * spec, mat.specG * spec, mat.specB * spec )
-		str += write_float_param( mat, "roughness", 'HARD', HardtoMicro(mat.hard) )
-		str += write_float_param( mat, "bumpmap", 'NOR', 0.0 )
-
-	elif (mat_type == 8):
-		### 'metal' material ### COMPLETE
-		str += "# Type: 'metal'\n"
-		str += write_float_param( mat, "roughness", 'HARD', HardtoMicro(mat.hard) )
-		str += write_float_param( mat, "bumpmap", 'NOR', 0.0 )
-
-	elif (mat_type == 9):
-		### 'carpaint' material ### COMPLETE
-		str += "# Type: 'carpaint'\n"
-		str += write_float_param( mat, "bumpmap", 'NOR', 0.0 )
-
-	elif (mat_type == 5):
-		### 'substrate' material ### COMPLETE
-		str += "# Type: 'substrate'\n"
-		str += write_color_param( mat, "Kd", 'COL', mat.R, mat.G, mat.B )
-		spec = mat.getSpec()
-		if spec > 1.0:
-			spec = 0
-		str += write_color_param( mat, "Ks", 'SPEC', mat.specR * spec, mat.specG * spec, mat.specB * spec )
-		# TODO: add different inputs for both u/v roughenss for aniso effect
-		str += write_float_param( mat, "uroughness", 'HARD', HardtoMicro(mat.hard) )
-		str += write_float_param( mat, "vroughness", 'HARD', HardtoMicro(mat.hard) )
-		str += write_float_param( mat, "bumpmap", 'NOR', 0.0 )
-
-	elif (mat_type == 6):
-		### 'matte' (Oren-Nayar) material ###
-		# TODO
-		str += "\n"
-	else:
-		### 'matte' (Lambertian) material ### COMPLETE
-		str += "# Type: 'matte' (Lambertian)\n"
-		str += write_color_param( mat, "Kd", 'COL', mat.R, mat.G, mat.B )
-		str += write_float_param( mat, "sigma", 'REF', 0 )
-		str += write_float_param( mat, "bumpmap", 'NOR', 0.0 )
-
-	str += "#####\n\n"
-	return str
 
 def exportMaterialGeomTag(mat):
-	mat_type = getMaterialType(mat)
-	if (mat_type == 100):
-		str = "AreaLightSource \"area\" \"integer nsamples\" [1] \"color L\" [%f %f %f]" %(mat.R * mat.emit, mat.G * mat.emit, mat.B * mat.emit)
-	else:
+	return "%s\n"%(luxProp(mat, "link", "").get())
 
-	 	str = "Material "
 
-		if (mat_type == 0):
-			### 'glass' material ### COMPLETE
-			str += " \"glass\" \"texture Kr\" \"Kr-%s\"" %mat.name
-			str += " \"texture Kt\" \"Kt-%s\"" %mat.name
-			str += " \"texture index\" \"index-%s\"" %mat.name
-			str += " \"texture bumpmap\" \"bumpmap-%s\"" %mat.name
-
-		elif (mat_type == 1):
-			### 'roughglass' material ###
-			str += " \"roughglass\" \"texture Kr\" \"Kr-%s\"" %mat.name
-			str += " \"texture Kt\" \"Kt-%s\"" %mat.name
-			str += " \"texture uroughness\" \"uroughness-%s\"" %mat.name
-			str += " \"texture vroughness\" \"vroughness-%s\"" %mat.name
-			str += " \"texture index\" \"index-%s\"" %mat.name
-			str += " \"texture bumpmap\" \"bumpmap-%s\"" %mat.name
-
-		elif (mat_type == 2):
-			### 'mirror' material ### COMPLETE
-			str += " \"mirror\" \"texture Kr\" \"Kr-%s\"" %mat.name
-			str += " \"texture bumpmap\" \"bumpmap-%s\"" %mat.name
-
-		elif (mat_type == 3):
-			### 'plastic' material ### COMPLETE
-			str += " \"plastic\" \"texture Kd\" \"Kd-%s\"" %mat.name
-			str += " \"texture Ks\" \"Ks-%s\"" %mat.name
-			str += " \"texture roughness\" \"roughness-%s\"" %mat.name
-			str += " \"texture bumpmap\" \"bumpmap-%s\"" %mat.name
-
-		elif (mat_type == 4):
-			### 'shinymetal' material ### COMPLETE
-			str += " \"shinymetal\" \"texture Ks\" \"Ks-%s\"" %mat.name
-			str += " \"texture Kr\" \"Kr-%s\"" %mat.name
-			str += " \"texture roughness\" \"roughness-%s\"" %mat.name
-			str += " \"texture bumpmap\" \"bumpmap-%s\"" %mat.name
-
-		elif (mat_type == 8):
-			### 'metal' material ### COMPLETE
-			metalname = makeMetalName(mat.name)
-			str += " \"metal\" \"string name\" \"%s\"" %metalname
-			str += " \"texture roughness\" \"roughness-%s\"" %mat.name
-			str += " \"texture bumpmap\" \"bumpmap-%s\"" %mat.name
-
-		elif (mat_type == 9):
-			### 'carpaint' material ### COMPLETE
-			carpaintname = makeCarpaintName(mat.name)
-			str += " \"carpaint\" \"string name\" \"%s\"" %carpaintname
-			str += " \"texture bumpmap\" \"bumpmap-%s\"" %mat.name
-
-		elif (mat_type == 5):
-			### 'substrate' material ### COMPLETE
-			str += " \"substrate\" \"texture Kd\" \"Kd-%s\"" %mat.name
-			str += " \"texture Ks\" \"Ks-%s\"" %mat.name
-			str += " \"texture uroughness\" \"uroughness-%s\"" %mat.name
-			str += " \"texture vroughness\" \"vroughness-%s\"" %mat.name
-			str += " \"texture bumpmap\" \"bumpmap-%s\"" %mat.name
-
-		elif (mat_type == 6) or (mat_type == 7):
-			### 'matte' (Oren-Nayar or Lambertian) material ###
-			str += " \"matte\" \"texture Kd\" \"Kd-%s\"" %mat.name
-			str += " \"texture sigma\" \"sigma-%s\"" %mat.name
-			str += " \"texture bumpmap\" \"bumpmap-%s\"" %mat.name
-
-	str += "\n"
-	return str
 
 
 ################################################################
 
+
+
+
+#-------------------------------------------------
+# getMaterials(obj)
+# helper function to get the material list of an object in respect of obj.colbits
+#-------------------------------------------------
+def getMaterials(obj, compress=False):
+	mats = [None]*16
+	colbits = obj.colbits
+	objMats = obj.getMaterials(1)
+	data = obj.getData()
+	try:
+		dataMats = data.materials
+	except:
+		try:
+			dataMats = data.getMaterials(1)
+		except:
+			dataMats = []
+			colbits = 0xffff
+	m = max(len(objMats), len(dataMats))
+	if m>0:
+		objMats.extend([None]*16)
+		dataMats.extend([None]*16)
+		for i in range(m):
+			if (colbits & (1<<i) > 0):
+				mats[i] = objMats[i]
+			else:
+				mats[i] = dataMats[i]
+		if compress:
+			mats = [m for m in mats if m]
+	else:
+		print "Warning: object %s has no material assigned"%(obj.getName())
+		mats = []
+	return mats
 
 
 
@@ -521,37 +145,6 @@ class luxExport:
 		self.lights = []
 
 	#-------------------------------------------------
-	# getMaterials(obj)
-	# helper function to get the material list of an object in respect of obj.colbits
-	#-------------------------------------------------
-	def getMaterials(self, obj):
-		mats = [None]*16
-		colbits = obj.colbits
-		objMats = obj.getMaterials(1)
-		data = obj.getData()
-		try:
-			dataMats = data.materials
-		except:
-			try:
-				dataMats = data.getMaterials(1)
-			except:
-				dataMats = []
-				colbits = 0xffff
-		m = max(len(objMats), len(dataMats))
-		if m>0:
-			objMats.extend([None]*16)
-			dataMats.extend([None]*16)
-			for i in range(m):
-				if (colbits & (1<<i) > 0):
-					mats[i] = objMats[i]
-				else:
-					mats[i] = dataMats[i]
-		else:
-			print "Warning: object %s has no material assigned"%(obj.getName())
-			mats = []
-		return mats
-
-	#-------------------------------------------------
 	# analyseObject(self, obj, matrix, name)
 	# called by analyseScene to build the lists before export
 	#-------------------------------------------------
@@ -562,8 +155,8 @@ class luxExport:
 				for o, m in obj.DupObjects:
 					self.analyseObject(o, m, "%s.%s"%(name, o.getName()))	
 			elif (obj_type == "Mesh") or (obj_type == "Surf") or (obj_type == "Curve") or (obj_type == "Text"):
-				mats = self.getMaterials(obj)
-				if (len(mats)>0) and (mats[0]!=None) and (mats[0].name=="PORTAL"):
+				mats = getMaterials(obj)
+				if (len(mats)>0) and (mats[0]!=None) and ((mats[0].name=="PORTAL") or (luxProp(mats[0], "type", "").get()=="portal")):
 					self.portals.append([obj, matrix])
 				else:
 					for mat in mats:
@@ -754,12 +347,12 @@ class luxExport:
 		mesh = Mesh.New('')
 		for (mesh_name, objs) in self.meshes.items():
 			allow_instancing = True
-			mats = self.getMaterials(objs[0]) # mats = obj.getData().getMaterials()
+			mats = getMaterials(objs[0]) # mats = obj.getData().getMaterials()
 			for mat in mats: # don't instance if one of the materials is emissive
-				if (mat!=None) and (mat.emit > 0.0):
+				if (mat!=None) and (luxProp(mat, "type", "").get()=="light"):
 					allow_instancing = False
 			for obj in objs: # don't instance if the objects with same mesh uses different materials
-				ms = self.getMaterials(obj)
+				ms = getMaterials(obj)
 				if ms <> mats:
 					allow_instancing = False
 			if allow_instancing and (len(objs) >= instancing_threshold):
@@ -791,7 +384,7 @@ class luxExport:
 			mesh_name = obj.getData(name_only=True)
 			if mesh_name in self.meshes:
 				mesh.getFromObject(obj, 0, 1)
-				mats = self.getMaterials(obj)
+				mats = getMaterials(obj)
 				print "  blender-mesh: %s (%d vertices, %d faces)"%(mesh_name, len(mesh.verts), len(mesh.faces))
 				if (mesh_optimizing):
 					self.exportMeshOpt(file, mesh, mats, mesh_name)
@@ -818,7 +411,7 @@ class luxExport:
 		  		  matrix[3][0], matrix[3][1], matrix[3][2], matrix[3][3]))
 			mesh_name = obj.getData(name_only=True)
 			mesh.getFromObject(obj, 0, 1)
-			mats = self.getMaterials(obj) # mats = obj.getData().getMaterials()
+			mats = getMaterials(obj) # mats = obj.getData().getMaterials()
 			if (mesh_optimizing):
 				self.exportMeshOpt(file, mesh, mats, mesh_name, True)
 			else:
@@ -862,14 +455,8 @@ def save_lux(filename, unindexedname):
 	print("Lux Render Export started...\n")
 	time1 = Blender.sys.time()
 	scn = Scene.GetCurrent()
-	##### Determine/open files
-	if getProp(scn, "ExportScene", 1):
-		print("Exporting scene to '" + filename + "'...\n")
-		file = open(filename, 'w')
 
 	filepath = os.path.dirname(filename)
-	print filename
-	print filepath
 	filebase = os.path.splitext(os.path.basename(filename))[0]
 
 	geom_filename = os.path.join(filepath, filebase + "-geom.lxo")
@@ -881,15 +468,18 @@ def save_lux(filename, unindexedname):
 	### Zuegs: initialization for export class
 	export = luxExport(Blender.Scene.GetCurrent())
 	
-	if getProp(scn, "ExportScene", 1):
+	if luxProp(scn, "lxs", "true").get()=="true":
+		##### Determine/open files
+		print("Exporting scene to '" + filename + "'...\n")
+		file = open(filename, 'w')
 		##### Write Header ######
 		file.write("# Lux Render v0.1 Scene File\n")
-		file.write("# Exported by LuxBlend_01_alphaCVS\n")
-	
+		file.write("# Exported by LuxBlend_0.1_alpha-MatEditor\n")
 		file.write("\n")
 	
 		##### Write camera ######
 		camObj = scn.getCurrentCamera()
+
 		if camObj:
 			print "processing Camera..."
 			matrix = camObj.getMatrix()
@@ -897,121 +487,30 @@ def save_lux(filename, unindexedname):
 			forwards = -matrix[2]
 			target = pos + forwards
 			up = matrix[1]
-			lens = camObj.data.getLens() 
-	    		context = Blender.Scene.getCurrent().getRenderingContext()
-	    		ratio = float(context.imageSizeY())/float(context.imageSizeX())
-			ctype = getProp(camObj.data, "CameraType", 0)
-			scale = 1.0
-			if (ratio < 1.0):
-				fov = 2*math.atan(16/lens*ratio) * (180 / 3.141592653)
-				if ctype==1: # ortho scale
-					scale = camObj.data.scale/2 * ratio
-				screenwindow = [((2*camObj.data.shiftX)-1)/ratio*scale, ((2*camObj.data.shiftX)+1)/ratio*scale, ((2*camObj.data.shiftY/ratio)-1)*scale, ((2*camObj.data.shiftY/ratio)+1)*scale]
-			else:
-				fov = 2*math.atan(16/lens/ratio) * (180 / 3.141592653)
-				if ctype==1: # ortho scale
-					scale = camObj.data.scale/2 / ratio
-				screenwindow = [((2*camObj.data.shiftX*ratio)-1)*scale, ((2*camObj.data.shiftX*ratio)+1)*scale, ((2*camObj.data.shiftY)-1)*ratio*scale, ((2*camObj.data.shiftY)+1)*ratio*scale]
-			file.write("LookAt %f %f %f   %f %f %f %f %f %f\n" % ( pos[0], pos[1], pos[2], target[0], target[1], target[2], up[0], up[1], up[2] ))
-
-			if ctype == 0:
-				file.write("Camera \"perspective\" \"float fov\" [%f]"%(fov))
-			if ctype == 1:
-				file.write("Camera \"orthographic\"")
-			if ctype == 2:
-				file.write("Camera \"environment\"")
-			if ctype in [0,1,2]:
-				file.write(" \"float hither\" [%f] \"float yon\" [%f] \"float shutteropen\" [%f] \"float shutterclose\" [%f] \"float screenwindow\" [%f %f %f %f]"\
-					%(camObj.data.clipStart, camObj.data.clipEnd, getProp(camObj.data, "ShutterOpen", 0.0), getProp(camObj.data, "ShutterClose", 1.0), screenwindow[0], screenwindow[1], screenwindow[2], screenwindow[3])) 
-			if ctype in [0,1]:
-				file.write(" \"float lensradius\" [%f] \"float focaldistance\" [%f]"%(getProp(camObj.data, "LensRadius", 0.0), camObj.data.dofDist))
+			file.write("LookAt %f %f %f %f %f %f %f %f %f\n" % ( pos[0], pos[1], pos[2], target[0], target[1], target[2], up[0], up[1], up[2] ))
+			file.write(luxCamera(camObj.data, scn.getRenderingContext()))
 			file.write("\n")
 		file.write("\n")
 	
 		##### Write film ######
-		file.write("Film \"multiimage\"\n") 
-		file.write("     \"integer xresolution\" [%d] \"integer yresolution\" [%d]\n" % (scn.getRenderingContext().sizeX*getProp(scn, "ScaleSize", 100)/100, scn.getRenderingContext().sizeY*getProp(scn, "ScaleSize", 100)/100) )
-		filenamebase = sys.splitext(sys.basename(filename))[0]
-		if(getProp(scn, "SaveIGI", 0)):
-			file.write("	 \"string igi_filename\" [\"%s.igi\"]\n" %(filenamebase))
-			file.write("	 	\"integer igi_writeinterval\" [%i]\n" %(getProp(scn, "SaveIGIInterval", 120)))
-		if(getProp(scn, "SaveEXR", 0)):
-			file.write("	 \"string hdr_filename\" [\"%s.exr\"]\n" %(filenamebase))
-			file.write("	 	\"integer hdr_writeinterval\" [%i]\n" %(getProp(scn, "SaveEXRInterval", 120)))
-		if(getProp(scn, "SaveTGA", 0)):
-			file.write("	 \"string ldr_filename\" [\"%s.tga\"]\n" %(filenamebase))
-			file.write("		\"integer ldr_writeinterval\" [%i]\n" %(getProp(scn, "SaveTGAInterval", 120)))
-		file.write("		\"integer ldr_displayinterval\" [%i]\n" %(getProp(scn, "DisplayInterval", 12)))
-		file.write("		\"string tonemapper\" [\"reinhard\"]\n")
-		file.write("			\"float reinhard_prescale\" [%f]\n" %(getProp(scn, "ToneMapPreScale", 1.0)))
-		file.write("			\"float reinhard_postscale\" [%f]\n" %(getProp(scn, "ToneMapPostScale", 1.0)))
-		file.write("			\"float reinhard_burn\" [%f]\n" %(getProp(scn, "ToneMapBurn", 6.0)))
-		file.write("		\"float gamma\" [%f]\n" %(getProp(scn, "OutputGamma",2.2)))
-		file.write("		\"float dither\" [%f]\n\n" %(getProp(scn, "OutputDither",0)))
-		if(getProp(scn, "Bloom", 0)):
-			file.write("		\"float bloomwidth\" [%f]\n" %(getProp(scn, "BloomWidth", 0.1)))
-			file.write("		\"float bloomradius\" [%f]\n" %(getProp(scn, "BloomRadius", 0.1)))
-	
-
-		file.write("\n")
-		##### Write Filter ######
-		tfilter = getProp(scn, "FilterType", 0)
-		if tfilter==0: # box
-			file.write("PixelFilter \"box\"");
-		if tfilter==1: # triangle
-			file.write("PixelFilter \"triangle\"");
-		if tfilter==2: # gaussian
-			file.write("PixelFilter \"gaussian\" \"float alpha\" [%f]"%(getProp(scn, "FilterGaussianAlpha", 2.0)))
-		if tfilter==3: # mitchell
-			file.write("PixelFilter \"mitchell\" \"float B\" [%f] \"float C\" [%f]"%(getProp(scn, "FilterMitchellB", 0.3333), getProp(scn, "FilterMitchellC", 0.3333)))
-		if tfilter==4: # sinc
-			file.write("PixelFilter \"sinc\" \"float tau\" [%f]"%(getProp(scn, "FilterSincTau", 3.0)))
-		file.write(" \"float xwidth\" [%f] \"float ywidth\" [%f]"%(getProp(scn, "FilterXWidth", 1), getProp(scn, "FilterYWidth", 1)))
-		file.write("\n")
+		file.write(luxFilm(scn))
 		file.write("\n")
 
+		##### Write Pixel Filter ######
+		file.write(luxPixelFilter(scn))
+		file.write("\n")
 	
-		##### Write Pixel Sampler ######
-		stype = getProp(scn, "SamplerType", 1)
-		if stype == 0:
-			file.write("Sampler \"lowdiscrepancy\"")
-		if stype == 1:
-			file.write("Sampler \"random\"")
-		ptype = getProp(scn, "PixelSamplerType", 0)
-		if ptype == 0:
-			file.write(" \"string pixelsampler\" [\"vegas\"]")
-		if ptype == 1:
-			file.write(" \"string pixelsampler\" [\"random\"]")
-		if ptype == 2:
-			file.write(" \"string pixelsampler\" [\"linear\"]")
-		file.write(" \"integer pixelsamples\" [%i]\n" %(getProp(scn, "SamplerPixelsamples", 4)))
+		##### Write Sampler ######
+		file.write(luxSampler(scn))
 		file.write("\n")
 	
 		##### Write Integrator ######
-
-		itype = getProp(scn, "IntegratorType", 1)
-		if itype == 0:
-			file.write("SurfaceIntegrator \"directlighting\" \"string strategy\" [\"%s\"]"%(["one", "all", "weighted"][getProp(scn, "DirectlightingStrategy", 0)]))
-		if itype == 1:
-			file.write("SurfaceIntegrator \"path\"")
-			if(getProp(scn, "Metropolis", 0) == 1):
-				file.write(" \"bool metropolis\" [\"true\"]")
-			else:
-				file.write(" \"bool metropolis\" [\"false\"]")
-		if itype == 2:
-			file.write("SurfaceIntegrator \"mltpath\"")
-		file.write(" \"integer maxdepth\" [%i]"%(getProp(scn, "MaxDepth", 16)))
-		if itype in [1,2]:
-			file.write(" \"integer maxconsecrejects\" [%f] \"float largemutationprob\" [%f] \"float rrcontinueprob\" [%f]"\
-				%(getProp(scn, "MetropolisMaxRejects", 256), getProp(scn, "MetropolisLMProb", 0.4), getProp(scn, "RRContinueProb", 0.65)))
+		file.write(luxSurfaceIntegrator(scn))
 		file.write("\n")
-		file.write("\n")
-
 		
 		##### Write Acceleration ######
-		file.write("Accelerator \"kdtree\"\n")
-		file.write("\n")
-	
+		file.write(luxAccelerator(scn))
+		file.write("\n")	
 	
 		########## BEGIN World
 		file.write("\n")
@@ -1022,48 +521,15 @@ def save_lux(filename, unindexedname):
 		export.analyseScene()
 	
 		##### Write World Background, Sunsky or Env map ######
-		etype = getProp(scn, "EnvType", 0)
-		if etype == 0:
-			worldcolor = Blender.World.Get('World').getHor()
+		env = luxEnvironment(scn)
+		if env != "":
 			file.write("AttributeBegin\n")
-			file.write("LightSource \"infinite\" \"color L\" [%g %g %g] \"integer nsamples\" [1]\n" %(worldcolor[0], worldcolor[1], worldcolor[2]))
-	
-			# file.write("%s" %portalstr)
+			file.write(env)
 			export.exportPortals(file)
-	
-	
 			file.write("AttributeEnd\n")
-		if etype == 1:
-			for obj in scn.objects:
-				if obj.getType() == "Lamp":
-					if obj.data.getType() == 1: # sun object
-						invmatrix = Mathutils.Matrix(obj.getInverseMatrix())
-						file.write("AttributeBegin\n")
-						file.write("Rotate %d 0 0 1\n"%(getProp(scn, "EnvRotation", 0)))
-						file.write("LightSource \"sunsky\" \"integer nsamples\" [1]\n")
-						file.write("            \"vector sundir\" [%f %f %f]\n" %(invmatrix[0][2], invmatrix[1][2], invmatrix[2][2]))
-						file.write("		\"color L\" [%f %f %f]\n" %(getProp(scn, "SkyGain", 1.0), getProp(scn, "SkyGain", 1.0), getProp(scn, "SkyGain", 1.0)))
-						file.write("		\"float turbidity\" [%f]\n" %(getProp(scn, "Turbidity", 2.0)))
-	
-						# file.write("%s" %portalstr)
-						export.exportPortals(file)
-	
-	
-						file.write("AttributeEnd\n")
-		if etype == 2:
-			if getProp(scn, "EnvFile", "") != "":
-				file.write("AttributeBegin\n")
-				file.write("Rotate %d 0 0 1\n"%(getProp(scn, "EnvRotation", 0)))
-				file.write("LightSource \"infinite\" \"integer nsamples\" [1]\n")
-				file.write("            \"string mapname\" [\"%s\"]\n" %(getProp(scn, "EnvFile", "")) )
-	
-				# file.write("%s" %portalstr)
-				export.exportPortals(file)
-	
-				file.write("AttributeEnd\n")
-		file.write("\n")
-	
-	
+			file.write("\n")	
+
+
 		#### Write material & geometry file includes in scene file
 		file.write("Include \"%s\"\n\n" %(mat_pfilename))
 		file.write("Include \"%s\"\n\n" %(geom_pfilename))
@@ -1072,7 +538,7 @@ def save_lux(filename, unindexedname):
 		file.write("WorldEnd\n\n")
 		file.close()
 		
-	if getProp(scn, "ExportMat", 1):
+	if luxProp(scn, "lxm", "true").get()=="true":
 		##### Write Material file #####
 		print("Exporting materials to '" + mat_filename + "'...\n")
 		mat_file = open(mat_filename, 'w')
@@ -1081,7 +547,7 @@ def save_lux(filename, unindexedname):
 		mat_file.write("")
 		mat_file.close()
 	
-	if getProp(scn, "ExportGeom", 1):
+	if luxProp(scn, "lxo", "true").get()=="true":
 		##### Write Geometry file #####
 		print("Exporting geometry to '" + geom_filename + "'...\n")
 		geom_file = open(geom_filename, 'w')
@@ -1117,8 +583,13 @@ def launchLux(filename):
 #	f.close()
 
 	scn = Scene.GetCurrent()
-	ic = getProp(scn, "LuxPath", "")
-	threads = getProp(scn, "Threads", 1)
+	ic = luxProp(scn, "lux", "").get()
+	checkluxpath = luxProp(scn, "checkluxpath", True).get()
+	if checkluxpath:
+		if sys.exists(ic) != 1:
+			Draw.PupMenu("Error: Lux renderer not found. Please set path on System page.%t|OK")
+			return		
+	threads = luxProp(scn, "threads", 1).get()
 		
 	if ostype == "win32":
 		
@@ -1131,7 +602,7 @@ def launchLux(filename):
 #		# call external shell script to start Lux
 #		cmd= "\"" + datadir + "\LuxWrapper.cmd " + filename + "\""
 
-		cmd = "start /b /belownormal %s \"%s\" --threads=%d"%(ic, filename, threads)		
+		cmd = "start /b /belownormal \"\" \"%s\" \"%s\" --threads=%d"%(ic, filename, threads)		
 
 	if ostype == "darwin":
 		
@@ -1172,351 +643,747 @@ def save_anim(filename):
 #### SAVE STILL (hackish...) ####
 def save_still(filename):
 	global MatSaved
-	scn = Scene.GetCurrent()	
+	scn = Scene.GetCurrent()
+	luxProp(scn, "filename", Blender.Get("filename")).set(filename)
 	MatSaved = 0
 	unindexedname = filename
 	save_lux(filename, unindexedname)
-	if getProp(scn, "ExecuteLux", 0) == 1:
+	if luxProp(scn, "run", "true").get() == "true":
 		launchLux(filename)
 
 
+
 ######################################################
-# Settings GUI
+# New GUI by Zuegs
 ######################################################
 
 from types import *
 
-# get defaults
+# default settings
 try:
-	rdict = Blender.Registry.GetKey('BlenderLux', True)
-	if not(type(rdict) is DictType):
-		rdict = {}
+	luxdefaults = Blender.Registry.GetKey('luxblend', True)
+	if not(type(luxdefaults) is DictType):
+		luxdefaults = {}
 except:
-	rdict = {}
-newrdict = rdict
+	luxdefaults = {}
+newluxdefaults = luxdefaults
+
+def saveluxdefaults():
+	try: del newluxdefaults['page']
+	except: pass
+	try: Blender.Registry.SetKey('luxblend', newluxdefaults, True)
+	except: pass
 
 
-# property management
-def setProp(obj, name, value):
-	if(obj):	
-		if(value!=None):
+# some helpers
+def luxstr(str):
+	return str.replace("\\", "\\\\") # todo: do encode \ and " signs by a additional backslash
+
+
+# class to access properties (for lux settings)
+class luxProp:
+	def __init__(self, obj, name, default):
+		self.obj = obj
+		self.name = name
+		self.default = default
+	def get(self):
+		if self.obj:
 			try:
-				obj.properties['luxblend'][name] = value
-			except (KeyError, TypeError):
-				obj.properties['luxblend'] = {}
-				obj.properties['luxblend'][name] = value
+				return self.obj.properties['luxblend'][self.name]
+			except KeyError:
+				if self.obj.__class__.__name__ == "Scene": # luxdefaults only for global setting
+					try:
+						return luxdefaults[self.name]
+					except KeyError:
+						return self.default
+				return self.default
+		return None
+	def set(self, value):
+		if self.obj:
+			if value != None:
+				try:
+					self.obj.properties['luxblend'][self.name] = value
+				except (KeyError, TypeError):
+					self.obj.properties['luxblend'] = {}
+					self.obj.properties['luxblend'][self.name] = value
+			else:
+				try:
+					del self.obj.properties['luxblend'][self.name]
+				except:
+					pass
+			if self.obj.__class__.__name__ == "Scene": # luxdefaults only for global setting
+				newluxdefaults[self.name] = value									
+	def getRGB(self):
+		l = self.get().split(" ")
+		if len(l) != 3: l = self.default.split(" ")
+		return (float(l[0]), float(l[1]), float(l[2]))
+	def getRGC(self):
+		col = self.getRGB()
+		return "%f %f %f"%(rg(col[0]), rg(col[1]),rg(col[2]))
+	def setRGB(self, value):
+		self.set("%f %f %f"%(value[0], value[1], value[2]))
+
+
+# class to access blender attributes (for lux settings)
+class luxAttr:
+	def __init__(self, obj, name):
+		self.obj = obj
+		self.name = name
+	def get(self):
+		if self.obj:
+			return getattr(self.obj, self.name)
 		else:
-			try:
-				del obj.properties['luxblend'][name]
-			except:
-				pass	
+			return None
+	def set(self, value):
+		if self.obj:
+			setattr(self.obj, self.name, value)
 
-def getProp(obj, name, default=None):
-	try:
-		value = (obj.properties['luxblend'])[name]
-		newrdict[name] = value
-		return value
-	except KeyError:
+
+# class for dynamic gui
+class luxGui:
+	def __init__(self, y=200):
+		self.x = 110 # left start position after captions
+		self.xmax = 110+2*(140+4)
+		self.y = y
+		self.w = 140 # default element width in pixels
+		self.h = 18  # default element height in pixels
+		self.hmax = 0
+		self.xgap = 4
+		self.ygap = 4
+	def getRect(self, wu, hu):
+		w = int(self.w * wu + self.xgap * (wu-1))
+		h = int(self.h * hu + self.ygap * (hu-1))
+		if self.x + w > self.xmax: self.newline()
+		rect = [int(self.x), int(self.y-h), int(w), int(h)]
+		self.x += int(w + self.xgap)
+		if h+self.ygap > self.hmax: self.hmax = int(h+self.ygap)
+		return rect
+	def newline(self, title="", distance=0):
+		self.x = 110
+		self.y -= int(self.hmax + distance)
+		self.hmax = 0
+		BGL.glColor3f(0.9,0.9,0.9); BGL.glRasterPos2i(10,self.y-self.h+5); Draw.Text(title)
+		
+
+# lux parameter types
+evtLuxGui = 99
+def luxOption(name, lux, options, caption, hint, gui, width=1.0):
+	if gui:
+		menustr = caption+": %t"
+		for i, v in enumerate(options): menustr = "%s %%x%d|%s"%(v, i, menustr)
 		try:
-			return rdict[name]
-		except KeyError:
-			setProp(obj, name, default)
-			return default
+			i = options.index(lux.get())
+		except ValueError:
+			print "value %s not found in options list"%(lux.get())
+			i = 0
+		r = gui.getRect(width, 1)
+		Draw.Menu(menustr, evtLuxGui, r[0], r[1], r[2], r[3], i, hint, lambda e,v: lux.set(options[v]))
+	return " \"string %s\" [\"%s\"]"%(name, lux.get())
 
- 
-def CBsetProp(obj, name):
-	return lambda evt, val: setProp(obj, name, val)
+def luxIdentifier(name, lux, options, caption, hint, gui, width=1.0):
+	if gui: gui.newline(caption+":", 8)
+	luxOption(name, lux, options, caption, hint, gui, width)
+	return "%s \"%s\""%(name, lux.get())
 
-def CBsetAttr(obj, name):
-	return lambda evt, val: setattr(obj, name, val)
+def luxFloat(name, lux, min, max, caption, hint, gui, width=1.0):
+	if gui:
+		r = gui.getRect(width, 1)
+		Draw.Number(caption+": ", evtLuxGui, r[0], r[1], r[2], r[3], float(lux.get()), min, max, hint, lambda e,v: lux.set(v))
+	return " \"float %s\" [%f]"%(name, lux.get())
+
+def luxInt(name, lux, min, max, caption, hint, gui, width=1.0):
+	if gui:
+		r = gui.getRect(width, 1)
+		Draw.Number(caption+": ", evtLuxGui, r[0], r[1], r[2], r[3], int(lux.get()), min, max, hint, lambda e,v: lux.set(v))
+	return " \"integer %s\" [%d]"%(name, lux.get())
+
+def luxBool(name, lux, caption, hint, gui, width=1.0):
+	if gui:
+		r = gui.getRect(width, 1)
+		Draw.Toggle(caption, evtLuxGui, r[0], r[1], r[2], r[3], lux.get()=="true", hint, lambda e,v: lux.set(["false","true"][bool(v)]))
+	return " \"bool %s\" [\"%s\"]"%(name, lux.get())
+
+def luxString(name, lux, caption, hint, gui, width=1.0):
+	if gui:
+		r = gui.getRect(width, 1)
+		Draw.String(caption+": ", evtLuxGui, r[0], r[1], r[2], r[3], lux.get(), 250, hint, lambda e,v: lux.set(v))
+	return " \"string %s\" [\"%s\"]"%(name, luxstr(lux.get()))
+
+def luxFile(name, lux, caption, hint, gui, width=1.0):
+	if gui:
+		r = gui.getRect(width, 1)
+		Draw.String(caption+": ", evtLuxGui, r[0], r[1], r[2]-r[3]-2, r[3], lux.get(), 250, hint, lambda e,v: lux.set(v))
+		Draw.Button("...", 0, r[0]+r[2]-r[3], r[1], r[3], r[3], "click to open file selector", lambda e,v:Window.FileSelector(lambda s:lux.set(s), "Select %s"%(caption), lux.get()))
+	return " \"string %s\" [\"%s\"]"%(name, luxstr(lux.get()))
+
+def luxRGB(name, lux, max, caption, hint, gui, width=2.0):
+	if gui:
+		r = gui.getRect(width, 1)
+		scale = 1.0
+		rgb = lux.getRGB()
+		if max > 1.0:
+			for i in range(3):
+				if rgb[i] > scale: scale = rgb[i]
+			rgb = (rgb[0]/scale, rgb[1]/scale, rgb[2]/scale)
+		Draw.ColorPicker(evtLuxGui, r[0], r[1], r[3], r[3], rgb, "click to select color", lambda e,v: lux.setRGB((v[0]*scale,v[1]*scale,v[2]*scale)))
+		w = int((r[2]-r[3])/3); m = max
+		if max > 1.0:
+			w = int((r[2]-r[3])/4); m = 1.0
+		Draw.Number("R:", evtLuxGui, r[0]+r[3], r[1], w, r[3], rgb[0], 0.0, m, "red", lambda e,v: lux.setRGB((v,rgb[1],rgb[2])))
+		Draw.Number("G:", evtLuxGui, r[0]+r[3]+w, r[1], w, r[3], rgb[1], 0.0, m, "green", lambda e,v: lux.setRGB((rgb[0],v,rgb[2])))
+		Draw.Number("B:", evtLuxGui, r[0]+r[3]+2*w, r[1], w, r[3], rgb[2], 0.0, m, "blue", lambda e,v: lux.setRGB((rgb[0],rgb[1],v)))
+		if max > 1.0:
+			Draw.Number("s:", evtLuxGui, r[0]+r[3]+3*w, r[1], w, r[3], scale, 0.0, max, "color scale", lambda e,v: lux.setRGB((rgb[0]*v,rgb[1]*v,rgb[2]*v)))
+	if max <= 1.0:
+		return " \"color %s\" [%s]"%(name, lux.getRGC())
+	return " \"color %s\" [%s]"%(name, lux.get())
 
 
 
-# Assign event numbers to buttons
-evtNoEvt = 0
-evtRedraw = 3
-evtExport = 1
-evtExportAnim = 2
-openCamera = 6
-openEnv = 7
-openRSet = 8
-openSSet = 9
-openTmap = 10
-evtFocusS = 4
-evtFocusC = 5
-evtloadimg = 11
-evtbrowselux = 12
-evtSaveDefaults = 13
-
-
-sceneSizeX = Scene.GetCurrent().getRenderingContext().imageSizeX()
-sceneSizeY = Scene.GetCurrent().getRenderingContext().imageSizeY()
-
-strScaleSize = "Scale Size %t | 100 % %x100 | 75 % %x75 | 50 % %x50 | 25 % %x25"
-
-strEnvType = "Env Type %t | Background Color %x0 | Physical Sky %x1 | Texture Map %x2 | None %x3"
-
-strEnvMapType = "Map type %t | LatLong %x0"
-
-strFilterType = "Filter %t| sinc %x4| mitchell %x3| gaussian %x2| triangle %x1| box %x0"
-
-strSamplerType = "Sampler %t| random %x1| lowdiscrepancy %x0"
-
-strPixelSamplerType = "PixelSampler %t| linear %x2| random %x1| vegas %x0"
-
-strIntegratorType = "Integrator %t| MLT-path %x2| path %x1| directlighting %x0"
-
-strToneMapType = "ToneMap type %t | Reinhard %x1"
-
-		
-######  Draw Camera  ###############################################
-def drawCamera():
-	drawButtons()
-	BGL.glColor3f(1.0,0.5,0.4)
-	BGL.glRectf(10,222,90,223)
-	scn = Scene.GetCurrent()
-	cam = scn.getCurrentCamera()
+# lux individual identifiers
+def luxCamera(cam, context, gui=None):
+	str = ""
 	if cam:
-		cam = cam.data
-		BGL.glColor3f(0.9,0.9,0.9); BGL.glRasterPos2i(10,205); Draw.Text("Camera-Type:")
-		Draw.Menu("Camera %t| environment %x2| orthographic %x1| perspective %x0", evtRedraw, 110, 200, 140, 18, getProp(cam, "CameraType", 0), "camera type", CBsetProp(cam, "CameraType"))
-		t = getProp(cam, "CameraType", 0)
-		if t==0: # perspective
-			Draw.Number("FOV: ", evtNoEvt, 260, 200, 140, 18, cam.angle, 7.323871, 172.847331, "Field Of View", CBsetAttr(cam, "angle"))
-		elif t==1: # orthographic
-			Draw.Number("Scale: ", evtNoEvt, 260, 200, 140, 18, cam.scale, 0.01, 1000.00, "Orthographic scale", CBsetAttr(cam, "scale"))
-		BGL.glColor3f(0.9,0.9,0.9); BGL.glRasterPos2i(10,180); Draw.Text("Clipping:")
-		Draw.Number("hither: ", evtNoEvt, 110, 175, 140, 18, cam.clipStart, 0.0, 100.0, "near clip distance", CBsetAttr(cam, "clipStart"))
-		Draw.Number("yon: ", evtNoEvt, 260, 175, 140, 18, cam.clipEnd, 1.0, 5000.0, "far clip distance", CBsetAttr(cam, "clipEnd"))
-		BGL.glColor3f(0.9,0.9,0.9); BGL.glRasterPos2i(10,155); Draw.Text("DOF Settings:")
-		Draw.Number("Lens Radius: ", evtNoEvt, 110, 150, 140, 18, float(getProp(cam, "LensRadius", 0.0)), 0.0, 3.0, "Defines the lens radius. Values higher than 0. enable DOF and control the amount", CBsetProp(cam, "LensRadius"))
-		Draw.Number("Focal Distance: ", evtNoEvt, 260, 150, 140, 18, cam.dofDist, 0.0, 5000.0, "Distance from the camera at which objects will be in focus. Has no effect if Lens Radius is 0.", CBsetAttr(cam, "dofDist"))
-		Draw.Button("S", evtFocusS, 400, 150, 20, 18, "Get the distance from the selected object")
-		Draw.Button("C", evtFocusC, 420, 150, 20, 18, "Get the distance from the 3d cursor")
-		BGL.glColor3f(0.9,0.9,0.9); BGL.glRasterPos2i(10,130); Draw.Text("Shutter:")
-		Draw.Number("Open: ", evtNoEvt, 110, 125, 140, 18, float(getProp(cam, "ShutterOpen", 0.0)), 0.0, 100.0, "The time in seconds at which the virtual shutter opens", CBsetProp(cam, "ShutterOpen"))
-		Draw.Number("Close: ", evtNoEvt, 260, 125, 140, 18, float(getProp(cam, "ShutterClose", 1.0)), 0.0, 100.0, "The time in seconds at which the virtual shutter closes", CBsetProp(cam, "ShutterClose"))
-	BGL.glColor3f(0.9,0.9,0.9) ; BGL.glRasterPos2i(10,105) ; Draw.Text("Size:")
-	Draw.Number("X: ", evtNoEvt, 110, 100, 140, 18, scn.getRenderingContext().sizeX, 1, 4096, "Width of the render", CBsetAttr(scn.getRenderingContext(), "sizeX"))
-	Draw.Number("Y: ", evtNoEvt, 260, 100, 140, 18, scn.getRenderingContext().sizeY, 1, 3072, "Height of the render", CBsetAttr(scn.getRenderingContext(), "sizeY"))
-	Draw.Menu(strScaleSize, evtNoEvt, 110, 80, 140, 18, getProp(scn, "ScaleSize", 100), "Scale Image Size of ...", CBsetProp(scn, "ScaleSize"))
+		camtype = luxProp(cam, "camera.type", "perspective")
+		str = luxIdentifier("Camera", camtype, ["perspective","orthographic","environment"], "CAMERA", "select camera type", gui)
+		scale = 1.0
+		if camtype.get() == "perspective":
+			str += luxFloat("fov", luxAttr(cam, "angle"), 8.0, 170.0, "fov", "camera field-of-view angle", gui)
+		if camtype.get() == "orthographic" :
+			str += luxFloat("scale", luxAttr(cam, "scale"), 0.01, 1000.0, "scale", "orthographic camera scale", gui)
+			scale = cam.scale / 2
+		if gui: gui.newline("  Clipping:")
+		str += luxFloat("hither", luxAttr(cam, "clipStart"), 0.0, 100.0, "hither", "near clip distance", gui)
+		str += luxFloat("yon", luxAttr(cam, "clipEnd"), 1.0, 10000.0, "yon", "far clip distance", gui)
+		if gui: gui.newline("  DOF:")
+		str += luxFloat("lensradius", luxProp(cam, "camera.lensradius", 0.0), 0.0, 10.0, "lens-radius", "Defines the lens radius. Values higher than 0. enable DOF and control the amount", gui)
+		dofdist = luxAttr(cam, "dofDist")
+		str += luxFloat("focaldistance", dofdist, 0.0, 10000.0, "distance", "Distance from the camera at which objects will be in focus. Has no effect if Lens Radius is 0", gui)
+		if gui:
+			Draw.Button("S", evtLuxGui, gui.x, gui.y-gui.h, gui.h, gui.h, "focus selected object", lambda e,v:setFocus("S"))
+			Draw.Button("C", evtLuxGui, gui.x+gui.h, gui.y-gui.h, gui.h, gui.h, "focus cursor", lambda e,v:setFocus("C"))
+		if gui: gui.newline("  Shutter:")
+		str += luxFloat("shutteropen", luxProp(cam, "camera.shutteropen", 0.0), 0.0, 100.0, "open", "time in seconds when shutter opens", gui)
+		str += luxFloat("shutterclose", luxProp(cam, "camera.shutterclose", 1.0), 0.0, 100.0, "close", "time in seconds when shutter closes", gui)
+		if gui: gui.newline("  Shift:")
+		luxFloat("X", luxAttr(cam, "shiftX"), -2.0, 2.0, "X", "horizontal lens shift", gui)
+		luxFloat("Y", luxAttr(cam, "shiftY"), -2.0, 2.0, "Y", "vertical lens shift", gui)
+		if context:
+	    		ratio = float(context.sizeY)/float(context.sizeX)
+			if ratio < 1.0:
+				screenwindow = [(2*cam.shiftX-1)*scale, (2*cam.shiftX+1)*scale, (2*cam.shiftY-ratio)*scale, (2*cam.shiftY+ratio)*scale]
+			else:
+				screenwindow = [(2*cam.shiftX-1/ratio)*scale, (2*cam.shiftX+1/ratio)*scale, (2*cam.shiftY-1)*scale, (2*cam.shiftY+1)*scale]
+# render region option
+			if context.borderRender:
+				(x1,y1,x2,y2) = context.border
+				screenwindow = [screenwindow[0]*(1-x1)+screenwindow[1]*x1, screenwindow[0]*(1-x2)+screenwindow[1]*x2,\
+						screenwindow[2]*(1-y1)+screenwindow[3]*y1, screenwindow[2]*(1-y2)+screenwindow[3]*y2]
+			str += " \"float screenwindow\" [%f %f %f %f]"%(screenwindow[0], screenwindow[1], screenwindow[2], screenwindow[3])
+	return str
 
-##############  Draw Environment  #######################################
-def drawEnv():
-	drawButtons()
-	BGL.glColor3f(1.0,0.5,0.4)
-	BGL.glRectf(90,222,170,223)
-	BGL.glColor3f(0.9,0.9,0.9)
+def luxFilm(scn, gui=None):
+	str = ""
+	if scn:
+		filmtype = luxProp(scn, "film.type", "multiimage")
+		str = luxIdentifier("Film", filmtype, ["multiimage"], "FILM", "select film type", gui)
+		# if filmtype.get() == "multiimage":
+		context = scn.getRenderingContext()
+		if context:
+			if gui: gui.newline("  Resolution:")
+			luxInt("xresolution", luxAttr(context, "sizeX"), 0, 4096, "X", "width of the render", gui, 0.666)
+			luxInt("yresolution", luxAttr(context, "sizeY"), 0, 4096, "Y", "height of the render", gui, 0.666)
+			scale = luxProp(scn, "film.scale", "100 %")
+			luxOption("", scale, ["100 %", "75 %", "50 %", "25 %"], "scale", "scale resolution", gui, 0.666)
+			scale = int(scale.get()[:-1])
+# render region option
+			if context.borderRender:
+				(x1,y1,x2,y2) = context.border
+				if (x1==x2) and (y1==y2): print "WARNING: empty render-region, use SHIFT-B to set render region in Blender."
+				str += " \"integer xresolution\" [%d] \"integer yresolution\" [%d]"%(luxAttr(context, "sizeX").get()*scale/100*(x2-x1), luxAttr(context, "sizeY").get()*scale/100*(y2-y1))
+			else:
+				str += " \"integer xresolution\" [%d] \"integer yresolution\" [%d]"%(luxAttr(context, "sizeX").get()*scale/100, luxAttr(context, "sizeY").get()*scale/100)
+
+		if gui: gui.newline("  Tonemapper:")
+		tonetype = luxProp(scn, "film.tonemapper.type", "reinhard")
+		str += luxOption("tonemapper", tonetype, ["reinhard", "contrast"], "tonemapper", "select tonemapper type", gui)
+		if tonetype.get() == "reinhard":
+			str += luxFloat("reinhard_burn", luxProp(scn, "film.tonemapper.reinhard.burn", 6.0), 0.1, 12.0, "burn", "12.0: no burn out, 0.1 lot of burn out", gui)
+			str += luxFloat("reinhard_prescale", luxProp(scn, "film.tonemapper.reinhard.prescale", 1.0), 0.0, 10.0, "pre-scale", "Pre Scale: See Lux Manual ;)", gui)
+			str += luxFloat("reinhard_postscale", luxProp(scn, "film.tonemapper.reinhard.postscale", 1.0), 0.0, 10.0, "post-scale", "Post Scale: See Lux Manual ;)", gui)
+#		if tonetype.get() == "contrast":
+#			str += luxFloat("displayadaptationY", luxProp(scn, "film.tonemapper.contrast.dispadaptY", 5), 0, 10, "displayadaptationY", "", gui)			
+#		if tonetype.get() == "nonlinear":
+#			str += luxFloat("maxY", luxProp(scn, "film.tonemapper.nonlinear.maxY", 0), 0, 100, "maxY", "", gui)			
+		if gui: gui.newline("  Filter:")
+		str += luxFloat("gamma", luxProp(scn, "film.gamma", 2.2), 0.0, 6.0, "gamma", "Output and RGC Gamma", gui)
+		str += luxFloat("dither", luxProp(scn, "film.dither", 0.0), 0.0, 1.0, "dither", "Output Image Dither", gui)
+		if gui: gui.newline("  Bloom:")
+		str += luxFloat("bloomwidth", luxProp(scn, "film.bloomweight", 0.0), 0.0, 1.0, "weight", "amount of bloom", gui)
+		str += luxFloat("bloomradius", luxProp(scn, "film.bloomradius", 0.0), 0.0, 10.0, "radius", "radius of bloom filter", gui)
+		if gui: gui.newline("  Display:")
+		str += luxInt("ldr_displayinterval", luxProp(scn, "film.ldr_displayinterval", 12), 5, 3600, "interval", "Set display Interval (seconds)", gui)
+		if gui: gui.newline("  Output:")
+		fn = luxProp(scn, "filename", Blender.Get("filename")).get();
+		saveigi = luxProp(scn, "film.igi_save", "false")
+		luxBool("", saveigi, "Save IGI", "save untonemapped IGI file", gui)
+		if saveigi.get() == "true":
+			str += " \"string igi_filename\" [\"%s\"]"%(luxstr(sys.makename(fn, ".igi")))
+			str += luxInt("igi_writeinterval", luxProp(scn, "film.igi_writeinterval", 120), 20, 3600, "interval", "Set Interval for IGI file write (seconds)", gui)
+		if gui: gui.newline("")
+		saveexr = luxProp(scn, "film.hdr_save", "false")
+		luxBool("", saveexr, "Save EXR", "save tonemapped EXR file", gui)
+		if saveexr.get() == "true":
+			str += " \"string hdr_filename\" [\"%s\"]"%(luxstr(sys.makename(fn, ".exr")))
+			str += luxInt("hdr_writeinterval", luxProp(scn, "film.hdr_writeinterval", 120), 20, 3600, "interval", "Set Interval for EXR file write (seconds)", gui)
+		if gui: gui.newline("")
+		savetga = luxProp(scn, "film.ldr_save", "true")
+		luxBool("", savetga, "Save TGA", "save tonemapped TGA file", gui)
+		if savetga.get() == "true":
+			str += " \"string ldr_filename\" [\"%s\"]"%(luxstr(sys.makename(fn, ".tga")))
+			str += luxInt("ldr_writeinterval", luxProp(scn, "film.ldr_writeinterval", 120), 20, 3600, "interval", "Set Interval for TGA file write (seconds)", gui)
+	return str
+
+
+def luxPixelFilter(scn, gui=None):
+	str = ""
+	if scn:
+		filtertype = luxProp(scn, "pixelfilter.type", "mitchell")
+		str = luxIdentifier("PixelFilter", filtertype, ["box", "gaussian", "mitchell", "sinc", "triangle"], "FILTER", "select pixel filter type", gui)
+		if filtertype.get() == "box":
+			if gui: gui.newline()
+			str += luxFloat("xwidth", luxProp(scn, "pixelfilter.box.xwidth", 0.5), 0.0, 10.0, "x-width", "Width of the filter in the x direction", gui)
+			str += luxFloat("ywidth", luxProp(scn, "pixelfilter.box.ywidth", 0.5), 0.0, 10.0, "y-width", "Width of the filter in the y direction", gui)
+		if filtertype.get() == "gaussian":
+			str += luxFloat("alpha", luxProp(scn, "pixelfilter.gaussian.alpha", 2.0), 0.0, 10.0, "alpha", "Gaussian rate of falloff. Lower values give blurrier images", gui)
+			if gui: gui.newline()
+			str += luxFloat("xwidth", luxProp(scn, "pixelfilter.gaussian.xwidth", 2.0), 0.0, 10.0, "x-width", "Width of the filter in the x direction", gui)
+			str += luxFloat("ywidth", luxProp(scn, "pixelfilter.gaussian.ywidth", 2.0), 0.0, 10.0, "y-width", "Width of the filter in the y direction", gui)
+		if filtertype.get() == "mitchell":
+			if gui: gui.newline()
+			str += luxFloat("B", luxProp(scn, "pixelfilter.mitchell.B", 0.3333), 0.0, 1.0, "B", "Specify the shape of the Mitchell filter. Often best result is when B + 2C = 1", gui)
+			str += luxFloat("C", luxProp(scn, "pixelfilter.mitchell.C", 0.3333), 0.0, 1.0, "C", "Specify the shape of the Mitchell filter. Often best result is when B + 2C = 1", gui)
+			if gui: gui.newline()
+			str += luxFloat("xwidth", luxProp(scn, "pixelfilter.mitchell.xwidth", 2.0), 0.0, 10.0, "x-width", "Width of the filter in the x direction", gui)
+			str += luxFloat("ywidth", luxProp(scn, "pixelfilter.mitchell.ywidth", 2.0), 0.0, 10.0, "y-width", "Width of the filter in the y direction", gui)
+		if filtertype.get() == "sinc":
+			str = luxFloat("tau", luxProp(scn, "pixelfilter.sinc.tau", 3.0), 0.0, 10.0, "tau", "Permitted number of cycles of the sinc function before it is clamped to zero", gui)
+			if gui: gui.newline()
+			str += luxFloat("xwidth", luxProp(scn, "pixelfilter.sinc.xwidth", 4.0), 0.0, 10.0, "x-width", "Width of the filter in the x direction", gui)
+			str += luxFloat("ywidth", luxProp(scn, "pixelfilter.sinc.ywidth", 4.0), 0.0, 10.0, "y-width", "Width of the filter in the y direction", gui)
+		if filtertype.get() == "triangle":
+			if gui: gui.newline()
+			str += luxFloat("xwidth", luxProp(scn, "pixelfilter.triangle.xwidth", 2.0), 0.0, 10.0, "x-width", "Width of the filter in the x direction", gui)
+			str += luxFloat("ywidth", luxProp(scn, "pixelfilter.triangle.ywidth", 2.0), 0.0, 10.0, "y-width", "Width of the filter in the y direction", gui)
+	return str			
+
+def luxSampler(scn, gui=None):
+	str = ""
+	if scn:
+		samplertype = luxProp(scn, "sampler.type", "lowdiscrepancy")
+		str = luxIdentifier("Sampler", samplertype, ["lowdiscrepancy", "random", "erpt"], "SAMPLER", "select sampler type", gui)
+		if samplertype.get() == "lowdiscrepancy":
+			str += luxOption("pixelsampler", luxProp(scn, "sampler.lowdisc.pixelsampler", "vegas"), ["random", "vegas"], "pixel-sampler", "select pixel-sampler", gui)
+			if gui: gui.newline()
+			str += luxInt("pixelsamples", luxProp(scn, "sampler.lowdisc.pixelsamples", 4), 1, 100, "samples", "Average number of samples taken per pixel. More samples create a higher quality image at the cost of render time", gui)
+		if samplertype.get() == "random":
+			str += luxOption("pixelsampler", luxProp(scn, "sampler.random.pixelsampler", "vegas"), ["random", "vegas"], "pixel-sampler", "select pixel-sampler", gui)
+			if gui: gui.newline()
+			str += luxInt("xsamples", luxProp(scn, "sampler.random.xsamples", 2), 1, 100, "xsamples", "Allows you to specify how many samples per pixel are taking in the x direction", gui)
+			str += luxInt("ysamples", luxProp(scn, "sampler.random.ysamples", 2), 1, 100, "ysamples", "Allows you to specify how many samples per pixel are taking in the y direction", gui)
+		if samplertype.get() == "erpt":
+			str += luxOption("pixelsampler", luxProp(scn, "sampler.erpt.pixelsampler", "vegas"), ["random", "vegas"], "pixel-sampler", "select pixel-sampler", gui)
+			str += luxInt("chainlength", luxProp(scn, "sampler.erpt.chainlength", 512), 1, 1000, "chainlength", "The number of mutations from a given seed", gui)
+			str += luxInt("mutationrange", luxProp(scn, "sampler.erpt.mutationrange", 128), 1, 1000, "mutationrange", "Maximum distance from a pixel in small mutation", gui)
+			if gui: gui.newline()
+			str += luxInt("pixelsamples", luxProp(scn, "sampler.erpt.pixelsamples", 4), 1, 100, "samples", "Average number of samples taken per pixel. More samples create a higher quality image at the cost of render time", gui)
+
+	return str			
+
+def luxSurfaceIntegrator(scn, gui=None):
+	str = ""
+	if scn:
+		integratortype = luxProp(scn, "sintegrator.type", "path")
+		str = luxIdentifier("SurfaceIntegrator", integratortype, ["directlighting", "path", "mltpath"], "INTEGRATOR", "select surface integrator type", gui)
+		if integratortype.get() == "directlighting":
+			str += luxOption("strategy", luxProp(scn, "sintegrator.dlighting.strategy", "all"), ["all", "one", "weighted"], "strategy", "select directlighting strategy", gui)
+			if gui: gui.newline()
+			str += luxInt("maxdepth", luxProp(scn, "sintegrator.dlighting.maxdepth", 5), 0, 1000, "max-depth", "The maximum recursion depth for ray casting", gui)
+		if integratortype.get() == "path":
+			mlt = luxProp(scn, "sintegrator.path.metropolis", "true")
+			str += luxBool("metropolis", mlt, "metropolis", "enables use of metropolis integrationsampler", gui)
+			if gui: gui.newline()
+			if mlt.get() == "true":
+				str += luxInt("maxconsecrejects", luxProp(scn, "sintegrator.path.maxrejects", 512), 0, 10000, "max.rejects", "number of consecutive rejects before a new mutation is forced", gui)
+				str += luxFloat("largemutationprob", luxProp(scn, "sintegrator.path.lmprob", 0.4), 0.0, 1.0, "LM.prob.", "probability of generation a large sample (mutation)", gui)
+				if gui: gui.newline()
+			str += luxInt("maxdepth", luxProp(scn, "sintegrator.path.maxdepth", 16), 0, 1000, "maxdepth", "The maximum recursion depth for ray casting", gui)
+			str += luxFloat("rrcontinueprob", luxProp(scn, "sintegrator.path.rrprob", 0.65), 0.0, 1.0, "RR.prob.", "continueprobability for RR (0.0-1.0)", gui)
+		if integratortype.get() == "mltpath":
+			if gui: gui.newline()
+			str += luxInt("maxconsecrejects", luxProp(scn, "sintegrator.mltpath.maxrejects", 512), 0, 10000, "max.rejects", "number of consecutive rejects before a new mutation is forced", gui)
+			str += luxFloat("largemutationprob", luxProp(scn, "sintegrator.mltpath.lmprob", 0.4), 0.0, 1.0, "LM.prob.", "probability of generation a large sample (mutation)", gui)
+			if gui: gui.newline()
+			str += luxInt("maxdepth", luxProp(scn, "sintegrator.mltpath.maxdepth", 32), 0, 1000, "maxdepth", "The maximum recursion depth for ray casting", gui)
+			str += luxFloat("rrcontinueprob", luxProp(scn, "sintegrator.path.rrprob", 0.65), 0.0, 1.0, "RR.prob.", "continueprobability for RR (0.0-1.0)", gui)
+	return str
+
+def luxEnvironment(scn, gui=None):
+	str = ""
+	if scn:
+		envtype = luxProp(scn, "env.type", "infinite")
+		lsstr = luxIdentifier("LightSource", envtype, ["none", "infinite", "sunsky"], "ENVIRONMENT", "select environment light type", gui)
+		if gui: gui.newline()
+		str = ""
+		if envtype.get() != "none":
+			if envtype.get() in ["infinite", "sunsky"]:
+				rot = luxProp(scn, "env.rotation", 0.0)
+				luxFloat("rotation", rot, 0.0, 360.0, "rotation", "environment rotation", gui)
+				if rot.get() != 0:
+					str += "\tRotate %d 0 0 1\n"%(rot.get())
+			str += "\t"+lsstr
+			str += luxInt("nsamples", luxProp(scn, "env.sunsky", 1), 1, 100, "samples", "number of samples", gui)
+			if gui: gui.newline()
+			if envtype.get() == "infinite":
+				map = luxProp(scn, "env.infinite.mapname", "")
+				mapstr = luxFile("mapname", map, "map-file", "filename of the environment map", gui, 2.0)
+				if map.get() != "":
+					str += mapstr
+				#	str += luxOption("type", luxProp(scn, "env.infinite.type", "latlong"), ["latlong"], "type", "environment mapping type", gui)
+				else:
+					worldcolor = Blender.World.Get('World').getHor()
+					str += " \"color L\" [%g %g %g]\n" %(worldcolor[0], worldcolor[1], worldcolor[2])
+			if envtype.get() == "sunsky":
+				sun = None
+				for obj in scn.objects:
+					if obj.getType() == "Lamp":
+						if obj.data.getType() == 1: # sun object
+							sun = obj
+				if sun:
+					invmatrix = Mathutils.Matrix(sun.getInverseMatrix())
+					str += " \"vector sundir\" [%f %f %f]\n" %(invmatrix[0][2], invmatrix[1][2], invmatrix[2][2])
+					gain = luxProp(scn, "env.sunsky.gain", 1.0)
+					luxFloat("gain", gain, 0.0, 100.0, "gain", "Sky gain", gui)
+					str += " \"color L\" [%f %f %f]\n" %(gain.get(), gain.get(), gain.get())
+					str += luxFloat("turbidity", luxProp(scn, "env.sunsky.turbidity", 2.0), 1.5, 5.0, "turbidity", "Sky turbidity", gui)
+				else:
+					if gui:
+						gui.newline(); r = gui.getRect(2,1); BGL.glRasterPos2i(r[0],r[1]+5) 
+						Draw.Text("create a blender Sun Lamp")
+			str += "\n"
+	return str
+
+def luxAccelerator(scn, gui=None):
+	str = ""
+	if scn:
+		acceltype = luxProp(scn, "accelerator.type", "kdtree")
+		str = luxIdentifier("Accelerator", acceltype, ["kdtree", "grid"], "ACCELERATOR", "select accelerator type", gui)
+		if acceltype.get() == "kdtree":
+			if gui: gui.newline()
+			str += luxInt("intersectcost", luxProp(scn, "accelerator.kdtree.interscost", 80), 0, 1000, "inters.cost", "specifies how expensive ray-object intersections are", gui)
+			str += luxInt("traversalcost", luxProp(scn, "accelerator.kdtree.travcost", 1), 0, 1000, "trav.cost", "specifies how expensive traversing a ray through the kdtree is", gui)
+			if gui: gui.newline()
+			str += luxFloat("emptybonus", luxProp(scn, "accelerator.kdtree.emptybonus", 0.2), 0.0, 100.0, "empty.b", "promotes kd-tree nodes that represent empty space", gui)
+			if gui: gui.newline()
+			str += luxInt("maxprims", luxProp(scn, "accelerator.kdtree.maxprims", 1), 0, 1000, "maxprims", "maximum number of primitives in a kdtree volume before further splitting of the volume occurs", gui)
+			str += luxInt("maxdepth", luxProp(scn, "accelerator.kdtree.maxdepth", -1), -1, 100, "maxdepth", "If positive, the maximum depth of the tree. If negative this value is set automatically", gui)
+		if acceltype.get() == "grid":
+			str += luxBool("refineimmediately", luxProp(scn, "accelerator.grid.refine", "false"), "refine immediately", "Makes the primitive intersectable as soon as it is added to the grid", gui)
+	return str
+
+def luxSystem(scn, gui=None):
+	if scn:
+		if gui: gui.newline("SYSTEM:", 10)
+		luxFile("filename", luxProp(scn, "lux", ""), "lux-file", "filename and path of the lux executable", gui, 2.0)
+		if gui: gui.newline()
+		luxInt("threads", luxProp(scn, "threads", 1), 1, 100, "threads", "number of threads used for rendering", gui)
+		if gui: gui.newline()
+		luxBool("RPC", luxProp(scn, "RPC", "true"), "RPC", "use reverse gamma correction", gui)
+		luxBool("ColClamp", luxProp(scn, "colorclamp", "true"), "ColClamp", "clamp all colors to 0.0-0.9", gui)
+
+
+
+
+# lux textures
+def luxSpectrumTexture(name, key, default, max, caption, hint, mat, gui):
+	str = ""
+	texname = "%s--%s"%(mat.getName(), name)
+	if gui: gui.newline("  "+caption)
+	strvalue = luxRGB("value", luxProp(mat, key+".value", default), max, "", "", gui, 2.0)
+	map = luxProp(mat, key+".map", False)
+	if gui:
+		Draw.Toggle("M", evtLuxGui, gui.x, gui.y-gui.h, gui.h, gui.h, map.get()=="true", "use file mapping", lambda e,v:map.set(["false","true"][bool(v)]))
+	if map.get()=="true":
+		if gui: gui.newline("", -2)
+		mapfile = luxProp(mat, key+".mapfile", "")
+		strmap = luxFile("filename", mapfile, "map", "texture file path", gui, 2.0)
+		str = "Texture \"%s.map\" \"color\" \"imagemap\"%s \"float vscale\" [-1.0]\n"%(texname, strmap)
+		str += "Texture \"%s.value\" \"color\" \"constant\"%s\n"%(texname, strvalue)
+		str += "Texture \"%s\" \"color\" \"scale\" \"texture tex1\" [\"%s.value\"] \"texture tex2\" [\"%s.map\"]\n"%(texname, texname, texname)
+	else:
+		str = "Texture \"%s\" \"color\" \"constant\"%s\n"%(texname, strvalue)
+	return (str," \"texture %s\" [\"%s\"]"%(name, texname))
+
+def luxFloatTexture(name, key, default, min, max, caption, hint, mat, gui):
+	str = ""
+	texname = "%s--%s"%(mat.getName(), name)
+	if gui: gui.newline("  "+caption)
+	strvalue = luxFloat("value", luxProp(mat, key+".value", default), min, max, "", "", gui, 0.75)
+	map = luxProp(mat, key+".map", "")
+	strmap = luxFile("filename", map, "map", "texture file path", gui, 1.25)
+	if map.get() == "":
+		str = "Texture \"%s\" \"float\" \"constant\"%s\n"%(texname, strvalue)
+	else:
+		str = "Texture \"%s.map\" \"float\" \"imagemap\"%s \"float vscale\" [-1.0]\n"%(texname, strmap)
+		str += "Texture \"%s.value\" \"float\" \"constant\"%s\n"%(texname, strvalue)
+		str += "Texture \"%s\" \"float\" \"scale\" \"texture tex1\" [\"%s.value\"] \"texture tex2\" [\"%s.map\"]\n"%(texname, texname, texname)
+	return (str, " \"texture %s\" [\"%s\"]"%(name, texname))
+
+
+
+def luxMaterial(mat, gui=None):
+	def c(t1, t2):
+		return (t1[0]+t2[0], t1[1]+t2[1])
+	str = ""
+	if mat:
+		mattype = luxProp(mat, "type", "matte")
+		link = luxIdentifier("Material", mattype, ["light","portal","carpaint","clay","felt","glass","matte","metal","mirror","plastic","primer","roughglass","shinymetal","substrate","translucent","uber"], "  TYPE", "select material type", gui)
+		if gui: gui.newline()
+		if mattype.get() == "light":
+			link = "AreaLightSource \"area\""
+#			(str,link) = c((str,link), luxSpectrumTexture("L", "light.l", "1.0 1.0 1.0", 100.0, "color", "", mat, gui))
+			if gui: gui.newline("  color")
+			link += luxRGB("L", luxProp(mat, "light.l", "1.0 1.0 1.0"), 100.0, "L", "", gui)
+			if gui: gui.newline("")
+			link += luxInt("nsamples", luxProp(mat, "light.nsamples", 1), 1, 100, "samples", "number of samples", gui)
+		if mattype.get() == "carpaint":
+			if gui: gui.newline("  name:")
+			carname = luxProp(mat, "carpaint.name", "white")
+			cars = ["","ford f8","polaris silber","opel titan","bmw339","2k acrylack","white","blue","blue matte"]
+			carlink = luxOption("name", carname, cars, "name", "", gui)
+			if carname.get() == "":
+				(str,link) = c((str,link), luxSpectrumTexture("Kd", "carpaint.kd", "1.0 1.0 1.0", 1.0, "diffuse", "", mat, gui))
+				(str,link) = c((str,link), luxSpectrumTexture("Ks1", "carpaint.ks1", "1.0 1.0 1.0", 1.0, "specular1", "", mat, gui))
+				(str,link) = c((str,link), luxSpectrumTexture("Ks2", "carpaint.ks2", "1.0 1.0 1.0", 1.0, "specular2", "", mat, gui))
+				(str,link) = c((str,link), luxSpectrumTexture("Ks3", "carpaint.ks3", "1.0 1.0 1.0", 1.0, "specular3", "", mat, gui))
+				(str,link) = c((str,link), luxFloatTexture("R1", "carpaint.r1", 1.0, 0.0, 1.0, "R1", "", mat, gui))
+				(str,link) = c((str,link), luxFloatTexture("R2", "carpaint.r2", 1.0, 0.0, 1.0, "R2", "", mat, gui))
+				(str,link) = c((str,link), luxFloatTexture("R3", "carpaint.r3", 1.0, 0.0, 1.0, "R3", "", mat, gui))
+				(str,link) = c((str,link), luxFloatTexture("M1", "carpaint.m1", 1.0, 0.0, 1.0, "M1", "", mat, gui))
+				(str,link) = c((str,link), luxFloatTexture("M2", "carpaint.m2", 1.0, 0.0, 1.0, "M2", "", mat, gui))
+				(str,link) = c((str,link), luxFloatTexture("M3", "carpaint.m3", 1.0, 0.0, 1.0, "M3", "", mat, gui))
+			else: link += carlink
+			(str,link) = c((str,link), luxFloatTexture("bumpmap", "metal.bumpmap", 0.0, 0.0, 1.0, "bumpmap", "", mat, gui))
+		if mattype.get() == "clay":
+			(str,link) = c((str,link), luxFloatTexture("bumpmap", "clay.bumpmap", 0.0, 0.0, 1.0, "bumpmap", "", mat, gui))
+		if mattype.get() == "felt":
+			(str,link) = c((str,link), luxFloatTexture("bumpmap", "felt.bumpmap", 0.0, 0.0, 1.0, "bumpmap", "", mat, gui))
+		if mattype.get() == "glass":
+			(str,link) = c((str,link), luxSpectrumTexture("Kr", "glass.kr", "1.0 1.0 1.0", 1.0, "reflection", "", mat, gui))
+			(str,link) = c((str,link), luxSpectrumTexture("Kt", "glass.kt", "1.0 1.0 1.0", 1.0, "transmission", "", mat, gui))
+			(str,link) = c((str,link), luxFloatTexture("index", "glass.index", 1.5, 0.0, 100.0, "index", "", mat, gui))
+			(str,link) = c((str,link), luxFloatTexture("bumpmap", "glass.bumpmap", 0.0, 0.0, 1.0, "bumpmap", "", mat, gui))
+		if mattype.get() == "matte":
+			(str,link) = c((str,link), luxSpectrumTexture("Kd", "matte.kd", "1.0 1.0 1.0", 1.0, "diffuse", "", mat, gui))
+			(str,link) = c((str,link), luxFloatTexture("sigma", "matte.sigma", 0.0, 0.0, 100.0, "sigma", "", mat, gui))
+			(str,link) = c((str,link), luxFloatTexture("bumpmap", "matte.bumpmap", 0.0, 0.0, 1.0, "bumpmap", "", mat, gui))
+		if mattype.get() == "metal":
+			if gui: gui.newline("  name:")
+			metalname = luxProp(mat, "metal.name", "")
+			metals = ["","aluminium","amorphous carbon","silver","gold","cobalt","copper","chromium","lithium","mercury","nickel","potassium","platinum","iridium","silicon","amorphous silicon","sodium","rhodium","tungsten","vanadium"]
+			if not(metalname.get() in metals):
+				metals.append(metalname.get())
+			metallink = luxOption("name", metalname, metals, "name", "", gui)
+			if gui: Draw.Button("...", evtLuxGui, gui.x, gui.y-gui.h, gui.h, gui.h, "click to select a nk file",lambda e,v:Window.FileSelector(lambda s:metalname.set(s), "Select nk file"))
+			if metalname.get() == "":
+				(str,link) = c((str,link), luxSpectrumTexture("n", "metal.n", "1.226973 0.930951 0.600745", 10.0, "n", "", mat, gui))
+				(str,link) = c((str,link), luxSpectrumTexture("k", "metal.k", "7.284448 6.535680 5.363405", 10.0, "k", "", mat, gui))
+			else: link += metallink
+			(str,link) = c((str,link), luxFloatTexture("roughness", "metal.roughness", 0.1, 0.0, 1.0, "roughness", "", mat, gui))
+			(str,link) = c((str,link), luxFloatTexture("bumpmap", "metal.bumpmap", 0.0, 0.0, 1.0, "bumpmap", "", mat, gui))
+		if mattype.get() == "mirror":
+			(str,link) = c((str,link), luxSpectrumTexture("Kr", "mirror.kr", "1.0 1.0 1.0", 1.0, "reflection", "", mat, gui))
+			(str,link) = c((str,link), luxFloatTexture("bumpmap", "mirror.bumpmap", 0.0, 0.0, 1.0, "bumpmap", "", mat, gui))
+		if mattype.get() == "plastic":
+			(str,link) = c((str,link), luxSpectrumTexture("Kd", "plastic.kd", "1.0 1.0 1.0", 1.0, "diffuse", "", mat, gui))
+			(str,link) = c((str,link), luxSpectrumTexture("Ks", "plastic.ks", "1.0 1.0 1.0", 1.0, "specular", "", mat, gui))
+			(str,link) = c((str,link), luxFloatTexture("roughness", "plastic.roughness", 0.1, 0.0, 1.0, "roughness", "", mat, gui))
+			(str,link) = c((str,link), luxFloatTexture("bumpmap", "plastic.bumpmap", 0.0, 0.0, 1.0, "bumpmap", "", mat, gui))
+		if mattype.get() == "primer":
+			(str,link) = c((str,link), luxFloatTexture("bumpmap", "primer.bumpmap", 0.0, 0.0, 1.0, "bumpmap", "", mat, gui))
+		if mattype.get() == "roughglass":
+			(str,link) = c((str,link), luxSpectrumTexture("Kr", "roughglass.kr", "1.0 1.0 1.0", 1.0, "reflection", "", mat, gui))
+			(str,link) = c((str,link), luxSpectrumTexture("Kt", "roughglass.kt", "1.0 1.0 1.0", 1.0, "transmission", "", mat, gui))
+			anisotropic = luxProp(mat, "roughglass.anisotropic", False)
+			if gui:
+				gui.newline("")
+				Draw.Toggle("A", evtLuxGui, gui.x-gui.h, gui.y-gui.h, gui.h, gui.h, anisotropic.get()=="true", "anisotropic roughness", lambda e,v:anisotropic.set(["false","true"][bool(v)]))
+			if anisotropic.get()=="true":
+				(str,link) = c((str,link), luxFloatTexture("uroughness", "roughglass.uroughness", 0.1, 0.0, 1.0, "u-roughness", "", mat, gui))
+				(str,link) = c((str,link), luxFloatTexture("vroughness", "roughglass.vroughness", 0.1, 0.0, 1.0, "v-roughness", "", mat, gui))
+			else:
+				(str,link) = c((str,link), luxFloatTexture("uroughness", "roughglass.uroughness", 0.1, 0.0, 1.0, "roughness", "", mat, gui))
+				if not(gui):
+					(str,link) = c((str,link), luxFloatTexture("vroughness", "roughglass.uroughness", 0.1, 0.0, 1.0, "v-roughness", "", mat, gui))
+			(str,link) = c((str,link), luxFloatTexture("index", "roughglass.index", 1.5, 0.0, 100.0, "index", "", mat, gui))
+			(str,link) = c((str,link), luxFloatTexture("bumpmap", "roughglass.bumpmap", 0.0, 0.0, 1.0, "bumpmap", "", mat, gui))
+		if mattype.get() == "shinymetal":
+			(str,link) = c((str,link), luxSpectrumTexture("Kr", "shinymetal.kr", "1.0 1.0 1.0", 1.0, "reflection", "", mat, gui))
+			(str,link) = c((str,link), luxSpectrumTexture("Ks", "shinymetal.ks", "1.0 1.0 1.0", 1.0, "specular", "", mat, gui))
+			(str,link) = c((str,link), luxFloatTexture("roughness", "shinymetal.roughness", 0.1, 0.0, 1.0, "roughness", "", mat, gui))
+			(str,link) = c((str,link), luxFloatTexture("bumpmap", "shinymetal.bumpmap", 0.0, 0.0, 1.0, "bumpmap", "", mat, gui))
+		if mattype.get() == "substrate":
+			(str,link) = c((str,link), luxSpectrumTexture("Kd", "substrade.kd", "1.0 1.0 1.0", 1.0, "diffuse", "", mat, gui))
+			(str,link) = c((str,link), luxSpectrumTexture("Ks", "substrade.ks", "1.0 1.0 1.0", 1.0, "specular", "", mat, gui))
+			anisotropic = luxProp(mat, "substrade.anisotropic", False)
+			if gui:
+				gui.newline("")
+				Draw.Toggle("A", evtLuxGui, gui.x-gui.h, gui.y-gui.h, gui.h, gui.h, anisotropic.get()=="true", "anisotropic roughness", lambda e,v:anisotropic.set(["false","true"][bool(v)]))
+			if anisotropic.get()=="true":
+				(str,link) = c((str,link), luxFloatTexture("uroughness", "substrade.uroughness", 0.1, 0.0, 1.0, "u-roughness", "", mat, gui))
+				(str,link) = c((str,link), luxFloatTexture("vroughness", "substrade.vroughness", 0.1, 0.0, 1.0, "v-roughness", "", mat, gui))
+			else:
+				(str,link) = c((str,link), luxFloatTexture("uroughness", "substrade.uroughness", 0.1, 0.0, 1.0, "roughness", "", mat, gui))
+				if not(gui):
+					(str,link) = c((str,link), luxFloatTexture("vroughness", "substrade.uroughness", 0.1, 0.0, 1.0, "v-roughness", "", mat, gui))
+			(str,link) = c((str,link), luxFloatTexture("bumpmap", "substrade.bumpmap", 0.0, 0.0, 1.0, "bumpmap", "", mat, gui))
+		if mattype.get() == "translucent":
+			(str,link) = c((str,link), luxSpectrumTexture("Kd", "translucent.kd", "1.0 1.0 1.0", 1.0, "diffuse", "", mat, gui))
+			(str,link) = c((str,link), luxSpectrumTexture("Ks", "translucent.ks", "1.0 1.0 1.0", 1.0, "specular", "", mat, gui))
+			(str,link) = c((str,link), luxSpectrumTexture("reflect", "translucent.reflect", "1.0 1.0 1.0", 1.0, "reflection", "", mat, gui))
+			(str,link) = c((str,link), luxSpectrumTexture("transmit", "translucent.transmit", "1.0 1.0 1.0", 1.0, "transmission", "", mat, gui))
+			(str,link) = c((str,link), luxFloatTexture("roughness", "translucent.roughness", 0.1, 0.0, 1.0, "roughness", "", mat, gui))
+			(str,link) = c((str,link), luxFloatTexture("index", "translucent.index", 1.5, 0.0, 100.0, "index", "", mat, gui))
+			(str,link) = c((str,link), luxFloatTexture("bumpmap", "translucent.bumpmap", 0.0, 0.0, 1.0, "bumpmap", "", mat, gui))
+		if mattype.get() == "uber":
+			(str,link) = c((str,link), luxSpectrumTexture("Kd", "uber.kd", "1.0 1.0 1.0", 1.0, "diffuse", "", mat, gui))
+			(str,link) = c((str,link), luxSpectrumTexture("Ks", "uber.ks", "1.0 1.0 1.0", 1.0, "specular", "", mat, gui))
+			(str,link) = c((str,link), luxSpectrumTexture("Kr", "uber.kr", "1.0 1.0 1.0", 1.0, "reflection", "", mat, gui))
+			(str,link) = c((str,link), luxFloatTexture("roughness", "uber.roughness", 0.1, 0.0, 1.0, "roughness", "", mat, gui))
+			(str,link) = c((str,link), luxSpectrumTexture("opacity", "uber.opacity", "1.0 1.0 1.0", 1.0, "opacity", "", mat, gui))
+			(str,link) = c((str,link), luxFloatTexture("bumpmap", "uber.bumpmap", 0.0, 0.0, 1.0, "bumpmap", "", mat, gui))
+		luxProp(mat, "link", "").set("".join(link))
+	return str
+
+
+
+def CBluxExport(default, run):
+	if default:
+		datadir = Blender.Get("datadir")
+		filename = datadir + os.sep + "default.lxs"
+		save_still(filename)
+	else:
+		Window.FileSelector(save_still, "Export", sys.makename(Blender.Get("filename"), ".lxs"))
+
+
+
+activemat = None
+def setactivemat(mat):
+	global activemat
+	activemat = mat
+
+# gui main draw
+def luxDraw():
+	BGL.glClear(BGL.GL_COLOR_BUFFER_BIT)
+	y = 400
+	BGL.glColor3f(0.2,0.2,0.2); BGL.glRectf(0,0,440,y)
+	BGL.glColor3f(0.9,0.9,0.9); BGL.glRasterPos2i(10,y-25); Draw.Text("LuxBlend v0.1RC4alpha-MatEditor :::...")
 	scn = Scene.GetCurrent()
-	Draw.Menu(strEnvType, evtRedraw, 10, 190, 150, 18, getProp(scn, "EnvType", 0), "Set the Environment type", CBsetProp(scn, "EnvType"))
-	if getProp(scn, "EnvType", 0) == 2:
-		Draw.String("Image: ", evtNoEvt, 10, 170, 255, 18, getProp(scn, "EnvFile", ""), 50, "the file name of the EXR latlong map", CBsetProp(scn, "EnvFile"))
-		Draw.Button("...", evtloadimg, 270, 170, 20, 18, "Load Env Map")
-		Draw.Menu(strEnvMapType, evtNoEvt, 10, 150, 150, 18, getProp(scn, "EnvMapType", 0), "Set the map type of the probe", CBsetProp(scn, "EnvMapType"))
-		Draw.Number("Rotation", evtNoEvt, 10, 130, 150, 18, getProp(scn, "EnvRotation", 0), 0.0, 360.0, "Set Environment rotation", CBsetProp(scn, "EnvRotation"))
-	if getProp(scn, "EnvType", 0) == 1:
-		Draw.Number("Sky Turbidity", evtNoEvt, 10, 170, 150, 18, getProp(scn, "Turbidity", 2.0), 1.5, 5.0, "Sky Turbidity", CBsetProp(scn, "Turbidity"))
-		Draw.Number("Sky Gain", evtNoEvt, 10, 150, 150, 18, getProp(scn, "SkyGain", 1.0), 0.0, 5.0, "Sky Gain", CBsetProp(scn, "SkyGain"))
-		Draw.Number("Rotation", evtNoEvt, 10, 130, 150, 18, getProp(scn, "EnvRotation", 0), 0.0, 360.0, "Set Environment rotation", CBsetProp(scn, "EnvRotation"))
-	
-###############  Draw Rendersettings   ###################################
-def drawSettings():
-	drawButtons()
-	BGL.glColor3f(1.0,0.5,0.4)
-	BGL.glRectf(170,222,250,223)
-	BGL.glColor3f(0.9,0.9,0.9)
-	scn = Scene.GetCurrent()
-	BGL.glColor3f(0.9,0.9,0.9); BGL.glRasterPos2i(10,205); Draw.Text("Integrator:")
-	Draw.Menu(strIntegratorType, evtRedraw, 110, 200, 140, 18, getProp(scn, "IntegratorType", 1), "Engine Integrator type", CBsetProp(scn, "IntegratorType"))
-	t = getProp(scn, "IntegratorType", 0)
-	if t==0: # directlighting
-		Draw.Menu(" Strategy %t| one %x0| all %x1| weighted %x2", evtNoEvt, 260, 200, 140, 18, getProp(scn, "DirectlightingStrategy", 0), "Strategy", CBsetProp(scn, "DirectlightingStrategy"))
-	if t==1: # path
-		Draw.Toggle("MLT", evtNoEvt, 260, 200, 140, 18, getProp(scn, "PathMLT", 0), "use Metropolis Light Transport", CBsetProp(scn, "PathMLT"))
-	Draw.Number("Maxdepth:", evtNoEvt, 110, 180, 140, 18, getProp(scn, "MaxDepth", 16), 1, 1024, "Maximum path depth (bounces)", CBsetProp(scn, "MaxDepth"))
-	if t in [1,2]: # path or MLTpath
-		Draw.Number("RRprob:", evtNoEvt, 260, 180, 140, 18, float(getProp(scn, "RRContinueProb", 0.65)), 0.01, 1.0, "Russian Roulette continue probability", CBsetProp(scn, "RRContinueProb"))
-		Draw.Number("MaxRejects:", evtNoEvt, 110, 160, 140, 18, float(getProp(scn, "MetropolisMaxRejects", 256)), 1, 1024, "Maximum nr of consecutive rejections for Metropolis accept", CBsetProp(scn, "MetropolisMaxRejects"))
-		Draw.Number("LMprob:", evtNoEvt, 260, 160, 140, 18, float(getProp(scn, "MetropolisLMProb", 0.4)), 0, 1, "Probability of using a large mutation for Metropolis", CBsetProp(scn, "MetropolisLMProb"))
+	if scn:
+		luxpage = luxProp(scn, "page", 0)
+		Draw.Button("Material", evtLuxGui, 10, y-50, 80, 16, "", lambda e,v:luxpage.set(0))
+		Draw.Button("Cam/Env", evtLuxGui, 90, y-50, 80, 16, "", lambda e,v:luxpage.set(1))
+		Draw.Button("Render", evtLuxGui, 170, y-50, 80, 16, "", lambda e,v:luxpage.set(2))
+		Draw.Button("Output", evtLuxGui, 250, y-50, 80, 16, "", lambda e,v:luxpage.set(3))
+		Draw.Button("System", evtLuxGui, 330, y-50, 80, 16, "", lambda e,v:luxpage.set(4))
+		gui = luxGui(y-50)
+		if luxpage.get() == 0:
+			BGL.glColor3f(1.0,0.5,0.4);BGL.glRectf(10,y-54,90,y-50);BGL.glColor3f(0.9,0.9,0.9)
+			obj = scn.objects.active
+			if obj:
+				matfilter = luxProp(scn, "matlistfilter", "false")
+				mats = getMaterials(obj, True)
+				if (activemat == None) and (len(mats) > 0):
+					setactivemat(mats[0])
+				if matfilter.get() == "false":
+					mats = Material.Get()
+				matindex = 0
+				for i, v in enumerate(mats):
+					if v==activemat: matindex = i
+				matnames = [m.getName() for m in mats]
+				menustr = "Material: %t"
+				for i, v in enumerate(matnames): menustr = "%s %%x%d|%s"%(v, i, menustr)
+				gui.newline("MATERIAL:", 8) 
+				r = gui.getRect(1.5, 1)
+				Draw.Menu(menustr, evtLuxGui, r[0], r[1], r[2], r[3], matindex, "", lambda e,v: setactivemat(mats[v]))
+				luxBool("", matfilter, "filter", "only show active object materials", gui, 0.5)
+				if len(mats) > 0:
+					setactivemat(mats[matindex])
+					luxMaterial(activemat, gui)
+		if luxpage.get() == 1:
+			BGL.glColor3f(1.0,0.5,0.4);BGL.glRectf(90,y-54,170,y-50);BGL.glColor3f(0.9,0.9,0.9)
+			cam = scn.getCurrentCamera()
+			if cam:
+				luxCamera(cam.data, scn.getRenderingContext(), gui)
+			gui.newline("", 10)
+			luxEnvironment(scn, gui)
+		if luxpage.get() == 2:
+			BGL.glColor3f(1.0,0.5,0.4);BGL.glRectf(170,y-54,250,y-50);BGL.glColor3f(0.9,0.9,0.9)
+			luxSurfaceIntegrator(scn, gui)
+			gui.newline("", 10)
+			luxSampler(scn, gui)
+			gui.newline("", 10)
+			luxPixelFilter(scn, gui)
+		if luxpage.get() == 3:
+			BGL.glColor3f(1.0,0.5,0.4);BGL.glRectf(250,y-54,330,y-50);BGL.glColor3f(0.9,0.9,0.9)
+			luxFilm(scn, gui)
+		if luxpage.get() == 4:
+			BGL.glColor3f(1.0,0.5,0.4);BGL.glRectf(330,y-54,410,y-50);BGL.glColor3f(0.9,0.9,0.9)
+			luxSystem(scn, gui)
+			gui.newline("", 10)
+			luxAccelerator(scn, gui)
+			gui.newline("SETTINGS:", 10)
+			r = gui.getRect(2,1)
+			Draw.Button("save defaults", 0, r[0], r[1], r[2], r[3], "save current settings as defaults", lambda e,v:saveluxdefaults())
+		run = luxProp(scn, "run", "true")
+		dlt = luxProp(scn, "default", "true")
+		lxs = luxProp(scn, "lxs", "true")
+		lxo = luxProp(scn, "lxo", "true")
+		lxm = luxProp(scn, "lxm", "true")
+		if (run.get()=="true"):
+			Draw.Button("Render", 0, 10, 20, 180, 36, "Render with Lux", lambda e,v:CBluxExport(dlt.get()=="true", True))
+		else:
+			Draw.Button("Export", 0, 10, 20, 180, 36, "Export", lambda e,v:CBluxExport(dlt.get()=="true", False))
+#			Draw.Button("Export Anim", 0, 200, 20, 100, 36, "Export as animation")
+		Draw.Toggle("run", evtLuxGui, 320, 40, 30, 16, run.get()=="true", "start Lux after export", lambda e,v: run.set(["false","true"][bool(v)]))
+		Draw.Toggle("def", evtLuxGui, 350, 40, 30, 16, dlt.get()=="true", "save to default.lxs", lambda e,v: dlt.set(["false","true"][bool(v)]))
+		Draw.Toggle(".lxs", 0, 320, 20, 30, 16, lxs.get()=="true", "export .lxs scene file", lambda e,v: lxs.set(["false","true"][bool(v)]))
+		Draw.Toggle(".lxo", 0, 350, 20, 30, 16, lxo.get()=="true", "export .lxo geometry file", lambda e,v: lxo.set(["false","true"][bool(v)]))
+		Draw.Toggle(".lxm", 0, 380, 20, 30, 16, lxm.get()=="true", "export .lxm material file", lambda e,v: lxm.set(["false","true"][bool(v)]))
+	BGL.glColor3f(0.9, 0.9, 0.9) ; BGL.glRasterPos2i(340,5) ; Draw.Text("Press Q or ESC to quit.", "tiny")
 
-	BGL.glColor3f(0.9,0.9,0.9); BGL.glRasterPos2i(10,140); Draw.Text("Sampler:")
-	Draw.Menu(strSamplerType, evtRedraw, 110, 135, 70, 18, getProp(scn, "SamplerType", 1), "Engine Sampler type", CBsetProp(scn, "SamplerType"))
-	Draw.Menu(strPixelSamplerType, evtNoEvt, 180, 135, 70, 18, getProp(scn, "PixelSamplerType", 0), "Engine PixelSampler type", CBsetProp(scn, "PixelSamplerType"))
-	Draw.Number("P.samples:", evtNoEvt, 260, 135, 140, 18, getProp(scn, "SamplerPixelsamples", 4), 1, 512, "Number of samples per pixel", CBsetProp(scn, "SamplerPixelsamples"))
 
-	BGL.glColor3f(0.9,0.9,0.9); BGL.glRasterPos2i(10,115); Draw.Text("Filter:")
-	Draw.Menu(strFilterType, evtRedraw, 110, 110, 140, 18, getProp(scn, "FilterType", 0), "Engine pixel reconstruction filter type", CBsetProp(scn, "FilterType"))
-	t = getProp(scn, "FilterType", 0)
-	if t==2: # gaussian
-		Draw.Number("alpha:", evtNoEvt, 260, 110, 140, 18, float(getProp(scn, "FilterGaussianAlpha", 2.0)), 0.0, 10.0, "Gaussian rate of falloff. Lower values give blurrier images", CBsetProp(scn, "FilterGaussianAlpha"))
-	if t==3: # mitchell
-		Draw.Number("B:", evtNoEvt, 260, 110, 70, 18, float(getProp(scn, "FilterMitchellB", 0.3333)), 0.0, 10.0, "Specify the shape of the Mitchell filter. Often best result is when B + 2C = 1", CBsetProp(scn, "FilterMitchellB"))
-		Draw.Number("C:", evtNoEvt, 330, 110, 70, 18, float(getProp(scn, "FilterMitchellC", 0.3333)), 0.0, 10.0, "Specify the shape of the Mitchell filter. Often best result is when B + 2C = 1", CBsetProp(scn, "FilterMitchellC"))
-	if t==4: # sinc
-		Draw.Number("tau:", evtNoEvt, 260, 110, 140, 18, float(getProp(scn, "FilterSincTau", 3.0)), 0.0, 10.0, "Permitted number of cycles of the sinc function before it is clamped to zero", CBsetProp(scn, "FilterSincTau"))
-	Draw.Number("X width:", evtNoEvt, 110, 90, 140, 18, float(getProp(scn, "FilterXWidth", 1.0)), 0.0, 10.0, "Horizontal filter width", CBsetProp(scn, "FilterXWidth"))
-	Draw.Number("Y width:", evtNoEvt, 260, 90, 140, 18, float(getProp(scn, "FilterYWidth", 1.0)), 0.0, 10.0, "Vertical filter width", CBsetProp(scn, "FilterYWidth"))
-
-##################  Draw RSettings  #########################	
-def drawSystem():
-	drawButtons()
-	BGL.glColor3f(1.0,0.5,0.4)
-	BGL.glRectf(330,222,410,223)
-	BGL.glColor3f(0.9,0.9,0.9)
-	scn = Scene.GetCurrent()
-	Draw.String("Lux: ", evtNoEvt, 10, 200, 380, 18, getProp(scn, "LuxPath", ""), 50, "the file name of the Lux executable", CBsetProp(scn, "LuxPath"))
-	Draw.Button("...", evtbrowselux, 392, 200, 20, 18, "Browse for the Lux executable")
-	Draw.Number("Threads", evtNoEvt, 292, 170, 120, 18, getProp(scn, "Threads", 1), 1, 16, "Number of Threads used in Lux", CBsetProp(scn, "Threads"))
-	Draw.Button("Save Defaults", evtSaveDefaults, 292, 120, 120, 38, "Save current settings as defaults for new scenes")
-	Draw.Toggle("Save IGI", evtNoEvt, 10, 170, 80, 18, getProp(scn, "SaveIGI", 0), "Save untonemapped IGI file", CBsetProp(scn, "SaveIGI"))
-	Draw.Number("Interval", evtNoEvt, 100, 170, 150, 18, getProp(scn, "SaveIGIInterval", 120), 20, 10000, "Set Interval for IGI file write (seconds)", CBsetProp(scn, "SaveIGIInterval"))
-	Draw.Toggle("Save EXR", evtNoEvt, 10, 150, 80, 18, getProp(scn, "SaveEXR", 0), "Save untonemapped EXR file", CBsetProp(scn, "SaveEXR"))
-	Draw.Number("Interval", evtNoEvt, 100,150,150,18, getProp(scn, "SaveEXRInterval", 120), 20, 10000, "Set Interval for EXR file write (seconds)", CBsetProp(scn, "SaveEXRInterval"))
-	Draw.Toggle("Save TGA", evtNoEvt, 10, 130, 80, 18, getProp(scn, "SaveTGA", 0), "Save tonemapped TGA file", CBsetProp(scn, "SaveTGA"))
-	Draw.Number("Interval", evtNoEvt, 100,130,150,18, getProp(scn, "SaveTGAInterval", 120), 20, 10000, "Set Interval for TGA file write (seconds)", CBsetProp(scn, "SaveTGAInterval"))
-	BGL.glRasterPos2i(10, 110); Draw.Text("Display:", "small")	
-	Draw.Number("Interval", evtNoEvt, 100, 110, 150, 18, getProp(scn, "DisplayInterval", 12), 5, 10000, "Set Interval for Display (seconds)", CBsetProp(scn, "DisplayInterval"))
-
-
-#################  Draw Tonemapping  #########################
-def drawTonemap():
-	drawButtons()
-	BGL.glColor3f(1.0,0.5,0.4)
-	BGL.glRectf(250,222,330,223)
-	BGL.glColor3f(0.9,0.9,0.9)
-	scn = Scene.GetCurrent()
-	Draw.Menu(strToneMapType, evtRedraw, 10, 190, 85, 18, getProp(scn, "ToneMapType", 1), "Set the type of the tonemapping", CBsetProp(scn, "ToneMapType"))
-	if getProp(scn, "ToneMapType", 1) == 1:
-		Draw.Number("Burn: ", evtNoEvt, 95, 190, 135, 18, getProp(scn, "ToneMapBurn", 6.0), 0.1, 12.0, "12.0: no burn out, 0.1 lot of burn out", CBsetProp(scn, "ToneMapBurn"))
-		Draw.Number("PreS: ", evtNoEvt, 10, 170, 110, 18, getProp(scn, "ToneMapPreScale", 1.0), 0.01,100.0, "Pre Scale: See Lux Manual ;)", CBsetProp(scn, "ToneMapPreScale"))
-		Draw.Number("PostS: ", evtNoEvt, 120, 170, 110, 18, getProp(scn, "ToneMapPostScale", 1.0), 0.01,100.0, "Post Scale: See Lux Manual ;)", CBsetProp(scn, "ToneMapPostScale"))
-	
-	Draw.Number("Output Gamma: ", evtNoEvt, 10, 140, 170, 18, getProp(scn, "OutputGamma", 2.2), 0.0, 6.0, "Output and RGC Gamma", CBsetProp(scn, "OutputGamma"))
-	Draw.Toggle("RGC", evtNoEvt, 180, 140, 30, 18, getProp(scn, "RGC", 1), "Use reverse gamma correction for rgb values", CBsetProp(scn, "RGC"))
-	Draw.Toggle("ColClamp", evtNoEvt, 210, 140, 60, 18, getProp(scn, "ColClamp", 0), "Scale/Clamp all colours to 0.0 - 0.9", CBsetProp(scn, "ColClamp"))
-	Draw.Number("Output Dither: ", evtNoEvt, 270, 140, 150, 18, getProp(scn, "OutputDither", 0.0), 0.0, 1.0, "Output Image Dither", CBsetProp(scn, "OutputDither"))
-
-	Draw.Toggle("Bloom", evtNoEvt, 10, 110, 80, 18, getProp(scn, "Bloom", 0), "Enable HDR Bloom", CBsetProp(scn, "Bloom"))
-	Draw.Number("Width: ", evtNoEvt, 90, 110, 120, 18, getProp(scn, "BloomWidth", 0.1), 0.1, 2.0, "Amount of bloom", CBsetProp(scn, "BloomWidth"))
-	Draw.Number("Radius: ", evtNoEvt, 210, 110, 120, 18, getProp(scn, "BloomRadius", 0.1), 0.1, 2.0, "Radius of the bloom filter", CBsetProp(scn, "BloomRadius"))
-
-	
-##############
-def drawGUI():
-##############
-
-	global Screen
-	
-	if Screen==0:
-		drawCamera()
- 	if Screen==1:
- 		drawEnv()
-	if Screen==2:
-		drawSettings()
- 	if Screen==3:
-   		drawSystem()
- 	if Screen==4:
- 		drawTonemap()
-
-##################
-def drawButtons():
-##################
-
-      ## buttons
-	BGL.glColor3f(0.2,0.2,0.2)
-	BGL.glRectf(0,0,440,270)
-	BGL.glColor3f(0.9,0.9,0.9);BGL.glRasterPos2i(10,245); Draw.Text("LuxBlend v0.1alphaCVS", "small")
-	scn = Scene.GetCurrent()
-	
-	Draw.Button("Render", evtExport, 10, 25, 100, 30, "Open file dialog and export")
-	if getProp(scn, "ExecuteLux", 0) == 0:
-		Draw.Button("Export Anim", evtExportAnim, 112, 25, 100, 30, "Open file dialog and export animation (careful: takes a lot of diskspace!!!)")
-	Draw.Button("Camera", openCamera, 10, 225, 80, 13, "Open Camera Dialog")
-	Draw.Button("Environment", openEnv, 90, 225, 80, 13, "Open Environment Dialog")
-	Draw.Button("Renderer", openRSet, 170, 225, 80, 13, "Open Rendersettings Dialog")
-	Draw.Button("Tonemap", openTmap, 250, 225, 80, 13, "open Tonemap Settings")
-	Draw.Button("System", openSSet, 330, 225, 80, 13, "open System Settings")
-	
-	Draw.Toggle("Run", evtRedraw, 10, 5, 30, 13, getProp(scn, "ExecuteLux", 0), "Execute Lux after saving", CBsetProp(scn, "ExecuteLux"))
-	Draw.Toggle("def",evtNoEvt,41,5,30,13, getProp(scn, "DefaultExport", 0), "Save as default.lxs to a temporary directory", CBsetProp(scn, "DefaultExport"))
-	Draw.Toggle(".lxs" ,evtNoEvt,77,5,30,13, getProp(scn, "ExportScene", 1), "Export Scenefile", CBsetProp(scn, "ExportScene"))
-	Draw.Toggle(".lxo" ,evtNoEvt,107,5,30,13, getProp(scn, "ExportGeom", 1), "Export Geometryfile", CBsetProp(scn, "ExportGeom"))
-	Draw.Toggle(".lxm" ,evtNoEvt,137,5,30,13, getProp(scn, "ExportMat", 1), "Export Materialfile", CBsetProp(scn, "ExportMat"))
-	BGL.glColor3f(0.9, 0.9, 0.9) ; BGL.glRasterPos2i(340,7) ; Draw.Text("Press Q or ESC to quit.", "tiny")
-	
-		
-def event(evt, val):  # function that handles keyboard and mouse events
+activeObject = None			
+def luxEvent(evt, val):  # function that handles keyboard and mouse events
+	global activeObject, activemat
 	if evt == Draw.ESCKEY or evt == Draw.QKEY:
 		stop = Draw.PupMenu("OK?%t|Cancel export %x1")
 		if stop == 1:
 			Draw.Exit()
 			return
+	scn = Scene.GetCurrent()
+	if scn:
+		if scn.objects.active != activeObject:
+			activeObject = scn.objects.active
+			activemat = None
+			Window.QRedrawAll()
 
-def setEnvMap(efilename):
-	setProp(Scene.GetCurrent(), "EnvFile", efilename)
+	
+def luxButtonEvt(evt):  # function that handles button events
+	if evt == evtLuxGui:
+		Window.QRedrawAll()
 
-def setLuxPath(efilename):
-	setProp(Scene.GetCurrent(), "LuxPath", efilename)
-	
-def buttonEvt(evt):  # function that handles button events
-	
-	global Screen, EnFile
-	
-	if evt == evtRedraw:
-		Draw.Redraw()
-
-	if evt == evtExport:
-		if getProp(Scene.GetCurrent(), "DefaultExport", 0) == 0:
-			Blender.Window.FileSelector(save_still, "Export", newFName('lxs'))
-		else:
-			datadir=Blender.Get("datadir")
-			filename = datadir + os.sep + "default.lxs"
-			save_still(filename)
-	
-	if evt == evtExportAnim:
-		Blender.Window.FileSelector(save_anim, "Export Animation", newFName('lxs'))
-		Draw.Redraw()
-				
-	if evt == openCamera:
-		Screen = 0
-		Draw.Redraw()
-	
-	if evt == openEnv:
-		Screen = 1
-		Draw.Redraw()
-		
-	if evt == openRSet:
-		Screen = 2
-		Draw.Redraw()
-	
-	if evt == openSSet:
-		Screen = 3
-		Draw.Redraw()
-	
-	if evt == openTmap:
-		Screen = 4
-		Draw.Redraw()
-	
-	if evt == evtloadimg:
-		Blender.Window.FileSelector(setEnvMap, "Load Environment Map", ('.exr'))
-		Draw.Redraw()
-	
-	if evt == evtFocusS:
-		setFocus("S")
-		Draw.Redraw()
-
-	if evt == evtFocusC:
-		setFocus("C")
-		Draw.Redraw()
-
-	if evt == evtbrowselux:
-		Blender.Window.FileSelector(setLuxPath, "Lux executable", ('.exe'))
-		Draw.Redraw()
-
-	if evt == evtSaveDefaults:
-		Blender.Registry.SetKey('BlenderLux', newrdict, True)
-		rdict = newrdict
-
+Draw.Register(luxDraw, luxEvent, luxButtonEvt)
 
 def setFocus(target):
 	currentscene = Scene.GetCurrent()
@@ -1533,12 +1400,28 @@ def setFocus(target):
 	camObj.data.dofDist = (camDir[0]*dist[0]+camDir[1]*dist[1]+camDir[2]*dist[2])/camDir.length
 
 
-Screen = 0
-Draw.Register(drawGUI, event, buttonEvt)
-luxpath = getProp(Scene.GetCurrent(), "LuxPath", "")
-if sys.exists(luxpath)<=0:
-	print "WARNING: LuxPath \"%s\" is not valid\n"%(luxpath)
-	Screen = 3
-	Draw.Redraw()
-	Draw.PupMenu("Please setup path to the lux render software and press \"save defaults\" button%t|Ok")
 
+
+
+
+
+print "\n\nLuxBlend v0.1RC4alphaCVS\n"
+
+luxpath = luxProp(Scene.GetCurrent(), "lux", "").get()
+luxrun = luxProp(Scene.GetCurrent(), "run", True).get()
+checkluxpath = luxProp(Scene.GetCurrent(), "checkluxpath", True).get()
+
+if checkluxpath and luxrun:
+	if (sys.exists(luxpath)<=0):
+		print "WARNING: LuxPath \"%s\" is not valid\n"%(luxpath)
+		scn = Scene.GetCurrent()
+		if scn:
+			r = Draw.PupMenu("Installation: Set path to the lux render software?%t|Yes%x1|No%x0|Never%x2")
+			if r == 1:
+				Window.FileSelector(lambda s:luxProp(scn, "lux", "").set(s), "Select Lux executable")
+				saveluxdefaults()
+			if r == 2:
+				newluxdefaults["checkluxpath"] = False
+				saveluxdefaults()
+else:
+	print "Lux path check disabled\n"
