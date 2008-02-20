@@ -1250,6 +1250,7 @@ def luxMaterial(mat, gui=None):
 			(str,link) = c((str,link), luxSpectrumTexture("Kr", "glass.kr", "1.0 1.0 1.0", 1.0, "reflection", "", mat, gui))
 			(str,link) = c((str,link), luxSpectrumTexture("Kt", "glass.kt", "1.0 1.0 1.0", 1.0, "transmission", "", mat, gui))
 			(str,link) = c((str,link), luxFloatTexture("index", "glass.index", 1.5, 0.0, 100.0, "index", "", mat, gui))
+			(str,link) = c((str,link), luxFloatTexture("cauchyb", "glass.cauchyb", 0.0, 0.0, 1.0, "cauchyb", "", mat, gui))
 			(str,link) = c((str,link), luxFloatTexture("bumpmap", "glass.bumpmap", 0.0, 0.0, 1.0, "bumpmap", "", mat, gui))
 		if mattype.get() == "matte":
 			(str,link) = c((str,link), luxSpectrumTexture("Kd", "matte.kd", "1.0 1.0 1.0", 1.0, "diffuse", "", mat, gui))
