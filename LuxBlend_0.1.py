@@ -668,13 +668,15 @@ evtPreviewMaterial = 93
 
 
 # default settings
+defaultsExclude = ['preset','filename','page','link']
 try:
 	luxdefaults = Blender.Registry.GetKey('luxblend', True)
 	if not(type(luxdefaults) is DictType):
 		luxdefaults = {}
 except:
 	luxdefaults = {}
-newluxdefaults = luxdefaults
+newluxdefaults = luxdefaults.copy()
+
 
 def saveluxdefaults():
 	try: del newluxdefaults['page']
@@ -687,7 +689,7 @@ def saveluxdefaults():
 
 
 # *** PRESETS **************************************
-presetsExclude = ['preset','lux','threads','filename','page','RGC','film.gamma','colorclamp','link']
+presetsExclude = ['preset','lux','datadir','threads','filename','page','RGC','film.gamma','colorclamp','link']
 def getPresets(key):
 	presets = Blender.Registry.GetKey(key, True)
 	if not(type(presets) is DictType):
@@ -744,7 +746,7 @@ class luxProp:
 		self.name = name
 		self.default = default
 	def get(self):
-		global usedproperties
+		global usedproperties, luxdefaults
 		if self.obj:
 			try:
 				value = self.obj.properties['luxblend'][self.name]
@@ -763,24 +765,26 @@ class luxProp:
 				return self.default
 		return None
 	def set(self, value):
+		global newluxdefaults
 		if self.obj:
-			if value != None:
-				try:
-					self.obj.properties['luxblend'][self.name] = value
+			if value is not None:
+				try: self.obj.properties['luxblend'][self.name] = value
 				except (KeyError, TypeError):
 					self.obj.properties['luxblend'] = {}
 					self.obj.properties['luxblend'][self.name] = value
 			else:
-				try:
-					del self.obj.properties['luxblend'][self.name]
-				except:
-					pass
+				try: del self.obj.properties['luxblend'][self.name]
+				except:	pass
 			if self.obj.__class__.__name__ == "Scene": # luxdefaults only for global setting
 				# value has changed, so this are user settings, remove preset reference
-				if not(self.name in presetsExclude):
+				if not(self.name in defaultsExclude):
 					newluxdefaults[self.name] = value
 					try: del self.obj.properties['luxblend']['preset']
 					except: pass
+	def delete(self):
+		if self.obj:
+			try: del self.obj.properties['luxblend'][self.name]
+			except:	pass
 	def getRGB(self):
 		l = self.get().split(" ")
 		if len(l) != 3: l = self.default.split(" ")
@@ -1164,6 +1168,8 @@ def luxSystem(scn, gui=None):
 		if gui: gui.newline("SYSTEM:", 10)
 		luxFile("filename", luxProp(scn, "lux", ""), "lux-file", "filename and path of the lux executable", gui, 2.0)
 		if gui: gui.newline()
+		luxFile("datadir", luxProp(scn, "datadir", ""), "default out dir", "default.lxs save path", gui, 2.0)
+		if gui: gui.newline()
 		luxInt("threads", luxProp(scn, "threads", 1), 1, 100, "threads", "number of threads used for rendering", gui)
 		if gui: gui.newline()
 		luxBool("RPC", luxProp(scn, "RPC", "true"), "RPC", "use reverse gamma correction", gui)
@@ -1339,7 +1345,8 @@ def luxMaterial(mat, gui=None):
 
 def CBluxExport(default, run):
 	if default:
-		datadir = Blender.Get("datadir")
+		datadir = luxProp(Scene.GetCurrent(), "datadir", "").get()
+		if datadir=="": datadir = Blender.Get("datadir")
 		filename = datadir + os.sep + "default.lxs"
 		save_still(filename)
 	else:
@@ -1588,21 +1595,27 @@ def setFocus(target):
 
 print "\n\nLuxBlend v0.1RC4alphaCVS\n"
 
-luxpath = luxProp(Scene.GetCurrent(), "lux", "").get()
+luxpathprop = luxProp(Scene.GetCurrent(), "lux", "")
+luxpath = luxpathprop.get()
 luxrun = luxProp(Scene.GetCurrent(), "run", True).get()
 checkluxpath = luxProp(Scene.GetCurrent(), "checkluxpath", True).get()
 
 if checkluxpath and luxrun:
-	if (sys.exists(luxpath)<=0):
-		print "WARNING: LuxPath \"%s\" is not valid\n"%(luxpath)
-		scn = Scene.GetCurrent()
-		if scn:
-			r = Draw.PupMenu("Installation: Set path to the lux render software?%t|Yes%x1|No%x0|Never%x2")
-			if r == 1:
-				Window.FileSelector(lambda s:luxProp(scn, "lux", "").set(s), "Select Lux executable")
-				saveluxdefaults()
-			if r == 2:
-				newluxdefaults["checkluxpath"] = False
-				saveluxdefaults()
+	if (luxpath is None) or (sys.exists(luxpath)<=0):
+		# luxpath not valid, so delete entry from .blend scene file ...
+		luxpathprop.delete()
+		# and re-get luxpath, so we get the path from default-settings
+		luxpath = luxpathprop.get()
+		if (luxpath is None) or (sys.exists(luxpath)<=0):
+			print "WARNING: LuxPath \"%s\" is not valid\n"%(luxpath)
+			scn = Scene.GetCurrent()
+			if scn:
+				r = Draw.PupMenu("Installation: Set path to the lux render software?%t|Yes%x1|No%x0|Never%x2")
+				if r == 1:
+					Window.FileSelector(lambda s:luxProp(scn, "lux", "").set(s), "Select Lux executable")
+					saveluxdefaults()
+				if r == 2:
+					newluxdefaults["checkluxpath"] = False
+					saveluxdefaults()
 else:
 	print "Lux path check disabled\n"
