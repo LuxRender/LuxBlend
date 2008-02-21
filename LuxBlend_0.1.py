@@ -1295,6 +1295,7 @@ def luxMaterial(mat, gui=None):
 				if not(gui):
 					(str,link) = c((str,link), luxFloatTexture("vroughness", "roughglass.uroughness", 0.1, 0.0, 1.0, "v-roughness", "", mat, gui))
 			(str,link) = c((str,link), luxFloatTexture("index", "roughglass.index", 1.5, 0.0, 100.0, "index", "", mat, gui))
+			(str,link) = c((str,link), luxFloatTexture("cauchyb", "roughglass.cauchyb", 0.0, 0.0, 1.0, "cauchyb", "", mat, gui))
 			(str,link) = c((str,link), luxFloatTexture("bumpmap", "roughglass.bumpmap", 0.0, 0.0, 1.0, "bumpmap", "", mat, gui))
 		if mattype.get() == "shinymetal":
 			(str,link) = c((str,link), luxSpectrumTexture("Kr", "shinymetal.kr", "1.0 1.0 1.0", 1.0, "reflection", "", mat, gui))
