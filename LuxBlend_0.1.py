@@ -151,6 +151,7 @@ class luxExport:
 	# called by analyseScene to build the lists before export
 	#-------------------------------------------------
 	def analyseObject(self, obj, matrix, name):
+		light = False
 		if (obj.users > 0):
 			obj_type = obj.getType()
 			if (obj.enableDupGroup or obj.enableDupVerts):
@@ -164,6 +165,8 @@ class luxExport:
 					for mat in mats:
 						if (mat!=None) and (mat not in self.materials):
 							self.materials.append(mat)
+						if (mat!=None) and (luxProp(mat, "type", "").get()=="light"):
+							light = True
 					mesh_name = obj.getData(name_only=True)
 					try:
 						self.meshes[mesh_name] += [obj]
@@ -171,16 +174,22 @@ class luxExport:
 						self.meshes[mesh_name] = [obj]				
 					self.objects.append([obj, matrix])
 			elif (obj_type == "Lamp"):
-				self.lights.append([obj, matrix])
+				ltype = obj.getData(mesh=1).getType() # data
+				if (ltype == Lamp.Types["Lamp"]) or (ltype == Lamp.Types["Spot"]):
+					self.lights.append([obj, matrix])
+					light = True
+		return light
 
 	#-------------------------------------------------
 	# analyseScene(self)
 	# this function builds the lists of object, lights, meshes and materials before export
 	#-------------------------------------------------
 	def analyseScene(self):
+		light = False
 		for obj in self.scene.objects:
 			if ((obj.Layers & self.scene.Layers) > 0):
-				self.analyseObject(obj, obj.getMatrix(), obj.getName())
+				light = light or self.analyseObject(obj, obj.getMatrix(), obj.getName())
+		return light
 
 	#-------------------------------------------------
 	# exportMaterialLink(self, file, mat)
@@ -191,10 +200,6 @@ class luxExport:
 			file.write("\tMaterial \"matte\" # dummy material\n")
 		else:
 			file.write("\t%s"%exportMaterialGeomTag(mat)) # use original methode
-
-
-
-
 
 
 
@@ -466,7 +471,21 @@ def save_lux(filename, unindexedname):
 	
 	### Zuegs: initialization for export class
 	export = luxExport(Blender.Scene.GetCurrent())
-	
+
+	# check if a light is present
+	envtype = luxProp(scn, "env.type", "infinite").get()
+	if envtype == "sunsky":
+		sun = None
+		for obj in scn.objects:
+			if obj.getType() == "Lamp":
+				if obj.getData(mesh=1).getType() == 1: # sun object # data
+					sun = obj
+	if not(export.analyseScene()) and not(envtype == "infinite") and not((envtype == "sunsky") and (sun != None)):
+		print("ERROR: No light source found")
+		Draw.PupMenu("ERROR: No light source found%t|OK%x1")
+		return False
+
+
 	if luxProp(scn, "lxs", "true").get()=="true":
 		##### Determine/open files
 		print("Exporting scene to '" + filename + "'...\n")
@@ -516,9 +535,7 @@ def save_lux(filename, unindexedname):
 		file.write("WorldBegin\n")
 	
 		file.write("\n")
-	
-		export.analyseScene()
-	
+		
 		##### Write World Background, Sunsky or Env map ######
 		env = luxEnvironment(scn)
 		if env != "":
@@ -563,7 +580,7 @@ def save_lux(filename, unindexedname):
 
 	time2 = Blender.sys.time()
 	print("Processing time: %f\n" %(time2-time1))
-	#Draw.Exit()
+	return True
 
 
 
@@ -646,9 +663,9 @@ def save_still(filename):
 	luxProp(scn, "filename", Blender.Get("filename")).set(filename)
 	MatSaved = 0
 	unindexedname = filename
-	save_lux(filename, unindexedname)
-	if luxProp(scn, "run", "true").get() == "true":
-		launchLux(filename)
+	if save_lux(filename, unindexedname):
+		if luxProp(scn, "run", "true").get() == "true":
+			launchLux(filename)
 
 
 
@@ -1053,23 +1070,33 @@ def luxSampler(scn, gui=None):
 	str = ""
 	if scn:
 		samplertype = luxProp(scn, "sampler.type", "lowdiscrepancy")
-		str = luxIdentifier("Sampler", samplertype, ["lowdiscrepancy", "random", "erpt"], "SAMPLER", "select sampler type", gui)
+		str = luxIdentifier("Sampler", samplertype, ["metropolis", "erpt", "lowdiscrepancy", "random", "halton"], "SAMPLER", "select sampler type", gui)
+		if samplertype.get() == "metropolis":
+			str += luxInt("initsamples", luxProp(scn, "sampler.metro.initsamples", 100000), 1, 1000000, "initsamples", "", gui)
+			if gui: gui.newline()
+			str += luxInt("maxconsecrejects", luxProp(scn, "sampler.metro.maxrejects", 512), 0, 10000, "max.rejects", "number of consecutive rejects before a new mutation is forced", gui)
+			str += luxFloat("largemutationprob", luxProp(scn, "sampler.metro.lmprob", 0.4), 0.0, 1.0, "LM.prob.", "probability of generation a large sample (mutation)", gui)
+		if samplertype.get() == "erpt":
+			str += luxInt("initsamples", luxProp(scn, "sampler.metro.initsamples", 100000), 1, 1000000, "initsamples", "", gui)
+			if gui: gui.newline()
+			str += luxInt("chainlength", luxProp(scn, "sampler.erpt.chainlength", 512), 1, 1000, "chainlength", "The number of mutations from a given seed", gui)
+#			str += luxOption("pixelsampler", luxProp(scn, "sampler.erpt.pixelsampler", "vegas"), ["random", "vegas"], "pixel-sampler", "select pixel-sampler", gui)
+#			str += luxInt("mutationrange", luxProp(scn, "sampler.erpt.mutationrange", 128), 1, 1000, "mutationrange", "Maximum distance from a pixel in small mutation", gui)
+#			if gui: gui.newline()
+#			str += luxInt("pixelsamples", luxProp(scn, "sampler.erpt.pixelsamples", 4), 1, 100, "samples", "Average number of samples taken per pixel. More samples create a higher quality image at the cost of render time", gui)
 		if samplertype.get() == "lowdiscrepancy":
-			str += luxOption("pixelsampler", luxProp(scn, "sampler.lowdisc.pixelsampler", "vegas"), ["random", "vegas"], "pixel-sampler", "select pixel-sampler", gui)
+			str += luxOption("pixelsampler", luxProp(scn, "sampler.lowdisc.pixelsampler", "lowdiscrepancy"), ["random", "vegas","lowdiscrepancy"], "pixel-sampler", "select pixel-sampler", gui)
 			if gui: gui.newline()
 			str += luxInt("pixelsamples", luxProp(scn, "sampler.lowdisc.pixelsamples", 4), 1, 100, "samples", "Average number of samples taken per pixel. More samples create a higher quality image at the cost of render time", gui)
 		if samplertype.get() == "random":
-			str += luxOption("pixelsampler", luxProp(scn, "sampler.random.pixelsampler", "vegas"), ["random", "vegas"], "pixel-sampler", "select pixel-sampler", gui)
+			str += luxOption("pixelsampler", luxProp(scn, "sampler.random.pixelsampler", "vegas"), ["random", "vegas","lowdiscrepancy"], "pixel-sampler", "select pixel-sampler", gui)
 			if gui: gui.newline()
 			str += luxInt("xsamples", luxProp(scn, "sampler.random.xsamples", 2), 1, 100, "xsamples", "Allows you to specify how many samples per pixel are taking in the x direction", gui)
 			str += luxInt("ysamples", luxProp(scn, "sampler.random.ysamples", 2), 1, 100, "ysamples", "Allows you to specify how many samples per pixel are taking in the y direction", gui)
-		if samplertype.get() == "erpt":
-			str += luxOption("pixelsampler", luxProp(scn, "sampler.erpt.pixelsampler", "vegas"), ["random", "vegas"], "pixel-sampler", "select pixel-sampler", gui)
-			str += luxInt("chainlength", luxProp(scn, "sampler.erpt.chainlength", 512), 1, 1000, "chainlength", "The number of mutations from a given seed", gui)
-			str += luxInt("mutationrange", luxProp(scn, "sampler.erpt.mutationrange", 128), 1, 1000, "mutationrange", "Maximum distance from a pixel in small mutation", gui)
+		if samplertype.get() == "halton":
+			str += luxOption("pixelsampler", luxProp(scn, "sampler.halton.pixelsampler", "lowdiscrepancy"), ["random", "vegas","lowdiscrepancy"], "pixel-sampler", "select pixel-sampler", gui)
 			if gui: gui.newline()
-			str += luxInt("pixelsamples", luxProp(scn, "sampler.erpt.pixelsamples", 4), 1, 100, "samples", "Average number of samples taken per pixel. More samples create a higher quality image at the cost of render time", gui)
-
+			str += luxInt("pixelsamples", luxProp(scn, "sampler.halton.pixelsamples", 4), 1, 100, "samples", "Average number of samples taken per pixel. More samples create a higher quality image at the cost of render time", gui)
 	return str			
 
 def luxSurfaceIntegrator(scn, gui=None):
@@ -1078,26 +1105,25 @@ def luxSurfaceIntegrator(scn, gui=None):
 		integratortype = luxProp(scn, "sintegrator.type", "path")
 		str = luxIdentifier("SurfaceIntegrator", integratortype, ["directlighting", "path", "mltpath"], "INTEGRATOR", "select surface integrator type", gui)
 		if integratortype.get() == "directlighting":
-			str += luxOption("strategy", luxProp(scn, "sintegrator.dlighting.strategy", "all"), ["all", "one", "weighted"], "strategy", "select directlighting strategy", gui)
-			if gui: gui.newline()
 			str += luxInt("maxdepth", luxProp(scn, "sintegrator.dlighting.maxdepth", 5), 0, 1000, "max-depth", "The maximum recursion depth for ray casting", gui)
+			if gui: gui.newline()
+			str += luxOption("strategy", luxProp(scn, "sintegrator.dlighting.strategy", "all"), ["one", "all", "weighted"], "strategy", "select directlighting strategy", gui)
 		if integratortype.get() == "path":
-			mlt = luxProp(scn, "sintegrator.path.metropolis", "true")
-			str += luxBool("metropolis", mlt, "metropolis", "enables use of metropolis integrationsampler", gui)
-			if gui: gui.newline()
-			if mlt.get() == "true":
-				str += luxInt("maxconsecrejects", luxProp(scn, "sintegrator.path.maxrejects", 512), 0, 10000, "max.rejects", "number of consecutive rejects before a new mutation is forced", gui)
-				str += luxFloat("largemutationprob", luxProp(scn, "sintegrator.path.lmprob", 0.4), 0.0, 1.0, "LM.prob.", "probability of generation a large sample (mutation)", gui)
-				if gui: gui.newline()
 			str += luxInt("maxdepth", luxProp(scn, "sintegrator.path.maxdepth", 16), 0, 1000, "maxdepth", "The maximum recursion depth for ray casting", gui)
+			if gui: gui.newline()
 			str += luxFloat("rrcontinueprob", luxProp(scn, "sintegrator.path.rrprob", 0.65), 0.0, 1.0, "RR.prob.", "continueprobability for RR (0.0-1.0)", gui)
+#			mlt = luxProp(scn, "sintegrator.path.metropolis", "true")
+#			str += luxBool("metropolis", mlt, "metropolis", "enables use of metropolis integrationsampler", gui)
+#			if mlt.get() == "true":
+#				str += luxInt("maxconsecrejects", luxProp(scn, "sintegrator.path.maxrejects", 512), 0, 10000, "max.rejects", "number of consecutive rejects before a new mutation is forced", gui)
+#				str += luxFloat("largemutationprob", luxProp(scn, "sintegrator.path.lmprob", 0.4), 0.0, 1.0, "LM.prob.", "probability of generation a large sample (mutation)", gui)
 		if integratortype.get() == "mltpath":
-			if gui: gui.newline()
-			str += luxInt("maxconsecrejects", luxProp(scn, "sintegrator.mltpath.maxrejects", 512), 0, 10000, "max.rejects", "number of consecutive rejects before a new mutation is forced", gui)
-			str += luxFloat("largemutationprob", luxProp(scn, "sintegrator.mltpath.lmprob", 0.4), 0.0, 1.0, "LM.prob.", "probability of generation a large sample (mutation)", gui)
-			if gui: gui.newline()
-			str += luxInt("maxdepth", luxProp(scn, "sintegrator.mltpath.maxdepth", 32), 0, 1000, "maxdepth", "The maximum recursion depth for ray casting", gui)
-			str += luxFloat("rrcontinueprob", luxProp(scn, "sintegrator.path.rrprob", 0.65), 0.0, 1.0, "RR.prob.", "continueprobability for RR (0.0-1.0)", gui)
+			str += luxInt("maxdepth", luxProp(scn, "sintegrator.mltpath.maxdepth", 16), 0, 1000, "maxdepth", "The maximum recursion depth for ray casting", gui)
+#			if gui: gui.newline()
+#			str += luxInt("maxconsecrejects", luxProp(scn, "sintegrator.mltpath.maxrejects", 512), 0, 10000, "max.rejects", "number of consecutive rejects before a new mutation is forced", gui)
+#			str += luxFloat("largemutationprob", luxProp(scn, "sintegrator.mltpath.lmprob", 0.4), 0.0, 1.0, "LM.prob.", "probability of generation a large sample (mutation)", gui)
+#			if gui: gui.newline()
+#			str += luxFloat("rrcontinueprob", luxProp(scn, "sintegrator.path.rrprob", 0.65), 0.0, 1.0, "RR.prob.", "continueprobability for RR (0.0-1.0)", gui)
 	return str
 
 def luxEnvironment(scn, gui=None):
