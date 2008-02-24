@@ -287,14 +287,18 @@ class luxExport:
 						exportVIndices = []
 						index = 0
 						for vertex in face:
-							v = [vertex.co[0], vertex.co[1], vertex.co[2]]
+#							v = [vertex.co[0], vertex.co[1], vertex.co[2]]
+							v = [vertex.co]
 							if normalFltr[shape]:
 								if (face.smooth):
-									v.extend(vertex.no)
+#									v.extend(vertex.no)
+									v.append(vertex.no)
 								else:
-									v.extend(face.no)
+#									v.extend(face.no)
+									v.append(face.no)
 							if (uvFltr[shape]) and (mesh.faceUV):
-								v.extend(face.uv[index])
+#								v.extend(face.uv[index])
+								v.append(face.uv[index])
 							blenderVIndex = vertex.index
 							newExportVIndex = -1
 							length = len(v)
@@ -323,21 +327,25 @@ class luxExport:
 							if (len(face)==4):
 								file.write("%d %d %d\n"%(face[0], face[2], face[3]))
 						file.write("\t] \"point P\" [\n");
-						for vertex in exportVerts:
-							file.write("%f %f %f\n"%(vertex[0], vertex[1], vertex[2]))
+#						for vertex in exportVerts:
+#							file.write("%f %f %f\n"%(vertex[0], vertex[1], vertex[2]))
+						file.write("".join(["%f %f %f\n"%tuple(vertex[0]) for vertex in exportVerts]))
 						if normalFltr[shape]:
 							file.write("\t] \"normal N\" [\n")
-							for vertex in exportVerts:
-								file.write("%f %f %f\n"%(vertex[3], vertex[4], vertex[5]))
+#							for vertex in exportVerts:
+#								file.write("%f %f %f\n"%(vertex[3], vertex[4], vertex[5]))
+							file.write("".join(["%f %f %f\n"%tuple(vertex[1]) for vertex in exportVerts])) 
 							if (uvFltr[shape]) and (mesh.faceUV):
 								file.write("\t] \"float uv\" [\n")
-								for vertex in exportVerts:
-									file.write("%f %f\n"%(vertex[6], vertex[7]))
+#								for vertex in exportVerts:
+#									file.write("%f %f\n"%(vertex[6], vertex[7]))
+								file.write("".join(["%f %f\n"%tuple(vertex[2]) for vertex in exportVerts])) 
 						else:			
 							if (uvFltr[shape]) and (mesh.faceUV):
 								file.write("\t] \"float uv\" [\n")
-								for vertex in exportVerts:
-									file.write("%f %f\n"%(vertex[3], vertex[4]))
+#								for vertex in exportVerts:
+#									file.write("%f %f\n"%(vertex[3], vertex[4]))
+								file.write("".join(["%f %f\n"%tuple(vertex[1]) for vertex in exportVerts])) 
 						file.write("\t]\n")
 						print "  shape(%s): %d vertices, %d faces"%(shapeText[shape], len(exportVerts), len(exportFaces))
 	
@@ -1140,7 +1148,7 @@ def luxEnvironment(scn, gui=None):
 				if rot.get() != 0:
 					str += "\tRotate %d 0 0 1\n"%(rot.get())
 			str += "\t"+lsstr
-			str += luxInt("nsamples", luxProp(scn, "env.sunsky", 1), 1, 100, "samples", "number of samples", gui)
+			str += luxInt("nsamples", luxProp(scn, "env.samples", 1), 1, 100, "samples", "number of samples", gui)
 			if gui: gui.newline()
 			if envtype.get() == "infinite":
 				map = luxProp(scn, "env.infinite.mapname", "")
@@ -1160,10 +1168,10 @@ def luxEnvironment(scn, gui=None):
 				if sun:
 					invmatrix = Mathutils.Matrix(sun.getInverseMatrix())
 					str += " \"vector sundir\" [%f %f %f]\n" %(invmatrix[0][2], invmatrix[1][2], invmatrix[2][2])
-					gain = luxProp(scn, "env.sunsky.gain", 1.0)
-					luxFloat("gain", gain, 0.0, 100.0, "gain", "Sky gain", gui)
-					str += " \"color L\" [%f %f %f]\n" %(gain.get(), gain.get(), gain.get())
+					str += luxFloat("gain", luxProp(scn, "env.sunsky.gain", 1.0), 0.0, 100.0, "gain", "Sky gain", gui)
 					str += luxFloat("turbidity", luxProp(scn, "env.sunsky.turbidity", 2.0), 1.5, 5.0, "turbidity", "Sky turbidity", gui)
+					if gui: gui.newline()
+					str += luxFloat("relsize", luxProp(scn, "env.sunsky.relisze", 1.0), 0.0, 100.0, "rel.size", "relative sun size", gui)
 				else:
 					if gui:
 						gui.newline(); r = gui.getRect(2,1); BGL.glRasterPos2i(r[0],r[1]+5) 
@@ -1247,7 +1255,7 @@ def luxMaterial(mat, gui=None):
 	str = ""
 	if mat:
 		mattype = luxProp(mat, "type", "matte")
-		link = luxIdentifier("Material", mattype, ["light","portal","carpaint","clay","felt","glass","matte","metal","mirror","plastic","primer","roughglass","shinymetal","substrate","translucent","uber"], "  TYPE", "select material type", gui)
+		link = luxIdentifier("Material", mattype, ["light","portal","carpaint","glass","matte","metal","mirror","plastic","roughglass","shinymetal","substrate"], "  TYPE", "select material type", gui)
 		if gui: gui.newline()
 		if mattype.get() == "light":
 			link = "AreaLightSource \"area\""
@@ -1274,10 +1282,12 @@ def luxMaterial(mat, gui=None):
 				(str,link) = c((str,link), luxFloatTexture("M3", "carpaint.m3", 1.0, 0.0, 1.0, "M3", "", mat, gui))
 			else: link += carlink
 			(str,link) = c((str,link), luxFloatTexture("bumpmap", "metal.bumpmap", 0.0, 0.0, 1.0, "bumpmap", "", mat, gui))
-		if mattype.get() == "clay":
-			(str,link) = c((str,link), luxFloatTexture("bumpmap", "clay.bumpmap", 0.0, 0.0, 1.0, "bumpmap", "", mat, gui))
-		if mattype.get() == "felt":
-			(str,link) = c((str,link), luxFloatTexture("bumpmap", "felt.bumpmap", 0.0, 0.0, 1.0, "bumpmap", "", mat, gui))
+# obsolet
+#		if mattype.get() == "clay":
+#			(str,link) = c((str,link), luxFloatTexture("bumpmap", "clay.bumpmap", 0.0, 0.0, 1.0, "bumpmap", "", mat, gui))
+# obsolet
+#		if mattype.get() == "felt":
+#			(str,link) = c((str,link), luxFloatTexture("bumpmap", "felt.bumpmap", 0.0, 0.0, 1.0, "bumpmap", "", mat, gui))
 		if mattype.get() == "glass":
 			(str,link) = c((str,link), luxSpectrumTexture("Kr", "glass.kr", "1.0 1.0 1.0", 1.0, "reflection", "", mat, gui))
 			(str,link) = c((str,link), luxSpectrumTexture("Kt", "glass.kt", "1.0 1.0 1.0", 1.0, "transmission", "", mat, gui))
@@ -1310,8 +1320,9 @@ def luxMaterial(mat, gui=None):
 			(str,link) = c((str,link), luxSpectrumTexture("Ks", "plastic.ks", "1.0 1.0 1.0", 1.0, "specular", "", mat, gui))
 			(str,link) = c((str,link), luxFloatTexture("roughness", "plastic.roughness", 0.1, 0.0, 1.0, "roughness", "", mat, gui))
 			(str,link) = c((str,link), luxFloatTexture("bumpmap", "plastic.bumpmap", 0.0, 0.0, 1.0, "bumpmap", "", mat, gui))
-		if mattype.get() == "primer":
-			(str,link) = c((str,link), luxFloatTexture("bumpmap", "primer.bumpmap", 0.0, 0.0, 1.0, "bumpmap", "", mat, gui))
+# obsolet
+#		if mattype.get() == "primer":
+#			(str,link) = c((str,link), luxFloatTexture("bumpmap", "primer.bumpmap", 0.0, 0.0, 1.0, "bumpmap", "", mat, gui))
 		if mattype.get() == "roughglass":
 			(str,link) = c((str,link), luxSpectrumTexture("Kr", "roughglass.kr", "1.0 1.0 1.0", 1.0, "reflection", "", mat, gui))
 			(str,link) = c((str,link), luxSpectrumTexture("Kt", "roughglass.kt", "1.0 1.0 1.0", 1.0, "transmission", "", mat, gui))
@@ -1349,21 +1360,23 @@ def luxMaterial(mat, gui=None):
 				if not(gui):
 					(str,link) = c((str,link), luxFloatTexture("vroughness", "substrade.uroughness", 0.1, 0.0, 1.0, "v-roughness", "", mat, gui))
 			(str,link) = c((str,link), luxFloatTexture("bumpmap", "substrade.bumpmap", 0.0, 0.0, 1.0, "bumpmap", "", mat, gui))
-		if mattype.get() == "translucent":
-			(str,link) = c((str,link), luxSpectrumTexture("Kd", "translucent.kd", "1.0 1.0 1.0", 1.0, "diffuse", "", mat, gui))
-			(str,link) = c((str,link), luxSpectrumTexture("Ks", "translucent.ks", "1.0 1.0 1.0", 1.0, "specular", "", mat, gui))
-			(str,link) = c((str,link), luxSpectrumTexture("reflect", "translucent.reflect", "1.0 1.0 1.0", 1.0, "reflection", "", mat, gui))
-			(str,link) = c((str,link), luxSpectrumTexture("transmit", "translucent.transmit", "1.0 1.0 1.0", 1.0, "transmission", "", mat, gui))
-			(str,link) = c((str,link), luxFloatTexture("roughness", "translucent.roughness", 0.1, 0.0, 1.0, "roughness", "", mat, gui))
-			(str,link) = c((str,link), luxFloatTexture("index", "translucent.index", 1.5, 0.0, 100.0, "index", "", mat, gui))
-			(str,link) = c((str,link), luxFloatTexture("bumpmap", "translucent.bumpmap", 0.0, 0.0, 1.0, "bumpmap", "", mat, gui))
-		if mattype.get() == "uber":
-			(str,link) = c((str,link), luxSpectrumTexture("Kd", "uber.kd", "1.0 1.0 1.0", 1.0, "diffuse", "", mat, gui))
-			(str,link) = c((str,link), luxSpectrumTexture("Ks", "uber.ks", "1.0 1.0 1.0", 1.0, "specular", "", mat, gui))
-			(str,link) = c((str,link), luxSpectrumTexture("Kr", "uber.kr", "1.0 1.0 1.0", 1.0, "reflection", "", mat, gui))
-			(str,link) = c((str,link), luxFloatTexture("roughness", "uber.roughness", 0.1, 0.0, 1.0, "roughness", "", mat, gui))
-			(str,link) = c((str,link), luxSpectrumTexture("opacity", "uber.opacity", "1.0 1.0 1.0", 1.0, "opacity", "", mat, gui))
-			(str,link) = c((str,link), luxFloatTexture("bumpmap", "uber.bumpmap", 0.0, 0.0, 1.0, "bumpmap", "", mat, gui))
+# obsolet
+#		if mattype.get() == "translucent":
+#			(str,link) = c((str,link), luxSpectrumTexture("Kd", "translucent.kd", "1.0 1.0 1.0", 1.0, "diffuse", "", mat, gui))
+#			(str,link) = c((str,link), luxSpectrumTexture("Ks", "translucent.ks", "1.0 1.0 1.0", 1.0, "specular", "", mat, gui))
+#			(str,link) = c((str,link), luxSpectrumTexture("reflect", "translucent.reflect", "1.0 1.0 1.0", 1.0, "reflection", "", mat, gui))
+#			(str,link) = c((str,link), luxSpectrumTexture("transmit", "translucent.transmit", "1.0 1.0 1.0", 1.0, "transmission", "", mat, gui))
+#			(str,link) = c((str,link), luxFloatTexture("roughness", "translucent.roughness", 0.1, 0.0, 1.0, "roughness", "", mat, gui))
+#			(str,link) = c((str,link), luxFloatTexture("index", "translucent.index", 1.5, 0.0, 100.0, "index", "", mat, gui))
+#			(str,link) = c((str,link), luxFloatTexture("bumpmap", "translucent.bumpmap", 0.0, 0.0, 1.0, "bumpmap", "", mat, gui))
+# obsolet
+#		if mattype.get() == "uber":
+#			(str,link) = c((str,link), luxSpectrumTexture("Kd", "uber.kd", "1.0 1.0 1.0", 1.0, "diffuse", "", mat, gui))
+#			(str,link) = c((str,link), luxSpectrumTexture("Ks", "uber.ks", "1.0 1.0 1.0", 1.0, "specular", "", mat, gui))
+#			(str,link) = c((str,link), luxSpectrumTexture("Kr", "uber.kr", "1.0 1.0 1.0", 1.0, "reflection", "", mat, gui))
+#			(str,link) = c((str,link), luxFloatTexture("roughness", "uber.roughness", 0.1, 0.0, 1.0, "roughness", "", mat, gui))
+#			(str,link) = c((str,link), luxSpectrumTexture("opacity", "uber.opacity", "1.0 1.0 1.0", 1.0, "opacity", "", mat, gui))
+#			(str,link) = c((str,link), luxFloatTexture("bumpmap", "uber.bumpmap", 0.0, 0.0, 1.0, "bumpmap", "", mat, gui))
 		luxProp(mat, "link", "").set("".join(link))
 	return str
 
@@ -1572,11 +1585,13 @@ def luxButtonEvt(evt):  # function that handles button events
 			Draw.Redraw()
 	if evt == evtPreviewMaterial:
 		if activemat:
+# not finished yet
+#			Draw.PupBlock("Preview settings", [("diameter", Draw.Create(1.0), 0.0, 100.0, "help")])
 			datadir = Blender.Get("datadir")
 			filename = datadir + os.sep + "preview.lxs"
 			file = open(filename, 'w')
 			file.write('LookAt 0.0 -5.0 1.0 0.0 -4.0 1.0 0.0 0.0 1.0\nCamera "perspective" "float fov" [22.5] "float screenwindow" [-1.0 1.0 -1.21 0.29]\n')
-			file.write('Film "multiimage" "integer xresolution" [400] "integer yresolution" [300] "integer ldr_displayinterval" [10] "integer ldr_writeinterval" [3600] "string tonemapper" ["reinhard"]\n')
+			file.write('Film "multiimage" "integer xresolution" [400] "integer yresolution" [300] "integer ldr_displayinterval" [5] "integer ldr_writeinterval" [3600] "string tonemapper" ["reinhard"]\n')
 			file.write('Sampler "erpt"\nSurfaceIntegrator "mltpath"\n')
 			file.write('WorldBegin\n')
 			file.write(luxMaterial(activemat))
