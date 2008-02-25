@@ -820,7 +820,7 @@ class luxProp:
 				# value has changed, so this are user settings, remove preset reference
 				if not(self.name in defaultsExclude):
 					newluxdefaults[self.name] = value
-					try: del self.obj.properties['luxblend']['preset']
+					try: self.obj.properties['luxblend']['preset']=""
 					except: pass
 	def delete(self):
 		if self.obj:
@@ -958,42 +958,70 @@ def luxCamera(cam, context, gui=None):
 	str = ""
 	if cam:
 		camtype = luxProp(cam, "camera.type", "perspective")
-		str = luxIdentifier("Camera", camtype, ["perspective","orthographic","environment"], "CAMERA", "select camera type", gui)
+		str = luxIdentifier("Camera", camtype, ["perspective","orthographic","environment","realistic"], "CAMERA", "select camera type", gui)
 		scale = 1.0
 		if camtype.get() == "perspective":
 			str += luxFloat("fov", luxAttr(cam, "angle"), 8.0, 170.0, "fov", "camera field-of-view angle", gui)
 		if camtype.get() == "orthographic" :
 			str += luxFloat("scale", luxAttr(cam, "scale"), 0.01, 1000.0, "scale", "orthographic camera scale", gui)
 			scale = cam.scale / 2
+		if camtype.get() == "realistic":
+			fov = luxAttr(cam, "angle")
+			luxFloat("fov", fov, 8.0, 170.0, "fov", "camera field-of-view angle", gui)
+			if gui: gui.newline()
+			str += luxFile("specfile", luxProp(cam, "camera.realistic.specfile", ""), "spec-file", "", gui, 1.0)
+#			if gui: gui.newline()
+# auto calc		str += luxFloat("filmdistance", luxProp(cam, "camera.realistic.filmdistance", 70.0), 0.1, 1000.0, "film-dist", "film-distance [mm]", gui)
+			filmdiag = luxProp(cam, "camera.realistic.filmdiag", 35.0)
+			str += luxFloat("filmdiag", filmdiag, 0.1, 1000.0, "film-diag", "[mm]", gui)
+			if gui: gui.newline()
+			fstop = luxProp(cam, "camera.realistic.fstop", 1.0)
+			luxFloat("aperture_diameter", fstop, 0.0, 100.0, "f-stop", "", gui)
+			dofdist = luxAttr(cam, "dofDist")
+			luxFloat("focaldistance", dofdist, 0.0, 10000.0, "distance", "Distance from the camera at which objects will be in focus. Has no effect if Lens Radius is 0", gui)
+			if gui:
+				Draw.Button("S", evtLuxGui, gui.x, gui.y-gui.h, gui.h, gui.h, "focus selected object", lambda e,v:setFocus("S"))
+				Draw.Button("C", evtLuxGui, gui.x+gui.h, gui.y-gui.h, gui.h, gui.h, "focus cursor", lambda e,v:setFocus("C"))
+			focal = filmdiag.get()*0.001 / math.tan(fov.get() * math.pi / 360.0) / 2.0
+			print "calculated focal length: %f mm"%(focal * 1000.0)
+			aperture_diameter = focal / fstop.get()
+			print "calculated aperture diameter: %f mm"%(aperture_diameter * 1000.0)
+			str += " \"float aperture_diameter\" [%f]"%(aperture_diameter*1000.0)
+			filmdistance = dofdist.get() * focal / (dofdist.get() - focal)
+			print "calculated film distance: %f mm"%(filmdistance * 1000.0)
+			str += " \"float filmdistance\" [%f]"%(filmdistance*1000.0)
 		if gui: gui.newline("  Clipping:")
 		str += luxFloat("hither", luxAttr(cam, "clipStart"), 0.0, 100.0, "hither", "near clip distance", gui)
 		str += luxFloat("yon", luxAttr(cam, "clipEnd"), 1.0, 10000.0, "yon", "far clip distance", gui)
-		if gui: gui.newline("  DOF:")
-		str += luxFloat("lensradius", luxProp(cam, "camera.lensradius", 0.0), 0.0, 10.0, "lens-radius", "Defines the lens radius. Values higher than 0. enable DOF and control the amount", gui)
-		dofdist = luxAttr(cam, "dofDist")
-		str += luxFloat("focaldistance", dofdist, 0.0, 10000.0, "distance", "Distance from the camera at which objects will be in focus. Has no effect if Lens Radius is 0", gui)
-		if gui:
-			Draw.Button("S", evtLuxGui, gui.x, gui.y-gui.h, gui.h, gui.h, "focus selected object", lambda e,v:setFocus("S"))
-			Draw.Button("C", evtLuxGui, gui.x+gui.h, gui.y-gui.h, gui.h, gui.h, "focus cursor", lambda e,v:setFocus("C"))
+		if camtype.get() in ["perspective", "orthographic"]:
+			if gui: gui.newline("  DOF:")
+			str += luxFloat("lensradius", luxProp(cam, "camera.lensradius", 0.0), 0.0, 10.0, "lens-radius", "Defines the lens radius. Values higher than 0. enable DOF and control the amount", gui)
+			dofdist = luxAttr(cam, "dofDist")
+			str += luxFloat("focaldistance", dofdist, 0.0, 10000.0, "distance", "Distance from the camera at which objects will be in focus. Has no effect if Lens Radius is 0", gui)
+			if gui:
+				Draw.Button("S", evtLuxGui, gui.x, gui.y-gui.h, gui.h, gui.h, "focus selected object", lambda e,v:setFocus("S"))
+				Draw.Button("C", evtLuxGui, gui.x+gui.h, gui.y-gui.h, gui.h, gui.h, "focus cursor", lambda e,v:setFocus("C"))
 		if gui: gui.newline("  Shutter:")
 		str += luxFloat("shutteropen", luxProp(cam, "camera.shutteropen", 0.0), 0.0, 100.0, "open", "time in seconds when shutter opens", gui)
 		str += luxFloat("shutterclose", luxProp(cam, "camera.shutterclose", 1.0), 0.0, 100.0, "close", "time in seconds when shutter closes", gui)
-		if gui: gui.newline("  Shift:")
-		luxFloat("X", luxAttr(cam, "shiftX"), -2.0, 2.0, "X", "horizontal lens shift", gui)
-		luxFloat("Y", luxAttr(cam, "shiftY"), -2.0, 2.0, "Y", "vertical lens shift", gui)
-		if context:
-	    		ratio = float(context.sizeY)/float(context.sizeX)
-			if ratio < 1.0:
-				screenwindow = [(2*cam.shiftX-1)*scale, (2*cam.shiftX+1)*scale, (2*cam.shiftY-ratio)*scale, (2*cam.shiftY+ratio)*scale]
-			else:
-				screenwindow = [(2*cam.shiftX-1/ratio)*scale, (2*cam.shiftX+1/ratio)*scale, (2*cam.shiftY-1)*scale, (2*cam.shiftY+1)*scale]
-# render region option
-			if context.borderRender:
-				(x1,y1,x2,y2) = context.border
-				screenwindow = [screenwindow[0]*(1-x1)+screenwindow[1]*x1, screenwindow[0]*(1-x2)+screenwindow[1]*x2,\
-						screenwindow[2]*(1-y1)+screenwindow[3]*y1, screenwindow[2]*(1-y2)+screenwindow[3]*y2]
-			str += " \"float screenwindow\" [%f %f %f %f]"%(screenwindow[0], screenwindow[1], screenwindow[2], screenwindow[3])
+		if camtype.get() in ["perspective", "orthographic"]:
+			if gui: gui.newline("  Shift:")
+			luxFloat("X", luxAttr(cam, "shiftX"), -2.0, 2.0, "X", "horizontal lens shift", gui)
+			luxFloat("Y", luxAttr(cam, "shiftY"), -2.0, 2.0, "Y", "vertical lens shift", gui)
+			if context:
+		    		ratio = float(context.sizeY)/float(context.sizeX)
+				if ratio < 1.0:
+					screenwindow = [(2*cam.shiftX-1)*scale, (2*cam.shiftX+1)*scale, (2*cam.shiftY-ratio)*scale, (2*cam.shiftY+ratio)*scale]
+				else:
+					screenwindow = [(2*cam.shiftX-1/ratio)*scale, (2*cam.shiftX+1/ratio)*scale, (2*cam.shiftY-1)*scale, (2*cam.shiftY+1)*scale]
+	# render region option
+				if context.borderRender:
+					(x1,y1,x2,y2) = context.border
+					screenwindow = [screenwindow[0]*(1-x1)+screenwindow[1]*x1, screenwindow[0]*(1-x2)+screenwindow[1]*x2,\
+							screenwindow[2]*(1-y1)+screenwindow[3]*y1, screenwindow[2]*(1-y2)+screenwindow[3]*y2]
+				str += " \"float screenwindow\" [%f %f %f %f]"%(screenwindow[0], screenwindow[1], screenwindow[2], screenwindow[3])
 	return str
+
 
 def luxFilm(scn, gui=None):
 	str = ""
@@ -1427,7 +1455,7 @@ def luxDraw():
 
 		# render presets
 		BGL.glRasterPos2i(10,y-45); Draw.Text("Render presets:")
-		luxpreset = luxProp(scn, "preset", "")
+		luxpreset = luxProp(scn, "preset", "1C - Final - medium MLT/Path Tracing (indoor) (recommended)")
 		presets = getScenePresets()
 		presetskeys = presets.keys()
 		presetskeys.sort()
