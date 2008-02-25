@@ -725,15 +725,18 @@ def getScenePresets():
 
 # radiance's hardcoded render presets:
 
+	# quick previews (biased)
 	presets['0A - Preview - Directlighting'] = {'pixelfilter.type':'gaussian','sampler.type':'lowdiscrepancy','sampler.lowdisc.pixelsampler':'lowdiscrepancy','sintegrator.type':'directlighting','sintegrator.dlighting.maxdepth':3 }
 	presets['0B - Preview - Path Tracing'] = {'pixelfilter.type':'gaussian','sampler.type':'lowdiscrepancy','sampler.lowdisc.pixelsampler':'lowdiscrepancy','sintegrator.type':'path','sintegrator.path.maxdepth':3, 'sintegrator.path.rrprob':1.0 }
 
+	# final renderings
 	presets['1A - Final - Path Tracing'] = {'pixelfilter.type':'mitchell','sampler.type':'lowdiscrepancy','sampler.lowdisc.pixelsampler':'lowdiscrepancy','sintegrator.type':'path','sintegrator.path.maxdepth':12, 'sintegrator.path.rrprob':0.65 }
-	presets['1B - Final - low MLT/Path Tracing'] = {'pixelfilter.type':'mitchell','sampler.type':'metropolis','sampler.metro.lmprob':0.4,'sampler.metro.maxrejects':256,'sintegrator.type':'path','sintegrator.path.maxdepth':12, 'sintegrator.path.rrprob':0.65 }
-	presets['1C - Final - medium MLT/Path Tracing'] = {'pixelfilter.type':'mitchell','sampler.type':'metropolis','sampler.metro.lmprob':0.25,'sampler.metro.maxrejects':256,'sintegrator.type':'path','sintegrator.path.maxdepth':12, 'sintegrator.path.rrprob':0.65 }
-	presets['1D - Final - high MLT/Path Tracing'] = {'pixelfilter.type':'mitchell','sampler.type':'metropolis','sampler.metro.lmprob':0.1,'sampler.metro.maxrejects':256,'sintegrator.type':'path','sintegrator.path.maxdepth':12, 'sintegrator.path.rrprob':0.65 }
+	presets['1B - Final - low MLT/Path Tracing (outdoor)'] = {'pixelfilter.type':'mitchell','sampler.type':'metropolis','sampler.metro.lmprob':0.4,'sampler.metro.maxrejects':128,'sintegrator.type':'path','sintegrator.path.maxdepth':12, 'sintegrator.path.rrprob':0.65 }
+	presets['1C - Final - medium MLT/Path Tracing (indoor) (recommended)'] = {'pixelfilter.type':'mitchell','sampler.type':'metropolis','sampler.metro.lmprob':0.25,'sampler.metro.maxrejects':128,'sintegrator.type':'path','sintegrator.path.maxdepth':12, 'sintegrator.path.rrprob':0.65 }
+	presets['1D - Final - high MLT/Path Tracing (complex)'] = {'pixelfilter.type':'mitchell','sampler.type':'metropolis','sampler.metro.lmprob':0.1,'sampler.metro.maxrejects':128,'sintegrator.type':'path','sintegrator.path.maxdepth':12, 'sintegrator.path.rrprob':0.65 }
+	presets['1E - Final - ER/Path Tracing'] = {'pixelfilter.type':'mitchell','sampler.type':'erpt','sintegrator.type':'path','sintegrator.path.maxdepth':12, 'sintegrator.path.rrprob':0.65 }
 
-
+	# empirical test/debugging reference renderings
 	presets['2A - Reference - Path Tracing'] = {'pixelfilter.type':'mitchell','sampler.type':'random','sampler.random.pixelsampler':'random','sintegrator.type':'path','sintegrator.path.maxdepth':1024, 'sintegrator.path.rrprob':0.65 }
 	presets['2B - Reference - MLT/Path Tracing'] = {'pixelfilter.type':'mitchell','sampler.type':'metropolis','sampler.metro.lmprob':0.25,'sampler.metro.maxrejects':8192,'sintegrator.type':'path','sintegrator.path.maxdepth':1024, 'sintegrator.path.rrprob':0.65 }
 
