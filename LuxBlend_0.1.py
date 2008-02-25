@@ -188,7 +188,7 @@ class luxExport:
 		light = False
 		for obj in self.scene.objects:
 			if ((obj.Layers & self.scene.Layers) > 0):
-				light = light or self.analyseObject(obj, obj.getMatrix(), obj.getName())
+				if self.analyseObject(obj, obj.getMatrix(), obj.getName()): light = True
 		return light
 
 	#-------------------------------------------------
