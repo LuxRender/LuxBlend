@@ -722,9 +722,22 @@ def getPresets(key):
 	return presets
 def getScenePresets():
 	presets = getPresets('luxblend_presets').copy()
-# radiance hardcoded render presets:
-#	presets['indoor'] = {'pixelfilter.type':'gaussian','env.type':'none','sampler.type':'erpt','sintegrator.type':'mltpath'}
-#	presets['indoor2'] = {'pixelfilter.type':'gaussian','env.type':'none','sampler.type':'erpt','sintegrator.type':'path'}
+
+# radiance's hardcoded render presets:
+
+	presets['0A - Preview - Directlighting'] = {'pixelfilter.type':'gaussian','sampler.type':'lowdiscrepancy','sampler.lowdisc.pixelsampler':'lowdiscrepancy','sintegrator.type':'directlighting','sintegrator.dlighting.maxdepth':3 }
+	presets['0B - Preview - Path Tracing'] = {'pixelfilter.type':'gaussian','sampler.type':'lowdiscrepancy','sampler.lowdisc.pixelsampler':'lowdiscrepancy','sintegrator.type':'path','sintegrator.path.maxdepth':3, 'sintegrator.path.rrprob':1.0 }
+
+	presets['1A - Final - Path Tracing'] = {'pixelfilter.type':'mitchell','sampler.type':'lowdiscrepancy','sampler.lowdisc.pixelsampler':'lowdiscrepancy','sintegrator.type':'path','sintegrator.path.maxdepth':12, 'sintegrator.path.rrprob':0.65 }
+	presets['1B - Final - low MLT/Path Tracing'] = {'pixelfilter.type':'mitchell','sampler.type':'metropolis','sampler.metro.lmprob':0.4,'sampler.metro.maxrejects':256,'sintegrator.type':'path','sintegrator.path.maxdepth':12, 'sintegrator.path.rrprob':0.65 }
+	presets['1C - Final - medium MLT/Path Tracing'] = {'pixelfilter.type':'mitchell','sampler.type':'metropolis','sampler.metro.lmprob':0.25,'sampler.metro.maxrejects':256,'sintegrator.type':'path','sintegrator.path.maxdepth':12, 'sintegrator.path.rrprob':0.65 }
+	presets['1D - Final - high MLT/Path Tracing'] = {'pixelfilter.type':'mitchell','sampler.type':'metropolis','sampler.metro.lmprob':0.1,'sampler.metro.maxrejects':256,'sintegrator.type':'path','sintegrator.path.maxdepth':12, 'sintegrator.path.rrprob':0.65 }
+
+
+	presets['2A - Reference - Path Tracing'] = {'pixelfilter.type':'mitchell','sampler.type':'random','sampler.random.pixelsampler':'random','sintegrator.type':'path','sintegrator.path.maxdepth':1024, 'sintegrator.path.rrprob':0.65 }
+	presets['2B - Reference - MLT/Path Tracing'] = {'pixelfilter.type':'mitchell','sampler.type':'metropolis','sampler.metro.lmprob':0.25,'sampler.metro.maxrejects':8192,'sintegrator.type':'path','sintegrator.path.maxdepth':1024, 'sintegrator.path.rrprob':0.65 }
+
+
 	return presets
 def getMaterialPresets():
 	return getPresets('luxblend_materials')
@@ -1082,12 +1095,12 @@ def luxSampler(scn, gui=None):
 		if samplertype.get() == "metropolis":
 			str += luxInt("initsamples", luxProp(scn, "sampler.metro.initsamples", 100000), 1, 1000000, "initsamples", "", gui)
 			if gui: gui.newline()
-			str += luxInt("maxconsecrejects", luxProp(scn, "sampler.metro.maxrejects", 512), 0, 10000, "max.rejects", "number of consecutive rejects before a new mutation is forced", gui)
-			str += luxFloat("largemutationprob", luxProp(scn, "sampler.metro.lmprob", 0.4), 0.0, 1.0, "LM.prob.", "probability of generation a large sample (mutation)", gui)
+			str += luxInt("maxconsecrejects", luxProp(scn, "sampler.metro.maxrejects", 256), 0, 32768, "max.rejects", "number of consecutive rejects before a new mutation is forced", gui)
+			str += luxFloat("largemutationprob", luxProp(scn, "sampler.metro.lmprob", 0.25), 0.0, 1.0, "LM.prob.", "probability of generation a large sample (mutation)", gui)
 		if samplertype.get() == "erpt":
 			str += luxInt("initsamples", luxProp(scn, "sampler.metro.initsamples", 100000), 1, 1000000, "initsamples", "", gui)
 			if gui: gui.newline()
-			str += luxInt("chainlength", luxProp(scn, "sampler.erpt.chainlength", 512), 1, 1000, "chainlength", "The number of mutations from a given seed", gui)
+			str += luxInt("chainlength", luxProp(scn, "sampler.erpt.chainlength", 512), 1, 32768, "chainlength", "The number of mutations from a given seed", gui)
 #			str += luxOption("pixelsampler", luxProp(scn, "sampler.erpt.pixelsampler", "vegas"), ["random", "vegas"], "pixel-sampler", "select pixel-sampler", gui)
 #			str += luxInt("mutationrange", luxProp(scn, "sampler.erpt.mutationrange", 128), 1, 1000, "mutationrange", "Maximum distance from a pixel in small mutation", gui)
 #			if gui: gui.newline()
@@ -1095,16 +1108,16 @@ def luxSampler(scn, gui=None):
 		if samplertype.get() == "lowdiscrepancy":
 			str += luxOption("pixelsampler", luxProp(scn, "sampler.lowdisc.pixelsampler", "lowdiscrepancy"), ["random", "vegas","lowdiscrepancy"], "pixel-sampler", "select pixel-sampler", gui)
 			if gui: gui.newline()
-			str += luxInt("pixelsamples", luxProp(scn, "sampler.lowdisc.pixelsamples", 4), 1, 100, "samples", "Average number of samples taken per pixel. More samples create a higher quality image at the cost of render time", gui)
+			str += luxInt("pixelsamples", luxProp(scn, "sampler.lowdisc.pixelsamples", 4), 1, 512, "samples", "Average number of samples taken per pixel. More samples create a higher quality image at the cost of render time", gui)
 		if samplertype.get() == "random":
 			str += luxOption("pixelsampler", luxProp(scn, "sampler.random.pixelsampler", "vegas"), ["random", "vegas","lowdiscrepancy"], "pixel-sampler", "select pixel-sampler", gui)
 			if gui: gui.newline()
-			str += luxInt("xsamples", luxProp(scn, "sampler.random.xsamples", 2), 1, 100, "xsamples", "Allows you to specify how many samples per pixel are taking in the x direction", gui)
-			str += luxInt("ysamples", luxProp(scn, "sampler.random.ysamples", 2), 1, 100, "ysamples", "Allows you to specify how many samples per pixel are taking in the y direction", gui)
+			str += luxInt("xsamples", luxProp(scn, "sampler.random.xsamples", 2), 1, 512, "xsamples", "Allows you to specify how many samples per pixel are taking in the x direction", gui)
+			str += luxInt("ysamples", luxProp(scn, "sampler.random.ysamples", 2), 1, 512, "ysamples", "Allows you to specify how many samples per pixel are taking in the y direction", gui)
 		if samplertype.get() == "halton":
 			str += luxOption("pixelsampler", luxProp(scn, "sampler.halton.pixelsampler", "lowdiscrepancy"), ["random", "vegas","lowdiscrepancy"], "pixel-sampler", "select pixel-sampler", gui)
 			if gui: gui.newline()
-			str += luxInt("pixelsamples", luxProp(scn, "sampler.halton.pixelsamples", 4), 1, 100, "samples", "Average number of samples taken per pixel. More samples create a higher quality image at the cost of render time", gui)
+			str += luxInt("pixelsamples", luxProp(scn, "sampler.halton.pixelsamples", 4), 1, 512, "samples", "Average number of samples taken per pixel. More samples create a higher quality image at the cost of render time", gui)
 	return str			
 
 def luxSurfaceIntegrator(scn, gui=None):
@@ -1113,11 +1126,11 @@ def luxSurfaceIntegrator(scn, gui=None):
 		integratortype = luxProp(scn, "sintegrator.type", "path")
 		str = luxIdentifier("SurfaceIntegrator", integratortype, ["directlighting", "path", "mltpath"], "INTEGRATOR", "select surface integrator type", gui)
 		if integratortype.get() == "directlighting":
-			str += luxInt("maxdepth", luxProp(scn, "sintegrator.dlighting.maxdepth", 5), 0, 1000, "max-depth", "The maximum recursion depth for ray casting", gui)
+			str += luxInt("maxdepth", luxProp(scn, "sintegrator.dlighting.maxdepth", 5), 0, 2048, "max-depth", "The maximum recursion depth for ray casting", gui)
 			if gui: gui.newline()
 			str += luxOption("strategy", luxProp(scn, "sintegrator.dlighting.strategy", "all"), ["one", "all", "weighted"], "strategy", "select directlighting strategy", gui)
 		if integratortype.get() == "path":
-			str += luxInt("maxdepth", luxProp(scn, "sintegrator.path.maxdepth", 16), 0, 1000, "maxdepth", "The maximum recursion depth for ray casting", gui)
+			str += luxInt("maxdepth", luxProp(scn, "sintegrator.path.maxdepth", 12), 0, 2048, "maxdepth", "The maximum recursion depth for ray casting", gui)
 			if gui: gui.newline()
 			str += luxFloat("rrcontinueprob", luxProp(scn, "sintegrator.path.rrprob", 0.65), 0.0, 1.0, "RR.prob.", "continueprobability for RR (0.0-1.0)", gui)
 #			mlt = luxProp(scn, "sintegrator.path.metropolis", "true")
@@ -1126,7 +1139,7 @@ def luxSurfaceIntegrator(scn, gui=None):
 #				str += luxInt("maxconsecrejects", luxProp(scn, "sintegrator.path.maxrejects", 512), 0, 10000, "max.rejects", "number of consecutive rejects before a new mutation is forced", gui)
 #				str += luxFloat("largemutationprob", luxProp(scn, "sintegrator.path.lmprob", 0.4), 0.0, 1.0, "LM.prob.", "probability of generation a large sample (mutation)", gui)
 		if integratortype.get() == "mltpath":
-			str += luxInt("maxdepth", luxProp(scn, "sintegrator.mltpath.maxdepth", 16), 0, 1000, "maxdepth", "The maximum recursion depth for ray casting", gui)
+			str += luxInt("maxdepth", luxProp(scn, "sintegrator.mltpath.maxdepth", 12), 0, 2048, "maxdepth", "The maximum recursion depth for ray casting", gui)
 #			if gui: gui.newline()
 #			str += luxInt("maxconsecrejects", luxProp(scn, "sintegrator.mltpath.maxrejects", 512), 0, 10000, "max.rejects", "number of consecutive rejects before a new mutation is forced", gui)
 #			str += luxFloat("largemutationprob", luxProp(scn, "sintegrator.mltpath.lmprob", 0.4), 0.0, 1.0, "LM.prob.", "probability of generation a large sample (mutation)", gui)
@@ -1206,7 +1219,7 @@ def luxSystem(scn, gui=None):
 		if gui: gui.newline()
 		luxInt("threads", luxProp(scn, "threads", 1), 1, 100, "threads", "number of threads used for rendering", gui)
 		if gui: gui.newline()
-		luxBool("RPC", luxProp(scn, "RPC", "true"), "RPC", "use reverse gamma correction", gui)
+		luxBool("RGC", luxProp(scn, "RGC", "true"), "RGC", "use reverse gamma correction", gui)
 		luxBool("ColClamp", luxProp(scn, "colorclamp", "true"), "ColClamp", "clamp all colors to 0.0-0.9", gui)
 
 
@@ -1410,7 +1423,7 @@ def luxDraw():
 		gui = luxGui(y-70)
 
 		# render presets
-		BGL.glRasterPos2i(70,y-45); Draw.Text("render presets:")
+		BGL.glRasterPos2i(10,y-45); Draw.Text("Render presets:")
 		luxpreset = luxProp(scn, "preset", "")
 		presets = getScenePresets()
 		presetskeys = presets.keys()
@@ -1420,7 +1433,7 @@ def luxDraw():
 		for i, v in enumerate(presetskeys): presetsstr = "%s %%x%d|%s"%(v, i, presetsstr)
 		try: i = presetskeys.index(luxpreset.get())
 		except ValueError: i = 0
-		Draw.Menu(presetsstr, evtLuxGui, 170, y-50, 160, 18, i, "", lambda e,v: luxpreset.set(presetskeys[v]))
+		Draw.Menu(presetsstr, evtLuxGui, 110, y-50, 220, 18, i, "", lambda e,v: luxpreset.set(presetskeys[v]))
 		Draw.Button("save", evtSavePreset, 330, y-50, 40, 18, "create a render-settings preset")
 		Draw.Button("del", evtDeletePreset, 370, y-50, 40, 18, "delete a render-settings preset")
 
