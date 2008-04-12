@@ -1286,7 +1286,7 @@ def luxMaterial(mat, gui=None):
 	str = ""
 	if mat:
 		mattype = luxProp(mat, "type", "matte")
-		link = luxIdentifier("Material", mattype, ["light","portal","carpaint","glass","matte","metal","mirror","plastic","roughglass","shinymetal","substrate"], "  TYPE", "select material type", gui)
+		link = luxIdentifier("Material", mattype, ["light","portal","carpaint","glass","matte","mattetranslucent","metal","mirror","plastic","roughglass","shinymetal","substrate"], "  TYPE", "select material type", gui)
 		if gui: gui.newline()
 		if mattype.get() == "light":
 			link = "AreaLightSource \"area\""
@@ -1327,6 +1327,11 @@ def luxMaterial(mat, gui=None):
 			(str,link) = c((str,link), luxFloatTexture("bumpmap", "glass.bumpmap", 0.0, 0.0, 1.0, "bumpmap", "", mat, gui))
 		if mattype.get() == "matte":
 			(str,link) = c((str,link), luxSpectrumTexture("Kd", "matte.kd", "1.0 1.0 1.0", 1.0, "diffuse", "", mat, gui))
+			(str,link) = c((str,link), luxFloatTexture("sigma", "matte.sigma", 0.0, 0.0, 100.0, "sigma", "", mat, gui))
+			(str,link) = c((str,link), luxFloatTexture("bumpmap", "matte.bumpmap", 0.0, 0.0, 1.0, "bumpmap", "", mat, gui))
+		if mattype.get() == "mattetranslucent":
+			(str,link) = c((str,link), luxSpectrumTexture("Kr", "matte.kr", "1.0 1.0 1.0", 1.0, "reflection", "", mat, gui))
+			(str,link) = c((str,link), luxSpectrumTexture("Kt", "matte.kt", "1.0 1.0 1.0", 1.0, "transmission", "", mat, gui))
 			(str,link) = c((str,link), luxFloatTexture("sigma", "matte.sigma", 0.0, 0.0, 100.0, "sigma", "", mat, gui))
 			(str,link) = c((str,link), luxFloatTexture("bumpmap", "matte.bumpmap", 0.0, 0.0, 1.0, "bumpmap", "", mat, gui))
 		if mattype.get() == "metal":
