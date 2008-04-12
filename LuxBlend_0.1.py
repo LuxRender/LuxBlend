@@ -727,18 +727,18 @@ def getScenePresets():
 
 	# quick previews (biased)
 	presets['0A - Preview - Directlighting'] = {'pixelfilter.type':'gaussian','sampler.type':'lowdiscrepancy','sampler.lowdisc.pixelsampler':'lowdiscrepancy','sintegrator.type':'directlighting','sintegrator.dlighting.maxdepth':3 }
-	presets['0B - Preview - Path Tracing'] = {'pixelfilter.type':'gaussian','sampler.type':'lowdiscrepancy','sampler.lowdisc.pixelsampler':'lowdiscrepancy','sintegrator.type':'path','sintegrator.path.maxdepth':3, 'sintegrator.path.rrprob':1.0 }
+	presets['0B - Preview - Path Tracing'] = {'pixelfilter.type':'gaussian','sampler.type':'lowdiscrepancy','sampler.lowdisc.pixelsampler':'lowdiscrepancy','sintegrator.type':'path','sintegrator.path.maxdepth':3 }
 
 	# final renderings
-	presets['1A - Final - Path Tracing'] = {'pixelfilter.type':'mitchell','sampler.type':'lowdiscrepancy','sampler.lowdisc.pixelsampler':'lowdiscrepancy','sintegrator.type':'path','sintegrator.path.maxdepth':12, 'sintegrator.path.rrprob':0.65 }
-	presets['1B - Final - low MLT/Path Tracing (outdoor)'] = {'pixelfilter.type':'mitchell','sampler.type':'metropolis','sampler.metro.lmprob':0.4,'sampler.metro.maxrejects':128,'sintegrator.type':'path','sintegrator.path.maxdepth':12, 'sintegrator.path.rrprob':0.65 }
-	presets['1C - Final - medium MLT/Path Tracing (indoor) (recommended)'] = {'pixelfilter.type':'mitchell','sampler.type':'metropolis','sampler.metro.lmprob':0.25,'sampler.metro.maxrejects':128,'sintegrator.type':'path','sintegrator.path.maxdepth':12, 'sintegrator.path.rrprob':0.65 }
-	presets['1D - Final - high MLT/Path Tracing (complex)'] = {'pixelfilter.type':'mitchell','sampler.type':'metropolis','sampler.metro.lmprob':0.1,'sampler.metro.maxrejects':128,'sintegrator.type':'path','sintegrator.path.maxdepth':12, 'sintegrator.path.rrprob':0.65 }
-	presets['1E - Final - ER/Path Tracing'] = {'pixelfilter.type':'mitchell','sampler.type':'erpt','sintegrator.type':'path','sintegrator.path.maxdepth':12, 'sintegrator.path.rrprob':0.65 }
+	presets['1A - Final - Path Tracing'] = {'pixelfilter.type':'mitchell','sampler.type':'lowdiscrepancy','sampler.lowdisc.pixelsampler':'lowdiscrepancy','sintegrator.type':'path','sintegrator.path.maxdepth':12 }
+	presets['1B - Final - low MLT/Path Tracing (outdoor)'] = {'pixelfilter.type':'mitchell','sampler.type':'metropolis','sampler.metro.lmprob':0.4,'sampler.metro.maxrejects':128,'sintegrator.type':'path','sintegrator.path.maxdepth':12 }
+	presets['1C - Final - medium MLT/Path Tracing (indoor) (recommended)'] = {'pixelfilter.type':'mitchell','sampler.type':'metropolis','sampler.metro.lmprob':0.25,'sampler.metro.maxrejects':128,'sintegrator.type':'path','sintegrator.path.maxdepth':12 }
+	presets['1D - Final - high MLT/Path Tracing (complex)'] = {'pixelfilter.type':'mitchell','sampler.type':'metropolis','sampler.metro.lmprob':0.1,'sampler.metro.maxrejects':128,'sintegrator.type':'path','sintegrator.path.maxdepth':12 }
+	presets['1E - Final - ER/Path Tracing'] = {'pixelfilter.type':'mitchell','sampler.type':'erpt','sintegrator.type':'path','sintegrator.path.maxdepth':12 }
 
 	# empirical test/debugging reference renderings
-	presets['2A - Reference - Path Tracing'] = {'pixelfilter.type':'mitchell','sampler.type':'random','sampler.random.pixelsampler':'random','sintegrator.type':'path','sintegrator.path.maxdepth':1024, 'sintegrator.path.rrprob':0.65 }
-	presets['2B - Reference - MLT/Path Tracing'] = {'pixelfilter.type':'mitchell','sampler.type':'metropolis','sampler.metro.lmprob':0.25,'sampler.metro.maxrejects':8192,'sintegrator.type':'path','sintegrator.path.maxdepth':1024, 'sintegrator.path.rrprob':0.65 }
+	presets['2A - Reference - Path Tracing'] = {'pixelfilter.type':'mitchell','sampler.type':'random','sampler.random.pixelsampler':'random','sintegrator.type':'path','sintegrator.path.maxdepth':1024 }
+	presets['2B - Reference - MLT/Path Tracing'] = {'pixelfilter.type':'mitchell','sampler.type':'metropolis','sampler.metro.lmprob':0.25,'sampler.metro.maxrejects':8192,'sintegrator.type':'path','sintegrator.path.maxdepth':1024 }
 
 
 	return presets
@@ -1163,19 +1163,6 @@ def luxSurfaceIntegrator(scn, gui=None):
 		if integratortype.get() == "path":
 			str += luxInt("maxdepth", luxProp(scn, "sintegrator.path.maxdepth", 12), 0, 2048, "maxdepth", "The maximum recursion depth for ray casting", gui)
 			if gui: gui.newline()
-			str += luxFloat("rrcontinueprob", luxProp(scn, "sintegrator.path.rrprob", 0.65), 0.0, 1.0, "RR.prob.", "continueprobability for RR (0.0-1.0)", gui)
-#			mlt = luxProp(scn, "sintegrator.path.metropolis", "true")
-#			str += luxBool("metropolis", mlt, "metropolis", "enables use of metropolis integrationsampler", gui)
-#			if mlt.get() == "true":
-#				str += luxInt("maxconsecrejects", luxProp(scn, "sintegrator.path.maxrejects", 512), 0, 10000, "max.rejects", "number of consecutive rejects before a new mutation is forced", gui)
-#				str += luxFloat("largemutationprob", luxProp(scn, "sintegrator.path.lmprob", 0.4), 0.0, 1.0, "LM.prob.", "probability of generation a large sample (mutation)", gui)
-		if integratortype.get() == "mltpath":
-			str += luxInt("maxdepth", luxProp(scn, "sintegrator.mltpath.maxdepth", 12), 0, 2048, "maxdepth", "The maximum recursion depth for ray casting", gui)
-#			if gui: gui.newline()
-#			str += luxInt("maxconsecrejects", luxProp(scn, "sintegrator.mltpath.maxrejects", 512), 0, 10000, "max.rejects", "number of consecutive rejects before a new mutation is forced", gui)
-#			str += luxFloat("largemutationprob", luxProp(scn, "sintegrator.mltpath.lmprob", 0.4), 0.0, 1.0, "LM.prob.", "probability of generation a large sample (mutation)", gui)
-#			if gui: gui.newline()
-#			str += luxFloat("rrcontinueprob", luxProp(scn, "sintegrator.path.rrprob", 0.65), 0.0, 1.0, "RR.prob.", "continueprobability for RR (0.0-1.0)", gui)
 	return str
 
 def luxEnvironment(scn, gui=None):
