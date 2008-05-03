@@ -1026,9 +1026,9 @@ def luxCamera(cam, context, gui=None):
 def luxFilm(scn, gui=None):
 	str = ""
 	if scn:
-		filmtype = luxProp(scn, "film.type", "multiimage")
-		str = luxIdentifier("Film", filmtype, ["multiimage", "fleximage"], "FILM", "select film type", gui)
-		if filmtype.get() == "multiimage":
+		filmtype = luxProp(scn, "film.type", "fleximage")
+		str = luxIdentifier("Film", filmtype, ["fleximage"], "FILM", "select film type", gui)
+		if filmtype.get() == "fleximage":
 			context = scn.getRenderingContext()
 			if context:
 				if gui: gui.newline("  Resolution:")
@@ -1045,94 +1045,31 @@ def luxFilm(scn, gui=None):
 				else:
 					str += " \"integer xresolution\" [%d] \"integer yresolution\" [%d]"%(luxAttr(context, "sizeX").get()*scale/100, luxAttr(context, "sizeY").get()*scale/100)
 	
-			if gui: gui.newline("  Tonemapper:")
-			tonetype = luxProp(scn, "film.tonemapper.type", "reinhard")
-			str += luxOption("tonemapper", tonetype, ["reinhard"], "tonemapper", "select tonemapper type", gui)
-			if tonetype.get() == "reinhard":
-				str += luxFloat("reinhard_burn", luxProp(scn, "film.tonemapper.reinhard.burn", 6.0), 0.1, 12.0, "burn", "12.0: no burn out, 0.1 lot of burn out", gui)
-				str += luxFloat("reinhard_prescale", luxProp(scn, "film.tonemapper.reinhard.prescale", 1.0), 0.0, 10.0, "pre-scale", "Pre Scale: See Lux Manual ;)", gui)
-				str += luxFloat("reinhard_postscale", luxProp(scn, "film.tonemapper.reinhard.postscale", 1.0), 0.0, 10.0, "post-scale", "Post Scale: See Lux Manual ;)", gui)
-	#		if tonetype.get() == "contrast":
-	#			str += luxFloat("contrast_displayadaptationY", luxProp(scn, "film.tonemapper.contrast.dispadaptY", 0), 0, 100, "d.adaptY", "display adaptation Y", gui)			
-	#		if tonetype.get() == "nonlinear":
-	#			str += luxFloat("nonlinear_maxY", luxProp(scn, "film.tonemapper.nonlinear.maxY", 0.0), 0.0, 100.0, "maxY", "maxY", gui)			
-			if gui: gui.newline("  Filter:")
+			if gui: gui.newline("  Tonemap:")
+			str += luxFloat("reinhard_prescale", luxProp(scn, "film.reinhard.prescale", 1.0), 0.0, 10.0, "pre-scale", "Pre Scale: See Lux Manual ;)", gui)
+			str += luxFloat("reinhard_postscale", luxProp(scn, "film.reinhard.postscale", 1.0), 0.0, 10.0, "post-scale", "Post Scale: See Lux Manual ;)", gui)
+			str += luxFloat("reinhard_burn", luxProp(scn, "film.reinhard.burn", 6.0), 0.1, 12.0, "burn", "12.0: no burn out, 0.1 lot of burn out", gui)
+			if gui: gui.newline("  Gamma:")
 			str += luxFloat("gamma", luxProp(scn, "film.gamma", 2.2), 0.0, 6.0, "gamma", "Output and RGC Gamma", gui)
-			str += luxFloat("dither", luxProp(scn, "film.dither", 0.0), 0.0, 1.0, "dither", "Output Image Dither", gui)
-			if gui: gui.newline("  Bloom:")
-			str += luxFloat("bloomwidth", luxProp(scn, "film.bloomweight", 0.0), 0.0, 1.0, "weight", "amount of bloom", gui)
-			str += luxFloat("bloomradius", luxProp(scn, "film.bloomradius", 0.0), 0.0, 10.0, "radius", "radius of bloom filter", gui)
 			if gui: gui.newline("  Display:")
-			str += luxInt("ldr_displayinterval", luxProp(scn, "film.ldr_displayinterval", 12), 5, 3600, "interval", "Set display Interval (seconds)", gui)
-			if gui: gui.newline("  Output:")
+			str += luxInt("displayinterval", luxProp(scn, "film.displayinterval", 12), 5, 3600, "interval", "Set display Interval (seconds)", gui)
+			if gui: gui.newline("  Write:")
+			str += luxInt("writeinterval", luxProp(scn, "film.writeinterval", 120), 5, 3600, "interval", "Set display Interval (seconds)", gui)
+			if gui: gui.newline("  Formats:")
 			fn = luxProp(scn, "filename", Blender.Get("filename")).get();
-			saveigi = luxProp(scn, "film.igi_save", "false")
-			luxBool("", saveigi, "Save IGI", "save untonemapped IGI file", gui)
-			if saveigi.get() == "true":
-				str += " \"string igi_filename\" [\"%s\"]"%(luxstr(sys.makename(fn, ".igi")))
-				str += luxInt("igi_writeinterval", luxProp(scn, "film.igi_writeinterval", 120), 20, 3600, "interval", "Set Interval for IGI file write (seconds)", gui)
 			if gui: gui.newline("")
-			saveexr = luxProp(scn, "film.hdr_save", "false")
-			luxBool("", saveexr, "Save EXR", "save tonemapped EXR file", gui)
-			if saveexr.get() == "true":
-				str += " \"string hdr_filename\" [\"%s\"]"%(luxstr(sys.makename(fn, ".exr")))
-				str += luxInt("hdr_writeinterval", luxProp(scn, "film.hdr_writeinterval", 120), 20, 3600, "interval", "Set Interval for EXR file write (seconds)", gui)
+			savetga = luxProp(scn, "film.write_tonemapped_tga", "true")
+			str += luxBool("write_tonemapped_tga", savetga, "Tonemapped TGA", "save tonemapped TGA file", gui)
 			if gui: gui.newline("")
-			savetga = luxProp(scn, "film.ldr_save", "true")
-			luxBool("", savetga, "Save TGA", "save tonemapped TGA file", gui)
-			if savetga.get() == "true":
-				str += " \"string ldr_filename\" [\"%s\"]"%(luxstr(sys.makename(fn, ".tga")))
-				str += luxInt("ldr_writeinterval", luxProp(scn, "film.ldr_writeinterval", 120), 20, 3600, "interval", "Set Interval for TGA file write (seconds)", gui)
-	if filmtype.get() == "fleximage":
-			context = scn.getRenderingContext()
-			if context:
-				if gui: gui.newline("  Resolution:")
-				luxInt("xresolution", luxAttr(context, "sizeX"), 0, 4096, "X", "width of the render", gui, 0.666)
-				luxInt("yresolution", luxAttr(context, "sizeY"), 0, 4096, "Y", "height of the render", gui, 0.666)
-				scale = luxProp(scn, "film.scale", "100 %")
-				luxOption("", scale, ["100 %", "75 %", "50 %", "25 %"], "scale", "scale resolution", gui, 0.666)
-				scale = int(scale.get()[:-1])
-# render region option
-				if context.borderRender:
-					(x1,y1,x2,y2) = context.border
-					if (x1==x2) and (y1==y2): print "WARNING: empty render-region, use SHIFT-B to set render region in Blender."
-					str += " \"integer xresolution\" [%d] \"integer yresolution\" [%d]"%(luxAttr(context, "sizeX").get()*scale/100*(x2-x1), luxAttr(context, "sizeY").get()*scale/100*(y2-y1))
-				else:
-					str += " \"integer xresolution\" [%d] \"integer yresolution\" [%d]"%(luxAttr(context, "sizeX").get()*scale/100, luxAttr(context, "sizeY").get()*scale/100)
-	
-			if gui: gui.newline("  Tonemapper:")
-			tonetype = luxProp(scn, "film.tonemapper.type", "reinhard")
-			str += luxOption("tonemapper", tonetype, ["reinhard"], "tonemapper", "select tonemapper type", gui)
-			if tonetype.get() == "reinhard":
-				str += luxFloat("reinhard_burn", luxProp(scn, "film.tonemapper.reinhard.burn", 6.0), 0.1, 12.0, "burn", "12.0: no burn out, 0.1 lot of burn out", gui)
-				str += luxFloat("reinhard_prescale", luxProp(scn, "film.tonemapper.reinhard.prescale", 1.0), 0.0, 10.0, "pre-scale", "Pre Scale: See Lux Manual ;)", gui)
-				str += luxFloat("reinhard_postscale", luxProp(scn, "film.tonemapper.reinhard.postscale", 1.0), 0.0, 10.0, "post-scale", "Post Scale: See Lux Manual ;)", gui)
-	#		if tonetype.get() == "contrast":
-	#			str += luxFloat("contrast_displayadaptationY", luxProp(scn, "film.tonemapper.contrast.dispadaptY", 0), 0, 100, "d.adaptY", "display adaptation Y", gui)			
-	#		if tonetype.get() == "nonlinear":
-	#			str += luxFloat("nonlinear_maxY", luxProp(scn, "film.tonemapper.nonlinear.maxY", 0.0), 0.0, 100.0, "maxY", "maxY", gui)			
-			if gui: gui.newline("  Filter:")
-			str += luxFloat("gamma", luxProp(scn, "film.gamma", 2.2), 0.0, 6.0, "gamma", "Output and RGC Gamma", gui)
-			str += luxFloat("dither", luxProp(scn, "film.dither", 0.0), 0.0, 1.0, "dither", "Output Image Dither", gui)
-			if gui: gui.newline("  Bloom:")
-			str += luxFloat("bloomwidth", luxProp(scn, "film.bloomweight", 0.0), 0.0, 1.0, "weight", "amount of bloom", gui)
-			str += luxFloat("bloomradius", luxProp(scn, "film.bloomradius", 0.0), 0.0, 10.0, "radius", "radius of bloom filter", gui)
-#			if gui: gui.newline("  Display:")
-#			str += luxInt("ldr_displayinterval", luxProp(scn, "film.ldr_displayinterval", 12), 5, 3600, "interval", "Set display Interval (seconds)", gui)
-			if gui: gui.newline("  Output:")
-
-			fn = luxProp(scn, "filename", Blender.Get("filename")).get();
-#			str += " \"string filename\" [\"%s\"]"%(luxstr(fn))
-			str += " \"string filename\" [\"%s\"]"%(luxstr(sys.makename(fn, "")))
+			savetmexr = luxProp(scn, "film.write_tonemapped_exr", "false")
+			saveexr = luxProp(scn, "film.write_untonemapped_exr", "false")
+			str += luxBool("write_tonemapped_exr", savetmexr, "Tonemapped EXR", "save tonemapped EXR file", gui)
+			str += luxBool("write_untonemapped_exr", saveexr, "Untonemapped EXR", "save untonemapped EXR file", gui)
 			if gui: gui.newline("")
-			saveexr = luxProp(scn, "film.hdr_save", "false")
-			savetga = luxProp(scn, "film.ldr_save", "true")
-			str += luxBool("outhdr", saveexr, "Save EXR", "save tonemapped EXR file", gui)
-			str += luxBool("outldr", savetga, "Save TGA", "save tonemapped TGA file", gui)
-#			str += " \"string outhdr\" [\"%s\"]"%(luxstr(saveexr))
-#			str += " \"string outldr\" [\"%s\"]"%(luxstr(savetga))
-			if gui: gui.newline("")
-			str += luxInt("writeinterval", luxProp(scn, "film.writeinterval", 120), 5, 3600, "interval", "Set Interval for file write (seconds)", gui)
+			savetmigi = luxProp(scn, "film.write_tonemapped_igi", "false")
+			saveigi = luxProp(scn, "film.write_untonemapped_igi", "false")
+			str += luxBool("write_tonemapped_igi", savetmigi, "Tonemapped IGI", "save tonemapped IGI file", gui)
+			str += luxBool("write_untonemapped_igi", saveigi, "Untonemapped IGI", "save untonemapped IGI file", gui)
 	return str
 
 
