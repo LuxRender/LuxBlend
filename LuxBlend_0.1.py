@@ -89,13 +89,15 @@ def exportMaterialGeomTag(mat):
 ################################################################
 
 
-
+dummyMat = 2394723948 # random identifier for dummy material
+clayMat = None
 
 #-------------------------------------------------
 # getMaterials(obj)
 # helper function to get the material list of an object in respect of obj.colbits
 #-------------------------------------------------
 def getMaterials(obj, compress=False):
+	global clayMat
 	mats = [None]*16
 	colbits = obj.colbits
 	objMats = obj.getMaterials(1)
@@ -122,6 +124,13 @@ def getMaterials(obj, compress=False):
 	else:
 		print "Warning: object %s has no material assigned"%(obj.getName())
 		mats = []
+	# clay option
+	if luxProp(Scene.GetCurrent(), "clay", "false").get()=="true":
+		if clayMat==None: clayMat = Material.New("lux_clayMat")
+		for i in range(len(mats)):
+			if mats[i]:
+				mattype = luxProp(mats[i], "type", "").get()
+				if (mattype not in ["portal","light"]): mats[i] = clayMat
 	return mats
 
 
@@ -129,8 +138,6 @@ def getMaterials(obj, compress=False):
 ######################################################
 # luxExport class
 ######################################################
-
-dummyMat = 2394723948 # random identifier for dummy material
 
 class luxExport:
 	#-------------------------------------------------
@@ -785,6 +792,7 @@ class luxProp:
 	def __init__(self, obj, name, default):
 		self.obj = obj
 		self.name = name
+		if len(name)>31: print "Warning: property-name \"%s\" has more than 31 chars."%(name)
 		self.default = default
 	def get(self):
 		global usedproperties, luxdefaults
@@ -1050,7 +1058,7 @@ def luxFilm(scn, gui=None):
 			str += luxFloat("reinhard_postscale", luxProp(scn, "film.reinhard.postscale", 1.0), 0.0, 10.0, "post-scale", "Post Scale: See Lux Manual ;)", gui)
 			str += luxFloat("reinhard_burn", luxProp(scn, "film.reinhard.burn", 6.0), 0.1, 12.0, "burn", "12.0: no burn out, 0.1 lot of burn out", gui)
 			if gui: gui.newline("  Gamma:")
-			str += luxFloat("gamma", luxProp(scn, "film.gamma", 2.2), 0.0, 6.0, "gamma", "Output and RGC Gamma", gui)
+			str += luxFloat("gamma", luxProp(scn, "film.gamma", 2.2), 0.1, 6.0, "gamma", "Output and RGC Gamma", gui)
 			if gui: gui.newline("  Display:")
 			str += luxInt("displayinterval", luxProp(scn, "film.displayinterval", 12), 5, 3600, "interval", "Set display Interval (seconds)", gui)
 			if gui: gui.newline("  Write:")
@@ -1150,9 +1158,9 @@ def luxSurfaceIntegrator(scn, gui=None):
 		if integratortype.get() == "path2":
 			str += luxInt("maxdepth", luxProp(scn, "sintegrator.path2.maxdepth", 12), 0, 2048, "maxdepth", "The maximum recursion depth for ray casting", gui)
 		if integratortype.get() == "bidirectional":
-			str += luxInt("eyedepth", luxProp(scn, "sintegrator.bidirectional.eyedepth", 8), 0, 2048, "eyedepth", "The maximum recursion depth for ray casting", gui)
+			str += luxInt("eyedepth", luxProp(scn, "sintegrator.bidir.eyedepth", 8), 0, 2048, "eyedepth", "The maximum recursion depth for ray casting", gui)
 			if gui: gui.newline()
-			str += luxInt("lightdepth", luxProp(scn, "sintegrator.bidirectional.lightdepth", 8), 0, 2048, "lightdepth", "The maximum recursion depth for light ray casting", gui)
+			str += luxInt("lightdepth", luxProp(scn, "sintegrator.bidir.lightdepth", 8), 0, 2048, "lightdepth", "The maximum recursion depth for light ray casting", gui)
 	return str
 
 def luxEnvironment(scn, gui=None):
@@ -1515,6 +1523,7 @@ def luxDraw():
 			Draw.Button("save defaults", 0, r[0], r[1], r[2], r[3], "save current settings as defaults", lambda e,v:saveluxdefaults())
 		run = luxProp(scn, "run", "true")
 		dlt = luxProp(scn, "default", "true")
+		clay = luxProp(scn, "clay", "false")
 		lxs = luxProp(scn, "lxs", "true")
 		lxo = luxProp(scn, "lxo", "true")
 		lxm = luxProp(scn, "lxm", "true")
@@ -1525,6 +1534,7 @@ def luxDraw():
 #			Draw.Button("Export Anim", 0, 200, 20, 100, 36, "Export as animation")
 		Draw.Toggle("run", evtLuxGui, 320, 40, 30, 16, run.get()=="true", "start Lux after export", lambda e,v: run.set(["false","true"][bool(v)]))
 		Draw.Toggle("def", evtLuxGui, 350, 40, 30, 16, dlt.get()=="true", "save to default.lxs", lambda e,v: dlt.set(["false","true"][bool(v)]))
+		Draw.Toggle("clay", evtLuxGui, 380, 40, 30, 16, clay.get()=="true", "all materials are rendered as white-matte", lambda e,v: clay.set(["false","true"][bool(v)]))
 		Draw.Toggle(".lxs", 0, 320, 20, 30, 16, lxs.get()=="true", "export .lxs scene file", lambda e,v: lxs.set(["false","true"][bool(v)]))
 		Draw.Toggle(".lxo", 0, 350, 20, 30, 16, lxo.get()=="true", "export .lxo geometry file", lambda e,v: lxo.set(["false","true"][bool(v)]))
 		Draw.Toggle(".lxm", 0, 380, 20, 30, 16, lxm.get()=="true", "export .lxm material file", lambda e,v: lxm.set(["false","true"][bool(v)]))
