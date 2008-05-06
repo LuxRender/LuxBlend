@@ -1431,12 +1431,71 @@ def setactivemat(mat):
 	global activemat
 	activemat = mat
 
+
+
+# scrollbar
+class scrollbar:
+	def __init__(self):
+		self.position = 0 # current position at top (inside 0..height-viewHeight)
+		self.height = 0 # total height of the content
+		self.viewHeight = 0 # height of window
+		self.x = 0 # horizontal position of the scrollbar
+		self.scrolling = self.over = False # start without scrolling ;)
+	def calcRects(self):
+		# Blender doesn't give us direct access to the window size yet, but it does set the
+		# GL scissor box for it, so we can get the size from that. (thx to Daniel Dunbar)
+		size = BGL.Buffer(BGL.GL_FLOAT, 4)
+		BGL.glGetFloatv(BGL.GL_SCISSOR_BOX, size)
+		size = size.list # [winx, winy, width, height]
+		self.winrect = size[:]
+		self.viewHeight = size[3]
+		size[0], size[1] = size[2]-20, 0 # [scrollx1, scrolly1, scrollx2, scrolly2]
+		self.rect = size[:]
+		if self.position < 0: self.position = 0
+		if self.height < self.viewHeight: self.height = self.viewHeight
+		if self.position > self.height-self.viewHeight: self.position = self.height-self.viewHeight
+		self.factor = (size[3]-size[1]-4)/self.height
+		self.sliderRect = [size[0]+2, size[3]-2-(self.position+self.viewHeight)*self.factor, size[2]-2, size[3]-2-self.position*self.factor]
+	def draw(self):
+		self.calcRects()
+		BGL.glColor3f(0.5,0.5,0.5); BGL.glRectf(self.rect[0],self.rect[1],self.rect[2],self.rect[3])
+		if self.over or self.scrolling: BGL.glColor3f(1.0,1.0,0.7)
+		else: BGL.glColor3f(0.7,0.7,0.7)
+		BGL.glRectf(self.sliderRect[0],self.sliderRect[1],self.sliderRect[2],self.sliderRect[3])
+	def getTop(self):
+		return self.viewHeight+self.position
+	def scroll(self, delta):
+		self.position = self.position + delta
+		self.calcRects()
+		Draw.Redraw()
+	def Mouse(self):
+		coord, buttons = Window.GetMouseCoords(), Window.GetMouseButtons()
+		over = (coord[0]>=self.winrect[0]+self.rect[0]) and (coord[0]<=self.winrect[0]+self.rect[2]) and \
+		       (coord[1]>=self.winrect[1]+self.rect[1]) and (coord[1]<=self.winrect[1]+self.rect[3])
+		if Window.MButs.L and buttons > 0:
+			if self.scrolling:
+				if self.factor > 0: self.scroll((self.lastcoord[1]-coord[1])/self.factor)
+				Draw.Redraw()
+			elif self.over:
+				self.scrolling = True
+			self.lastcoord = coord
+		elif self.scrolling:
+			self.scrolling = False
+			Draw.Redraw()
+		if self.over != over: Draw.Redraw()
+		self.over = over
+
+scrollbar = scrollbar()
+
+
 # gui main draw
 def luxDraw():
 	BGL.glClear(BGL.GL_COLOR_BUFFER_BIT)
-	y = 420
+
+	y = int(scrollbar.getTop()) # 420
 	BGL.glColor3f(0.2,0.2,0.2); BGL.glRectf(0,0,440,y)
 	BGL.glColor3f(0.9,0.9,0.9); BGL.glRasterPos2i(10,y-15); Draw.Text("LuxBlend v0.1RC4alpha-MatEditor :::...")
+
 	scn = Scene.GetCurrent()
 	if scn:
 		luxpage = luxProp(scn, "page", 0)
@@ -1521,6 +1580,8 @@ def luxDraw():
 			gui.newline("SETTINGS:", 10)
 			r = gui.getRect(2,1)
 			Draw.Button("save defaults", 0, r[0], r[1], r[2], r[3], "save current settings as defaults", lambda e,v:saveluxdefaults())
+		y = gui.y - 80
+		if y > 0: y = 0 # bottom align of render button
 		run = luxProp(scn, "run", "true")
 		dlt = luxProp(scn, "default", "true")
 		clay = luxProp(scn, "clay", "false")
@@ -1528,17 +1589,19 @@ def luxDraw():
 		lxo = luxProp(scn, "lxo", "true")
 		lxm = luxProp(scn, "lxm", "true")
 		if (run.get()=="true"):
-			Draw.Button("Render", 0, 10, 20, 180, 36, "Render with Lux", lambda e,v:CBluxExport(dlt.get()=="true", True))
+			Draw.Button("Render", 0, 10, y+20, 180, 36, "Render with Lux", lambda e,v:CBluxExport(dlt.get()=="true", True))
 		else:
-			Draw.Button("Export", 0, 10, 20, 180, 36, "Export", lambda e,v:CBluxExport(dlt.get()=="true", False))
-#			Draw.Button("Export Anim", 0, 200, 20, 100, 36, "Export as animation")
-		Draw.Toggle("run", evtLuxGui, 320, 40, 30, 16, run.get()=="true", "start Lux after export", lambda e,v: run.set(["false","true"][bool(v)]))
-		Draw.Toggle("def", evtLuxGui, 350, 40, 30, 16, dlt.get()=="true", "save to default.lxs", lambda e,v: dlt.set(["false","true"][bool(v)]))
-		Draw.Toggle("clay", evtLuxGui, 380, 40, 30, 16, clay.get()=="true", "all materials are rendered as white-matte", lambda e,v: clay.set(["false","true"][bool(v)]))
-		Draw.Toggle(".lxs", 0, 320, 20, 30, 16, lxs.get()=="true", "export .lxs scene file", lambda e,v: lxs.set(["false","true"][bool(v)]))
-		Draw.Toggle(".lxo", 0, 350, 20, 30, 16, lxo.get()=="true", "export .lxo geometry file", lambda e,v: lxo.set(["false","true"][bool(v)]))
-		Draw.Toggle(".lxm", 0, 380, 20, 30, 16, lxm.get()=="true", "export .lxm material file", lambda e,v: lxm.set(["false","true"][bool(v)]))
-	BGL.glColor3f(0.9, 0.9, 0.9) ; BGL.glRasterPos2i(340,5) ; Draw.Text("Press Q or ESC to quit.", "tiny")
+			Draw.Button("Export", 0, 10, y+20, 180, 36, "Export", lambda e,v:CBluxExport(dlt.get()=="true", False))
+#			Draw.Button("Export Anim", 0, 200, y+20, 100, 36, "Export as animation")
+		Draw.Toggle("run", evtLuxGui, 320, y+40, 30, 16, run.get()=="true", "start Lux after export", lambda e,v: run.set(["false","true"][bool(v)]))
+		Draw.Toggle("def", evtLuxGui, 350, y+40, 30, 16, dlt.get()=="true", "save to default.lxs", lambda e,v: dlt.set(["false","true"][bool(v)]))
+		Draw.Toggle("clay", evtLuxGui, 380, y+40, 30, 16, clay.get()=="true", "all materials are rendered as white-matte", lambda e,v: clay.set(["false","true"][bool(v)]))
+		Draw.Toggle(".lxs", 0, 320, y+20, 30, 16, lxs.get()=="true", "export .lxs scene file", lambda e,v: lxs.set(["false","true"][bool(v)]))
+		Draw.Toggle(".lxo", 0, 350, y+20, 30, 16, lxo.get()=="true", "export .lxo geometry file", lambda e,v: lxo.set(["false","true"][bool(v)]))
+		Draw.Toggle(".lxm", 0, 380, y+20, 30, 16, lxm.get()=="true", "export .lxm material file", lambda e,v: lxm.set(["false","true"][bool(v)]))
+	BGL.glColor3f(0.9, 0.9, 0.9) ; BGL.glRasterPos2i(340,y+5) ; Draw.Text("Press Q or ESC to quit.", "tiny")
+	scrollbar.height = scrollbar.getTop() - y
+	scrollbar.draw()
 
 
 activeObject = None			
@@ -1555,6 +1618,11 @@ def luxEvent(evt, val):  # function that handles keyboard and mouse events
 			activeObject = scn.objects.active
 			activemat = None
 			Window.QRedrawAll()
+	if (evt == Draw.MOUSEX) or (evt == Draw.MOUSEY): scrollbar.Mouse()
+	if evt == Draw.WHEELUPMOUSE: scrollbar.scroll(-16)
+	if evt == Draw.WHEELDOWNMOUSE: scrollbar.scroll(16)
+	if evt == Draw.PAGEUPKEY: scrollbar.scroll(-50)
+	if evt == Draw.PAGEDOWNKEY: scrollbar.scroll(50)
 
 	
 def luxButtonEvt(evt):  # function that handles button events
@@ -1643,8 +1711,6 @@ def luxButtonEvt(evt):  # function that handles button events
 			file.write('WorldEnd\n')
 			file.close()
 			launchLux(filename)
-
-
 
 
 Draw.Register(luxDraw, luxEvent, luxButtonEvt)
