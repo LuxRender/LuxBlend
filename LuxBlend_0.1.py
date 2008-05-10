@@ -1413,13 +1413,21 @@ def luxMaterial(mat, gui=None):
 	def c(t1, t2):
 		return (t1[0]+t2[0], t1[1]+t2[1])
 	str = ""
+	useNamedMaterials = True
 	if mat:
 		matname = mat.getName()
 		mattype = luxProp(mat, "type", "matte")
-		link = luxIdentifier("Material", mattype, ["light","portal","carpaint","glass","matte","mattetranslucent","metal","mirror","plastic","roughglass","shinymetal","substrate"], "  TYPE", "select material type", gui)
+		materials = ["light","portal","carpaint","glass","matte","mattetranslucent","metal","mirror","plastic","roughglass","shinymetal","substrate"]
+		if useNamedMaterials:
+			if gui: gui.newline("Material:", 8)
+			link = luxOption("type", mattype, materials, "  TYPE", "select material type", gui)
+		else: link = luxIdentifier("Material", mattype, materials, "  TYPE", "select material type", gui)
 		if gui: gui.newline()
 		if mattype.get() == "light":
-			link = "AreaLightSource \"area\""
+# not yet supported:	if not(useNamedMaterials): link = "AreaLightSource \"area\""
+# using old methode and ensure named-materials are not used for lights:
+			useNamedMaterials = False
+			link = link = "AreaLightSource \"area\""
 #			(str,link) = c((str,link), luxSpectrumTexture("L", "light.l", "1.0 1.0 1.0", 100.0, "color", "", mat, gui))
 			if gui: gui.newline("  color")
 			link += luxRGB("L", luxProp(mat, "light.l", "1.0 1.0 1.0"), 1.0, "L", "", gui)
@@ -1498,14 +1506,14 @@ def luxMaterial(mat, gui=None):
 			anisotropic = luxProp(mat, "roughglass.anisotropic", False)
 			if gui:
 				gui.newline("")
-				Draw.Toggle("A", evtLuxGui, gui.x-gui.h, gui.y-gui.h, gui.h, gui.h, anisotropic.get()=="true", "anisotropic roughness", lambda e,v:anisotropic.set(["false","true"][bool(v)]))
+				Draw.Toggle("A", evtLuxGui, gui.x-gui.h, gui.y-gui.h-4, gui.h, gui.h, anisotropic.get()=="true", "anisotropic roughness", lambda e,v:anisotropic.set(["false","true"][bool(v)]))
 			if anisotropic.get()=="true":
 				(str,link) = c((str,link), luxFloatTexture("uroughness", "", 0.1, 0.0, 1.0, "u-roughness", "", mat, gui))
 				(str,link) = c((str,link), luxFloatTexture("vroughness", "", 0.1, 0.0, 1.0, "v-roughness", "", mat, gui))
 			else:
-				(str,link) = c((str,link), luxFloatTexture("uroughness", "", 0.1, 0.0, 1.0, "roughness", "", mat, gui))
-				if not(gui):
-					(str,link) = c((str,link), luxFloatTexture("vroughness", "", 0.1, 0.0, 1.0, "v-roughness", "", mat, gui))
+				(s, l) = luxFloatTexture("uroughness", "", 0.1, 0.0, 1.0, "roughness", "", mat, gui)
+				(str,link) = c((str,link), (s, l))
+				link += l.replace("uroughness", "vroughness", 1)
 			(str,link) = c((str,link), luxFloatTexture("index", "", 1.5, 0.0, 100.0, "index", "", mat, gui))
 			(str,link) = c((str,link), luxFloatTexture("cauchyb", "", 0.0, 0.0, 1.0, "cauchyb", "", mat, gui))
 			(str,link) = c((str,link), luxFloatTexture("bumpmap", "", 0.0, 0.0, 1.0, "bumpmap", "", mat, gui))
@@ -1520,14 +1528,14 @@ def luxMaterial(mat, gui=None):
 			anisotropic = luxProp(mat, "substrade.anisotropic", False)
 			if gui:
 				gui.newline("")
-				Draw.Toggle("A", evtLuxGui, gui.x-gui.h, gui.y-gui.h, gui.h, gui.h, anisotropic.get()=="true", "anisotropic roughness", lambda e,v:anisotropic.set(["false","true"][bool(v)]))
+				Draw.Toggle("A", evtLuxGui, gui.x-gui.h, gui.y-gui.h-4, gui.h, gui.h, anisotropic.get()=="true", "anisotropic roughness", lambda e,v:anisotropic.set(["false","true"][bool(v)]))
 			if anisotropic.get()=="true":
 				(str,link) = c((str,link), luxFloatTexture("uroughness", "", 0.1, 0.0, 1.0, "u-roughness", "", mat, gui))
 				(str,link) = c((str,link), luxFloatTexture("vroughness", "", 0.1, 0.0, 1.0, "v-roughness", "", mat, gui))
 			else:
-				(str,link) = c((str,link), luxFloatTexture("uroughness", "", 0.1, 0.0, 1.0, "roughness", "", mat, gui))
-				if not(gui):
-					(str,link) = c((str,link), luxFloatTexture("vroughness", "", 0.1, 0.0, 1.0, "v-roughness", "", mat, gui))
+				(s, l) = luxFloatTexture("uroughness", "", 0.1, 0.0, 1.0, "roughness", "", mat, gui)
+				(str,link) = c((str,link), (s, l))
+				link += l.replace("uroughness", "vroughness", 1)
 			(str,link) = c((str,link), luxFloatTexture("bumpmap", "", 0.0, 0.0, 1.0, "bumpmap", "", mat, gui))
 # obsolet
 #		if mattype.get() == "translucent":
@@ -1546,6 +1554,10 @@ def luxMaterial(mat, gui=None):
 #			(str,link) = c((str,link), luxFloatTexture("roughness", "", 0.1, 0.0, 1.0, "roughness", "", mat, gui))
 #			(str,link) = c((str,link), luxSpectrumTexture("opacity", "", "1.0 1.0 1.0", 1.0, "opacity", "", mat, gui))
 #			(str,link) = c((str,link), luxFloatTexture("bumpmap", "", 0.0, 0.0, 1.0, "bumpmap", "", mat, gui))
+
+		if useNamedMaterials:
+			str += "MakeNamedMaterial \"%s\"%s\n"%(matname, link)
+			link = "NamedMaterial \"%s\""%(matname)
 		luxProp(mat, "link", "").set("".join(link))
 	return str
 
