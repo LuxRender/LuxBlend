@@ -1258,7 +1258,7 @@ def luxSystem(scn, gui=None):
 
 
 def luxMapping(key, mat, gui, level=0):
-	if gui: gui.newline("  "*(level+3)+"mapping:", -2)
+	if gui: gui.newline("  "*(level+3)+"2Dmap:", -2)
 	mapping = luxProp(mat, key+".mapping", "uv")
 	mappings = ["uv","spherical","cylindrical","planar"]
 	str = luxOption("mapping", mapping, mappings, "mapping", "", gui, 0.5)
@@ -1276,7 +1276,17 @@ def luxMapping(key, mat, gui, level=0):
 		str += luxVector("v2", luxProp(mat, key+".v2", "0 1 0"), -100.0, 100.0, "v2", "v2-vector", gui, 2.0)
 	return str
 
-
+def lux3DMapping(key, mat, gui, level=0):
+	str = ""
+	if gui: gui.newline("  "*(level+4)+"scale:", -2)
+	str += luxVector("scale", luxProp(mat, key+".3dscale", "1 1 1"), 0.0, 1000.0, "scale", "scale-vector", gui, 2.0)
+	if gui: gui.newline("  "*(level+4)+"rot:", -2)
+	str += luxVector("rotate", luxProp(mat, key+".3drotate", "0 0 0"), -360.0, 360.0, "rotate", "rotate-vector", gui, 2.0)
+	if gui: gui.newline("  "*(level+4)+"move:", -2)
+	str += luxVector("translate", luxProp(mat, key+".3dtranslate", "0 0 0"), -1000.0, 1000.0, "move", "translate-vector", gui, 2.0)
+	return str
+	
+	
 
 def luxTexture(name, parentkey, type, default, min, max, caption, hint, mat, gui, level=0):
 	def c(t1, t2):
@@ -1337,10 +1347,12 @@ def luxTexture(name, parentkey, type, default, min, max, caption, hint, mat, gui
 		str += luxMapping(keyname, mat, gui, level)
 
 	if texture.get() == "uv":
-		str += luxMapping(keyname, mat, gui, level) # this texture nas no options except mapping
+		str += luxMapping(keyname, mat, gui, level)
+		# this texture nas no options 
 
 	if texture.get() == "windy":
-		str += luxMapping(keyname, mat, gui, level) # this texture has no options except mapping
+		str += lux3DMapping(keyname, mat, gui, level)
+		# this texture has no options 
 
 	if texture.get() == "checkerboard":
 		dim = luxProp(mat, keyname+".dim", 2)
@@ -1350,7 +1362,8 @@ def luxTexture(name, parentkey, type, default, min, max, caption, hint, mat, gui
 		(s, l) = c(("", ""), luxTexture("tex1", keyname, type, default, min, max, "tex1", "", mat, gui, level+1))
 		(s, l) = c((s, l), luxTexture("tex2", keyname, type, default, min, max, "tex2", "", mat, gui, level+1))
 		str = s + str + l
-		if dim.get() == 2: str += luxMapping(keyname, mat, gui, level) # not supported
+		if dim.get() == 2: str += luxMapping(keyname, mat, gui, level) 
+		if dim.get() == 3: str += lux3DMapping(keyname, mat, gui, level)
 
 	if texture.get() == "dots":
 		(s, l) = c(("", ""), luxTexture("inside", keyname, type, default, min, max, "inside", "", mat, gui, level+1))
@@ -1361,20 +1374,20 @@ def luxTexture(name, parentkey, type, default, min, max, caption, hint, mat, gui
 	if texture.get() == "fbm":
 		str += luxInt("octaves", luxProp(mat, keyname+".octaves", 8), 1, 100, "octaves", "", gui, 0.75)
 		str += luxFloat("roughness", luxProp(mat, keyname+".roughness", 0.5), 0.0, 1.0, "roughness", "", gui, 0.75)
-#		str += luxMapping(keyname, mat, gui, level) # not supported
+		str += lux3DMapping(keyname, mat, gui, level)
 
 	if texture.get() == "marble":
 		str += luxInt("octaves", luxProp(mat, keyname+".octaves", 8), 1, 100, "octaves", "", gui, 0.75)
 		str += luxFloat("roughness", luxProp(mat, keyname+".roughness", 0.5), 0.0, 1.0, "roughness", "", gui, 0.75)
 		if gui: gui.newline("", -2)
-		str += luxFloat("scale", luxProp(mat, keyname+".scale", 1.0), 0.0, 100.0, "scale", "Scaling factor for the noise input", gui, 1.0)
+		str += luxFloat("nscale", luxProp(mat, keyname+".nscale", 1.0), 0.0, 100.0, "nscale", "Scaling factor for the noise input", gui, 1.0)
 		str += luxFloat("variation", luxProp(mat, keyname+".variation", 0.2), 0.0, 100.0, "variation", "A scaling factor for the noise input function", gui, 1.0)
-#		str += luxMapping(keyname, mat, gui, level) # not supported
+		str += lux3DMapping(keyname, mat, gui, level)
 
 	if texture.get() == "wrinkled":
 		str += luxInt("octaves", luxProp(mat, keyname+".octaves", 8), 1, 100, "octaves", "", gui, 0.75)
 		str += luxFloat("roughness", luxProp(mat, keyname+".roughness", 0.5), 0.0, 1.0, "roughness", "", gui, 0.75)
-#		str += luxMapping(keyname, mat, gui, level) # not supported
+		str += lux3DMapping(keyname, mat, gui, level)
 
 	return (str+"\n", " \"texture %s\" [\"%s\"]"%(name, texname))
 
@@ -1648,7 +1661,7 @@ def luxDraw():
 
 	y = int(scrollbar.getTop()) # 420
 	BGL.glColor3f(0.2,0.2,0.2); BGL.glRectf(0,0,440,y)
-	BGL.glColor3f(0.9,0.9,0.9); BGL.glRasterPos2i(10,y-15); Draw.Text("LuxBlend v0.1RC4alpha-MatEditor :::...")
+	BGL.glColor3f(0.9,0.9,0.9); BGL.glRasterPos2i(10,y-15); Draw.Text("LuxBlend v0.5alpha-MatEditor :::...")
 
 	scn = Scene.GetCurrent()
 	if scn:
@@ -1889,7 +1902,7 @@ def setFocus(target):
 
 
 
-print "\n\nLuxBlend v0.1RC4alphaCVS\n"
+print "\n\nLuxBlend v0.5alphaCVS\n"
 
 luxpathprop = luxProp(Scene.GetCurrent(), "lux", "")
 luxpath = luxpathprop.get()
