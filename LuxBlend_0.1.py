@@ -1289,7 +1289,7 @@ def luxTexture(name, parentkey, type, default, min, max, caption, hint, mat, gui
 		else: gui.newline("    texture:", -2)
 	if level == 0: texture = luxProp(mat, keyname+".texture", "imagemap")
 	else: texture = luxProp(mat, keyname+".texture", "constant")
-	textures = ["constant","imagemap","mix","scale","bilerp","checkerboard","dots","fbm","marble","wrinkled"] # unknown types: "uv","windy"
+	textures = ["constant","imagemap","mix","scale","bilerp","uv", "checkerboard","dots","fbm","marble","wrinkled", "windy"] # note - radiance - added uv and windy types
 	luxOption("texture", texture, textures, "texture", "", gui, 0.5)
 	str = "Texture \"%s\" \"%s\" \"%s\""%(texname, type, texture.get())
 	if texture.get() == "constant":
@@ -1335,6 +1335,12 @@ def luxTexture(name, parentkey, type, default, min, max, caption, hint, mat, gui
 			if gui: gui.newline("          v11:", -2)
 			str += luxRGB("v11", luxProp(mat, keyname+".v11", "1.0 1.0 1.0"), max, "v11", "", gui, 2.0)
 		str += luxMapping(keyname, mat, gui, level)
+
+	if texture.get() == "uv":
+		str += luxMapping(keyname, mat, gui, level) # this texture nas no options except mapping
+
+	if texture.get() == "windy":
+		str += luxMapping(keyname, mat, gui, level) # this texture has no options except mapping
 
 	if texture.get() == "checkerboard":
 		dim = luxProp(mat, keyname+".dim", 2)
