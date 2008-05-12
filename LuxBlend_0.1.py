@@ -1279,7 +1279,7 @@ def luxMapping(key, mat, gui, level=0):
 def lux3DMapping(key, mat, gui, level=0):
 	str = ""
 	if gui: gui.newline("  "*(level+4)+"scale:", -2)
-	str += luxVector("scale", luxProp(mat, key+".3dscale", "1 1 1"), 0.0, 1000.0, "scale", "scale-vector", gui, 2.0)
+	str += luxVector("scale", luxProp(mat, key+".3dscale", "1 1 1"), 0.001, 1000.0, "scale", "scale-vector", gui, 2.0)
 	if gui: gui.newline("  "*(level+4)+"rot:", -2)
 	str += luxVector("rotate", luxProp(mat, key+".3drotate", "0 0 0"), -360.0, 360.0, "rotate", "rotate-vector", gui, 2.0)
 	if gui: gui.newline("  "*(level+4)+"move:", -2)
