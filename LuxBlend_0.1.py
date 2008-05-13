@@ -46,7 +46,8 @@ import math
 import os
 import sys as osys
 import Blender
-from Blender import Mesh, Scene, Object, Material, Texture, Window, sys, Draw, BGL, Mathutils, Lamp
+from Blender import Mesh, Scene, Object, Material, Texture, Window, sys, Draw, BGL, Mathutils, Lamp, Image
+
 
 
 
@@ -683,6 +684,41 @@ def save_still(filename):
 			launchLux(filename)
 
 
+######################################################
+# Icons
+######################################################
+
+def decodeIconStr(s):
+	img = Image.New("", 16, 16, 32)
+	print len(s)
+	offset = 0
+	for y in range(16):
+		for x in range(16):
+			col = []
+			for c in range(4):
+				col.append((ord(s[offset])-32)/95.0)
+				offset += 1
+			img.setPixelF(x, y, col)
+	return img
+
+icon_material = decodeIconStr(r"""                                 luc luc luc <) .>+ Y?, l=* w?, l>+ Y<) .luc luc luc    luc ;   =* L@. w`Q<zl]FrcIlZ@]L4z?, w=* L;   luc    luc =* LN>3wslRufJtcFtb?tcA@:384.F3$w=* Lluc    <( -F3"wtlYudF43%43%tb>tb>)&!   F?3>, w<( -   >+ YfYIzvlPtb>43%43%tb>tb>]P5(& RH7\K4z>+ Y   ?, nrlYueFtb>tb>tb>tb>tb>tb>tb>tcAlZA?, n   <) ywqel\>J@.lY9tb>tb>tb>tb>tb>tb?rdJ<) y   ?, osl^<83   3+#tb>tb>YI3(& *'!_R:l]F?, o   >, Zl_PzFFF   '$ tb>tb>(&       ;94`Q=z>, Z   ;) 3F3$wllc533YI3tb>tb>LF3   &&&YQG@. w;) 3   luc =+ OTF7wwqfvlYueGtcAueFodMpgYN>.w=+ Oluc    luc 33  =+ OF3$wl^Pzrl^wpeqlYeYHzF3"w=+ O33  luc    luc luc luc ;) 3>, Z?, o<) y?, o>, Z;) 3luc luc luc                   """)
+
+icon_channel = decodeIconStr(r"""pyg pyg pyg pyg pyg pyg pyg 333%pyg pyg pyg pyg pyg pyg pyg pyg pyg pyg pyg 333!333H555e555y333555y555e333H333!pyg pyg pyg pyg pyg pyg 333/555m???}ZZZ[[[ZZZPPPFFF777}555m333/pyg pyg pyg pyg 333/444|\\\~ppp```TTTKKKIIIHHHJJJ<<<~444|333/pyg pyg 333!555maaa~vvvaaaYYYTTTNNNHHHCCC@@@HHH???~555m333!pyg 333HFFF}|||lllddd^^^YYYSSSNNNHHHCCC@@@JJJ555}333Hpyg 555ennnyyyooojjjddd^^^YYYSSSNNNHHHCCCGGGHHH555epyg 555yzzz{{{uuuoooiiiddd^^^YYYSSSNNNHHHHHHMMM555ypyg 333~~~zzztttoooiiiddd^^^YYYSSSMMMJJJYYY333333%555yzzzzzztttoooiiiddd^^^YYYSSSTTTZZZ555ypyg 555eooozzztttnnniiiccc^^^YYY___WWW555epyg 333HFFF}~~~yyytttnnniiiccc```ooo???}333Hpyg 333!555mfff~yyytttnnnkkktttZZZ~555m333!pyg pyg 333/555|fff~~~~zzzyyy|||```~444|333/pyg pyg pyg pyg 333/555mFFF}ooozzz~~~zzznnnFFF}555m333/pyg pyg pyg pyg pyg pyg 333!333H555e555y333555y555e333H333!pyg pyg pyg pyg """)
+
+icon_tex = decodeIconStr(r"""                                 A. s@- }@- }@- }@- }@- }@- }@- }@- }@- }@- }@- }A. s   ?, zp]zqazqazra{rb{sb{sc{sd{te{tg|uh?,    ?, {sbi[@F?2RJ9vhNzlRzmUznX>;4KF={tf?,    ?, yp`'%"      ME6yjNzlQqfP      \WN?,    ?, um^$#!      OF5yiKyjNylQ:7/   TPG?,    ?, |sc`Q4A:,QG3udDyhHyiKyjNwjPcYFxpa?,    ?, |sdwa8wc<wd?xeBxfDyhGyiJyjMykP{sb?,    ?, |tev`5jX5ua;wd>xeAn^@k\AyiJyjM{ra?,    ?, |uglW0$$$H?.wc;YL3      C=0yiJ{r`?,    ?, |vir\14.$XJ.wa8@8*      !! veE{r`?,    ?, |wlv^1v^1v^1v`4eT3+)#"! F>.xfC{r`?,    ?, |ug|vj|uh|tf|sc|sbzq`{q`{r`{q`{p]?,    A. v@-!A."A."A."A."A.!@.!@."A."A.!@-!A. v                  """)
+
+icon_texoption = decodeIconStr(r"""                                ~~~ pyg 555u)))~!!!{!!!t   h   Z   5pyg pyg pyg pyg pyg pyg  }yq(pyg DDDE777...---!!!         i   !pyg pyg pyg pyg  d^S4}yr/pyg GGG=:::LLLWWW;;;      ~   Vpyg pyg pyg pyg  WOAB|te?}zs-pyg IIIV;;;SSSYYY===!!!   ~###Apyg pyg pyg  OG6NznXOlfZA}zt,pyg JJJg:::~555777+++:::$$$~###q###1pyg  J@.YwiOb=:3fNJCK}zu+pyg LLLa???}666QQQpppXXX443*(%~.(#\ E;'bxiKr/-'v850hKGAK}{v)pyg pyg BBBWBBB~{{{qqqTQOE70A4.v >5&fyiJn\;oNF7imdSN|vi:}|w(pyg pyg DDDgPPP~vutYMC~M>5F70~ 71$jzmTv^1~wd@myjN[zp\J|vj8~|y'pyg OOO CBAyTMF~skd]NBP@7~ 2-#n{q^u^1v_3}weAkykOZc[MOTQJB~|z%pyg 1( (0)${h_W}qh`]M@~ -)"r|ug2-#G<(v_4{sa@j'%#z20,j>=9Mvvt$pyg -($/1*%}nf^~oe[~ (%!v}yq2-#G<(v^1v`5z&%"|""!}0/+jeaZ9~}|"pyg /'%95.)~g\P| #" z}xn}yr|ui{q_zmVsfN{PKAvXQEf{r`D}xn3~~}!pyg /(#D5.(n "" v#" {'%!w+("s0+#p4/$l:3%i>7(cA:.YC>4OD@:C@>;5$$$'pyg pyg  """)
+
+icon_map = decodeIconStr(r"""                 pyg pyg pyg pyg pyg 222>333l333l222>pyg pyg pyg pyg pyg   pyg pyg pyg 3337333jD@8hZ?HHH999333j3337pyg pyg pyg   pyg 2221222c@=8f[ExfDwa7GGGMMMFFF777222c2221pyg   222O=;8~cZJxjPwd?v_3v^1CCCFFFKKKNNNDDD555~222O  333}yn[yhIva8aP0K?)v^1CCCFFFHHHJJJNNNOOO333}  333{q^   va7K@*   v^2CCCFFFHHHJJJMMMRRR333  333{r`K@,va7K@*   v^2CCCFFFHHHJJJLLLSSS333  333{scwa9va7v`5v_4v^2CCCFFFHHHJJJLLLUUU333  333|tdK@,K@+v`6v`4v_2CCCFFFHHHJJJLLLVVV333  333|tf      v`6wfB|sdjjjPPPHHHJJJLLLWWW333  333|uiwb:yiK|vkpppXXXLLLYYY333  333~|xp~|wwwwfff333~  333R=<;~gd_{yvuuu]]];;;~333R  pyg 333+333L333mGFCnkd}|yyyydddCCC333m333L333+pyg   pyg pyg pyg pyg 3330333R333q333q333R3330pyg pyg pyg pyg  """)
+
+icon_mapoption = decodeIconStr(r"""                 pyg 777!pyg pyg pyg pyg pyg pyg pyg pyg pyg pyg pyg pyg   pyg >>>h333{&&&r   f   W   I   ,pyg pyg pyg pyg pyg pyg   pyg MMM4???z555~111###   |   {   Ppyg pyg pyg pyg pyg   pyg pyg NNN0@@@zPPPXXX<<<      z   :pyg pyg pyg pyg   pyg pyg pyg MMMB@@@zQQQWWW<<<!!!!!!v   3pyg pyg pyg   pyg    0pyg pyg LLLP===z444444---~???{&&&y   \   (pyg   pyg    C    pyg pyg MMMF???p888~ZZZ}pppYYY666{-)'z.($C  pyg    V   !pyg pyg pyg pyg @@@CDDDy|||qqqPLJ|E70}C5._  pyg    i   "pyg pyg pyg pyg pyg CCCRRRRzrqp{[NCyM>5F71q  pyg    z   #pyg pyg pyg pyg pyg OOO A@?gXPIyskd\MAP@7p  ###v      ###vpyg pyg pyg pyg pyg 0''$/)$ljaYtqh_]MAp           !   !        pyg pyg 0($(2+&rog`wpe[t           }   l   Y   E   2pyg pyg .'$.60*weYMl  ###v      ###vpyg pyg pyg pyg pyg pyg pyg pyg /(#44-'N                 """)
+
+def drawIcon(icon, x, y):
+	BGL.glEnable(BGL.GL_BLEND)
+	BGL.glBlendFunc(BGL.GL_SRC_ALPHA, BGL.GL_ONE_MINUS_SRC_ALPHA) 
+	Draw.Image(icon, x, y)
+	BGL.glDisable(BGL.GL_BLEND)
+
 
 ######################################################
 # New GUI by Zuegs
@@ -886,11 +922,13 @@ class luxGui:
 		self.x += int(w + self.xgap)
 		if h+self.ygap > self.hmax: self.hmax = int(h+self.ygap)
 		return rect
-	def newline(self, title="", distance=0):
+	def newline(self, title="", distance=0, level=0, icon=None, color=None):
 		self.x = 110
 		self.y -= int(self.hmax + distance)
+		if color!=None:	BGL.glColor3f(color[0],color[1],color[2]); BGL.glRectf(0,self.y-self.h,self.xmax,self.y); BGL.glColor3f(0.9, 0.9, 0.9)
+		if icon!=None: drawIcon(icon, 2+level*10, self.y-16)
 		self.hmax = 0
-		BGL.glColor3f(0.9,0.9,0.9); BGL.glRasterPos2i(10,self.y-self.h+5); Draw.Text(title)
+		BGL.glColor3f(0.9,0.9,0.9); BGL.glRasterPos2i(20+level*10,self.y-self.h+5); Draw.Text(title)
 		
 
 # lux parameter types
@@ -1258,7 +1296,7 @@ def luxSystem(scn, gui=None):
 
 
 def luxMapping(key, mat, gui, level=0):
-	if gui: gui.newline("  "*(level+3)+"2Dmap:", -2)
+	if gui: gui.newline("2Dmap:", -2, level+3, icon_map)
 	mapping = luxProp(mat, key+".mapping", "uv")
 	mappings = ["uv","spherical","cylindrical","planar"]
 	str = luxOption("mapping", mapping, mappings, "mapping", "", gui, 0.5)
@@ -1270,19 +1308,19 @@ def luxMapping(key, mat, gui, level=0):
 	if mapping.get() == "planar":
 		str += luxFloat("udelta", luxProp(mat, key+".udelta", 0.0), -100.0, 100.0, "Ud", "u-delta", gui, 0.75)
 		str += luxFloat("vdelta", luxProp(mat, key+".vdelta", 0.0), -100.0, 100.0, "Vd", "v-delta", gui, 0.75)
-		if gui: gui.newline("  "*(level+4)+"v1:", -2)
+		if gui: gui.newline("v1:", -2, level+4, icon_mapoption)
 		str += luxVector("v1", luxProp(mat, key+".v1", "1 0 0"), -100.0, 100.0, "v1", "v1-vector", gui, 2.0)
-		if gui: gui.newline("  "*(level+4)+"v2:", -2)
+		if gui: gui.newline("v2:", -2, level+4, icon_mapoption)
 		str += luxVector("v2", luxProp(mat, key+".v2", "0 1 0"), -100.0, 100.0, "v2", "v2-vector", gui, 2.0)
 	return str
 
 def lux3DMapping(key, mat, gui, level=0):
 	str = ""
-	if gui: gui.newline("  "*(level+4)+"scale:", -2)
+	if gui: gui.newline("scale:", -2, level+4, icon_mapoption)
 	str += luxVector("scale", luxProp(mat, key+".3dscale", "1 1 1"), 0.001, 1000.0, "scale", "scale-vector", gui, 2.0)
-	if gui: gui.newline("  "*(level+4)+"rot:", -2)
+	if gui: gui.newline("rot:", -2, level+4, icon_mapoption)
 	str += luxVector("rotate", luxProp(mat, key+".3drotate", "0 0 0"), -360.0, 360.0, "rotate", "rotate-vector", gui, 2.0)
-	if gui: gui.newline("  "*(level+4)+"move:", -2)
+	if gui: gui.newline("move:", -2, level+4, icon_mapoption)
 	str += luxVector("translate", luxProp(mat, key+".3dtranslate", "0 0 0"), -1000.0, 1000.0, "move", "translate-vector", gui, 2.0)
 	return str
 	
@@ -1295,8 +1333,8 @@ def luxTexture(name, parentkey, type, default, min, max, caption, hint, mat, gui
 	texname = "%s:%s"%(mat.getName(), keyname)
 #	if gui: gui.newline("  "*(level+2)+caption+":")
 	if gui:
-		if (level > 0): gui.newline("  "*(level+2)+caption+":", -2)
-		else: gui.newline("    texture:", -2)
+		if (level > 0): gui.newline(caption+":", -2, level+2, icon_texoption, [0.3,0.3,0.3])
+		else: gui.newline("texture:", -2, 2, icon_tex, [0.4,0.4,0.4])
 	if level == 0: texture = luxProp(mat, keyname+".texture", "imagemap")
 	else: texture = luxProp(mat, keyname+".texture", "constant")
 	textures = ["constant","imagemap","mix","scale","bilerp","uv", "checkerboard","dots","fbm","marble","wrinkled", "windy"] # note - radiance - added uv and windy types
@@ -1393,7 +1431,7 @@ def luxTexture(name, parentkey, type, default, min, max, caption, hint, mat, gui
 
 
 def luxSpectrumTexture(name, key, default, max, caption, hint, mat, gui):
-	if gui: gui.newline("  "+caption, 4)
+	if gui: gui.newline(caption, 4, 1, icon_channel, [0.5,0.5,0.5])
 	str = ""
 	keyname = "%s:%s"%(key, name)
 	texname = "%s:%s"%(mat.getName(), keyname)
@@ -1410,7 +1448,7 @@ def luxSpectrumTexture(name, key, default, max, caption, hint, mat, gui):
 	return (str, link)
 
 def luxFloatTexture(name, key, default, min, max, caption, hint, mat, gui):
-	if gui: gui.newline("  "+caption, 4)
+	if gui: gui.newline(caption, 4, 1, icon_channel, [0.5,0.5,0.5])
 	str = ""
 	keyname = "%s:%s"%(key, name)
 	texname = "%s:%s"%(mat.getName(), keyname)
@@ -1438,10 +1476,11 @@ def luxMaterial(mat, gui=None):
 		mattype = luxProp(mat, "type", "matte")
 		materials = ["light","portal","carpaint","glass","matte","mattetranslucent","metal","mirror","plastic","roughglass","shinymetal","substrate"]
 		if useNamedMaterials:
-			if gui: gui.newline("Material:", 8)
+			if gui: gui.newline("Material:", 8, 0, icon_material)
 			link = luxOption("type", mattype, materials, "  TYPE", "select material type", gui)
 		else: link = luxIdentifier("Material", mattype, materials, "  TYPE", "select material type", gui)
 		if gui: gui.newline()
+
 		if mattype.get() == "light":
 # not yet supported:	if not(useNamedMaterials): link = "AreaLightSource \"area\""
 # using old methode and ensure named-materials are not used for lights:
@@ -1497,7 +1536,10 @@ def luxMaterial(mat, gui=None):
 		if mattype.get() == "metal":
 			if gui: gui.newline("  name:")
 			metalname = luxProp(mat, "metal.name", "")
-			metals = ["","aluminium","amorphous carbon","silver","gold","cobalt","copper","chromium","lithium","mercury","nickel","potassium","platinum","iridium","silicon","amorphous silicon","sodium","rhodium","tungsten","vanadium"]
+#			metals = ["","aluminium","amorphous carbon","silver","gold","cobalt","copper","chromium","lithium","mercury","nickel","potassium","platinum","iridium","silicon","amorphous silicon","sodium","rhodium","tungsten","vanadium"]
+# supported metals have changed:
+			metals = ["","aluminium","amorphous carbon","silver","gold","copper"]
+
 			if not(metalname.get() in metals):
 				metals.append(metalname.get())
 			metallink = luxOption("name", metalname, metals, "name", "", gui)
