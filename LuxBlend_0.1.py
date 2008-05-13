@@ -1264,7 +1264,7 @@ def luxMapping(key, mat, gui, level=0):
 	str = luxOption("mapping", mapping, mappings, "mapping", "", gui, 0.5)
 	if mapping.get() == "uv":
 		str += luxFloat("uscale", luxProp(mat, key+".uscale", 1.0), -100.0, 100.0, "Us", "u-scale", gui, 0.375)
-		str += luxFloat("vscale", luxProp(mat, key+".vscale", 1.0), -100.0, 100.0, "Vs", "v-scale", gui, 0.375)
+		str += luxFloat("vscale", luxProp(mat, key+".vscale", -1.0), -100.0, 100.0, "Vs", "v-scale", gui, 0.375)
 		str += luxFloat("udelta", luxProp(mat, key+".udelta", 0.0), -100.0, 100.0, "Ud", "u-delta", gui, 0.375)
 		str += luxFloat("vdelta", luxProp(mat, key+".vdelta", 0.0), -100.0, 100.0, "Vd", "v-delta", gui, 0.375)
 	if mapping.get() == "planar":
