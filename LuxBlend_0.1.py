@@ -1337,13 +1337,13 @@ def luxTexture(name, parentkey, type, default, min, max, caption, hint, mat, gui
 		else: gui.newline("texture:", -2, 2, icon_tex, [0.4,0.4,0.4])
 	if level == 0: texture = luxProp(mat, keyname+".texture", "imagemap")
 	else: texture = luxProp(mat, keyname+".texture", "constant")
-	textures = ["constant","imagemap","mix","scale","bilerp","uv", "checkerboard","dots","fbm","marble","wrinkled", "windy"] # note - radiance - added uv and windy types
-	luxOption("texture", texture, textures, "texture", "", gui, 0.5)
+	textures = ["constant","imagemap","mix","scale","bilerp","uv", "checkerboard","dots","fbm","marble","wrinkled", "windy", "blender_marble", "blender_musgrave", "blender_wood"] # note - radiance - added uv and windy types
+	luxOption("texture", texture, textures, "texture", "", gui, 0.9)
 	str = "Texture \"%s\" \"%s\" \"%s\""%(texname, type, texture.get())
 	if texture.get() == "constant":
 		value = luxProp(mat, keyname+".value", default)
-		if type == "float": luxFloat("value", value, min, max, "", "", gui, 1.5)
-		elif type == "color": luxRGB("value", value, max, "", "", gui, 1.5)
+		if type == "float": luxFloat("value", value, min, max, "", "", gui, 1.1)
+		elif type == "color": luxRGB("value", value, max, "", "", gui, 1.1)
 # direct version
 		if type == "color": return ("", " \"%s %s\" [%s]"%(type, name, value.getRGC()))
 		return ("", " \"%s %s\" [%s]"%(type, name, value.get()))
@@ -1352,7 +1352,7 @@ def luxTexture(name, parentkey, type, default, min, max, caption, hint, mat, gui
 #		else: str += " \"%s value\" [%s]"%(type, value.get())
 
 	if texture.get() == "imagemap":
-		str += luxFile("filename", luxProp(mat, keyname+".filename", ""), "file", "texture file path", gui, 1.5)
+		str += luxFile("filename", luxProp(mat, keyname+".filename", ""), "file", "texture file path", gui, 1.1)
 		str += luxMapping(keyname, mat, gui, level)
 
 	if texture.get() == "mix":
@@ -1394,8 +1394,8 @@ def luxTexture(name, parentkey, type, default, min, max, caption, hint, mat, gui
 
 	if texture.get() == "checkerboard":
 		dim = luxProp(mat, keyname+".dim", 2)
-		str += luxInt("dimension", dim, 2, 3, "dimension", "", gui, 0.75)
-		if dim.get() == 2: str += luxOption("aamode", luxProp(mat, keyname+".aamode", "closedform"), ["closedform","supersample","none"], "aamode", "antialiasing mode", gui, 0.75)
+		str += luxInt("dimension", dim, 2, 3, "dim", "", gui, 0.5)
+		if dim.get() == 2: str += luxOption("aamode", luxProp(mat, keyname+".aamode", "closedform"), ["closedform","supersample","none"], "aamode", "antialiasing mode", gui, 0.6)
 		if gui: gui.newline("", -2)
 		(s, l) = c(("", ""), luxTexture("tex1", keyname, type, default, min, max, "tex1", "", mat, gui, level+1))
 		(s, l) = c((s, l), luxTexture("tex2", keyname, type, default, min, max, "tex2", "", mat, gui, level+1))
@@ -1410,21 +1410,111 @@ def luxTexture(name, parentkey, type, default, min, max, caption, hint, mat, gui
 		str += luxMapping(keyname, mat, gui, level)
 
 	if texture.get() == "fbm":
-		str += luxInt("octaves", luxProp(mat, keyname+".octaves", 8), 1, 100, "octaves", "", gui, 0.75)
-		str += luxFloat("roughness", luxProp(mat, keyname+".roughness", 0.5), 0.0, 1.0, "roughness", "", gui, 0.75)
+		str += luxInt("octaves", luxProp(mat, keyname+".octaves", 8), 1, 100, "octaves", "", gui, 1.1)
+		str += luxFloat("roughness", luxProp(mat, keyname+".roughness", 0.5), 0.0, 1.0, "roughness", "", gui, 2.0)
 		str += lux3DMapping(keyname, mat, gui, level)
 
 	if texture.get() == "marble":
-		str += luxInt("octaves", luxProp(mat, keyname+".octaves", 8), 1, 100, "octaves", "", gui, 0.75)
-		str += luxFloat("roughness", luxProp(mat, keyname+".roughness", 0.5), 0.0, 1.0, "roughness", "", gui, 0.75)
+		str += luxInt("octaves", luxProp(mat, keyname+".octaves", 8), 1, 100, "octaves", "", gui, 1.1)
+		str += luxFloat("roughness", luxProp(mat, keyname+".roughness", 0.5), 0.0, 1.0, "roughness", "", gui, 2.0)
 		if gui: gui.newline("", -2)
 		str += luxFloat("nscale", luxProp(mat, keyname+".nscale", 1.0), 0.0, 100.0, "nscale", "Scaling factor for the noise input", gui, 1.0)
 		str += luxFloat("variation", luxProp(mat, keyname+".variation", 0.2), 0.0, 100.0, "variation", "A scaling factor for the noise input function", gui, 1.0)
 		str += lux3DMapping(keyname, mat, gui, level)
 
 	if texture.get() == "wrinkled":
-		str += luxInt("octaves", luxProp(mat, keyname+".octaves", 8), 1, 100, "octaves", "", gui, 0.75)
-		str += luxFloat("roughness", luxProp(mat, keyname+".roughness", 0.5), 0.0, 1.0, "roughness", "", gui, 0.75)
+		str += luxInt("octaves", luxProp(mat, keyname+".octaves", 8), 1, 100, "octaves", "", gui, 1.1)
+		str += luxFloat("roughness", luxProp(mat, keyname+".roughness", 0.5), 0.0, 1.0, "roughness", "", gui, 2.0)
+		str += lux3DMapping(keyname, mat, gui, level)
+
+	if texture.get() == "blender_marble":
+		if gui: gui.newline("noise:", -2, level+4, icon_texoption)
+
+		mtype = luxProp(mat, keyname+".mtype", "soft")
+		mtypes = ["soft","sharp","sharper"]
+		str += luxOption("type", mtype, mtypes, "type", "", gui, 0.5)
+
+		noisetype = luxProp(mat, keyname+".noisetype", "hard_noise")
+		noisetypes = ["soft_noise","hard_noise"]
+		str += luxOption("noisetype", noisetype, noisetypes, "noisetypes", "", gui, 0.75)
+
+		str += luxInt("noisedepth", luxProp(mat, keyname+".noisedepth", 2), 0, 6, "noisedepth", "", gui, 0.75)
+
+		str += luxFloat("noisesize", luxProp(mat, keyname+".noisesize", 0.25), 0.0, 2.0, "noisesize", "", gui, 1.0)
+		str += luxFloat("turbulance", luxProp(mat, keyname+".turbulance", 5.0), 0.0, 200.0, "turbulance", "", gui, 1.0)
+
+		if gui: gui.newline("basis:", -2, level+4, icon_texoption)
+		noisebasis2 = luxProp(mat, keyname+".noisebasis2", "sin")
+		noisebasises2 = ["sin","saw","tri"]
+		str += luxOption("noisebasis2", noisebasis2, noisebasises2, "noisebasis2", "", gui, 0.7)
+
+		noisebasis = luxProp(mat, keyname+".noisebasis", "blender_original")
+		noisebasises = ["blender_original","original_perlin", "improved_perlin", "voronoi_f1", "voronoi_f2", "voronoi_f3", "voronoi_f4", "voronoi_f2f1", "voronoi_crackle", "cell_noise"]
+		str += luxOption("noisebasis", noisebasis, noisebasises, "noisebasis", "", gui, 1.3)
+
+		if gui: gui.newline("level:", -2, level+4, icon_texoption)
+		str += luxFloat("bright", luxProp(mat, keyname+".bright", 1.0), 0.0, 2.0, "bright", "", gui, 1.0)
+		str += luxFloat("contrast", luxProp(mat, keyname+".contrast", 1.0), 0.0, 5.0, "contrast", "", gui, 1.0)
+		str += lux3DMapping(keyname, mat, gui, level)
+
+	if texture.get() == "blender_musgrave":
+		if gui: gui.newline("type:", -2, level+4, icon_texoption)
+		mtype = luxProp(mat, keyname+".mtype", "multifractal")
+		mtypes = ["multifractal","ridged_multifractal", "hybrid_multifractal", "hetero_terrain", "fbm"]
+		str += luxOption("type", mtype, mtypes, "type", "", gui, 2.0)
+
+		str += luxFloat("h", luxProp(mat, keyname+".h", 1.0), 0.0, 2.0, "h", "", gui, 0.5)
+		str += luxFloat("lacu", luxProp(mat, keyname+".lacu", 2.0), 0.0, 6.0, "lacu", "", gui, 0.75)
+		str += luxFloat("octs", luxProp(mat, keyname+".octs", 2.0), 0.0, 8.0, "octs", "", gui, 0.75)
+
+		if mtype.get() == "hetero_terrain":
+			str += luxFloat("offset", luxProp(mat, keyname+".offset", 2.0), 0.0, 6.0, "offset", "", gui, 2.0)
+		if mtype.get() == "ridged_multifractal":
+			str += luxFloat("offset", luxProp(mat, keyname+".offset", 2.0), 0.0, 6.0, "offset", "", gui, 1.25)
+			str += luxFloat("gain", luxProp(mat, keyname+".gain", 2.0), 0.0, 6.0, "gain", "", gui, 0.75)
+		if mtype.get() == "hybrid_multifractal":
+			str += luxFloat("offset", luxProp(mat, keyname+".offset", 2.0), 0.0, 6.0, "offset", "", gui, 1.25)
+			str += luxFloat("gain", luxProp(mat, keyname+".gain", 2.0), 0.0, 6.0, "gain", "", gui, 0.75)
+
+		str += luxFloat("outscale", luxProp(mat, keyname+".outscale", 1.0), 0.0, 10.0, "iscale", "", gui, 1.0)
+		str += luxFloat("noisesize", luxProp(mat, keyname+".noisesize", 0.25), 0.0, 2.0, "noisesize", "", gui, 1.0)
+
+		if gui: gui.newline("basis:", -2, level+4, icon_texoption)
+		noisebasis = luxProp(mat, keyname+".noisebasis", "blender_original")
+		noisebasises = ["blender_original","original_perlin", "improved_perlin", "voronoi_f1", "voronoi_f2", "voronoi_f3", "voronoi_f4", "voronoi_f2f1", "voronoi_crackle", "cell_noise"]
+		str += luxOption("noisebasis", noisebasis, noisebasises, "noisebasis", "", gui, 2.0)
+
+		if gui: gui.newline("level:", -2, level+4, icon_texoption)
+		str += luxFloat("bright", luxProp(mat, keyname+".bright", 1.0), 0.0, 2.0, "bright", "", gui, 1.0)
+		str += luxFloat("contrast", luxProp(mat, keyname+".contrast", 1.0), 0.0, 5.0, "contrast", "", gui, 1.0)
+		str += lux3DMapping(keyname, mat, gui, level)
+
+	if texture.get() == "blender_wood":
+		if gui: gui.newline("noise:", -2, level+4, icon_texoption)
+
+		mtype = luxProp(mat, keyname+".mtype", "bands")
+		mtypes = ["bands","rings","bandnoise", "ringnoise"]
+		str += luxOption("type", mtype, mtypes, "type", "", gui, 0.5)
+
+		noisetype = luxProp(mat, keyname+".noisetype", "hard_noise")
+		noisetypes = ["soft_noise","hard_noise"]
+		str += luxOption("noisetype", noisetype, noisetypes, "noisetypes", "", gui, 0.75)
+
+		str += luxFloat("noisesize", luxProp(mat, keyname+".noisesize", 0.25), 0.0, 2.0, "noisesize", "", gui, 1.0)
+		str += luxFloat("turbulance", luxProp(mat, keyname+".turbulance", 5.0), 0.0, 200.0, "turbulance", "", gui, 1.0)
+
+		if gui: gui.newline("basis:", -2, level+4, icon_texoption)
+		noisebasis2 = luxProp(mat, keyname+".noisebasis2", "sin")
+		noisebasises2 = ["sin","saw","tri"]
+		str += luxOption("noisebasis2", noisebasis2, noisebasises2, "noisebasis2", "", gui, 0.7)
+
+		noisebasis = luxProp(mat, keyname+".noisebasis", "blender_original")
+		noisebasises = ["blender_original","original_perlin", "improved_perlin", "voronoi_f1", "voronoi_f2", "voronoi_f3", "voronoi_f4", "voronoi_f2f1", "voronoi_crackle", "cell_noise"]
+		str += luxOption("noisebasis", noisebasis, noisebasises, "noisebasis", "", gui, 1.3)
+
+		if gui: gui.newline("level:", -2, level+4, icon_texoption)
+		str += luxFloat("bright", luxProp(mat, keyname+".bright", 1.0), 0.0, 2.0, "bright", "", gui, 1.0)
+		str += luxFloat("contrast", luxProp(mat, keyname+".contrast", 1.0), 0.0, 5.0, "contrast", "", gui, 1.0)
 		str += lux3DMapping(keyname, mat, gui, level)
 
 	return (str+"\n", " \"texture %s\" [\"%s\"]"%(name, texname))
