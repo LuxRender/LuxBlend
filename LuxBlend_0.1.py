@@ -914,7 +914,9 @@ class luxGui:
 		self.hmax = 0
 		self.xgap = 4
 		self.ygap = 4
+		self.resethmax = False
 	def getRect(self, wu, hu):
+		if self.resethmax: self.hmax = 0; self.resethmax = False
 		w = int(self.w * wu + self.xgap * (wu-1))
 		h = int(self.h * hu + self.ygap * (hu-1))
 		if self.x + w > self.xmax: self.newline()
@@ -924,10 +926,10 @@ class luxGui:
 		return rect
 	def newline(self, title="", distance=0, level=0, icon=None, color=None):
 		self.x = 110
-		self.y -= int(self.hmax + distance)
-		if color!=None:	BGL.glColor3f(color[0],color[1],color[2]); BGL.glRectf(0,self.y-self.h,self.xmax,self.y); BGL.glColor3f(0.9, 0.9, 0.9)
+		if not(self.resethmax): self.y -= int(self.hmax + distance)
+		if color!=None:	BGL.glColor3f(color[0],color[1],color[2]); BGL.glRectf(0,self.y-self.hmax,self.xmax,self.y+distance); BGL.glColor3f(0.9, 0.9, 0.9)
 		if icon!=None: drawIcon(icon, 2+level*10, self.y-16)
-		self.hmax = 0
+		self.resethmax = True
 		BGL.glColor3f(0.9,0.9,0.9); BGL.glRasterPos2i(20+level*10,self.y-self.h+5); Draw.Text(title)
 		
 
@@ -1293,10 +1295,13 @@ def luxSystem(scn, gui=None):
 		luxBool("ColClamp", luxProp(scn, "colorclamp", "true"), "ColClamp", "clamp all colors to 0.0-0.9", gui)
 
 
+def scalelist(list, factor):
+	for i in range(len(list)): list[i] = list[i] * factor
+	return list
 
 
 def luxMapping(key, mat, gui, level=0):
-	if gui: gui.newline("2Dmap:", -2, level+3, icon_map)
+	if gui: gui.newline("2Dmap:", -2, level, icon_map)
 	mapping = luxProp(mat, key+".mapping", "uv")
 	mappings = ["uv","spherical","cylindrical","planar"]
 	str = luxOption("mapping", mapping, mappings, "mapping", "", gui, 0.5)
@@ -1308,34 +1313,35 @@ def luxMapping(key, mat, gui, level=0):
 	if mapping.get() == "planar":
 		str += luxFloat("udelta", luxProp(mat, key+".udelta", 0.0), -100.0, 100.0, "Ud", "u-delta", gui, 0.75)
 		str += luxFloat("vdelta", luxProp(mat, key+".vdelta", 0.0), -100.0, 100.0, "Vd", "v-delta", gui, 0.75)
-		if gui: gui.newline("v1:", -2, level+4, icon_mapoption)
+		if gui: gui.newline("v1:", -2, level+1, icon_mapoption)
 		str += luxVector("v1", luxProp(mat, key+".v1", "1 0 0"), -100.0, 100.0, "v1", "v1-vector", gui, 2.0)
-		if gui: gui.newline("v2:", -2, level+4, icon_mapoption)
+		if gui: gui.newline("v2:", -2, level+1, icon_mapoption)
 		str += luxVector("v2", luxProp(mat, key+".v2", "0 1 0"), -100.0, 100.0, "v2", "v2-vector", gui, 2.0)
 	return str
 
 def lux3DMapping(key, mat, gui, level=0):
 	str = ""
-	if gui: gui.newline("scale:", -2, level+4, icon_mapoption)
+	if gui: gui.newline("scale:", -2, level, icon_mapoption)
 	str += luxVector("scale", luxProp(mat, key+".3dscale", "1 1 1"), 0.001, 1000.0, "scale", "scale-vector", gui, 2.0)
-	if gui: gui.newline("rot:", -2, level+4, icon_mapoption)
+	if gui: gui.newline("rot:", -2, level, icon_mapoption)
 	str += luxVector("rotate", luxProp(mat, key+".3drotate", "0 0 0"), -360.0, 360.0, "rotate", "rotate-vector", gui, 2.0)
-	if gui: gui.newline("move:", -2, level+4, icon_mapoption)
+	if gui: gui.newline("move:", -2, level, icon_mapoption)
 	str += luxVector("translate", luxProp(mat, key+".3dtranslate", "0 0 0"), -1000.0, 1000.0, "move", "translate-vector", gui, 2.0)
 	return str
 	
 	
 
-def luxTexture(name, parentkey, type, default, min, max, caption, hint, mat, gui, level=0):
+def luxTexture(name, parentkey, type, default, min, max, caption, hint, mat, gui, matlevel, texlevel=0):
 	def c(t1, t2):
 		return (t1[0]+t2[0], t1[1]+t2[1])
+	level = matlevel + texlevel
 	keyname = "%s:%s"%(parentkey, name)
 	texname = "%s:%s"%(mat.getName(), keyname)
-#	if gui: gui.newline("  "*(level+2)+caption+":")
+#	if gui: gui.newline(caption+":", 0, level)
 	if gui:
-		if (level > 0): gui.newline(caption+":", -2, level+2, icon_texoption, [0.3,0.3,0.3])
-		else: gui.newline("texture:", -2, 2, icon_tex, [0.4,0.4,0.4])
-	if level == 0: texture = luxProp(mat, keyname+".texture", "imagemap")
+		if (texlevel > 0): gui.newline(caption+":", -2, level, icon_texoption, scalelist([0.5,0.5,0.5],2.0/(level+2)))
+		else: gui.newline("texture:", -2, level, icon_tex, scalelist([0.5,0.5,0.5],2.0/(level+2)))
+	if texlevel == 0: texture = luxProp(mat, keyname+".texture", "imagemap")
 	else: texture = luxProp(mat, keyname+".texture", "constant")
 	textures = ["constant","imagemap","mix","scale","bilerp","uv", "checkerboard","dots","fbm","marble","wrinkled", "windy", "blender_marble", "blender_musgrave", "blender_wood"] # note - radiance - added uv and windy types
 	luxOption("texture", texture, textures, "texture", "", gui, 0.9)
@@ -1353,17 +1359,17 @@ def luxTexture(name, parentkey, type, default, min, max, caption, hint, mat, gui
 
 	if texture.get() == "imagemap":
 		str += luxFile("filename", luxProp(mat, keyname+".filename", ""), "file", "texture file path", gui, 1.1)
-		str += luxMapping(keyname, mat, gui, level)
+		str += luxMapping(keyname, mat, gui, level+1)
 
 	if texture.get() == "mix":
-		(s, l) = c(("", ""), luxTexture("tex1", keyname, type, default, min, max, "tex1", "", mat, gui, level+1))
-		(s, l) = c((s, l), luxTexture("tex2", keyname, type, default, min, max, "tex2", "", mat, gui, level+1))
-		(s, l) = c((s, l), luxTexture("amount", keyname, "float", 0.5, 0.0, 1.0, "amount", "The degree of mix between the two textures", mat, gui, level+1))
+		(s, l) = c(("", ""), luxTexture("amount", keyname, "float", 0.5, 0.0, 1.0, "amount", "The degree of mix between the two textures", mat, gui, matlevel, texlevel+1))
+		(s, l) = c((s, l), luxTexture("tex1", keyname, type, default, min, max, "tex1", "", mat, gui, matlevel, texlevel+1))
+		(s, l) = c((s, l), luxTexture("tex2", keyname, type, default, min, max, "tex2", "", mat, gui, matlevel, texlevel+1))
 		str = s + str + l
 
 	if texture.get() == "scale":
-		(s, l) = c(("", ""), luxTexture("tex1", keyname, type, default, min, max, "tex1", "", mat, gui, level+1))
-		(s, l) = c((s, l), luxTexture("tex2", keyname, type, default, min, max, "tex2", "", mat, gui, level+1))
+		(s, l) = c(("", ""), luxTexture("tex1", keyname, type, default, min, max, "tex1", "", mat, gui, matlevel, texlevel+1))
+		(s, l) = c((s, l), luxTexture("tex2", keyname, type, default, min, max, "tex2", "", mat, gui, matlevel, texlevel+1))
 		str = s + str + l
 
 	if texture.get() == "bilerp":
@@ -1382,14 +1388,14 @@ def luxTexture(name, parentkey, type, default, min, max, caption, hint, mat, gui
 			str += luxRGB("v10", luxProp(mat, keyname+".v10", "0.0 0.0 0.0"), max, "v10", "", gui, 2.0)
 			if gui: gui.newline("          v11:", -2)
 			str += luxRGB("v11", luxProp(mat, keyname+".v11", "1.0 1.0 1.0"), max, "v11", "", gui, 2.0)
-		str += luxMapping(keyname, mat, gui, level)
+		str += luxMapping(keyname, mat, gui, level+1)
 
 	if texture.get() == "uv":
-		str += luxMapping(keyname, mat, gui, level)
+		str += luxMapping(keyname, mat, gui, level+1)
 		# this texture nas no options 
 
 	if texture.get() == "windy":
-		str += lux3DMapping(keyname, mat, gui, level)
+		str += lux3DMapping(keyname, mat, gui, level+1)
 		# this texture has no options 
 
 	if texture.get() == "checkerboard":
@@ -1397,22 +1403,22 @@ def luxTexture(name, parentkey, type, default, min, max, caption, hint, mat, gui
 		str += luxInt("dimension", dim, 2, 3, "dim", "", gui, 0.5)
 		if dim.get() == 2: str += luxOption("aamode", luxProp(mat, keyname+".aamode", "closedform"), ["closedform","supersample","none"], "aamode", "antialiasing mode", gui, 0.6)
 		if gui: gui.newline("", -2)
-		(s, l) = c(("", ""), luxTexture("tex1", keyname, type, default, min, max, "tex1", "", mat, gui, level+1))
-		(s, l) = c((s, l), luxTexture("tex2", keyname, type, default, min, max, "tex2", "", mat, gui, level+1))
+		(s, l) = c(("", ""), luxTexture("tex1", keyname, type, default, min, max, "tex1", "", mat, gui, matlevel, texlevel+1))
+		(s, l) = c((s, l), luxTexture("tex2", keyname, type, default, min, max, "tex2", "", mat, gui, matlevel, texlevel+1))
 		str = s + str + l
-		if dim.get() == 2: str += luxMapping(keyname, mat, gui, level) 
-		if dim.get() == 3: str += lux3DMapping(keyname, mat, gui, level)
+		if dim.get() == 2: str += luxMapping(keyname, mat, gui, level+1) 
+		if dim.get() == 3: str += lux3DMapping(keyname, mat, gui, level+1)
 
 	if texture.get() == "dots":
-		(s, l) = c(("", ""), luxTexture("inside", keyname, type, default, min, max, "inside", "", mat, gui, level+1))
-		(s, l) = c((s, l), luxTexture("outside", keyname, type, default, min, max, "outside", "", mat, gui, level+1))
+		(s, l) = c(("", ""), luxTexture("inside", keyname, type, default, min, max, "inside", "", mat, gui, matlevel, texlevel+1))
+		(s, l) = c((s, l), luxTexture("outside", keyname, type, default, min, max, "outside", "", mat, gui, matlevel, texlevel+1))
 		str = s + str + l
-		str += luxMapping(keyname, mat, gui, level)
+		str += luxMapping(keyname, mat, gui, level+1)
 
 	if texture.get() == "fbm":
 		str += luxInt("octaves", luxProp(mat, keyname+".octaves", 8), 1, 100, "octaves", "", gui, 1.1)
 		str += luxFloat("roughness", luxProp(mat, keyname+".roughness", 0.5), 0.0, 1.0, "roughness", "", gui, 2.0)
-		str += lux3DMapping(keyname, mat, gui, level)
+		str += lux3DMapping(keyname, mat, gui, level+1)
 
 	if texture.get() == "marble":
 		str += luxInt("octaves", luxProp(mat, keyname+".octaves", 8), 1, 100, "octaves", "", gui, 1.1)
@@ -1420,15 +1426,15 @@ def luxTexture(name, parentkey, type, default, min, max, caption, hint, mat, gui
 		if gui: gui.newline("", -2)
 		str += luxFloat("nscale", luxProp(mat, keyname+".nscale", 1.0), 0.0, 100.0, "nscale", "Scaling factor for the noise input", gui, 1.0)
 		str += luxFloat("variation", luxProp(mat, keyname+".variation", 0.2), 0.0, 100.0, "variation", "A scaling factor for the noise input function", gui, 1.0)
-		str += lux3DMapping(keyname, mat, gui, level)
+		str += lux3DMapping(keyname, mat, gui, level+1)
 
 	if texture.get() == "wrinkled":
 		str += luxInt("octaves", luxProp(mat, keyname+".octaves", 8), 1, 100, "octaves", "", gui, 1.1)
 		str += luxFloat("roughness", luxProp(mat, keyname+".roughness", 0.5), 0.0, 1.0, "roughness", "", gui, 2.0)
-		str += lux3DMapping(keyname, mat, gui, level)
+		str += lux3DMapping(keyname, mat, gui, level+1)
 
 	if texture.get() == "blender_marble":
-		if gui: gui.newline("noise:", -2, level+4, icon_texoption)
+		if gui: gui.newline("noise:", -2, level+1, icon_texoption)
 
 		mtype = luxProp(mat, keyname+".mtype", "soft")
 		mtypes = ["soft","sharp","sharper"]
@@ -1443,7 +1449,7 @@ def luxTexture(name, parentkey, type, default, min, max, caption, hint, mat, gui
 		str += luxFloat("noisesize", luxProp(mat, keyname+".noisesize", 0.25), 0.0, 2.0, "noisesize", "", gui, 1.0)
 		str += luxFloat("turbulance", luxProp(mat, keyname+".turbulance", 5.0), 0.0, 200.0, "turbulance", "", gui, 1.0)
 
-		if gui: gui.newline("basis:", -2, level+4, icon_texoption)
+		if gui: gui.newline("basis:", -2, level+1, icon_texoption)
 		noisebasis2 = luxProp(mat, keyname+".noisebasis2", "sin")
 		noisebasises2 = ["sin","saw","tri"]
 		str += luxOption("noisebasis2", noisebasis2, noisebasises2, "noisebasis2", "", gui, 0.7)
@@ -1452,13 +1458,13 @@ def luxTexture(name, parentkey, type, default, min, max, caption, hint, mat, gui
 		noisebasises = ["blender_original","original_perlin", "improved_perlin", "voronoi_f1", "voronoi_f2", "voronoi_f3", "voronoi_f4", "voronoi_f2f1", "voronoi_crackle", "cell_noise"]
 		str += luxOption("noisebasis", noisebasis, noisebasises, "noisebasis", "", gui, 1.3)
 
-		if gui: gui.newline("level:", -2, level+4, icon_texoption)
+		if gui: gui.newline("level:", -2, level+1, icon_texoption)
 		str += luxFloat("bright", luxProp(mat, keyname+".bright", 1.0), 0.0, 2.0, "bright", "", gui, 1.0)
 		str += luxFloat("contrast", luxProp(mat, keyname+".contrast", 1.0), 0.0, 5.0, "contrast", "", gui, 1.0)
-		str += lux3DMapping(keyname, mat, gui, level)
+		str += lux3DMapping(keyname, mat, gui, level+1)
 
 	if texture.get() == "blender_musgrave":
-		if gui: gui.newline("type:", -2, level+4, icon_texoption)
+		if gui: gui.newline("type:", -2, level+1, icon_texoption)
 		mtype = luxProp(mat, keyname+".mtype", "multifractal")
 		mtypes = ["multifractal","ridged_multifractal", "hybrid_multifractal", "hetero_terrain", "fbm"]
 		str += luxOption("type", mtype, mtypes, "type", "", gui, 2.0)
@@ -1479,18 +1485,18 @@ def luxTexture(name, parentkey, type, default, min, max, caption, hint, mat, gui
 		str += luxFloat("outscale", luxProp(mat, keyname+".outscale", 1.0), 0.0, 10.0, "iscale", "", gui, 1.0)
 		str += luxFloat("noisesize", luxProp(mat, keyname+".noisesize", 0.25), 0.0, 2.0, "noisesize", "", gui, 1.0)
 
-		if gui: gui.newline("basis:", -2, level+4, icon_texoption)
+		if gui: gui.newline("basis:", -2, level+1, icon_texoption)
 		noisebasis = luxProp(mat, keyname+".noisebasis", "blender_original")
 		noisebasises = ["blender_original","original_perlin", "improved_perlin", "voronoi_f1", "voronoi_f2", "voronoi_f3", "voronoi_f4", "voronoi_f2f1", "voronoi_crackle", "cell_noise"]
 		str += luxOption("noisebasis", noisebasis, noisebasises, "noisebasis", "", gui, 2.0)
 
-		if gui: gui.newline("level:", -2, level+4, icon_texoption)
+		if gui: gui.newline("level:", -2, level+1, icon_texoption)
 		str += luxFloat("bright", luxProp(mat, keyname+".bright", 1.0), 0.0, 2.0, "bright", "", gui, 1.0)
 		str += luxFloat("contrast", luxProp(mat, keyname+".contrast", 1.0), 0.0, 5.0, "contrast", "", gui, 1.0)
-		str += lux3DMapping(keyname, mat, gui, level)
+		str += lux3DMapping(keyname, mat, gui, level+1)
 
 	if texture.get() == "blender_wood":
-		if gui: gui.newline("noise:", -2, level+4, icon_texoption)
+		if gui: gui.newline("noise:", -2, level+1, icon_texoption)
 
 		mtype = luxProp(mat, keyname+".mtype", "bands")
 		mtypes = ["bands","rings","bandnoise", "ringnoise"]
@@ -1503,7 +1509,7 @@ def luxTexture(name, parentkey, type, default, min, max, caption, hint, mat, gui
 		str += luxFloat("noisesize", luxProp(mat, keyname+".noisesize", 0.25), 0.0, 2.0, "noisesize", "", gui, 1.0)
 		str += luxFloat("turbulance", luxProp(mat, keyname+".turbulance", 5.0), 0.0, 200.0, "turbulance", "", gui, 1.0)
 
-		if gui: gui.newline("basis:", -2, level+4, icon_texoption)
+		if gui: gui.newline("basis:", -2, level+1, icon_texoption)
 		noisebasis2 = luxProp(mat, keyname+".noisebasis2", "sin")
 		noisebasises2 = ["sin","saw","tri"]
 		str += luxOption("noisebasis2", noisebasis2, noisebasises2, "noisebasis2", "", gui, 0.7)
@@ -1512,16 +1518,16 @@ def luxTexture(name, parentkey, type, default, min, max, caption, hint, mat, gui
 		noisebasises = ["blender_original","original_perlin", "improved_perlin", "voronoi_f1", "voronoi_f2", "voronoi_f3", "voronoi_f4", "voronoi_f2f1", "voronoi_crackle", "cell_noise"]
 		str += luxOption("noisebasis", noisebasis, noisebasises, "noisebasis", "", gui, 1.3)
 
-		if gui: gui.newline("level:", -2, level+4, icon_texoption)
+		if gui: gui.newline("level:", -2, level+1, icon_texoption)
 		str += luxFloat("bright", luxProp(mat, keyname+".bright", 1.0), 0.0, 2.0, "bright", "", gui, 1.0)
 		str += luxFloat("contrast", luxProp(mat, keyname+".contrast", 1.0), 0.0, 5.0, "contrast", "", gui, 1.0)
-		str += lux3DMapping(keyname, mat, gui, level)
+		str += lux3DMapping(keyname, mat, gui, level+1)
 
 	return (str+"\n", " \"texture %s\" [\"%s\"]"%(name, texname))
 
 
-def luxSpectrumTexture(name, key, default, max, caption, hint, mat, gui):
-	if gui: gui.newline(caption, 4, 1, icon_channel, [0.5,0.5,0.5])
+def luxSpectrumTexture(name, key, default, max, caption, hint, mat, gui, level=0):
+	if gui: gui.newline(caption, 4, level, icon_channel, scalelist([0.5,0.5,0.5],2.0/(level+2)))
 	str = ""
 	keyname = "%s:%s"%(key, name)
 	texname = "%s:%s"%(mat.getName(), keyname)
@@ -1531,14 +1537,14 @@ def luxSpectrumTexture(name, key, default, max, caption, hint, mat, gui):
 	if gui: Draw.Toggle("T", evtLuxGui, gui.x, gui.y-gui.h, gui.h, gui.h, tex.get()=="true", "use texture", lambda e,v:tex.set(["false","true"][bool(v)]))
 	if tex.get()=="true":
 		if gui: gui.newline("", -2)
-		(str, link) = luxTexture(name, key, "color", default, 0, max, caption, hint, mat, gui)
+		(str, link) = luxTexture(name, key, "color", default, 0, max, caption, hint, mat, gui, level+1)
 		if value.getRGB() != (1.0, 1.0, 1.0):
 			str += "Texture \"%s\" \"color\" \"scale\" \"texture tex1\" [\"%s\"] \"color tex2\" [%s]\n"%(texname+".scale", texname, value.get())
 			link = " \"texture %s\" [\"%s\"]"%(name, texname+".scale")
 	return (str, link)
 
-def luxFloatTexture(name, key, default, min, max, caption, hint, mat, gui):
-	if gui: gui.newline(caption, 4, 1, icon_channel, [0.5,0.5,0.5])
+def luxFloatTexture(name, key, default, min, max, caption, hint, mat, gui, level=0):
+	if gui: gui.newline(caption, 4, level, icon_channel, scalelist([0.5,0.5,0.5],2.0/(level+2)))
 	str = ""
 	keyname = "%s:%s"%(key, name)
 	texname = "%s:%s"%(mat.getName(), keyname)
@@ -1548,7 +1554,7 @@ def luxFloatTexture(name, key, default, min, max, caption, hint, mat, gui):
 	if gui: Draw.Toggle("T", evtLuxGui, gui.x, gui.y-gui.h, gui.h, gui.h, tex.get()=="true", "use texture", lambda e,v:tex.set(["false","true"][bool(v)]))
 	if tex.get()=="true":
 		if gui: gui.newline("", -2)
-		(str, link) = luxTexture(name, key, "float", default, min, max, caption, hint, mat, gui)
+		(str, link) = luxTexture(name, key, "float", default, min, max, caption, hint, mat, gui, level+1)
 		if value.get() != 1.0:
 			str += "Texture \"%s\" \"float\" \"scale\" \"texture tex1\" [\"%s\"] \"float tex2\" [%s]\n"%(texname+".scale", texname, value.get())
 			link = " \"texture %s\" [\"%s\"]"%(name, texname+".scale")
@@ -1556,76 +1562,75 @@ def luxFloatTexture(name, key, default, min, max, caption, hint, mat, gui):
 
 
 
-def luxMaterial(mat, gui=None):
+def luxMaterialBlock(name, luxname, key, mat, gui=None, level=0):
 	def c(t1, t2):
 		return (t1[0]+t2[0], t1[1]+t2[1])
 	str = ""
-	useNamedMaterials = True
+	if key == "": keyname = kn = name
+	else: keyname = kn = "%s:%s"%(key, name)
+	if kn != "": kn += "."
+	if keyname == "": matname = mat.getName()
+	else: matname = "%s:%s"%(mat.getName(), keyname)
 	if mat:
-		matname = mat.getName()
-		mattype = luxProp(mat, "type", "matte")
-		materials = ["light","portal","carpaint","glass","matte","mattetranslucent","metal","mirror","plastic","roughglass","shinymetal","substrate"]
-		if useNamedMaterials:
-			if gui: gui.newline("Material:", 8, 0, icon_material)
-			link = luxOption("type", mattype, materials, "  TYPE", "select material type", gui)
-		else: link = luxIdentifier("Material", mattype, materials, "  TYPE", "select material type", gui)
+		mattype = luxProp(mat, kn+"type", "matte")
+		materials = ["carpaint","glass","matte","mattetranslucent","metal","mirror","plastic","roughglass","shinymetal","substrate","mix","null"]
+		if level == 0: materials = ["light","portal"]+materials
+		if gui:
+			if level == 0: gui.newline("Material:", 12, level, icon_material, [0.4,0.4,0.6])
+			else: gui.newline(name+":", 12, level, icon_material, scalelist([0.4,0.4,0.6],2.0/(level+2)))
+		link = luxOption("type", mattype, materials, "  TYPE", "select material type", gui)
 		if gui: gui.newline()
-
+		if mattype.get() == "mix":
+			(str,link) = c((str,link), luxFloatTexture("amount", keyname, 0.5, 0.0, 1.0, "amount", "The degree of mix between the two materials", mat, gui, level+1))
+			(str,link) = c((str,link), luxMaterialBlock("mat1", "namedmaterial1", keyname, mat, gui, level+1))
+			(str,link) = c((str,link), luxMaterialBlock("mat2", "namedmaterial2", keyname, mat, gui, level+1))
 		if mattype.get() == "light":
-# not yet supported:	if not(useNamedMaterials): link = "AreaLightSource \"area\""
-# using old methode and ensure named-materials are not used for lights:
-			useNamedMaterials = False
-			link = link = "AreaLightSource \"area\""
-#			(str,link) = c((str,link), luxSpectrumTexture("L", "light.l", "1.0 1.0 1.0", 100.0, "color", "", mat, gui))
-			if gui: gui.newline("  color")
-			link += luxRGB("L", luxProp(mat, "light.l", "1.0 1.0 1.0"), 1.0, "L", "", gui)
+			link = "AreaLightSource \"area\""
+#			(str,link) = c((str,link), luxSpectrumTexture("L", "light.l", "1.0 1.0 1.0", 100.0, "color", "", mat, gui, level+1))
+			if gui: gui.newline("color:", 0, level+1)
+			link += luxRGB("L", luxProp(mat, kn+"light.l", "1.0 1.0 1.0"), 1.0, "L", "", gui)
 			if gui: gui.newline("")
-			link += luxFloat("gain", luxProp(mat, "light.gain", 1.0), 0.0, 100.0, "gain", "gain", gui)
-			link += luxInt("nsamples", luxProp(mat, "light.nsamples", 1), 1, 100, "samples", "number of samples", gui)
+			link += luxFloat("gain", luxProp(mat, kn+"light.gain", 1.0), 0.0, 100.0, "gain", "gain", gui)
+			link += luxInt("nsamples", luxProp(mat, kn+"light.nsamples", 1), 1, 100, "samples", "number of samples", gui)
 			if gui: gui.newline("")
-			link += luxString("lightgroup", luxProp(mat, "light.lightgroup", ""), "light-group", "assign light to a named light-group", gui, 2.0)
+			link += luxString("lightgroup", luxProp(mat, kn+"light.lightgroup", ""), "light-group", "assign light to a named light-group", gui, 2.0)
+			return (str, link)
 		if mattype.get() == "carpaint":
-			if gui: gui.newline("  name:")
-			carname = luxProp(mat, "carpaint.name", "white")
+			if gui: gui.newline("name:", 0, level+1)
+			carname = luxProp(mat, kn+"carpaint.name", "white")
 			cars = ["","ford f8","polaris silber","opel titan","bmw339","2k acrylack","white","blue","blue matte"]
 			carlink = luxOption("name", carname, cars, "name", "", gui)
 			if carname.get() == "":
-				(str,link) = c((str,link), luxSpectrumTexture("Kd", "", "1.0 1.0 1.0", 1.0, "diffuse", "", mat, gui))
-				(str,link) = c((str,link), luxSpectrumTexture("Ks1", "", "1.0 1.0 1.0", 1.0, "specular1", "", mat, gui))
-				(str,link) = c((str,link), luxSpectrumTexture("Ks2", "", "1.0 1.0 1.0", 1.0, "specular2", "", mat, gui))
-				(str,link) = c((str,link), luxSpectrumTexture("Ks3", "", "1.0 1.0 1.0", 1.0, "specular3", "", mat, gui))
-				(str,link) = c((str,link), luxFloatTexture("R1", "", 1.0, 0.0, 1.0, "R1", "", mat, gui))
-				(str,link) = c((str,link), luxFloatTexture("R2", "", 1.0, 0.0, 1.0, "R2", "", mat, gui))
-				(str,link) = c((str,link), luxFloatTexture("R3", "", 1.0, 0.0, 1.0, "R3", "", mat, gui))
-				(str,link) = c((str,link), luxFloatTexture("M1", "", 1.0, 0.0, 1.0, "M1", "", mat, gui))
-				(str,link) = c((str,link), luxFloatTexture("M2", "", 1.0, 0.0, 1.0, "M2", "", mat, gui))
-				(str,link) = c((str,link), luxFloatTexture("M3", "", 1.0, 0.0, 1.0, "M3", "", mat, gui))
+				(str,link) = c((str,link), luxSpectrumTexture("Kd", keyname, "1.0 1.0 1.0", 1.0, "diffuse", "", mat, gui, level+1))
+				(str,link) = c((str,link), luxSpectrumTexture("Ks1", keyname, "1.0 1.0 1.0", 1.0, "specular1", "", mat, gui, level+1))
+				(str,link) = c((str,link), luxSpectrumTexture("Ks2", keyname, "1.0 1.0 1.0", 1.0, "specular2", "", mat, gui, level+1))
+				(str,link) = c((str,link), luxSpectrumTexture("Ks3", keyname, "1.0 1.0 1.0", 1.0, "specular3", "", mat, gui, level+1))
+				(str,link) = c((str,link), luxFloatTexture("R1", keyname, 1.0, 0.0, 1.0, "R1", "", mat, gui, level+1))
+				(str,link) = c((str,link), luxFloatTexture("R2", keyname, 1.0, 0.0, 1.0, "R2", "", mat, gui, level+1))
+				(str,link) = c((str,link), luxFloatTexture("R3", keyname, 1.0, 0.0, 1.0, "R3", "", mat, gui, level+1))
+				(str,link) = c((str,link), luxFloatTexture("M1", keyname, 1.0, 0.0, 1.0, "M1", "", mat, gui, level+1))
+				(str,link) = c((str,link), luxFloatTexture("M2", keyname, 1.0, 0.0, 1.0, "M2", "", mat, gui, level+1))
+				(str,link) = c((str,link), luxFloatTexture("M3", keyname, 1.0, 0.0, 1.0, "M3", "", mat, gui, level+1))
 			else: link += carlink
-			(str,link) = c((str,link), luxFloatTexture("bumpmap", "", 0.0, 0.0, 1.0, "bumpmap", "", mat, gui))
-# obsolet
-#		if mattype.get() == "clay":
-#			(str,link) = c((str,link), luxFloatTexture("bumpmap", "", 0.0, 0.0, 1.0, "bumpmap", "", mat, gui))
-# obsolet
-#		if mattype.get() == "felt":
-#			(str,link) = c((str,link), luxFloatTexture("bumpmap", "", 0.0, 0.0, 1.0, "bumpmap", "", mat, gui))
+			(str,link) = c((str,link), luxFloatTexture("bumpmap", keyname, 0.0, 0.0, 1.0, "bumpmap", "", mat, gui, level+1))
 		if mattype.get() == "glass":
-			(str,link) = c((str,link), luxSpectrumTexture("Kr", "", "1.0 1.0 1.0", 1.0, "reflection", "", mat, gui))
-			(str,link) = c((str,link), luxSpectrumTexture("Kt", "", "1.0 1.0 1.0", 1.0, "transmission", "", mat, gui))
-			(str,link) = c((str,link), luxFloatTexture("index", "", 1.5, 0.0, 100.0, "index", "", mat, gui))
-			(str,link) = c((str,link), luxFloatTexture("cauchyb", "", 0.0, 0.0, 1.0, "cauchyb", "", mat, gui))
-			(str,link) = c((str,link), luxFloatTexture("bumpmap", "", 0.0, 0.0, 1.0, "bumpmap", "", mat, gui))
+			(str,link) = c((str,link), luxSpectrumTexture("Kr", keyname, "1.0 1.0 1.0", 1.0, "reflection", "", mat, gui, level+1))
+			(str,link) = c((str,link), luxSpectrumTexture("Kt", keyname, "1.0 1.0 1.0", 1.0, "transmission", "", mat, gui, level+1))
+			(str,link) = c((str,link), luxFloatTexture("index", keyname, 1.5, 0.0, 100.0, "index", "", mat, gui, level+1))
+			(str,link) = c((str,link), luxFloatTexture("cauchyb", keyname, 0.0, 0.0, 1.0, "cauchyb", "", mat, gui, level+1))
+			(str,link) = c((str,link), luxFloatTexture("bumpmap", keyname, 0.0, 0.0, 1.0, "bumpmap", "", mat, gui, level+1))
 		if mattype.get() == "matte":
-			(str,link) = c((str,link), luxSpectrumTexture("Kd", "", "1.0 1.0 1.0", 1.0, "diffuse", "", mat, gui))
-			(str,link) = c((str,link), luxFloatTexture("sigma", "", 0.0, 0.0, 100.0, "sigma", "", mat, gui))
-			(str,link) = c((str,link), luxFloatTexture("bumpmap", "", 0.0, 0.0, 1.0, "bumpmap", "", mat, gui))
+			(str,link) = c((str,link), luxSpectrumTexture("Kd", keyname, "1.0 1.0 1.0", 1.0, "diffuse", "", mat, gui, level+1))
+			(str,link) = c((str,link), luxFloatTexture("sigma", keyname, 0.0, 0.0, 100.0, "sigma", "", mat, gui, level+1))
+			(str,link) = c((str,link), luxFloatTexture("bumpmap", keyname, 0.0, 0.0, 1.0, "bumpmap", "", mat, gui, level+1))
 		if mattype.get() == "mattetranslucent":
-			(str,link) = c((str,link), luxSpectrumTexture("Kr", "", "1.0 1.0 1.0", 1.0, "reflection", "", mat, gui))
-			(str,link) = c((str,link), luxSpectrumTexture("Kt", "", "1.0 1.0 1.0", 1.0, "transmission", "", mat, gui))
-			(str,link) = c((str,link), luxFloatTexture("sigma", "", 0.0, 0.0, 100.0, "sigma", "", mat, gui))
-			(str,link) = c((str,link), luxFloatTexture("bumpmap", "", 0.0, 0.0, 1.0, "bumpmap", "", mat, gui))
+			(str,link) = c((str,link), luxSpectrumTexture("Kr", keyname, "1.0 1.0 1.0", 1.0, "reflection", "", mat, gui, level+1))
+			(str,link) = c((str,link), luxSpectrumTexture("Kt", keyname, "1.0 1.0 1.0", 1.0, "transmission", "", mat, gui, level+1))
+			(str,link) = c((str,link), luxFloatTexture("sigma", keyname, 0.0, 0.0, 100.0, "sigma", "", mat, gui, level+1))
+			(str,link) = c((str,link), luxFloatTexture("bumpmap", keyname, 0.0, 0.0, 1.0, "bumpmap", "", mat, gui, level+1))
 		if mattype.get() == "metal":
-			if gui: gui.newline("  name:")
-			metalname = luxProp(mat, "metal.name", "")
+			if gui: gui.newline("name:", 0, level+1)
+			metalname = luxProp(mat, kn+"metal.name", "")
 #			metals = ["","aluminium","amorphous carbon","silver","gold","cobalt","copper","chromium","lithium","mercury","nickel","potassium","platinum","iridium","silicon","amorphous silicon","sodium","rhodium","tungsten","vanadium"]
 # supported metals have changed:
 			metals = ["","aluminium","amorphous carbon","silver","gold","copper"]
@@ -1635,80 +1640,67 @@ def luxMaterial(mat, gui=None):
 			metallink = luxOption("name", metalname, metals, "name", "", gui)
 			if gui: Draw.Button("...", evtLuxGui, gui.x, gui.y-gui.h, gui.h, gui.h, "click to select a nk file",lambda e,v:Window.FileSelector(lambda s:metalname.set(s), "Select nk file"))
 			if metalname.get() == "":
-				(str,link) = c((str,link), luxSpectrumTexture("n", "", "1.226973 0.930951 0.600745", 10.0, "n", "", mat, gui))
-				(str,link) = c((str,link), luxSpectrumTexture("k", "", "7.284448 6.535680 5.363405", 10.0, "k", "", mat, gui))
+				(str,link) = c((str,link), luxSpectrumTexture("n", keyname, "1.226973 0.930951 0.600745", 10.0, "n", "", mat, gui, level+1))
+				(str,link) = c((str,link), luxSpectrumTexture("k", keyname, "7.284448 6.535680 5.363405", 10.0, "k", "", mat, gui, level+1))
 			else: link += metallink
-			(str,link) = c((str,link), luxFloatTexture("roughness", "", 0.1, 0.0, 1.0, "roughness", "", mat, gui))
-			(str,link) = c((str,link), luxFloatTexture("bumpmap", "", 0.0, 0.0, 1.0, "bumpmap", "", mat, gui))
+			(str,link) = c((str,link), luxFloatTexture("roughness", keyname, 0.1, 0.0, 1.0, "roughness", "", mat, gui, level+1))
+			(str,link) = c((str,link), luxFloatTexture("bumpmap", keyname, 0.0, 0.0, 1.0, "bumpmap", "", mat, gui, level+1))
 		if mattype.get() == "mirror":
-			(str,link) = c((str,link), luxSpectrumTexture("Kr", "", "1.0 1.0 1.0", 1.0, "reflection", "", mat, gui))
-			(str,link) = c((str,link), luxFloatTexture("bumpmap", "", 0.0, 0.0, 1.0, "bumpmap", "", mat, gui))
+			(str,link) = c((str,link), luxSpectrumTexture("Kr", keyname, "1.0 1.0 1.0", 1.0, "reflection", "", mat, gui, level+1))
+			(str,link) = c((str,link), luxFloatTexture("bumpmap", keyname, 0.0, 0.0, 1.0, "bumpmap", "", mat, gui, level+1))
 		if mattype.get() == "plastic":
-			(str,link) = c((str,link), luxSpectrumTexture("Kd", "", "1.0 1.0 1.0", 1.0, "diffuse", "", mat, gui))
-			(str,link) = c((str,link), luxSpectrumTexture("Ks", "", "1.0 1.0 1.0", 1.0, "specular", "", mat, gui))
-			(str,link) = c((str,link), luxFloatTexture("roughness", "", 0.1, 0.0, 1.0, "roughness", "", mat, gui))
-			(str,link) = c((str,link), luxFloatTexture("bumpmap", "", 0.0, 0.0, 1.0, "bumpmap", "", mat, gui))
-# obsolet
-#		if mattype.get() == "primer":
-#			(str,link) = c((str,link), luxFloatTexture("bumpmap", "", 0.0, 0.0, 1.0, "bumpmap", "", mat, gui))
+			(str,link) = c((str,link), luxSpectrumTexture("Kd", keyname, "1.0 1.0 1.0", 1.0, "diffuse", "", mat, gui, level+1))
+			(str,link) = c((str,link), luxSpectrumTexture("Ks", keyname, "1.0 1.0 1.0", 1.0, "specular", "", mat, gui, level+1))
+			(str,link) = c((str,link), luxFloatTexture("roughness", keyname, 0.1, 0.0, 1.0, "roughness", "", mat, gui, level+1))
+			(str,link) = c((str,link), luxFloatTexture("bumpmap", keyname, 0.0, 0.0, 1.0, "bumpmap", "", mat, gui, level+1))
 		if mattype.get() == "roughglass":
-			(str,link) = c((str,link), luxSpectrumTexture("Kr", "", "1.0 1.0 1.0", 1.0, "reflection", "", mat, gui))
-			(str,link) = c((str,link), luxSpectrumTexture("Kt", "", "1.0 1.0 1.0", 1.0, "transmission", "", mat, gui))
-			anisotropic = luxProp(mat, "roughglass.anisotropic", False)
+			(str,link) = c((str,link), luxSpectrumTexture("Kr", keyname, "1.0 1.0 1.0", 1.0, "reflection", "", mat, gui, level+1))
+			(str,link) = c((str,link), luxSpectrumTexture("Kt", keyname, "1.0 1.0 1.0", 1.0, "transmission", "", mat, gui, level+1))
+			anisotropic = luxProp(mat, kn+"roughglass.anisotropic", False)
 			if gui:
 				gui.newline("")
 				Draw.Toggle("A", evtLuxGui, gui.x-gui.h, gui.y-gui.h-4, gui.h, gui.h, anisotropic.get()=="true", "anisotropic roughness", lambda e,v:anisotropic.set(["false","true"][bool(v)]))
 			if anisotropic.get()=="true":
-				(str,link) = c((str,link), luxFloatTexture("uroughness", "", 0.1, 0.0, 1.0, "u-roughness", "", mat, gui))
-				(str,link) = c((str,link), luxFloatTexture("vroughness", "", 0.1, 0.0, 1.0, "v-roughness", "", mat, gui))
+				(str,link) = c((str,link), luxFloatTexture("uroughness", keyname, 0.1, 0.0, 1.0, "u-roughness", "", mat, gui, level+1))
+				(str,link) = c((str,link), luxFloatTexture("vroughness", keyname, 0.1, 0.0, 1.0, "v-roughness", "", mat, gui, level+1))
 			else:
-				(s, l) = luxFloatTexture("uroughness", "", 0.1, 0.0, 1.0, "roughness", "", mat, gui)
+				(s, l) = luxFloatTexture("uroughness", keyname, 0.1, 0.0, 1.0, "roughness", "", mat, gui, level+1)
 				(str,link) = c((str,link), (s, l))
 				link += l.replace("uroughness", "vroughness", 1)
-			(str,link) = c((str,link), luxFloatTexture("index", "", 1.5, 0.0, 100.0, "index", "", mat, gui))
-			(str,link) = c((str,link), luxFloatTexture("cauchyb", "", 0.0, 0.0, 1.0, "cauchyb", "", mat, gui))
-			(str,link) = c((str,link), luxFloatTexture("bumpmap", "", 0.0, 0.0, 1.0, "bumpmap", "", mat, gui))
+			(str,link) = c((str,link), luxFloatTexture("index", keyname, 1.5, 0.0, 100.0, "index", "", mat, gui, level+1))
+			(str,link) = c((str,link), luxFloatTexture("cauchyb", keyname, 0.0, 0.0, 1.0, "cauchyb", "", mat, gui, level+1))
+			(str,link) = c((str,link), luxFloatTexture("bumpmap", keyname, 0.0, 0.0, 1.0, "bumpmap", "", mat, gui, level+1))
 		if mattype.get() == "shinymetal":
-			(str,link) = c((str,link), luxSpectrumTexture("Kr", "", "1.0 1.0 1.0", 1.0, "reflection", "", mat, gui))
-			(str,link) = c((str,link), luxSpectrumTexture("Ks", "", "1.0 1.0 1.0", 1.0, "specular", "", mat, gui))
-			(str,link) = c((str,link), luxFloatTexture("roughness", "", 0.1, 0.0, 1.0, "roughness", "", mat, gui))
-			(str,link) = c((str,link), luxFloatTexture("bumpmap", "", 0.0, 0.0, 1.0, "bumpmap", "", mat, gui))
+			(str,link) = c((str,link), luxSpectrumTexture("Kr", keyname, "1.0 1.0 1.0", 1.0, "reflection", "", mat, gui, level+1))
+			(str,link) = c((str,link), luxSpectrumTexture("Ks", keyname, "1.0 1.0 1.0", 1.0, "specular", "", mat, gui, level+1))
+			(str,link) = c((str,link), luxFloatTexture("roughness", keyname, 0.1, 0.0, 1.0, "roughness", "", mat, gui, level+1))
+			(str,link) = c((str,link), luxFloatTexture("bumpmap", keyname, 0.0, 0.0, 1.0, "bumpmap", "", mat, gui, level+1))
 		if mattype.get() == "substrate":
-			(str,link) = c((str,link), luxSpectrumTexture("Kd", "", "1.0 1.0 1.0", 1.0, "diffuse", "", mat, gui))
-			(str,link) = c((str,link), luxSpectrumTexture("Ks", "", "1.0 1.0 1.0", 1.0, "specular", "", mat, gui))
-			anisotropic = luxProp(mat, "substrade.anisotropic", False)
+			(str,link) = c((str,link), luxSpectrumTexture("Kd", keyname, "1.0 1.0 1.0", 1.0, "diffuse", "", mat, gui, level+1))
+			(str,link) = c((str,link), luxSpectrumTexture("Ks", keyname, "1.0 1.0 1.0", 1.0, "specular", "", mat, gui, level+1))
+			anisotropic = luxProp(mat, kn+"substrade.anisotropic", False)
 			if gui:
 				gui.newline("")
 				Draw.Toggle("A", evtLuxGui, gui.x-gui.h, gui.y-gui.h-4, gui.h, gui.h, anisotropic.get()=="true", "anisotropic roughness", lambda e,v:anisotropic.set(["false","true"][bool(v)]))
 			if anisotropic.get()=="true":
-				(str,link) = c((str,link), luxFloatTexture("uroughness", "", 0.1, 0.0, 1.0, "u-roughness", "", mat, gui))
-				(str,link) = c((str,link), luxFloatTexture("vroughness", "", 0.1, 0.0, 1.0, "v-roughness", "", mat, gui))
+				(str,link) = c((str,link), luxFloatTexture("uroughness", keyname, 0.1, 0.0, 1.0, "u-roughness", "", mat, gui, level+1))
+				(str,link) = c((str,link), luxFloatTexture("vroughness", keyname, 0.1, 0.0, 1.0, "v-roughness", "", mat, gui, level+1))
 			else:
-				(s, l) = luxFloatTexture("uroughness", "", 0.1, 0.0, 1.0, "roughness", "", mat, gui)
+				(s, l) = luxFloatTexture("uroughness", keyname, 0.1, 0.0, 1.0, "roughness", "", mat, gui, level+1)
 				(str,link) = c((str,link), (s, l))
 				link += l.replace("uroughness", "vroughness", 1)
-			(str,link) = c((str,link), luxFloatTexture("bumpmap", "", 0.0, 0.0, 1.0, "bumpmap", "", mat, gui))
-# obsolet
-#		if mattype.get() == "translucent":
-#			(str,link) = c((str,link), luxSpectrumTexture("Kd", "", "1.0 1.0 1.0", 1.0, "diffuse", "", mat, gui))
-#			(str,link) = c((str,link), luxSpectrumTexture("Ks", "", "1.0 1.0 1.0", 1.0, "specular", "", mat, gui))
-#			(str,link) = c((str,link), luxSpectrumTexture("reflect", "", "1.0 1.0 1.0", 1.0, "reflection", "", mat, gui))
-#			(str,link) = c((str,link), luxSpectrumTexture("transmit", "", "1.0 1.0 1.0", 1.0, "transmission", "", mat, gui))
-#			(str,link) = c((str,link), luxFloatTexture("roughness", "", 0.1, 0.0, 1.0, "roughness", "", mat, gui))
-#			(str,link) = c((str,link), luxFloatTexture("index", "", 1.5, 0.0, 100.0, "index", "", mat, gui))
-#			(str,link) = c((str,link), luxFloatTexture("bumpmap", "", 0.0, 0.0, 1.0, "bumpmap", "", mat, gui))
-# obsolet
-#		if mattype.get() == "uber":
-#			(str,link) = c((str,link), luxSpectrumTexture("Kd", "", "1.0 1.0 1.0", 1.0, "diffuse", "", mat, gui))
-#			(str,link) = c((str,link), luxSpectrumTexture("Ks", "", "1.0 1.0 1.0", 1.0, "specular", "", mat, gui))
-#			(str,link) = c((str,link), luxSpectrumTexture("Kr", "", "1.0 1.0 1.0", 1.0, "reflection", "", mat, gui))
-#			(str,link) = c((str,link), luxFloatTexture("roughness", "", 0.1, 0.0, 1.0, "roughness", "", mat, gui))
-#			(str,link) = c((str,link), luxSpectrumTexture("opacity", "", "1.0 1.0 1.0", 1.0, "opacity", "", mat, gui))
-#			(str,link) = c((str,link), luxFloatTexture("bumpmap", "", 0.0, 0.0, 1.0, "bumpmap", "", mat, gui))
+			(str,link) = c((str,link), luxFloatTexture("bumpmap", keyname, 0.0, 0.0, 1.0, "bumpmap", "", mat, gui, level+1))
 
-		if useNamedMaterials:
-			str += "MakeNamedMaterial \"%s\"%s\n"%(matname, link)
-			link = "NamedMaterial \"%s\""%(matname)
+		str += "MakeNamedMaterial \"%s\"%s\n"%(matname, link)
+	return (str, " \"string %s\" [\"%s\"]"%(luxname, matname))
+
+
+def luxMaterial(mat, gui=None):
+	str = ""
+	if mat:
+		(str, link) = luxMaterialBlock("", "", "", mat, gui, 0)
+		if luxProp(mat, "type", "matte").get() != "light":
+			link = "NamedMaterial \"%s\""%(mat.getName())
 		luxProp(mat, "link", "").set("".join(link))
 	return str
 
