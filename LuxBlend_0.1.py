@@ -688,6 +688,13 @@ def save_still(filename):
 # Icons
 ######################################################
 
+def base64value(char):
+	if ord(char) in range(65, 91): return ord(char)-65
+	if ord(char) in range(97, 123): return ord(char)-97+26
+	if ord(char) in range(48, 58): return ord(char)-48+52
+	if char == '+': return 62
+	return 63
+
 def decodeIconStr(s):
 	img = Image.New("", 16, 16, 32)
 	print len(s)
@@ -696,22 +703,25 @@ def decodeIconStr(s):
 		for x in range(16):
 			col = []
 			for c in range(4):
-				col.append((ord(s[offset])-32)/95.0)
+				col.append(int(base64value(s[offset])*4.048))
 				offset += 1
-			img.setPixelF(x, y, col)
+			img.setPixelI(x, y, col)
 	return img
 
-icon_material = decodeIconStr(r"""                                 luc luc luc <) .>+ Y?, l=* w?, l>+ Y<) .luc luc luc    luc ;   =* L@. w`Q<zl]FrcIlZ@]L4z?, w=* L;   luc    luc =* LN>3wslRufJtcFtb?tcA@:384.F3$w=* Lluc    <( -F3"wtlYudF43%43%tb>tb>)&!   F?3>, w<( -   >+ YfYIzvlPtb>43%43%tb>tb>]P5(& RH7\K4z>+ Y   ?, nrlYueFtb>tb>tb>tb>tb>tb>tb>tcAlZA?, n   <) ywqel\>J@.lY9tb>tb>tb>tb>tb>tb?rdJ<) y   ?, osl^<83   3+#tb>tb>YI3(& *'!_R:l]F?, o   >, Zl_PzFFF   '$ tb>tb>(&       ;94`Q=z>, Z   ;) 3F3$wllc533YI3tb>tb>LF3   &&&YQG@. w;) 3   luc =+ OTF7wwqfvlYueGtcAueFodMpgYN>.w=+ Oluc    luc 33  =+ OF3$wl^Pzrl^wpeqlYeYHzF3"w=+ O33  luc    luc luc luc ;) 3>, Z?, o<) y?, o>, Z;) 3luc luc luc                   """)
+icon_blender = decodeIconStr("///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A27wA27wA27wA27wA27wAFFFGIIIsNNN5IIIsFFFG27wA27wA27wA27wA27wA///A27wA27wA27wA27wA27wAFFFmnnn9sss/kkk9FFFm27wA27wA27wA27wA27wA///A27wA27wA27wA27wA27wAEEEvwww/AAA/sss/EEEv27wA27wA27wA27wA27wA///A27wA27wA27wA27wA27wAFFFxzzz/xxx/vvv/FFFx27wA27wA27wA27wA27wA///A27wAGGGRLLLtKKK7KKK9JJJ/111/ppp/xxx/III/JJJ9JJJ7LLLtGGGR27wA///AGGGQPPP8xxx/444/vvv/555/333/999/zzz/xxx/jjj/nnn/nnn/OOO8GGGQ///ALLL2222/zzz/lll/+++/888/666/444/222/000/yyy/aaa/nnn/vvv/LLL2///AMMMxqqq/+++/ttt/////AAA/888/666/444/AAA/000/iii/zzz/nnn/MMMx///AGGGKLLLqKKK7ZZZ/yyy/yyy/yyy/888/vvv/ttt/rrr/VVV/JJJ7LLLqGGGK///A27wA27wA27wAJJJ1999+////sss5UUU8qqq5777/333+III127wA27wA27wA///A27wA27wA27wAHHHJMMMzUUU7GGGpHHHIGGGpSSS7MMMzHHHJ27wA27wA27wA///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A")
+icon_col = decodeIconStr("///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A27wA27wA27wA27wAVIAPXKB5VIAS27wA27wA27wA27wA///A///A///A///A///A27wA27wA27wAVIAPXKB8shU/XLC9VIAS27wA27wA27wA///A///A///A///A///A27wA27wAVIAPXKB8ymU/7xd/0qb/XLC9VIAS27wA27wA///A///A///A///A///A27wAVIAPXKA8xkO/7uW/7wa/7xd/0qb/XLC9VIAS27wA///A///A///A///A///AVIAPXKA8xiJ/6rO/6sS/7uW/7wZ/7xd/0qa/XLC9VIAS///A///A///A///A///AXKA1ypd/+6z/6rO/6rO/6sS/7uW/7vZ/7xd/shT/XKB5///A///A///A///A///AVJAMYMC873w/+6z/6rO/6rO/6sS/7uV/ymT/XKB8VIAP///A///A///A///A///A27wAVJAMYMC873w/+6z/6rO/6rO/xkN/XKB8VIAP27wA///A///A///A///A///A27wA27wAVJAMYMC873w/+6z/xiJ/XKA8VIAP27wA27wA///A///A///A///A///A27wA27wA27wAVJAMYMC8xpc/XKA8VIAP27wA27wA27wA///A///A///A///A///A27wA27wA27wA27wAVJAMXKA1VIAP27wA27wA27wA27wA///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A")
+icon_float = decodeIconStr("///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A27wA27wA27wA27wAMMMSOOO5MMMP27wA27wA27wA27wA///A///A///A///A///A27wA27wA27wAMMMSPPP9nnn/PPP8MMMP27wA27wA27wA///A///A///A///A///A27wA27wAMMMSPPP9ttt/333/vvv/PPP8MMMP27wA27wA///A///A///A///A///A27wAMMMSOOO9ppp/zzz/111/333/vvv/PPP8MMMP27wA///A///A///A///A///AMMMSOOO9lll/uuu/www/zzz/111/333/vvv/PPP8MMMP///A///A///A///A///AOOO5sss/666/sss/uuu/www/zzz/111/333/kkk/PPP1///A///A///A///A///AMMMPQQQ8444/666/ttt/uuu/www/zzz/ppp/OOO8MMMM///A///A///A///A///A27wAMMMPQQQ8444/666/ttt/uuu/mmm/OOO8MMMM27wA///A///A///A///A///A27wA27wAMMMPQQQ8444/555/jjj/OOO8MMMM27wA27wA///A///A///A///A///A27wA27wA27wAMMMPQQQ8ppp/OOO8MMMM27wA27wA27wA///A///A///A///A///A27wA27wA27wA27wAMMMPOOO1MMMM27wA27wA27wA27wA///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A")
+icon_map2d = decodeIconStr("///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A27wA27wA27wA27wA27wAMMMUMMMzMMMzMMMU27wA27wA27wA27wA27wA///A///A27wA27wA27wANNNPMMMyYVQ/wnV/bbb/RRR/MMMyNNNP27wA27wA27wA///A///A27wAMMMLMMMtWUQ/vnZ/7vY/6rP/aaa/eee/ZZZ/PPP/MMMtMMML27wA///A///AMMMfTSQ/tnc/7yg/7uV/6qN/6qM/YYY/ZZZ/ddd/fff/YYY/OOO/MMMf///A///AMMM/71o/7wb/6sQ/rgK/dVG/6qM/YYY/ZZZ/bbb/ccc/fff/ggg/MMM////A///AMMM/92q/AAA/6rP/dVH/AAA/6qM/YYY/ZZZ/bbb/ccc/eee/iii/MMM////A///AMMM/93r/dWI/6rP/dVH/AAA/6qM/XXX/ZZZ/bbb/ccc/eee/iii/MMM////A///AMMM/94t/6sR/6rQ/6rO/6qN/6qM/XXX/ZZZ/bbb/ccc/eee/jjj/MMM////A///AMMM/94u/dWI/dVI/6rP/6rN/6qM/XXX/ZZZ/bbb/ccc/eee/kkk/MMM////A///AMMM/+5v/AAA/AAA/6rP/7vX/94t/xxx/ggg/bbb/ccc/eee/lll/MMM////A///AMMM/+5x/6sR/7xd/+6y/////////////////111/mmm/eee/mmm/MMM////A///AMMM/+72//96/////////////////////////////////666/vvv/MMM////A///AMMMiTTS/wuq/986/////////////////////////555/ppp/SSS/MMMi///A///A27wAMMMHMMMdMMM0aZX/0yu/+97/888/uuu/XXX/MMM0MMMdMMMH27wA///A///A27wA27wA27wA27wANNNLMMMhMMM3MMM3MMMhNNNL27wA27wA27wA27wA///A")
+icon_map2dparam = decodeIconStr("///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A27wAQQQB27wA27wA27wA27wA27wA27wA27wA27wA27wA27wA27wA27wA///A///A27wAUUUwMMM9EEE3AAAvAAAlAAAbAAAI27wA27wA27wA27wA27wA27wA///A///A27wAeeeOVVV9OOO/MMM/CCC/AAA+AAA9AAAg27wA27wA27wA27wA27wA///A///A27wA27wAfffKWWW9ggg/mmm/TTT/AAA/AAA9AAAS27wA27wA27wA27wA///A///A27wA27wA27wAeeeXVVV9hhh/lll/TTT/BBB/BBB6AAAN27wA27wA27wA///A///A27wAAAAK27wA27wAdddgTTT8NNN/NNN/JJJ/VVV9EEE8AAAoAAAG27wA///A///A27wAAAAXAAAA27wA27wAeeeaVVV2QQQ/nnn+222/mmm/PPP9JGF8KGCX///A///A27wAAAAkAAAA27wA27wA27wA27wAVVVXYYY8+++/333/gec+ZPL+XOJq///A///A27wAAAAxAAAB27wA27wA27wA27wA27wAXXXiiii83219ofY8eUO/aQL2///A///A27wAAAA9AAAC27wA27wA27wA27wA27wAgggAWWVwmgc84yt/oeW/gWP1///A///ACCC6AAA/AAA/CCC627wA27wA27wA27wA27wAKFFDKGDzxsm52wq/peW2///A///AAAA/////////AAA/AAABAAAAAAAAAAAA27wA27wALFCFMHE31wr61uo5///A///AAAA/////////AAA/AAA+AAAzAAAmAAAZAAAM27wA27wAKFDJPLH6umez///A///ACCC6AAA/AAA/CCC627wA27wA27wA27wA27wA27wA27wA27wAKFCOOJFf///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A")
+icon_map3dparam = decodeIconStr("27wA27wA27wA27wA27wA27wA3nIC6pMJ6pMJ3nIC27wA27wA27wA27wA27wA27wA27wA27wA27wA27wA27wA3nIC6qMj6qM/6qM/6qMj3nIC27wA27wA27wA27wA27wA27wA27wA27wA27wA27wA6pMJ6qM/////////6qM/6pMJ27wA27wA27wA27wA27wA27wA27wA27wA27wANNNOSQMz5qM/////////5qM/SQMzNNNO27wA27wA27wA27wA27wA27wAMMMIMMMrXXX/www/5wg/6qM/5qM/vnX/bbb/PPP/MMMrMMMI27wA27wA27wA27wAMMM1xxx/777/222/yyy/zxu/caY/bbb/ggg/iii/YYY/MMM127wA27wA27wA27wAMMM/+++/zzz/yyy/yyy/yyy/ZZZ/bbb/ddd/fff/kkk/MMM/27wA27wA27wA27wAMMM/////yyy/yyy/yyy/yyy/ZZZ/bbb/ddd/eee/lll/MMM/27wA27wA27wA27wAMMM/////yyy/yyy/yyy/yyy/ZZZ/bbb/ddd/eee/nnn/MMM/27wA27wA27wA3nICRPM//97/yyy/yyy/yyy/yyy/ZZZ/bbb/ddd/eee/rpm/RPM/3nIC27wA3nIC6qMj5qM/6qM/2ue/zzz/444/999/666/rrr/fff/tkU/5qM/5qM/6qMj3nIC6pMJ6qM/////////6qM/+96/////////////////985/6qM/////////6qM/6pMJ6pMJ6qM/////////6qM/+86/////////////////974/6qM/////////6qM/6pMJ3nIC6qMj6qM/6qM/pfM2PPP+mmm/555/000/hhh/PPP+pfM26qM/6qM/6qMj3nIC27wA3nIC6pMJ6pMJ3nICMMMEMMMaMMMwMMMwMMMaMMME3nIC6pMJ6pMJ3nIC27wA///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A")
+icon_mat = decodeIconStr("///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A27wA27wA27wAVJAMXKBnXLB1WJA9XLB1XKBnVJAM27wA27wA27wA///A///A///A27wAVAAAWJBgYMD9ukW/1sc/5we/0qY/sgQ/XLB9WJBgVAAA27wA///A///A///A27wAWJBghXM96zk/8yf/7wa/7vY/7vZ/YUN/TQM/aPF9WJBg27wA///A///A///AVIALZNE970o/7wb/QNG/QNG/7vX/7vX/JHD/DDD/bXP/XKB9VIAL///A///A///AXKBpype/8zj/7vX/QNG/QNG/7vX/7vX/sjR/IGD/keS/rfQ/XKBp///A///A///AXLB36zp/7xc/7vX/7vX/7vX/7vX/7vX/7vX/7vX/7vZ/0qZ/XLB3///A///A///AVJA+95x/2rX/fYM/zoU/7vX/7vX/7vX/7vX/7vX/7vY/6wf/VJA+///A///A///AXKB361s/VTO/AAA/NKF/7vX/7vX/meP/IGD/JHD/tkU/1rc/XKB3///A///A///AXKBq0tj/cba/AAA/HGD/7vX/7vX/IGD/AAA/AAA/VTQ/ujW/XKBq///A///A///AVIAMaPG920w/RPN/meP/7vX/7vX/gaM/BAA/HHH/njd/YMD9VIAM///A///A///A27wAWKBilbS995y/91n/8xd/7vZ/7xc/4wh/4yn/iXM9WKBi27wA///A///A///A27wAQQABWKBiaOF9zsj/61s/95x/5zp/xpe/ZNE9WKBiQQAB27wA///A///A///A27wA27wA27wAVIAMXKBqXKB3VJA+XKB3XKBqVIAM27wA27wA27wA///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A")
+icon_matmix = decodeIconStr("27wA27wA27wA27wA27wA27wA27wAMIFdUMG7WNF+WNF+SLG5LHFS27wA27wA///A27wA27wA27wA27wA27wASLGAOJGziYN/xmV/wmT/pgQ/jaN/YPH/NJGm27wA///A27wA27wA27wA27wA27wAMIFjlbR/9ye/6sQ/zlJ/sgJ/ofM/ngT/YPH/MIGT///A27wA27wA27wA27wA27wAXQJ/6xk/9xZ/6sQ/5qM/zlK/sfI/ofM/jaN/SLG5///A27wA27wA27wA27wAHHHGgXQ//4r/8xc/7vX/7tR/5pM/zlK/sgJ/pgQ/WMF+///A27wA27wA27wA27wAJOVVYbf/58//y27/wz3/7vY/7tS/4pM/ykJ/vmU/WMF////A27wAAAAALIGkTMG+NQU/Qcu/Sfz/Sfz/Wi1/wz4/7vZ/7sR/6sR/wmW/UMH8///ASLGAOJG1iYN/xmV/kns/Rfz/99+/++//Rfz/z27/8ye/9yc/9zg/iYN/LIFh///AMHFilbR/9ye/6sQ/jns/Rfz/////////Rfz/57///4q/6xk/lbR/NJG227wA///AYQJ96xk/9xZ/6sQ/orw/Tgz/Rfz/Rez/Qdw/Xaf/gXP/XPI/MIGoAAAA27wA///AgXQ//4r/8xc/7vX/7tR/nrw/jms/dhn/ein/WNG/GGGRAAAA27wA27wA27wA///AhYR//7x/91m/8xe/7vY/7tS/4pM/ykJ/vmU/WMF/GGGH27wA27wA27wA27wA///AbTM995x//+6/80k/8ye/7vZ/7sR/6sR/wmW/TMG+27wA27wA27wA27wA27wA///APIEitld///7//+6/91n/8ye/9yc/9zg/iYN/LIGk27wA27wA27wA27wA27wA///ARKGCRKFyskc/94v//7w//4q/6xk/lbR/OJG0AAAA27wA27wA27wA27wA27wA///A27wAQJECPIEibTL9hYQ/gXP/YQJ9MHEi27wA27wA27wA27wA27wA27wA27wA///A")
+icon_tex = decodeIconStr("///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///AOOO6MMM/MMM/MMM/MMM/MMM/MMM/MMM/MMM/MMM/MMM/MMM/OOO6///A///A///AMMM/444/555/555/555/555/666/666/777/777/888/888/MMM////A///A///AMMM/555/mmm/TTT/aaa/xxx/111/222/222/QQQ/ZZZ/777/MMM////A///A///AMMM/333/DDD/AAA/AAA/YYY/zzz/111/xxx/AAA/AAA/nnn/MMM////A///A///AMMM/222/DDD/AAA/AAA/bbb/yyy/zzz/111/RRR/AAA/iii/MMM////A///A///AMMM/666/jjj/TTT/ddd/vvv/xxx/yyy/zzz/000/rrr/555/MMM////A///A///AMMM/666/rrr/sss/uuu/vvv/www/xxx/yyy/zzz/000/666/MMM////A///A///AMMM/666/qqq/iii/qqq/uuu/vvv/ppp/nnn/yyy/zzz/555/MMM////A///A///AMMM/777/jjj/AAA/RRR/sss/bbb/AAA/AAA/SSS/yyy/555/MMM////A///A///AMMM/888/mmm/LLL/ccc/rrr/QQQ/AAA/AAA/AAA/www/555/MMM////A///A///AMMM/888/nnn/ooo/ppp/qqq/jjj/HHH/DDD/XXX/www/555/MMM////A///A///AMMM/666/888/888/777/666/666/555/555/555/444/333/MMM////A///A///ANNN4NNN+NNN+NNN+NNN+NNN+NNN+NNN+NNN+NNN+NNN+NNN+OOO4///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A")
+icon_texcol = decodeIconStr("///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///AWKA4VJA+VJA+VJA+VJA+VJA+VJA+VJA+VJA+VJA+VJA+VJA+WKA4///A///A///AVIA/82p/93r/93r/93s/93s/93s/93t/94u/94u/94w/95w/VIA////A///A///AVIA/93s/xoV/ZVM/icR/6wf/8zi/80k/80l/USN/daU/94v/VIA////A///A///AVIA/72r/FDC/AAA/AAA/eZP/8yf/8zh/3vg/AAA/AAA/olf/VIA////A///A///AVIA/50p/DCB/AAA/AAA/faO/8xd/8yf/8zh/SPK/AAA/jga/VIA////A///A///AVIA/94t/rhO/WRI/haN/5uY/7wb/8xd/8yf/7yg/tma/72r/VIA////A///A///AVIA/94u/6sQ/6tT/7uV/7uX/7vY/7wa/7xc/8ye/8yg/93s/VIA////A///A///AVIA/94u/6rO/ylO/5sS/7uU/7uW/1qV/yoW/7xc/8ye/93s/VIA////A///A///AVIA/+5w/zlL/DDD/bVK/6tS/mdN/AAA/AAA/YTK/7xc/93r/VIA////A///A///AVIA/+5x/3oL/NKD/mcK/6sQ/WQG/AAA/AAA/BAA/5uZ/93r/VIA////A///A///AVIA/+6z/6qM/6qM/6qM/6rO/ujM/IGC/BBA/aUJ/7vX/93r/VIA////A///A///AVIA/+5w/+6y/+5w/+4v/94t/93s/82r/93r/93r/93r/92p/VIA////A///A///AWJA6VJA/WJB/WJB/WJB/WJB/WJB/WJB/WJB/WJB/WJB/VJA/WJA6///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A")
+icon_texmix = decodeIconStr("///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///APPP7ccc/ddd/ccc/bbb/bbb/ddd/eee/RRR9///A///A///A///A///A///A///AYYY+yyy/fff/qqq/000/111/jjj/sss/eee////A///A///A///A///A///A///Aaaa9XXX/AAA/III/rrr/xxx/LLL/GGG/VVV////A///A///A///A///A///A///AZZZ9hhh/JJJ/XXX/rrr/uuu/kkk/eee/YYY////A///A///A///A///A///A///AVYd/sv0/imq/nqu/rrr/ttt/vvv/000/bbb////A///APPP7ccc/ddd/ccc/Ycg/Qcu/Sfz/Sfz/Wi1/fin/RRR/bbb/yyy/bbb////A///AYYY+yyy/fff/qqq/x05/Rfz/99+/++//Rfz/PSX/AAA/AAA/uuu/bbb////A///Aaaa9XXX/AAA/III/orw/Rfz/////////Rfz/lpu/XXX/eee/000/ccc////A///AZZZ9hhh/JJJ/XXX/osw/Tgz/Rfz/Rez/Qdw/Wae/bbb9aaa9YYY9PPP7///A///AYYY9vvv/lll/ppp/rrr/pty/sw1/w06/Ych////A///A///A///A///A///A///AZZZ9sss/SSS/iii/hhh/RRR/bbb/yyy/bbb////A///A///A///A///A///A///AZZZ9rrr/JJJ/eee/SSS/AAA/AAA/uuu/bbb////A///A///A///A///A///A///AZZZ+111/ttt/uuu/ooo/XXX/eee/000/ccc////A///A///A///A///A///A///AOOO4aaa9aaa9ZZZ9ZZZ9bbb9aaa9YYY9PPP7///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A")
+icon_texmixcol = decodeIconStr("///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///AaOE7mcS/ndT/mcS/lbS/kbS/ndU/neV/bQH9///A///A///A///A///A///A///AiYP+92o/niY/0tg//4p//6s/pme/wun/neV////A///A///A///A///A///A///AkZP9aYT/AAA/LJF/5vd//2j/OMH/GHH/eVN////A///A///A///A///A///A///AjYP9qlZ/OKE/haO/7wb/+zf/voZ/jgY/hYP////A///A///A///A///A///A///AXae/z27/qty/ux2/9wZ/+yc//1f//5o/lbS////A///AaOE7mcS/ndT/mcS/adh/Qcu/Sfz/Sfz/Wi1/lot/ZUK/leQ//3l/kbR////A///AiYP+92o/niY/0tg/25+/Rfz/99+/++//Rfz/TXc/AAA/BAA/9zg/lbS////A///AkZP9aYT/AAA/LJF/tx2/Rfz/////////Rfz/quz/bZU/lhX//6o/lcS////A///AjYP9qlZ/OKE/haO/uy3/Tgz/Rfz/Rez/Qdw/Ybg/laQ9laQ9iYP9aOE7///A///AhXP9/1f/6sQ/8vW/9wZ/wz4/y28/26//aej////A///A///A///A///A///A///AhXQ98xd/eWH/znR/xmR/ZUK/leQ//3l/kbR////A///A///A///A///A///A///AhYR97xb/TMA/xkL/dVG/AAA/BAA/9zg/lbS////A///A///A///A///A///A///AiYR+/7q//zb//0d/1tb/bZU/lhX//6o/lcS////A///A///A///A///A///A///AZNE4iZS9iZS9iYR9jZQ9laQ9laQ9iYP9aOE7///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A")
+icon_texparam = decodeIconStr("///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A27wAOOO5GGG/BBB9AAA5AAAwAAAnAAAO27wA27wA27wA27wA27wA27wA///A875F27wAYYYZPPP/KKK/III/BBB/AAA/AAA/AAAxAAAB27wA27wA27wA27wA///AoooO875K27wAaaaTRRR/eee/lll/SSS/AAA/AAA/AAAk27wA27wA27wA27wA///AeeeX222V876J27wAbbbkSSS/iii/mmm/TTT/AAA/AAA/CCCW27wA27wA27wA///AXXXfxxxftttW887I27wAcccwSSS/OOO/PPP/III/RRR/CCC/CCC3CCCL27wA///ATTTmtttsQQQvbbbd887H27wAdddrVVV/PPP/hhh/222/lll/NNN/HFE/KFCo///APPPssss3HHH6NNNwZZZd988G27wA27wAXXXlXXX/999/333/jhg/ZPK/WOJ5///AMMMvsss/jjj1XXXxrrrf333R998F27xA27wAYYYvggg/554/meX/eUO/ZQL////AJJJyvvv/jjj/oooztttoyyyc444Q999E27xAfffAYXW7jeZ/4yt/pfX/gWP////AHHH0zzz/iii/jjj+oooytttnlllggggX+99D27xALFAFKGD9wql/2wr/peW////AFFF3333/HHH/QQQ/jjj9mmmyDDD8KKKxTTTe555D26xAIFDKMHE+0vq/1uo////ADDD6666/HHH/QQQ/jjj/kkk8DDD+BBB+JJJyrrrR+++C26xAKFDROKG/wog+///ABBB9555/777/333/000/www/rrr9bbb6fffv000Y555M///B26xAKFCYOKF0///ABBB5BBB9DDD6EEE4GGG1IIIzKKKxNNNtPPPmSSSfUUUXUUUODDDE26xA27wA///A")
 
-icon_channel = decodeIconStr(r"""pyg pyg pyg pyg pyg pyg pyg 333%pyg pyg pyg pyg pyg pyg pyg pyg pyg pyg pyg 333!333H555e555y333555y555e333H333!pyg pyg pyg pyg pyg pyg 333/555m???}ZZZ[[[ZZZPPPFFF777}555m333/pyg pyg pyg pyg 333/444|\\\~ppp```TTTKKKIIIHHHJJJ<<<~444|333/pyg pyg 333!555maaa~vvvaaaYYYTTTNNNHHHCCC@@@HHH???~555m333!pyg 333HFFF}|||lllddd^^^YYYSSSNNNHHHCCC@@@JJJ555}333Hpyg 555ennnyyyooojjjddd^^^YYYSSSNNNHHHCCCGGGHHH555epyg 555yzzz{{{uuuoooiiiddd^^^YYYSSSNNNHHHHHHMMM555ypyg 333~~~zzztttoooiiiddd^^^YYYSSSMMMJJJYYY333333%555yzzzzzztttoooiiiddd^^^YYYSSSTTTZZZ555ypyg 555eooozzztttnnniiiccc^^^YYY___WWW555epyg 333HFFF}~~~yyytttnnniiiccc```ooo???}333Hpyg 333!555mfff~yyytttnnnkkktttZZZ~555m333!pyg pyg 333/555|fff~~~~zzzyyy|||```~444|333/pyg pyg pyg pyg 333/555mFFF}ooozzz~~~zzznnnFFF}555m333/pyg pyg pyg pyg pyg pyg 333!333H555e555y333555y555e333H333!pyg pyg pyg pyg """)
-
-icon_tex = decodeIconStr(r"""                                 A. s@- }@- }@- }@- }@- }@- }@- }@- }@- }@- }@- }A. s   ?, zp]zqazqazra{rb{sb{sc{sd{te{tg|uh?,    ?, {sbi[@F?2RJ9vhNzlRzmUznX>;4KF={tf?,    ?, yp`'%"      ME6yjNzlQqfP      \WN?,    ?, um^$#!      OF5yiKyjNylQ:7/   TPG?,    ?, |sc`Q4A:,QG3udDyhHyiKyjNwjPcYFxpa?,    ?, |sdwa8wc<wd?xeBxfDyhGyiJyjMykP{sb?,    ?, |tev`5jX5ua;wd>xeAn^@k\AyiJyjM{ra?,    ?, |uglW0$$$H?.wc;YL3      C=0yiJ{r`?,    ?, |vir\14.$XJ.wa8@8*      !! veE{r`?,    ?, |wlv^1v^1v^1v`4eT3+)#"! F>.xfC{r`?,    ?, |ug|vj|uh|tf|sc|sbzq`{q`{r`{q`{p]?,    A. v@-!A."A."A."A."A.!@.!@."A."A.!@-!A. v                  """)
-
-icon_texoption = decodeIconStr(r"""                                ~~~ pyg 555u)))~!!!{!!!t   h   Z   5pyg pyg pyg pyg pyg pyg  }yq(pyg DDDE777...---!!!         i   !pyg pyg pyg pyg  d^S4}yr/pyg GGG=:::LLLWWW;;;      ~   Vpyg pyg pyg pyg  WOAB|te?}zs-pyg IIIV;;;SSSYYY===!!!   ~###Apyg pyg pyg  OG6NznXOlfZA}zt,pyg JJJg:::~555777+++:::$$$~###q###1pyg  J@.YwiOb=:3fNJCK}zu+pyg LLLa???}666QQQpppXXX443*(%~.(#\ E;'bxiKr/-'v850hKGAK}{v)pyg pyg BBBWBBB~{{{qqqTQOE70A4.v >5&fyiJn\;oNF7imdSN|vi:}|w(pyg pyg DDDgPPP~vutYMC~M>5F70~ 71$jzmTv^1~wd@myjN[zp\J|vj8~|y'pyg OOO CBAyTMF~skd]NBP@7~ 2-#n{q^u^1v_3}weAkykOZc[MOTQJB~|z%pyg 1( (0)${h_W}qh`]M@~ -)"r|ug2-#G<(v_4{sa@j'%#z20,j>=9Mvvt$pyg -($/1*%}nf^~oe[~ (%!v}yq2-#G<(v^1v`5z&%"|""!}0/+jeaZ9~}|"pyg /'%95.)~g\P| #" z}xn}yr|ui{q_zmVsfN{PKAvXQEf{r`D}xn3~~}!pyg /(#D5.(n "" v#" {'%!w+("s0+#p4/$l:3%i>7(cA:.YC>4OD@:C@>;5$$$'pyg pyg  """)
-
-icon_map = decodeIconStr(r"""                 pyg pyg pyg pyg pyg 222>333l333l222>pyg pyg pyg pyg pyg   pyg pyg pyg 3337333jD@8hZ?HHH999333j3337pyg pyg pyg   pyg 2221222c@=8f[ExfDwa7GGGMMMFFF777222c2221pyg   222O=;8~cZJxjPwd?v_3v^1CCCFFFKKKNNNDDD555~222O  333}yn[yhIva8aP0K?)v^1CCCFFFHHHJJJNNNOOO333}  333{q^   va7K@*   v^2CCCFFFHHHJJJMMMRRR333  333{r`K@,va7K@*   v^2CCCFFFHHHJJJLLLSSS333  333{scwa9va7v`5v_4v^2CCCFFFHHHJJJLLLUUU333  333|tdK@,K@+v`6v`4v_2CCCFFFHHHJJJLLLVVV333  333|tf      v`6wfB|sdjjjPPPHHHJJJLLLWWW333  333|uiwb:yiK|vkpppXXXLLLYYY333  333~|xp~|wwwwfff333~  333R=<;~gd_{yvuuu]]];;;~333R  pyg 333+333L333mGFCnkd}|yyyydddCCC333m333L333+pyg   pyg pyg pyg pyg 3330333R333q333q333R3330pyg pyg pyg pyg  """)
-
-icon_mapoption = decodeIconStr(r"""                 pyg 777!pyg pyg pyg pyg pyg pyg pyg pyg pyg pyg pyg pyg   pyg >>>h333{&&&r   f   W   I   ,pyg pyg pyg pyg pyg pyg   pyg MMM4???z555~111###   |   {   Ppyg pyg pyg pyg pyg   pyg pyg NNN0@@@zPPPXXX<<<      z   :pyg pyg pyg pyg   pyg pyg pyg MMMB@@@zQQQWWW<<<!!!!!!v   3pyg pyg pyg   pyg    0pyg pyg LLLP===z444444---~???{&&&y   \   (pyg   pyg    C    pyg pyg MMMF???p888~ZZZ}pppYYY666{-)'z.($C  pyg    V   !pyg pyg pyg pyg @@@CDDDy|||qqqPLJ|E70}C5._  pyg    i   "pyg pyg pyg pyg pyg CCCRRRRzrqp{[NCyM>5F71q  pyg    z   #pyg pyg pyg pyg pyg OOO A@?gXPIyskd\MAP@7p  ###v      ###vpyg pyg pyg pyg pyg 0''$/)$ljaYtqh_]MAp           !   !        pyg pyg 0($(2+&rog`wpe[t           }   l   Y   E   2pyg pyg .'$.60*weYMl  ###v      ###vpyg pyg pyg pyg pyg pyg pyg pyg /(#44-'N                 """)
 
 def drawIcon(icon, x, y):
 	BGL.glEnable(BGL.GL_BLEND)
@@ -1301,7 +1311,8 @@ def scalelist(list, factor):
 
 
 def luxMapping(key, mat, gui, level=0):
-	if gui: gui.newline("2Dmap:", -2, level, icon_map)
+	global icon_map2d, icon_map2dparam
+	if gui: gui.newline("2Dmap:", -2, level, icon_map2d)
 	mapping = luxProp(mat, key+".mapping", "uv")
 	mappings = ["uv","spherical","cylindrical","planar"]
 	str = luxOption("mapping", mapping, mappings, "mapping", "", gui, 0.5)
@@ -1313,37 +1324,46 @@ def luxMapping(key, mat, gui, level=0):
 	if mapping.get() == "planar":
 		str += luxFloat("udelta", luxProp(mat, key+".udelta", 0.0), -100.0, 100.0, "Ud", "u-delta", gui, 0.75)
 		str += luxFloat("vdelta", luxProp(mat, key+".vdelta", 0.0), -100.0, 100.0, "Vd", "v-delta", gui, 0.75)
-		if gui: gui.newline("v1:", -2, level+1, icon_mapoption)
+		if gui: gui.newline("v1:", -2, level+1, icon_map2dparam)
 		str += luxVector("v1", luxProp(mat, key+".v1", "1 0 0"), -100.0, 100.0, "v1", "v1-vector", gui, 2.0)
-		if gui: gui.newline("v2:", -2, level+1, icon_mapoption)
+		if gui: gui.newline("v2:", -2, level+1, icon_map2dparam)
 		str += luxVector("v2", luxProp(mat, key+".v2", "0 1 0"), -100.0, 100.0, "v2", "v2-vector", gui, 2.0)
 	return str
 
 def lux3DMapping(key, mat, gui, level=0):
+	global icon_map3dparam
 	str = ""
-	if gui: gui.newline("scale:", -2, level, icon_mapoption)
+	if gui: gui.newline("scale:", -2, level, icon_map3dparam)
 	str += luxVector("scale", luxProp(mat, key+".3dscale", "1 1 1"), 0.001, 1000.0, "scale", "scale-vector", gui, 2.0)
-	if gui: gui.newline("rot:", -2, level, icon_mapoption)
+	if gui: gui.newline("rot:", -2, level, icon_map3dparam)
 	str += luxVector("rotate", luxProp(mat, key+".3drotate", "0 0 0"), -360.0, 360.0, "rotate", "rotate-vector", gui, 2.0)
-	if gui: gui.newline("move:", -2, level, icon_mapoption)
+	if gui: gui.newline("move:", -2, level, icon_map3dparam)
 	str += luxVector("translate", luxProp(mat, key+".3dtranslate", "0 0 0"), -1000.0, 1000.0, "move", "translate-vector", gui, 2.0)
 	return str
 	
 	
 
 def luxTexture(name, parentkey, type, default, min, max, caption, hint, mat, gui, matlevel, texlevel=0):
+	global icon_tex, icon_texcol, icon_texmix, icon_texmixcol, icon_texparam
 	def c(t1, t2):
 		return (t1[0]+t2[0], t1[1]+t2[1])
 	level = matlevel + texlevel
 	keyname = "%s:%s"%(parentkey, name)
 	texname = "%s:%s"%(mat.getName(), keyname)
 #	if gui: gui.newline(caption+":", 0, level)
-	if gui:
-		if (texlevel > 0): gui.newline(caption+":", -2, level, icon_texoption, scalelist([0.5,0.5,0.5],2.0/(level+2)))
-		else: gui.newline("texture:", -2, level, icon_tex, scalelist([0.5,0.5,0.5],2.0/(level+2)))
 	if texlevel == 0: texture = luxProp(mat, keyname+".texture", "imagemap")
 	else: texture = luxProp(mat, keyname+".texture", "constant")
 	textures = ["constant","imagemap","mix","scale","bilerp","uv", "checkerboard","dots","fbm","marble","wrinkled", "windy", "blender_marble", "blender_musgrave", "blender_wood"] # note - radiance - added uv and windy types
+	if gui:
+		icon = icon_tex
+		if texture.get() in ["mix", "scale", "checkerboard", "dots"]:
+			if type=="color": icon = icon_texmixcol
+			else: icon = icon_texmix
+		else:
+			if type=="color": icon = icon_texcol
+			else: icon = icon_tex
+		if (texlevel > 0): gui.newline(caption+":", -2, level, icon, scalelist([0.5,0.5,0.5],2.0/(level+2)))
+		else: gui.newline("texture:", -2, level, icon, scalelist([0.5,0.5,0.5],2.0/(level+2)))
 	luxOption("texture", texture, textures, "texture", "", gui, 0.9)
 	str = "Texture \"%s\" \"%s\" \"%s\""%(texname, type, texture.get())
 	if texture.get() == "constant":
@@ -1434,7 +1454,7 @@ def luxTexture(name, parentkey, type, default, min, max, caption, hint, mat, gui
 		str += lux3DMapping(keyname, mat, gui, level+1)
 
 	if texture.get() == "blender_marble":
-		if gui: gui.newline("noise:", -2, level+1, icon_texoption)
+		if gui: gui.newline("noise:", -2, level+1, icon_texparam)
 
 		mtype = luxProp(mat, keyname+".mtype", "soft")
 		mtypes = ["soft","sharp","sharper"]
@@ -1449,7 +1469,7 @@ def luxTexture(name, parentkey, type, default, min, max, caption, hint, mat, gui
 		str += luxFloat("noisesize", luxProp(mat, keyname+".noisesize", 0.25), 0.0, 2.0, "noisesize", "", gui, 1.0)
 		str += luxFloat("turbulance", luxProp(mat, keyname+".turbulance", 5.0), 0.0, 200.0, "turbulance", "", gui, 1.0)
 
-		if gui: gui.newline("basis:", -2, level+1, icon_texoption)
+		if gui: gui.newline("basis:", -2, level+1, icon_texparam)
 		noisebasis2 = luxProp(mat, keyname+".noisebasis2", "sin")
 		noisebasises2 = ["sin","saw","tri"]
 		str += luxOption("noisebasis2", noisebasis2, noisebasises2, "noisebasis2", "", gui, 0.7)
@@ -1458,13 +1478,13 @@ def luxTexture(name, parentkey, type, default, min, max, caption, hint, mat, gui
 		noisebasises = ["blender_original","original_perlin", "improved_perlin", "voronoi_f1", "voronoi_f2", "voronoi_f3", "voronoi_f4", "voronoi_f2f1", "voronoi_crackle", "cell_noise"]
 		str += luxOption("noisebasis", noisebasis, noisebasises, "noisebasis", "", gui, 1.3)
 
-		if gui: gui.newline("level:", -2, level+1, icon_texoption)
+		if gui: gui.newline("level:", -2, level+1, icon_texparam)
 		str += luxFloat("bright", luxProp(mat, keyname+".bright", 1.0), 0.0, 2.0, "bright", "", gui, 1.0)
 		str += luxFloat("contrast", luxProp(mat, keyname+".contrast", 1.0), 0.0, 5.0, "contrast", "", gui, 1.0)
 		str += lux3DMapping(keyname, mat, gui, level+1)
 
 	if texture.get() == "blender_musgrave":
-		if gui: gui.newline("type:", -2, level+1, icon_texoption)
+		if gui: gui.newline("type:", -2, level+1, icon_texparam)
 		mtype = luxProp(mat, keyname+".mtype", "multifractal")
 		mtypes = ["multifractal","ridged_multifractal", "hybrid_multifractal", "hetero_terrain", "fbm"]
 		str += luxOption("type", mtype, mtypes, "type", "", gui, 2.0)
@@ -1485,18 +1505,18 @@ def luxTexture(name, parentkey, type, default, min, max, caption, hint, mat, gui
 		str += luxFloat("outscale", luxProp(mat, keyname+".outscale", 1.0), 0.0, 10.0, "iscale", "", gui, 1.0)
 		str += luxFloat("noisesize", luxProp(mat, keyname+".noisesize", 0.25), 0.0, 2.0, "noisesize", "", gui, 1.0)
 
-		if gui: gui.newline("basis:", -2, level+1, icon_texoption)
+		if gui: gui.newline("basis:", -2, level+1, icon_texparam)
 		noisebasis = luxProp(mat, keyname+".noisebasis", "blender_original")
 		noisebasises = ["blender_original","original_perlin", "improved_perlin", "voronoi_f1", "voronoi_f2", "voronoi_f3", "voronoi_f4", "voronoi_f2f1", "voronoi_crackle", "cell_noise"]
 		str += luxOption("noisebasis", noisebasis, noisebasises, "noisebasis", "", gui, 2.0)
 
-		if gui: gui.newline("level:", -2, level+1, icon_texoption)
+		if gui: gui.newline("level:", -2, level+1, icon_texparam)
 		str += luxFloat("bright", luxProp(mat, keyname+".bright", 1.0), 0.0, 2.0, "bright", "", gui, 1.0)
 		str += luxFloat("contrast", luxProp(mat, keyname+".contrast", 1.0), 0.0, 5.0, "contrast", "", gui, 1.0)
 		str += lux3DMapping(keyname, mat, gui, level+1)
 
 	if texture.get() == "blender_wood":
-		if gui: gui.newline("noise:", -2, level+1, icon_texoption)
+		if gui: gui.newline("noise:", -2, level+1, icon_texparam)
 
 		mtype = luxProp(mat, keyname+".mtype", "bands")
 		mtypes = ["bands","rings","bandnoise", "ringnoise"]
@@ -1509,7 +1529,7 @@ def luxTexture(name, parentkey, type, default, min, max, caption, hint, mat, gui
 		str += luxFloat("noisesize", luxProp(mat, keyname+".noisesize", 0.25), 0.0, 2.0, "noisesize", "", gui, 1.0)
 		str += luxFloat("turbulance", luxProp(mat, keyname+".turbulance", 5.0), 0.0, 200.0, "turbulance", "", gui, 1.0)
 
-		if gui: gui.newline("basis:", -2, level+1, icon_texoption)
+		if gui: gui.newline("basis:", -2, level+1, icon_texparam)
 		noisebasis2 = luxProp(mat, keyname+".noisebasis2", "sin")
 		noisebasises2 = ["sin","saw","tri"]
 		str += luxOption("noisebasis2", noisebasis2, noisebasises2, "noisebasis2", "", gui, 0.7)
@@ -1518,7 +1538,7 @@ def luxTexture(name, parentkey, type, default, min, max, caption, hint, mat, gui
 		noisebasises = ["blender_original","original_perlin", "improved_perlin", "voronoi_f1", "voronoi_f2", "voronoi_f3", "voronoi_f4", "voronoi_f2f1", "voronoi_crackle", "cell_noise"]
 		str += luxOption("noisebasis", noisebasis, noisebasises, "noisebasis", "", gui, 1.3)
 
-		if gui: gui.newline("level:", -2, level+1, icon_texoption)
+		if gui: gui.newline("level:", -2, level+1, icon_texparam)
 		str += luxFloat("bright", luxProp(mat, keyname+".bright", 1.0), 0.0, 2.0, "bright", "", gui, 1.0)
 		str += luxFloat("contrast", luxProp(mat, keyname+".contrast", 1.0), 0.0, 5.0, "contrast", "", gui, 1.0)
 		str += lux3DMapping(keyname, mat, gui, level+1)
@@ -1527,7 +1547,8 @@ def luxTexture(name, parentkey, type, default, min, max, caption, hint, mat, gui
 
 
 def luxSpectrumTexture(name, key, default, max, caption, hint, mat, gui, level=0):
-	if gui: gui.newline(caption, 4, level, icon_channel, scalelist([0.5,0.5,0.5],2.0/(level+2)))
+	global icon_col
+	if gui: gui.newline(caption, 4, level, icon_col, scalelist([0.5,0.5,0.5],2.0/(level+2)))
 	str = ""
 	keyname = "%s:%s"%(key, name)
 	texname = "%s:%s"%(mat.getName(), keyname)
@@ -1544,7 +1565,8 @@ def luxSpectrumTexture(name, key, default, max, caption, hint, mat, gui, level=0
 	return (str, link)
 
 def luxFloatTexture(name, key, default, min, max, caption, hint, mat, gui, level=0):
-	if gui: gui.newline(caption, 4, level, icon_channel, scalelist([0.5,0.5,0.5],2.0/(level+2)))
+	global icon_float
+	if gui: gui.newline(caption, 4, level, icon_float, scalelist([0.5,0.5,0.5],2.0/(level+2)))
 	str = ""
 	keyname = "%s:%s"%(key, name)
 	texname = "%s:%s"%(mat.getName(), keyname)
@@ -1563,6 +1585,7 @@ def luxFloatTexture(name, key, default, min, max, caption, hint, mat, gui, level
 
 
 def luxMaterialBlock(name, luxname, key, mat, gui=None, level=0):
+	global icon_mat, icon_matmix
 	def c(t1, t2):
 		return (t1[0]+t2[0], t1[1]+t2[1])
 	str = ""
@@ -1576,8 +1599,10 @@ def luxMaterialBlock(name, luxname, key, mat, gui=None, level=0):
 		materials = ["carpaint","glass","matte","mattetranslucent","metal","mirror","plastic","roughglass","shinymetal","substrate","mix","null"]
 		if level == 0: materials = ["light","portal"]+materials
 		if gui:
-			if level == 0: gui.newline("Material:", 12, level, icon_material, [0.4,0.4,0.6])
-			else: gui.newline(name+":", 12, level, icon_material, scalelist([0.4,0.4,0.6],2.0/(level+2)))
+			icon = icon_mat
+			if mattype.get() == "mix": icon = icon_matmix
+			if level == 0: gui.newline("Material:", 12, level, icon, [0.4,0.4,0.6])
+			else: gui.newline(name+":", 12, level, icon, scalelist([0.4,0.4,0.6],2.0/(level+2)))
 		link = luxOption("type", mattype, materials, "  TYPE", "select material type", gui)
 		if gui: gui.newline()
 		if mattype.get() == "mix":
@@ -1784,7 +1809,7 @@ def luxDraw():
 	BGL.glClear(BGL.GL_COLOR_BUFFER_BIT)
 
 	y = int(scrollbar.getTop()) # 420
-	BGL.glColor3f(0.2,0.2,0.2); BGL.glRectf(0,0,440,y)
+	BGL.glColor3f(0.1,0.1,0.1); BGL.glRectf(0,0,440,y)
 	BGL.glColor3f(0.9,0.9,0.9); BGL.glRasterPos2i(10,y-15); Draw.Text("LuxBlend v0.5alpha-MatEditor :::...")
 
 	scn = Scene.GetCurrent()
