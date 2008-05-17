@@ -779,19 +779,34 @@ def getScenePresets():
 # radiance's hardcoded render presets:
 
 	# quick previews (biased)
-	presets['0A - Preview - Directlighting'] = {'pixelfilter.type':'gaussian','sampler.type':'lowdiscrepancy','sampler.lowdisc.pixelsampler':'lowdiscrepancy','sintegrator.type':'directlighting','sintegrator.dlighting.maxdepth':3 }
-	presets['0B - Preview - Path Tracing'] = {'pixelfilter.type':'gaussian','sampler.type':'lowdiscrepancy','sampler.lowdisc.pixelsampler':'lowdiscrepancy','sintegrator.type':'path','sintegrator.path.maxdepth':3 }
+	presets['0A - Preview - Directlighting - progressive'] = {'pixelfilter.type':'gaussian','pixelfilter.gaussian.xwidth':2.0,'pixelfilter.gaussian.ywidth':2.0,'sampler.type':'lowdiscrepancy','sampler.lowdisc.pixelsampler':'lowdiscrepancy','sampler.lowdisc.pixelsamples':2,'sintegrator.type':'directlighting','sintegrator.dlighting.maxdepth':2,'sintegrator.dlighting.strategy':'all' }
+	presets['0B - Preview - Directlighting - grid'] = {'pixelfilter.type':'gaussian','pixelfilter.gaussian.xwidth':2.0,'pixelfilter.gaussian.ywidth':2.0,'sampler.type':'lowdiscrepancy','sampler.lowdisc.pixelsampler':'grid','sampler.lowdisc.pixelsamples':2,'sintegrator.type':'directlighting','sintegrator.dlighting.maxdepth':2,'sintegrator.dlighting.strategy':'all' }
+
+	presets['0C - Preview - Path Tracing - progressive'] = {'pixelfilter.type':'gaussian','pixelfilter.gaussian.xwidth':2.0,'pixelfilter.gaussian.ywidth':2.0,'sampler.type':'lowdiscrepancy','sampler.lowdisc.pixelsampler':'lowdiscrepancy','sampler.lowdisc.pixelsamples':2,'sintegrator.type':'path','sintegrator.path.maxdepth':3 }
+	presets['0D - Preview - Path Tracing - grid'] = {'pixelfilter.type':'gaussian','pixelfilter.gaussian.xwidth':2.0,'pixelfilter.gaussian.ywidth':2.0,'sampler.type':'lowdiscrepancy','sampler.lowdisc.pixelsampler':'grid','sampler.lowdisc.pixelsamples':2,'sintegrator.type':'path','sintegrator.path.maxdepth':3 }
+
+	presets['0x'] = { }
 
 	# final renderings
 	presets['1A - Final - Path Tracing'] = {'pixelfilter.type':'mitchell','sampler.type':'lowdiscrepancy','sampler.lowdisc.pixelsampler':'lowdiscrepancy','sintegrator.type':'path','sintegrator.path.maxdepth':12 }
 	presets['1B - Final - low MLT/Path Tracing (outdoor)'] = {'pixelfilter.type':'mitchell','sampler.type':'metropolis','sampler.metro.lmprob':0.4,'sampler.metro.maxrejects':128,'sintegrator.type':'path','sintegrator.path.maxdepth':12 }
-	presets['1C - Final - medium MLT/Path Tracing (indoor) (recommended)'] = {'pixelfilter.type':'mitchell','sampler.type':'metropolis','sampler.metro.lmprob':0.25,'sampler.metro.maxrejects':128,'sintegrator.type':'path','sintegrator.path.maxdepth':12 }
-	presets['1D - Final - high MLT/Path Tracing (complex)'] = {'pixelfilter.type':'mitchell','sampler.type':'metropolis','sampler.metro.lmprob':0.1,'sampler.metro.maxrejects':128,'sintegrator.type':'path','sintegrator.path.maxdepth':12 }
-	presets['1E - Final - ERPT/Path Tracing'] = {'pixelfilter.type':'mitchell','sampler.type':'erpt','sintegrator.type':'path','sintegrator.path.maxdepth':12 }
+	presets['1C - Final - medium MLT/Path Tracing (indoor)'] = {'pixelfilter.type':'mitchell','sampler.type':'metropolis','sampler.metro.lmprob':0.25,'sampler.metro.maxrejects':128,'sintegrator.type':'path','sintegrator.path.maxdepth':12 }
+	presets['1D - Final - medium vMLT/Path Tracing (indoor) (recommended)'] = {'pixelfilter.type':'mitchell','sampler.type':'metropolis','sampler.metro.lmprob':0.25,'sampler.metro.maxrejects':128,'sintegrator.type':'path','sintegrator.path.maxdepth':12 }
+	presets['1E - Final - high MLT/Path Tracing (complex)'] = {'pixelfilter.type':'mitchell','sampler.type':'metropolis','sampler.metro.lmprob':0.1,'sampler.metro.maxrejects':128,'sintegrator.type':'path','sintegrator.path.maxdepth':12 }
+	presets['1F - Final - ERPT/Path Tracing'] = {'pixelfilter.type':'mitchell','sampler.type':'erpt','sintegrator.type':'path','sintegrator.path.maxdepth':12 }
+
+	presets['1x'] = { }
 
 	# empirical test/debugging reference renderings
 	presets['2A - Reference - Path Tracing'] = {'pixelfilter.type':'mitchell','sampler.type':'random','sampler.random.pixelsampler':'random','sintegrator.type':'path','sintegrator.path.maxdepth':1024 }
-	presets['2B - Reference - MLT/Path Tracing'] = {'pixelfilter.type':'mitchell','sampler.type':'metropolis','sampler.metro.lmprob':0.25,'sampler.metro.maxrejects':8192,'sintegrator.type':'path','sintegrator.path.maxdepth':1024 }
+	presets['2B - Reference - MLT/Path Tracing'] = {'pixelfilter.type':'mitchell','sampler.type':'metropolis','sampler.metro.usevariance':'true','sampler.metro.lmprob':0.25,'sampler.metro.maxrejects':8192,'sintegrator.type':'path','sintegrator.path.maxdepth':1024 }
+
+	presets['2x'] = { }
+
+	# Experimental
+	presets['3A - Experimental - BidirPath Tracing'] = {'pixelfilter.type':'mitchell','sampler.type':'lowdiscrepancy','sampler.lowdisc.pixelsampler':'lowdiscrepancy','sintegrator.type':'bidirectional' }
+	presets['3B - Experimental - medium MLT/BidirPath Tracing'] = {'pixelfilter.type':'mitchell','sampler.type':'metropolis','sampler.metro.lmprob':0.25,'sampler.metro.maxrejects':128,'sintegrator.type':'bidirectional' }
+
 
 
 	return presets
@@ -1197,16 +1212,16 @@ def luxSampler(scn, gui=None):
 			if gui: gui.newline()
 			str += luxInt("erpt", luxProp(scn, "sampler.erpt.chainlength", 512), 1, 32768, "chainlength", "The number of mutations from a given seed", gui)
 		if samplertype.get() == "lowdiscrepancy":
-			str += luxOption("pixelsampler", luxProp(scn, "sampler.lowdisc.pixelsampler", "lowdiscrepancy"), ["random", "vegas","lowdiscrepancy"], "pixel-sampler", "select pixel-sampler", gui)
+			str += luxOption("pixelsampler", luxProp(scn, "sampler.lowdisc.pixelsampler", "lowdiscrepancy"), ["linear", "grid", "random", "vegas","lowdiscrepancy"], "pixel-sampler", "select pixel-sampler", gui)
 			if gui: gui.newline()
 			str += luxInt("pixelsamples", luxProp(scn, "sampler.lowdisc.pixelsamples", 4), 1, 512, "samples", "Average number of samples taken per pixel. More samples create a higher quality image at the cost of render time", gui)
 		if samplertype.get() == "random":
-			str += luxOption("pixelsampler", luxProp(scn, "sampler.random.pixelsampler", "vegas"), ["random", "vegas","lowdiscrepancy"], "pixel-sampler", "select pixel-sampler", gui)
+			str += luxOption("pixelsampler", luxProp(scn, "sampler.random.pixelsampler", "vegas"), ["linear", "grid", "random", "vegas","lowdiscrepancy"], "pixel-sampler", "select pixel-sampler", gui)
 			if gui: gui.newline()
 			str += luxInt("xsamples", luxProp(scn, "sampler.random.xsamples", 2), 1, 512, "xsamples", "Allows you to specify how many samples per pixel are taking in the x direction", gui)
 			str += luxInt("ysamples", luxProp(scn, "sampler.random.ysamples", 2), 1, 512, "ysamples", "Allows you to specify how many samples per pixel are taking in the y direction", gui)
 		if samplertype.get() == "halton":
-			str += luxOption("pixelsampler", luxProp(scn, "sampler.halton.pixelsampler", "lowdiscrepancy"), ["random", "vegas","lowdiscrepancy"], "pixel-sampler", "select pixel-sampler", gui)
+			str += luxOption("pixelsampler", luxProp(scn, "sampler.halton.pixelsampler", "lowdiscrepancy"), ["linear", "grid", "random", "vegas","lowdiscrepancy"], "pixel-sampler", "select pixel-sampler", gui)
 			if gui: gui.newline()
 			str += luxInt("pixelsamples", luxProp(scn, "sampler.halton.pixelsamples", 4), 1, 512, "samples", "Average number of samples taken per pixel. More samples create a higher quality image at the cost of render time", gui)
 	return str			
@@ -1229,6 +1244,7 @@ def luxSurfaceIntegrator(scn, gui=None):
 			if gui: gui.newline()
 			str += luxInt("lightdepth", luxProp(scn, "sintegrator.bidir.lightdepth", 8), 0, 2048, "lightdepth", "The maximum recursion depth for light ray casting", gui)
 	return str
+
 
 def luxEnvironment(scn, gui=None):
 	str = ""
