@@ -696,17 +696,14 @@ def base64value(char):
 	return 63
 
 def decodeIconStr(s):
-	img = Image.New("", 16, 16, 32)
-	print len(s)
+	buf = BGL.Buffer(BGL.GL_BYTE, [16,16,4])
 	offset = 0
 	for y in range(16):
 		for x in range(16):
-			col = []
 			for c in range(4):
-				col.append(int(base64value(s[offset])*4.048))
+				buf[y][x][c] = int(base64value(s[offset])*4.048)
 				offset += 1
-			img.setPixelI(x, y, col)
-	return img
+	return buf
 
 icon_blender = decodeIconStr("///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A27wA27wA27wA27wA27wAFFFGIIIsNNN5IIIsFFFG27wA27wA27wA27wA27wA///A27wA27wA27wA27wA27wAFFFmnnn9sss/kkk9FFFm27wA27wA27wA27wA27wA///A27wA27wA27wA27wA27wAEEEvwww/AAA/sss/EEEv27wA27wA27wA27wA27wA///A27wA27wA27wA27wA27wAFFFxzzz/xxx/vvv/FFFx27wA27wA27wA27wA27wA///A27wAGGGRLLLtKKK7KKK9JJJ/111/ppp/xxx/III/JJJ9JJJ7LLLtGGGR27wA///AGGGQPPP8xxx/444/vvv/555/333/999/zzz/xxx/jjj/nnn/nnn/OOO8GGGQ///ALLL2222/zzz/lll/+++/888/666/444/222/000/yyy/aaa/nnn/vvv/LLL2///AMMMxqqq/+++/ttt/////AAA/888/666/444/AAA/000/iii/zzz/nnn/MMMx///AGGGKLLLqKKK7ZZZ/yyy/yyy/yyy/888/vvv/ttt/rrr/VVV/JJJ7LLLqGGGK///A27wA27wA27wAJJJ1999+////sss5UUU8qqq5777/333+III127wA27wA27wA///A27wA27wA27wAHHHJMMMzUUU7GGGpHHHIGGGpSSS7MMMzHHHJ27wA27wA27wA///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A")
 icon_col = decodeIconStr("///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A27wA27wA27wA27wAVIAPXKB5VIAS27wA27wA27wA27wA///A///A///A///A///A27wA27wA27wAVIAPXKB8shU/XLC9VIAS27wA27wA27wA///A///A///A///A///A27wA27wAVIAPXKB8ymU/7xd/0qb/XLC9VIAS27wA27wA///A///A///A///A///A27wAVIAPXKA8xkO/7uW/7wa/7xd/0qb/XLC9VIAS27wA///A///A///A///A///AVIAPXKA8xiJ/6rO/6sS/7uW/7wZ/7xd/0qa/XLC9VIAS///A///A///A///A///AXKA1ypd/+6z/6rO/6rO/6sS/7uW/7vZ/7xd/shT/XKB5///A///A///A///A///AVJAMYMC873w/+6z/6rO/6rO/6sS/7uV/ymT/XKB8VIAP///A///A///A///A///A27wAVJAMYMC873w/+6z/6rO/6rO/xkN/XKB8VIAP27wA///A///A///A///A///A27wA27wAVJAMYMC873w/+6z/xiJ/XKA8VIAP27wA27wA///A///A///A///A///A27wA27wA27wAVJAMYMC8xpc/XKA8VIAP27wA27wA27wA///A///A///A///A///A27wA27wA27wA27wAVJAMXKA1VIAP27wA27wA27wA27wA///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A")
@@ -726,7 +723,8 @@ icon_texparam = decodeIconStr("///A///A///A///A///A///A///A///A///A///A///A///A/
 def drawIcon(icon, x, y):
 	BGL.glEnable(BGL.GL_BLEND)
 	BGL.glBlendFunc(BGL.GL_SRC_ALPHA, BGL.GL_ONE_MINUS_SRC_ALPHA) 
-	Draw.Image(icon, x, y)
+	BGL.glRasterPos2f(int(x)+0.5, int(y)+0.5)
+	BGL.glDrawPixels(16, 16, BGL.GL_RGBA, BGL.GL_UNSIGNED_BYTE, icon)
 	BGL.glDisable(BGL.GL_BLEND)
 
 
@@ -941,10 +939,10 @@ class luxGui:
 		self.ygap = 4
 		self.resethmax = False
 	def getRect(self, wu, hu):
-		if self.resethmax: self.hmax = 0; self.resethmax = False
 		w = int(self.w * wu + self.xgap * (wu-1))
 		h = int(self.h * hu + self.ygap * (hu-1))
 		if self.x + w > self.xmax: self.newline()
+		if self.resethmax: self.hmax = 0; self.resethmax = False
 		rect = [int(self.x), int(self.y-h), int(w), int(h)]
 		self.x += int(w + self.xgap)
 		if h+self.ygap > self.hmax: self.hmax = int(h+self.ygap)
@@ -1022,11 +1020,12 @@ def luxRGB(name, lux, max, caption, hint, gui, width=2.0):
 		w = int((r[2]-r[3])/3); m = max
 		if max > 1.0:
 			w = int((r[2]-r[3])/4); m = 1.0
-		Draw.Number("R:", evtLuxGui, r[0]+r[3], r[1], w, r[3], rgb[0], 0.0, m, "red", lambda e,v: lux.setRGB((v,rgb[1],rgb[2])))
-		Draw.Number("G:", evtLuxGui, r[0]+r[3]+w, r[1], w, r[3], rgb[1], 0.0, m, "green", lambda e,v: lux.setRGB((rgb[0],v,rgb[2])))
-		Draw.Number("B:", evtLuxGui, r[0]+r[3]+2*w, r[1], w, r[3], rgb[2], 0.0, m, "blue", lambda e,v: lux.setRGB((rgb[0],rgb[1],v)))
+		drawR, drawG, drawB, drawS = Draw.Create(rgb[0]), Draw.Create(rgb[1]), Draw.Create(rgb[2]), Draw.Create(scale)
+		drawR = Draw.Number("R:", evtLuxGui, r[0]+r[3], r[1], w, r[3], drawR.val, 0.0, m, "red", lambda e,v: lux.setRGB((v*scale,drawG.val*scale,drawB.val*scale)))
+		drawG = Draw.Number("G:", evtLuxGui, r[0]+r[3]+w, r[1], w, r[3], drawG.val, 0.0, m, "green", lambda e,v: lux.setRGB((drawR.val*scale,v*scale,drawB.val*scale)))
+		drawB = Draw.Number("B:", evtLuxGui, r[0]+r[3]+2*w, r[1], w, r[3], drawB.val, 0.0, m, "blue", lambda e,v: lux.setRGB((drawR.val*scale,drawG.val*scale,v*scale)))
 		if max > 1.0:
-			Draw.Number("s:", evtLuxGui, r[0]+r[3]+3*w, r[1], w, r[3], scale, 0.0, max, "color scale", lambda e,v: lux.setRGB((rgb[0]*v,rgb[1]*v,rgb[2]*v)))
+			Draw.Number("s:", evtLuxGui, r[0]+r[3]+3*w, r[1], w, r[3], drawS.val, 0.0, max, "color scale", lambda e,v: lux.setRGB((drawR.val*v,drawG.val*v,drawB.val*v)))
 	if max <= 1.0:
 		return " \"color %s\" [%s]"%(name, lux.getRGC())
 	return " \"color %s\" [%s]"%(name, lux.get())
@@ -1036,9 +1035,10 @@ def luxVector(name, lux, min, max, caption, hint, gui, width=2.0):
 		r = gui.getRect(width, 1)
 		vec = lux.getVector()
 		w = int(r[2]/3)
-		Draw.Number("x:", evtLuxGui, r[0], r[1], w, r[3], vec[0], min, max, "", lambda e,v: lux.setVector((v,vec[1],vec[2])))
-		Draw.Number("y:", evtLuxGui, r[0]+w, r[1], w, r[3], vec[1], min, max, "", lambda e,v: lux.setVector((vec[0],v,vec[2])))
-		Draw.Number("z:", evtLuxGui, r[0]+2*w, r[1], w, r[3], vec[2], min, max, "", lambda e,v: lux.setVector((vec[0],vec[1],v)))
+		drawX, drawY, drawZ = Draw.Create(vec[0]), Draw.Create(vec[1]), Draw.Create(vec[2])
+		drawX = Draw.Number("x:", evtLuxGui, r[0], r[1], w, r[3], drawX.val, min, max, "", lambda e,v: lux.setVector((v,drawY.val,drawZ.val)))
+		drawY = Draw.Number("y:", evtLuxGui, r[0]+w, r[1], w, r[3], drawY.val, min, max, "", lambda e,v: lux.setVector((drawX.val,v,drawZ.val)))
+		drawZ = Draw.Number("z:", evtLuxGui, r[0]+2*w, r[1], w, r[3], drawZ.val, min, max, "", lambda e,v: lux.setVector((drawX.val,drawY.val,v)))
 	return " \"vector %s\" [%s]"%(name, lux.get())
 
 
@@ -1453,20 +1453,26 @@ def luxTexture(name, parentkey, type, default, min, max, caption, hint, mat, gui
 
 	if texture.get() == "fbm":
 		str += luxInt("octaves", luxProp(mat, keyname+".octaves", 8), 1, 100, "octaves", "", gui, 1.1)
+		if gui: gui.newline("", -2)
 		str += luxFloat("roughness", luxProp(mat, keyname+".roughness", 0.5), 0.0, 1.0, "roughness", "", gui, 2.0)
+		if gui: gui.newline("", -2)
 		str += lux3DMapping(keyname, mat, gui, level+1)
 
 	if texture.get() == "marble":
 		str += luxInt("octaves", luxProp(mat, keyname+".octaves", 8), 1, 100, "octaves", "", gui, 1.1)
+		if gui: gui.newline("", -2)
 		str += luxFloat("roughness", luxProp(mat, keyname+".roughness", 0.5), 0.0, 1.0, "roughness", "", gui, 2.0)
 		if gui: gui.newline("", -2)
 		str += luxFloat("nscale", luxProp(mat, keyname+".nscale", 1.0), 0.0, 100.0, "nscale", "Scaling factor for the noise input", gui, 1.0)
 		str += luxFloat("variation", luxProp(mat, keyname+".variation", 0.2), 0.0, 100.0, "variation", "A scaling factor for the noise input function", gui, 1.0)
+		if gui: gui.newline("", -2)
 		str += lux3DMapping(keyname, mat, gui, level+1)
 
 	if texture.get() == "wrinkled":
 		str += luxInt("octaves", luxProp(mat, keyname+".octaves", 8), 1, 100, "octaves", "", gui, 1.1)
+		if gui: gui.newline("", -2)
 		str += luxFloat("roughness", luxProp(mat, keyname+".roughness", 0.5), 0.0, 1.0, "roughness", "", gui, 2.0)
+		if gui: gui.newline("", -2)
 		str += lux3DMapping(keyname, mat, gui, level+1)
 
 	if texture.get() == "blender_marble":
@@ -1955,13 +1961,11 @@ def luxEvent(evt, val):  # function that handles keyboard and mouse events
 	if evt == Draw.WHEELDOWNMOUSE: scrollbar.scroll(16)
 	if evt == Draw.PAGEUPKEY: scrollbar.scroll(-50)
 	if evt == Draw.PAGEDOWNKEY: scrollbar.scroll(50)
-
 	
 def luxButtonEvt(evt):  # function that handles button events
 	global usedproperties
 	if evt == evtLuxGui:
 		Draw.Redraw()
-		# Window.QRedrawAll() # moved to luxAttr.set()
 	if evt == evtSavePreset:
 		scn = Scene.GetCurrent()
 		if scn:
