@@ -1272,7 +1272,7 @@ def luxSurfaceIntegrator(scn, gui=None):
 			if gui: gui.newline("  Render:")
 			str += luxInt("maxdepth", luxProp(scn, "sintegrator.photonmap.maxdepth", 5), 1, 1024, "maxdepth", "The maximum recursion depth of specular reflection and refraction", gui)
 			str += luxFloat("maxdist", luxProp(scn, "sintegrator.photonmap.maxdist", 0.1), 0.0, 10.0, "maxdist", "The maximum distance between a point being shaded and a photon that can contribute to that point", gui)
-			str += luxInt("nused", luxProp(scn, "sintegrator.photonmap.nused", 50), 1, 1000000, "nused", "The number of photons to use in density estimation", gui)
+			str += luxInt("nused", luxProp(scn, "sintegrator.photonmap.nused", 50), 0, 1000000, "nused", "The number of photons to use in density estimation", gui)
 			if gui: gui.newline("  FinalGather:")
 			str += luxBool("finalgather",luxProp(scn, "sintegrator.photonmap.fgather", "true"), "finalgather", "Enable use of final gather during rendering", gui)
 			str += luxInt("finalgathersamples", luxProp(scn, "sintegrator.photonmap.fgathers", 32), 1, 1024, "samples", "The number of finalgather samples to take per pixel during rendering", gui)
