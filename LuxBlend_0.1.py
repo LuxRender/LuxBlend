@@ -778,10 +778,10 @@ def getScenePresets():
 
 	# quick previews (biased)
 	presets['0A - Preview - Directlighting - progressive'] = {'pixelfilter.type':'gaussian','pixelfilter.gaussian.xwidth':2.0,'pixelfilter.gaussian.ywidth':2.0,'sampler.type':'lowdiscrepancy','sampler.lowdisc.pixelsampler':'lowdiscrepancy','sampler.lowdisc.pixelsamples':2,'sintegrator.type':'directlighting','sintegrator.dlighting.maxdepth':2,'sintegrator.dlighting.strategy':'all' }
-	presets['0B - Preview - Directlighting - grid'] = {'pixelfilter.type':'gaussian','pixelfilter.gaussian.xwidth':2.0,'pixelfilter.gaussian.ywidth':2.0,'sampler.type':'lowdiscrepancy','sampler.lowdisc.pixelsampler':'grid','sampler.lowdisc.pixelsamples':2,'sintegrator.type':'directlighting','sintegrator.dlighting.maxdepth':2,'sintegrator.dlighting.strategy':'all' }
+	presets['0B - Preview - Directlighting - tile'] = {'pixelfilter.type':'gaussian','pixelfilter.gaussian.xwidth':2.0,'pixelfilter.gaussian.ywidth':2.0,'sampler.type':'lowdiscrepancy','sampler.lowdisc.pixelsampler':'tile','sampler.lowdisc.pixelsamples':2,'sintegrator.type':'directlighting','sintegrator.dlighting.maxdepth':2,'sintegrator.dlighting.strategy':'all' }
 
 	presets['0C - Preview - Path Tracing - progressive'] = {'pixelfilter.type':'gaussian','pixelfilter.gaussian.xwidth':2.0,'pixelfilter.gaussian.ywidth':2.0,'sampler.type':'lowdiscrepancy','sampler.lowdisc.pixelsampler':'lowdiscrepancy','sampler.lowdisc.pixelsamples':2,'sintegrator.type':'path','sintegrator.path.maxdepth':3 }
-	presets['0D - Preview - Path Tracing - grid'] = {'pixelfilter.type':'gaussian','pixelfilter.gaussian.xwidth':2.0,'pixelfilter.gaussian.ywidth':2.0,'sampler.type':'lowdiscrepancy','sampler.lowdisc.pixelsampler':'grid','sampler.lowdisc.pixelsamples':2,'sintegrator.type':'path','sintegrator.path.maxdepth':3 }
+	presets['0D - Preview - Path Tracing - tile'] = {'pixelfilter.type':'gaussian','pixelfilter.gaussian.xwidth':2.0,'pixelfilter.gaussian.ywidth':2.0,'sampler.type':'lowdiscrepancy','sampler.lowdisc.pixelsampler':'tile','sampler.lowdisc.pixelsamples':2,'sintegrator.type':'path','sintegrator.path.maxdepth':3 }
 
 	presets['0x'] = { }
 
@@ -1212,16 +1212,16 @@ def luxSampler(scn, gui=None):
 			if gui: gui.newline()
 			str += luxInt("erpt", luxProp(scn, "sampler.erpt.chainlength", 512), 1, 32768, "chainlength", "The number of mutations from a given seed", gui)
 		if samplertype.get() == "lowdiscrepancy":
-			str += luxOption("pixelsampler", luxProp(scn, "sampler.lowdisc.pixelsampler", "lowdiscrepancy"), ["linear", "grid", "random", "vegas","lowdiscrepancy"], "pixel-sampler", "select pixel-sampler", gui)
+			str += luxOption("pixelsampler", luxProp(scn, "sampler.lowdisc.pixelsampler", "lowdiscrepancy"), ["linear", "tile", "random", "vegas","lowdiscrepancy"], "pixel-sampler", "select pixel-sampler", gui)
 			if gui: gui.newline()
 			str += luxInt("pixelsamples", luxProp(scn, "sampler.lowdisc.pixelsamples", 4), 1, 512, "samples", "Average number of samples taken per pixel. More samples create a higher quality image at the cost of render time", gui)
 		if samplertype.get() == "random":
-			str += luxOption("pixelsampler", luxProp(scn, "sampler.random.pixelsampler", "vegas"), ["linear", "grid", "random", "vegas","lowdiscrepancy"], "pixel-sampler", "select pixel-sampler", gui)
+			str += luxOption("pixelsampler", luxProp(scn, "sampler.random.pixelsampler", "vegas"), ["linear", "tile", "random", "vegas","lowdiscrepancy"], "pixel-sampler", "select pixel-sampler", gui)
 			if gui: gui.newline()
 			str += luxInt("xsamples", luxProp(scn, "sampler.random.xsamples", 2), 1, 512, "xsamples", "Allows you to specify how many samples per pixel are taking in the x direction", gui)
 			str += luxInt("ysamples", luxProp(scn, "sampler.random.ysamples", 2), 1, 512, "ysamples", "Allows you to specify how many samples per pixel are taking in the y direction", gui)
 		if samplertype.get() == "halton":
-			str += luxOption("pixelsampler", luxProp(scn, "sampler.halton.pixelsampler", "lowdiscrepancy"), ["linear", "grid", "random", "vegas","lowdiscrepancy"], "pixel-sampler", "select pixel-sampler", gui)
+			str += luxOption("pixelsampler", luxProp(scn, "sampler.halton.pixelsampler", "lowdiscrepancy"), ["linear", "tile", "random", "vegas","lowdiscrepancy"], "pixel-sampler", "select pixel-sampler", gui)
 			if gui: gui.newline()
 			str += luxInt("pixelsamples", luxProp(scn, "sampler.halton.pixelsamples", 4), 1, 512, "samples", "Average number of samples taken per pixel. More samples create a higher quality image at the cost of render time", gui)
 	return str			
