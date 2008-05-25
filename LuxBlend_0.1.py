@@ -1230,7 +1230,7 @@ def luxSurfaceIntegrator(scn, gui=None):
 	str = ""
 	if scn:
 		integratortype = luxProp(scn, "sintegrator.type", "path")
-		str = luxIdentifier("SurfaceIntegrator", integratortype, ["directlighting", "path", "path2", "bidirectional"], "INTEGRATOR", "select surface integrator type", gui)
+		str = luxIdentifier("SurfaceIntegrator", integratortype, ["directlighting", "path", "path2", "bidirectional", "photonmap"], "INTEGRATOR", "select surface integrator type", gui)
 		if integratortype.get() == "directlighting":
 			str += luxInt("maxdepth", luxProp(scn, "sintegrator.dlighting.maxdepth", 5), 0, 2048, "max-depth", "The maximum recursion depth for ray casting", gui)
 			if gui: gui.newline()
@@ -1243,6 +1243,20 @@ def luxSurfaceIntegrator(scn, gui=None):
 			str += luxInt("eyedepth", luxProp(scn, "sintegrator.bidir.eyedepth", 8), 0, 2048, "eyedepth", "The maximum recursion depth for ray casting", gui)
 			if gui: gui.newline()
 			str += luxInt("lightdepth", luxProp(scn, "sintegrator.bidir.lightdepth", 8), 0, 2048, "lightdepth", "The maximum recursion depth for light ray casting", gui)
+		if integratortype.get() == "photonmap":
+			if gui: gui.newline("  Photons:")
+			str += luxInt("indirectphotons", luxProp(scn, "sintegrator.photonmap.idphotons", 100000), 0, 10000000, "indirect", "The number of photons to shoot for caustics during preprocessing of the photon map", gui)
+			str += luxInt("causticphotons", luxProp(scn, "sintegrator.photonmap.cphotons", 10000), 0, 10000000, "caustic", "The number of photons to shoot for caustics during preprocessing of the photon map", gui)
+			if gui: gui.newline()
+			str += luxBool("directwithphotons",luxProp(scn, "sintegrator.photonmap.dwphotons", "false"), "directwithphotons", "Enable use of photons for direct lighting during rendering", gui)
+			str += luxInt("directphotons", luxProp(scn, "sintegrator.photonmap.dphotons", 0), 0, 10000000, "direct", "The number of photons to shoot for caustics during preprocessing of the photon map", gui)
+			if gui: gui.newline("  Render:")
+			str += luxInt("maxdepth", luxProp(scn, "sintegrator.photonmap.maxdepth", 5), 1, 1024, "maxdepth", "The maximum recursion depth of specular reflection and refraction", gui)
+			str += luxFloat("maxdist", luxProp(scn, "sintegrator.photonmap.maxdist", 0.1), 0.0, 10.0, "maxdist", "The maximum distance between a point being shaded and a photon that can contribute to that point", gui)
+			str += luxInt("nused", luxProp(scn, "sintegrator.photonmap.nused", 50), 1, 1000000, "nused", "The number of photons to use in density estimation", gui)
+			if gui: gui.newline("  FinalGather:")
+			str += luxBool("finalgather",luxProp(scn, "sintegrator.photonmap.fgather", "true"), "finalgather", "Enable use of final gather during rendering", gui)
+			str += luxInt("finalgathersamples", luxProp(scn, "sintegrator.photonmap.fgathers", 32), 1, 1024, "samples", "The number of finalgather samples to take per pixel during rendering", gui)
 	return str
 
 
