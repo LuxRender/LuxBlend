@@ -1246,7 +1246,7 @@ def luxSurfaceIntegrator(scn, gui=None):
 	str = ""
 	if scn:
 		integratortype = luxProp(scn, "sintegrator.type", "path")
-		str = luxIdentifier("SurfaceIntegrator", integratortype, ["directlighting", "path", "path2", "bidirectional", "photonmap"], "INTEGRATOR", "select surface integrator type", gui)
+		str = luxIdentifier("SurfaceIntegrator", integratortype, ["directlighting", "path", "path2", "bidirectional", "exphotonmap"], "INTEGRATOR", "select surface integrator type", gui)
 		if integratortype.get() == "directlighting":
 			str += luxOption("strategy", luxProp(scn, "sintegrator.dlighting.strategy", "all"), ["one", "all", "weighted"], "strategy", "select directlighting strategy", gui)
 			if gui: gui.newline("  Depth:")
@@ -1262,22 +1262,23 @@ def luxSurfaceIntegrator(scn, gui=None):
 			if gui: gui.newline("  Depth:")
 			str += luxInt("eyedepth", luxProp(scn, "sintegrator.bidir.eyedepth", 8), 0, 2048, "eyedepth", "The maximum recursion depth for ray casting", gui)
 			str += luxInt("lightdepth", luxProp(scn, "sintegrator.bidir.lightdepth", 8), 0, 2048, "lightdepth", "The maximum recursion depth for light ray casting", gui)
-		if integratortype.get() == "photonmap":
+		if integratortype.get() == "exphotonmap":
 			if gui: gui.newline("  Photons:")
 			str += luxInt("indirectphotons", luxProp(scn, "sintegrator.photonmap.idphotons", 100000), 0, 10000000, "indirect", "The number of photons to shoot for caustics during preprocessing of the photon map", gui)
-			str += luxInt("causticphotons", luxProp(scn, "sintegrator.photonmap.cphotons", 10000), 0, 10000000, "caustic", "The number of photons to shoot for caustics during preprocessing of the photon map", gui)
-			if gui: gui.newline()
-			str += luxBool("directwithphotons",luxProp(scn, "sintegrator.photonmap.dwphotons", "false"), "directwithphotons", "Enable use of photons for direct lighting during rendering", gui)
-			str += luxInt("directphotons", luxProp(scn, "sintegrator.photonmap.dphotons", 0), 0, 10000000, "direct", "The number of photons to shoot for caustics during preprocessing of the photon map", gui)
+			str += luxInt("causticphotons", luxProp(scn, "sintegrator.photonmap.cphotons", 20000), 0, 10000000, "caustic", "The number of photons to shoot for caustics during preprocessing of the photon map", gui)
+		#	if gui: gui.newline()
+		#	str += luxBool("directwithphotons",luxProp(scn, "sintegrator.photonmap.dwphotons", "false"), "directwithphotons", "Enable use of photons for direct lighting during rendering", gui)
+		#	str += luxInt("directphotons", luxProp(scn, "sintegrator.photonmap.dphotons", 0), 0, 10000000, "direct", "The number of photons to shoot for caustics during preprocessing of the photon map", gui)
 			if gui: gui.newline("  Render:")
 			str += luxInt("maxdepth", luxProp(scn, "sintegrator.photonmap.maxdepth", 5), 1, 1024, "maxdepth", "The maximum recursion depth of specular reflection and refraction", gui)
 			str += luxFloat("maxdist", luxProp(scn, "sintegrator.photonmap.maxdist", 0.1), 0.0, 10.0, "maxdist", "The maximum distance between a point being shaded and a photon that can contribute to that point", gui)
+			str += luxFloat("rrthreshold", luxProp(scn, "sintegrator.photonmap.rrthres", 0.05), 0.0, 1.0, "rrthreshold", "Threshold for russian roulette particle tracing termination", gui)
 			str += luxInt("nused", luxProp(scn, "sintegrator.photonmap.nused", 50), 0, 1000000, "nused", "The number of photons to use in density estimation", gui)
 			if gui: gui.newline("  FinalGather:")
 			str += luxBool("finalgather",luxProp(scn, "sintegrator.photonmap.fgather", "true"), "finalgather", "Enable use of final gather during rendering", gui)
 			str += luxInt("finalgathersamples", luxProp(scn, "sintegrator.photonmap.fgathers", 32), 1, 1024, "samples", "The number of finalgather samples to take per pixel during rendering", gui)
+			str += luxFloat("gatherangle", luxProp(scn, "sintegrator.photonmap.gangle", 10.0), 0.0, 360.0, "gatherangle", "Angle for final gather", gui)
 	return str
-
 
 def luxEnvironment(scn, gui=None):
 	str = ""
@@ -1402,7 +1403,7 @@ def luxTexture(name, parentkey, type, default, min, max, caption, hint, mat, gui
 #	if gui: gui.newline(caption+":", 0, level)
 	if texlevel == 0: texture = luxProp(mat, keyname+".texture", "imagemap")
 	else: texture = luxProp(mat, keyname+".texture", "constant")
-	textures = ["constant","imagemap","mix","scale","bilerp","uv", "checkerboard","dots","fbm","marble","wrinkled", "windy", "blender_marble", "blender_musgrave", "blender_wood"] # note - radiance - added uv and windy types
+	textures = ["constant","imagemap","mix","scale","bilerp","uv", "checkerboard","dots","fbm","marble","wrinkled", "windy", "blender_marble", "blender_musgrave", "blender_wood", "blender_clouds"] 
 	if gui:
 		icon = icon_tex
 		if texture.get() in ["mix", "scale", "checkerboard", "dots"]:
@@ -1589,6 +1590,30 @@ def luxTexture(name, parentkey, type, default, min, max, caption, hint, mat, gui
 		noisebasises2 = ["sin","saw","tri"]
 		str += luxOption("noisebasis2", noisebasis2, noisebasises2, "noisebasis2", "", gui, 0.7)
 
+		noisebasis = luxProp(mat, keyname+".noisebasis", "blender_original")
+		noisebasises = ["blender_original","original_perlin", "improved_perlin", "voronoi_f1", "voronoi_f2", "voronoi_f3", "voronoi_f4", "voronoi_f2f1", "voronoi_crackle", "cell_noise"]
+		str += luxOption("noisebasis", noisebasis, noisebasises, "noisebasis", "", gui, 1.3)
+
+		if gui: gui.newline("level:", -2, level+1, icon_texparam)
+		str += luxFloat("bright", luxProp(mat, keyname+".bright", 1.0), 0.0, 2.0, "bright", "", gui, 1.0)
+		str += luxFloat("contrast", luxProp(mat, keyname+".contrast", 1.0), 0.0, 5.0, "contrast", "", gui, 1.0)
+		str += lux3DMapping(keyname, mat, gui, level+1)
+
+	if texture.get() == "blender_clouds":
+		if gui: gui.newline("noise:", -2, level+1, icon_texparam)
+
+		mtype = luxProp(mat, keyname+".mtype", "default")
+		mtypes = ["default","color"]
+		str += luxOption("type", mtype, mtypes, "type", "", gui, 0.5)
+
+		noisetype = luxProp(mat, keyname+".noisetype", "hard_noise")
+		noisetypes = ["soft_noise","hard_noise"]
+		str += luxOption("noisetype", noisetype, noisetypes, "noisetypes", "", gui, 0.75)
+
+		str += luxFloat("noisesize", luxProp(mat, keyname+".noisesize", 0.25), 0.0, 2.0, "noisesize", "", gui, 1.0)
+		str += luxInt("noisedepth", luxProp(mat, keyname+".noisedepth", 2), 0, 6, "noisedepth", "", gui, 1.0)
+
+		if gui: gui.newline("basis:", -2, level+1, icon_texparam)
 		noisebasis = luxProp(mat, keyname+".noisebasis", "blender_original")
 		noisebasises = ["blender_original","original_perlin", "improved_perlin", "voronoi_f1", "voronoi_f2", "voronoi_f3", "voronoi_f4", "voronoi_f2f1", "voronoi_crackle", "cell_noise"]
 		str += luxOption("noisebasis", noisebasis, noisebasises, "noisebasis", "", gui, 1.3)
