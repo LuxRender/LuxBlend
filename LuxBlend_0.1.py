@@ -667,7 +667,7 @@ def save_anim(filename):
 		Blender.Set('curframe', i)
 		Blender.Redraw()
 		frameindex = "-" + str(i) + ".lxs"
-		indexedname = makename(filename, frameindex)
+		indexedname = sys.makename(filename, frameindex)
 		unindexedname = filename
 		save_lux(indexedname, unindexedname)
 		MatSaved = 1
@@ -1821,6 +1821,16 @@ def CBluxExport(default, run):
 		Window.FileSelector(save_still, "Export", sys.makename(Blender.Get("filename"), ".lxs"))
 
 
+def CBluxAnimExport(default, run):
+	if default:
+		datadir = luxProp(Scene.GetCurrent(), "datadir", "").get()
+		if datadir=="": datadir = Blender.Get("datadir")
+		filename = datadir + os.sep + "default.lxs"
+		save_anim(filename)
+	else:
+		Window.FileSelector(save_anim, "Export", sys.makename(Blender.Get("filename"), ".lxs"))
+
+
 
 activemat = None
 def setactivemat(mat):
@@ -1985,10 +1995,12 @@ def luxDraw():
 		lxo = luxProp(scn, "lxo", "true")
 		lxm = luxProp(scn, "lxm", "true")
 		if (run.get()=="true"):
-			Draw.Button("Render", 0, 10, y+20, 180, 36, "Render with Lux", lambda e,v:CBluxExport(dlt.get()=="true", True))
+			Draw.Button("Render", 0, 10, y+20, 100, 36, "Render with Lux", lambda e,v:CBluxExport(dlt.get()=="true", True))
+			Draw.Button("Export Anim", 0, 110, y+20, 100, 36, "Render animation with Lux", lambda e,v:CBluxAnimExport(dlt.get()=="true", True))
 		else:
-			Draw.Button("Export", 0, 10, y+20, 180, 36, "Export", lambda e,v:CBluxExport(dlt.get()=="true", False))
-#			Draw.Button("Export Anim", 0, 200, y+20, 100, 36, "Export as animation")
+			Draw.Button("Export", 0, 10, y+20, 100, 36, "Export", lambda e,v:CBluxExport(dlt.get()=="true", False))
+			Draw.Button("Export Anim", 0, 110, y+20, 100, 36, "Export animation", lambda e,v:CBluxAnimExport(dlt.get()=="true", False))
+
 		Draw.Toggle("run", evtLuxGui, 320, y+40, 30, 16, run.get()=="true", "start Lux after export", lambda e,v: run.set(["false","true"][bool(v)]))
 		Draw.Toggle("def", evtLuxGui, 350, y+40, 30, 16, dlt.get()=="true", "save to default.lxs", lambda e,v: dlt.set(["false","true"][bool(v)]))
 		Draw.Toggle("clay", evtLuxGui, 380, y+40, 30, 16, clay.get()=="true", "all materials are rendered as white-matte", lambda e,v: clay.set(["false","true"][bool(v)]))
