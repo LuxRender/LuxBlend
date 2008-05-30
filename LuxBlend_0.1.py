@@ -662,13 +662,15 @@ def save_anim(filename):
 	MatSaved = 0
 	startF = Blender.Get('staframe')
 	endF = Blender.Get('endframe')
+	scn = Scene.GetCurrent()
 
 	for i in range (startF, endF):
 		Blender.Set('curframe', i)
 		Blender.Redraw()
-		frameindex = "-" + str(i) + ".lxs"
+		frameindex = ("-%05d" % (i)) + ".lxs"
 		indexedname = sys.makename(filename, frameindex)
 		unindexedname = filename
+		luxProp(scn, "filename", Blender.Get("filename")).set(sys.makename(filename, "-%05d" %  (Blender.Get('curframe'))))
 		save_lux(indexedname, unindexedname)
 		MatSaved = 1
 
@@ -676,7 +678,7 @@ def save_anim(filename):
 def save_still(filename):
 	global MatSaved
 	scn = Scene.GetCurrent()
-	luxProp(scn, "filename", Blender.Get("filename")).set(filename)
+	luxProp(scn, "filename", Blender.Get("filename")).set(sys.makename(filename, ""))
 	MatSaved = 0
 	unindexedname = filename
 	if save_lux(filename, unindexedname):
@@ -1134,20 +1136,28 @@ def luxFilm(scn, gui=None):
 					str += " \"integer xresolution\" [%d] \"integer yresolution\" [%d]"%(luxAttr(context, "sizeX").get()*scale/100*(x2-x1), luxAttr(context, "sizeY").get()*scale/100*(y2-y1))
 				else:
 					str += " \"integer xresolution\" [%d] \"integer yresolution\" [%d]"%(luxAttr(context, "sizeX").get()*scale/100, luxAttr(context, "sizeY").get()*scale/100)
+
+			if gui: gui.newline("  Halt:")
+			str += luxInt("haltspp", luxProp(scn, "haltspp", 0), 0, 32768, "haltspp", "Stop rendering after specified amount of samples per pixel / 0 = never halt", gui)
 	
 			if gui: gui.newline("  Tonemap:")
 			str += luxFloat("reinhard_prescale", luxProp(scn, "film.reinhard.prescale", 1.0), 0.0, 10.0, "pre-scale", "Pre Scale: See Lux Manual ;)", gui)
 			str += luxFloat("reinhard_postscale", luxProp(scn, "film.reinhard.postscale", 1.0), 0.0, 10.0, "post-scale", "Post Scale: See Lux Manual ;)", gui)
 			str += luxFloat("reinhard_burn", luxProp(scn, "film.reinhard.burn", 6.0), 0.1, 12.0, "burn", "12.0: no burn out, 0.1 lot of burn out", gui)
+
 			if gui: gui.newline("  Gamma:")
 			str += luxFloat("gamma", luxProp(scn, "film.gamma", 2.2), 0.1, 6.0, "gamma", "Output and RGC Gamma", gui)
+
 			if gui: gui.newline("  Display:")
 			str += luxInt("displayinterval", luxProp(scn, "film.displayinterval", 12), 5, 3600, "interval", "Set display Interval (seconds)", gui)
+
 			if gui: gui.newline("  Write:")
 			str += luxInt("writeinterval", luxProp(scn, "film.writeinterval", 120), 5, 3600, "interval", "Set display Interval (seconds)", gui)
+
+			fn = luxProp(scn, "filename", "default-%05d" %  (Blender.Get('curframe')))
+			str += luxString("filename", fn, "File name", "save file name", None)
+
 			if gui: gui.newline("  Formats:")
-			fn = luxProp(scn, "filename", Blender.Get("filename")).get();
-			if gui: gui.newline("")
 			savetga = luxProp(scn, "film.write_tonemapped_tga", "true")
 			str += luxBool("write_tonemapped_tga", savetga, "Tonemapped TGA", "save tonemapped TGA file", gui)
 			if gui: gui.newline("")
@@ -1210,36 +1220,26 @@ def luxSampler(scn, gui=None):
 			if gui: gui.newline()
 			str += luxInt("stratawidth", luxProp(scn, "sampler.metro.stratawidth", 256), 1, 32768, "stratawidth", "The number of x/y strata for stratified sampling of seeds", gui)
 			str += luxBool("usevariance",luxProp(scn, "sampler.metro.usevariance", "false"), "usevariance", "Accept based on variance", gui)
-			if gui: gui.newline("  Halt:")
-			str += luxInt("haltspp", luxProp(scn, "sampler.metro.haltspp", 0), 0, 32768, "haltspp", "Stop rendering after specified amount of samples per pixel / 0 = never halt", gui)
 		if samplertype.get() == "erpt":
 			str += luxInt("initsamples", luxProp(scn, "sampler.erpt.initsamples", 100000), 1, 1000000, "initsamples", "", gui)
 			if gui: gui.newline("  Mutation:")
 			str += luxInt("chainlength", luxProp(scn, "sampler.erpt.chainlength", 512), 1, 32768, "chainlength", "The number of mutations from a given seed", gui)
 			if gui: gui.newline()
 			str += luxInt("stratawidth", luxProp(scn, "sampler.erpt.stratawidth", 256), 1, 32768, "stratawidth", "The number of x/y strata for stratified sampling of seeds", gui)
-			if gui: gui.newline("  Halt:")
-			str += luxInt("haltspp", luxProp(scn, "sampler.erpt.haltspp", 0), 0, 32768, "haltspp", "Stop rendering after specified amount of samples per pixel / 0 = never halt", gui)
 		if samplertype.get() == "lowdiscrepancy":
 			if gui: gui.newline("  PixelSampler:")
 			str += luxOption("pixelsampler", luxProp(scn, "sampler.lowdisc.pixelsampler", "lowdiscrepancy"), ["linear", "tile", "random", "vegas","lowdiscrepancy"], "pixel-sampler", "select pixel-sampler", gui)
 			str += luxInt("pixelsamples", luxProp(scn, "sampler.lowdisc.pixelsamples", 4), 1, 512, "samples", "Average number of samples taken per pixel. More samples create a higher quality image at the cost of render time", gui)
-			if gui: gui.newline("  Halt:")
-			str += luxInt("haltspp", luxProp(scn, "sampler.lowdisc.haltspp", 0), 0, 32768, "haltspp", "Stop rendering after specified amount of samples per pixel / 0 = never halt", gui)
 		if samplertype.get() == "random":
 			if gui: gui.newline("  PixelSampler:")
 			str += luxOption("pixelsampler", luxProp(scn, "sampler.random.pixelsampler", "vegas"), ["linear", "tile", "random", "vegas","lowdiscrepancy"], "pixel-sampler", "select pixel-sampler", gui)
 			if gui: gui.newline()
 			str += luxInt("xsamples", luxProp(scn, "sampler.random.xsamples", 2), 1, 512, "xsamples", "Allows you to specify how many samples per pixel are taking in the x direction", gui)
 			str += luxInt("ysamples", luxProp(scn, "sampler.random.ysamples", 2), 1, 512, "ysamples", "Allows you to specify how many samples per pixel are taking in the y direction", gui)
-			if gui: gui.newline("  Halt:")
-			str += luxInt("haltspp", luxProp(scn, "sampler.random.haltspp", 0), 0, 32768, "haltspp", "Stop rendering after specified amount of samples per pixel / 0 = never halt", gui)
 		if samplertype.get() == "halton":
 			if gui: gui.newline("  PixelSampler:")
 			str += luxOption("pixelsampler", luxProp(scn, "sampler.halton.pixelsampler", "lowdiscrepancy"), ["linear", "tile", "random", "vegas","lowdiscrepancy"], "pixel-sampler", "select pixel-sampler", gui)
 			str += luxInt("pixelsamples", luxProp(scn, "sampler.halton.pixelsamples", 4), 1, 512, "samples", "Average number of samples taken per pixel. More samples create a higher quality image at the cost of render time", gui)
-			if gui: gui.newline("  Halt:")
-			str += luxInt("haltspp", luxProp(scn, "sampler.halton.haltspp", 0), 0, 32768, "haltspp", "Stop rendering after specified amount of samples per pixel / 0 = never halt", gui)
 	return str			
 
 def luxSurfaceIntegrator(scn, gui=None):
