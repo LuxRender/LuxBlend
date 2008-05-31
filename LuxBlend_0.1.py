@@ -1087,6 +1087,7 @@ def luxCamera(cam, context, gui=None):
 		str += luxFloat("yon", luxAttr(cam, "clipEnd"), 1.0, 10000.0, "yon", "far clip distance", gui)
 		if camtype.get() in ["perspective", "orthographic"]:
 			if gui: gui.newline("  DOF:")
+			str += luxBool("autofocus",luxProp(cam, "camera.autofocus", "true"), "autofocus", "Enable automatic focus", gui)
 			str += luxFloat("lensradius", luxProp(cam, "camera.lensradius", 0.0), 0.0, 1.0, "lens-radius", "Defines the lens radius. Values higher than 0. enable DOF and control the amount", gui)
 			dofdist = luxAttr(cam, "dofDist")
 			str += luxFloat("focaldistance", dofdist, 0.0, 100.0, "distance", "Distance from the camera at which objects will be in focus. Has no effect if Lens Radius is 0", gui)
