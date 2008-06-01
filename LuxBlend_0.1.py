@@ -473,7 +473,8 @@ class luxExport:
 	def exportVolumes(self, file):
 		for [obj, matrix] in self.volumes:
 			print "volume: %s"%(obj.getName())
-			file.write("\tTransform [%s %s %s %s  %s %s %s %s  %s %s %s %s  %s %s %s %s]\n"\
+			file.write("# Volume: %s\n"%(obj.getName()))
+			file.write("Transform [%s %s %s %s  %s %s %s %s  %s %s %s %s  %s %s %s %s]\n"\
 				%(matrix[0][0], matrix[0][1], matrix[0][2], matrix[0][3],\
 				  matrix[1][0], matrix[1][1], matrix[1][2], matrix[1][3],\
 				  matrix[2][0], matrix[2][1], matrix[2][2], matrix[2][3],\
@@ -484,6 +485,7 @@ class luxExport:
 				mat = mats[0]
 				(str, link) = luxMaterialBlock("", "", "", mat)
 				file.write("%s"%link)
+				file.write("\n\n")
 
 
 ######################################################
@@ -1476,7 +1478,7 @@ def luxTexture(name, parentkey, type, default, min, max, caption, hint, mat, gui
 #	if gui: gui.newline(caption+":", 0, level)
 	if texlevel == 0: texture = luxProp(mat, keyname+".texture", "imagemap")
 	else: texture = luxProp(mat, keyname+".texture", "constant")
-	textures = ["constant","imagemap","mix","scale","bilerp","uv", "checkerboard","dots","fbm","marble","wrinkled", "windy", "blender_marble", "blender_musgrave", "blender_wood", "blender_clouds"] 
+	textures = ["constant","imagemap","mix","scale","bilerp","uv", "checkerboard","dots","fbm","marble","wrinkled", "windy", "blender_marble", "blender_musgrave", "blender_wood", "blender_clouds", "blender_blend", "blender_distortednoise", "blender_noise", "blender_magic", "blender_stucci"] 
 	if gui:
 		icon = icon_tex
 		if texture.get() in ["mix", "scale", "checkerboard", "dots"]:
@@ -1695,6 +1697,85 @@ def luxTexture(name, parentkey, type, default, min, max, caption, hint, mat, gui
 		str += luxFloat("bright", luxProp(mat, keyname+".bright", 1.0), 0.0, 2.0, "bright", "", gui, 1.0)
 		str += luxFloat("contrast", luxProp(mat, keyname+".contrast", 1.0), 0.0, 5.0, "contrast", "", gui, 1.0)
 		str += lux3DMapping(keyname, mat, gui, level+1)
+
+	if texture.get() == "blender_blend":
+		if gui: gui.newline("type:", -2, level+1, icon_texparam)
+
+		mtype = luxProp(mat, keyname+".mtype", "lin")
+		mtypes = ["lin","quad","ease","diag","sphere","halo","radial"]
+		str += luxOption("type", mtype, mtypes, "type", "", gui, 0.5)
+		
+		mflag = luxProp(mat, keyname+".flag", "")
+		mflags = ["flip xy", ""]
+		str += luxOption("flag", mflag, mflags, "flag", "", gui, 0.5)
+
+
+		if gui: gui.newline("level:", -2, level+1, icon_texparam)
+		str += luxFloat("bright", luxProp(mat, keyname+".bright", 1.0), 0.0, 2.0, "bright", "", gui, 1.0)
+		str += luxFloat("contrast", luxProp(mat, keyname+".contrast", 1.0), 0.0, 5.0, "contrast", "", gui, 1.0)
+		str += lux3DMapping(keyname, mat, gui, level+1)
+
+	if texture.get() == "blender_distortednoise":
+		if gui: gui.newline("noise:", -2, level+1, icon_texparam)
+		
+		str += luxFloat("distamount", luxProp(mat, keyname+".distamount", 1.0), 0.0, 10.0, "distamount", "", gui, 1.0)
+		str += luxFloat("noisesize", luxProp(mat, keyname+".noisesize", 0.25), 0.0, 2.0, "noisesize", "", gui, 1.0)
+		str += luxFloat("nabla", luxProp(mat, keyname+".nabla", 0.025), 0.000, 2.0, "nabla", "", gui, 1.0)
+		
+		ntype = luxProp(mat, keyname+".type", "blender_original")
+		ntypes = ["blender_original","original_perlin", "improved_perlin", "voronoi_f1", "voronoi_f2", "voronoi_f3", "voronoi_f4", "voronoi_f2f1", "voronoi_crackle", "cell_noise"]
+		str += luxOption("type", ntype, ntypes, "type", "", gui, 1.3)
+		
+		noisebasis = luxProp(mat, keyname+".noisebasis", "blender_original")
+		noisebasises = ["blender_original","original_perlin", "improved_perlin", "voronoi_f1", "voronoi_f2", "voronoi_f3", "voronoi_f4", "voronoi_f2f1", "voronoi_crackle", "cell_noise"]
+		str += luxOption("noisebasis", noisebasis, noisebasises, "noisebasis", "", gui, 1.3)
+
+		if gui: gui.newline("level:", -2, level+1, icon_texparam)
+		str += luxFloat("bright", luxProp(mat, keyname+".bright", 1.0), 0.0, 2.0, "bright", "", gui, 1.0)
+		str += luxFloat("contrast", luxProp(mat, keyname+".contrast", 1.0), 0.0, 5.0, "contrast", "", gui, 1.0)
+		str += lux3DMapping(keyname, mat, gui, level+1)
+
+	if texture.get() == "blender_noise":		
+		if gui: gui.newline("level:", -2, level+1, icon_texparam)
+		str += luxFloat("bright", luxProp(mat, keyname+".bright", 1.0), 0.0, 2.0, "bright", "", gui, 1.0)
+		str += luxFloat("contrast", luxProp(mat, keyname+".contrast", 1.0), 0.0, 5.0, "contrast", "", gui, 1.0)
+		str += lux3DMapping(keyname, mat, gui, level+1)
+		
+	if texture.get() == "blender_magic":
+		if gui: gui.newline("noise:", -2, level+1, icon_texparam)
+		
+		str += luxInt("noisedepth", luxProp(mat, keyname+".noisedepth", 2), 0.0, 10.0, "noisedepth", "", gui, 1.0)
+		str += luxFloat("turbulance", luxProp(mat, keyname+".turbulance", 5.0), 0.0, 2.0, "turbulance", "", gui, 1.0)
+
+
+		if gui: gui.newline("level:", -2, level+1, icon_texparam)
+		str += luxFloat("bright", luxProp(mat, keyname+".bright", 1.0), 0.0, 2.0, "bright", "", gui, 1.0)
+		str += luxFloat("contrast", luxProp(mat, keyname+".contrast", 1.0), 0.0, 5.0, "contrast", "", gui, 1.0)
+		str += lux3DMapping(keyname, mat, gui, level+1)
+		
+	if texture.get() == "blender_stucci":
+		if gui: gui.newline("noise:", -2, level+1, icon_texparam)
+		mtype = luxProp(mat, keyname+".mtype", "Plastic")
+		mtypes = ["Plastic","Wall In","Wall Out"]
+		str += luxOption("type", mtype, mtypes, "type", "", gui, 0.5)
+
+		noisetype = luxProp(mat, keyname+".noisetype", "soft_noise")
+		noisetypes = ["soft_noise","hard_noise"]
+		str += luxOption("noisetype", noisetype, noisetypes, "noisetypes", "", gui, 0.75)
+		
+		str += luxFloat("noisesize", luxProp(mat, keyname+".noisesize", 0.25), 0.0, 10.0, "noisesize", "", gui, 1.0)
+		str += luxFloat("turbulance", luxProp(mat, keyname+".turbulance", 5.0), 0.0, 2.0, "turbulance", "", gui, 1.0)
+
+		noisebasis = luxProp(mat, keyname+".noisebasis", "blender_original")
+		noisebasises = ["blender_original","original_perlin", "improved_perlin", "voronoi_f1", "voronoi_f2", "voronoi_f3", "voronoi_f4", "voronoi_f2f1", "voronoi_crackle", "cell_noise"]
+		str += luxOption("noisebasis", noisebasis, noisebasises, "noisebasis", "", gui, 1.3)
+
+		if gui: gui.newline("level:", -2, level+1, icon_texparam)
+		str += luxFloat("bright", luxProp(mat, keyname+".bright", 1.0), 0.0, 2.0, "bright", "", gui, 1.0)
+		str += luxFloat("contrast", luxProp(mat, keyname+".contrast", 1.0), 0.0, 5.0, "contrast", "", gui, 1.0)
+		str += lux3DMapping(keyname, mat, gui, level+1)
+
+
 
 	return (str+"\n", " \"texture %s\" [\"%s\"]"%(name, texname))
 
