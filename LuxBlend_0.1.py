@@ -131,7 +131,7 @@ def getMaterials(obj, compress=False):
 		for i in range(len(mats)):
 			if mats[i]:
 				mattype = luxProp(mats[i], "type", "").get()
-				if (mattype not in ["portal","light"]): mats[i] = clayMat
+				if (mattype not in ["portal","light","boundvolume"]): mats[i] = clayMat
 	return mats
 
 
@@ -150,6 +150,7 @@ class luxExport:
 		self.camera = scene.objects.camera
 		self.objects = []
 		self.portals = []
+		self.volumes = []
 		self.meshes = {}
 		self.materials = []
 		self.lights = []
@@ -169,6 +170,8 @@ class luxExport:
 				mats = getMaterials(obj)
 				if (len(mats)>0) and (mats[0]!=None) and ((mats[0].name=="PORTAL") or (luxProp(mats[0], "type", "").get()=="portal")):
 					self.portals.append([obj, matrix])
+				elif (luxProp(mats[0], "type", "").get()=="boundvolume"):
+					self.volumes.append([obj, matrix])
 				else:
 					for mat in mats:
 						if (mat!=None) and (mat not in self.materials):
@@ -463,6 +466,26 @@ class luxExport:
 				file.write("TransformEnd # %s\n"%obj.getName())
 				file.write("\n")
 
+	#-------------------------------------------------
+	# exportVolumes(self, file)
+	# exports volumes to the file
+	#-------------------------------------------------
+	def exportVolumes(self, file):
+		for [obj, matrix] in self.volumes:
+			print "volume: %s"%(obj.getName())
+			file.write("\tTransform [%s %s %s %s  %s %s %s %s  %s %s %s %s  %s %s %s %s]\n"\
+				%(matrix[0][0], matrix[0][1], matrix[0][2], matrix[0][3],\
+				  matrix[1][0], matrix[1][1], matrix[1][2], matrix[1][3],\
+				  matrix[2][0], matrix[2][1], matrix[2][2], matrix[2][3],\
+		  		  matrix[3][0], matrix[3][1], matrix[3][2], matrix[3][3]))
+			#bounds = obj.getBoundBox();
+		#	return "%s\n"%(luxProp(mat, "link", "").get())
+		mats = getMaterials(obj)
+		if (len(mats)>0) and (mats[0]!=None) and (luxProp(mats[0], "type", "").get()=="boundvolume"):
+			mat = mats[0]
+			(str, link) = luxMaterialBlock("", "", "", mat)
+			#str = luxVolume(mat)
+			file.write("%s"%link)
 
 
 ######################################################
@@ -470,7 +493,7 @@ class luxExport:
 ######################################################
 
 def save_lux(filename, unindexedname):
-	global meshlist, matnames, geom_filename, geom_pfilename, mat_filename, mat_pfilename
+	global meshlist, matnames, geom_filename, geom_pfilename, mat_filename, mat_pfilename, vol_filename, vol_pfilename
 
 	print("Lux Render Export started...\n")
 	time1 = Blender.sys.time()
@@ -484,6 +507,9 @@ def save_lux(filename, unindexedname):
 
 	mat_filename = os.path.join(filepath, filebase + "-mat.lxm")
 	mat_pfilename = filebase + "-mat.lxm"
+	
+	vol_filename = os.path.join(filepath, filebase + "-vol.lxv")
+	vol_pfilename = filebase + "-vol.lxv"
 	
 	### Zuegs: initialization for export class
 	export = luxExport(Blender.Scene.GetCurrent())
@@ -538,8 +564,12 @@ def save_lux(filename, unindexedname):
 		file.write(luxSampler(scn))
 		file.write("\n")
 	
-		##### Write Integrator ######
+		##### Write Surface Integrator ######
 		file.write(luxSurfaceIntegrator(scn))
+		file.write("\n")
+		
+		##### Write Volume Integrator ######
+		file.write(luxVolumeIntegrator(scn))
 		file.write("\n")
 		
 		##### Write Acceleration ######
@@ -561,10 +591,10 @@ def save_lux(filename, unindexedname):
 			file.write("AttributeEnd\n")
 			file.write("\n")	
 
-
 		#### Write material & geometry file includes in scene file
 		file.write("Include \"%s\"\n\n" %(mat_pfilename))
 		file.write("Include \"%s\"\n\n" %(geom_pfilename))
+		file.write("Include \"%s\"\n\n" %(vol_pfilename))
 		
 		#### Write End Tag
 		file.write("WorldEnd\n\n")
@@ -590,6 +620,17 @@ def save_lux(filename, unindexedname):
 		export.exportObjects(geom_file)
 		geom_file.write("")
 		geom_file.close()
+
+	if luxProp(scn, "lxv", "true").get()=="true":
+		##### Write Volume file #####
+		print("Exporting volumes to '" + vol_filename + "'...\n")
+		vol_file = open(vol_filename, 'w')
+		meshlist = []
+		vol_file.write("")
+		export.exportVolumes(vol_file)
+		vol_file.write("")
+		vol_file.close()
+
 
 	print("Finished.\n")
 	del export
@@ -1303,6 +1344,17 @@ def luxSurfaceIntegrator(scn, gui=None):
 			str += luxFloat("gatherangle", luxProp(scn, "sintegrator.photonmap.gangle", 10.0), 0.0, 360.0, "gatherangle", "Angle for final gather", gui)
 	return str
 
+def luxVolumeIntegrator(scn, gui=None):
+	str = ""
+	if scn:
+		integratortype = luxProp(scn, "vintegrator.type", "single")
+		str = luxIdentifier("VolumeIntegrator", integratortype, ["emission", "single"], "VOLUME INT", "select volume integrator type", gui)
+		if integratortype.get() == "emission":
+			str += luxFloat("stepsize", luxProp(scn, "vintegrator.emission.stepsize", 1.0), 0.0, 100.0, "stepsize", "Stepsize for volumes", gui)
+		if integratortype.get() == "single":
+			str += luxFloat("stepsize", luxProp(scn, "vintegrator.emission.stepsize", 1.0), 0.0, 100.0, "stepsize", "Stepsize for volumes", gui)
+	return str
+
 def luxEnvironment(scn, gui=None):
 	str = ""
 	if scn:
@@ -1700,7 +1752,7 @@ def luxMaterialBlock(name, luxname, key, mat, gui=None, level=0):
 	if mat:
 		mattype = luxProp(mat, kn+"type", "matte")
 		materials = ["carpaint","glass","matte","mattetranslucent","metal","mirror","plastic","roughglass","shinymetal","substrate","mix","null"]
-		if level == 0: materials = ["light","portal"]+materials
+		if level == 0: materials = ["light","portal","boundvolume"]+materials
 		if gui:
 			icon = icon_mat
 			if mattype.get() == "mix": icon = icon_matmix
@@ -1723,6 +1775,35 @@ def luxMaterialBlock(name, luxname, key, mat, gui=None, level=0):
 			if gui: gui.newline("")
 			link += luxString("lightgroup", luxProp(mat, kn+"light.lightgroup", ""), "light-group", "assign light to a named light-group", gui, 2.0)
 			return (str, link)
+		if mattype.get() == "boundvolume":
+			link = ""
+			voltype = luxProp(mat, kn+"vol.type", "homogeneous")
+			vols = ["homogeneous", "exponential"]
+			vollink = luxOption("type", voltype, vols, "type", "", gui)
+			if voltype.get() == "homogeneous":
+				link = "Volume \"homogeneous\""
+			if voltype.get() == "exponential":
+				link = "Volume \"exponential\""
+
+			if gui: gui.newline("absorption:", 0, level+1)
+			link += luxRGB("sigma_a", luxProp(mat, kn+"vol.sig_a", "1.0 1.0 1.0"), 1.0, "sigma_a", "The absorption cross section", gui)
+			if gui: gui.newline("scattering:", 0, level+1)
+			link += luxRGB("sigma_s", luxProp(mat, kn+"vol.sig_b", "0.0 0.0 0.0"), 1.0, "sigma_b", "The scattering cross section", gui)
+			if gui: gui.newline("emission:", 0, level+1)
+			link += luxRGB("Le", luxProp(mat, kn+"vol.le", "0.0 0.0 0.0"), 1.0, "Le", "The volume's emission spectrum", gui)
+			#link += luxFloat("gain", luxProp(mat, kn+"vol.gain", 1.0), 0.0, 100.0, "gain", "gain", gui)
+			if gui: gui.newline("assymetry:", 0, level+1)
+			link += luxFloat("g", luxProp(mat, kn+"vol.g", 0.0), 0.0, 100.0, "g", "The phase function asymmetry parameter", gui)
+
+			if voltype.get() == "exponential":
+				if gui: gui.newline("form:", 0, level+1)
+				link += luxFloat("a", luxProp(mat, kn+"vol.a", 1.0), 0.0, 100.0, "a/scale", "exponential::a parameter in the ae^{-bh} formula", gui)
+				link += luxFloat("b", luxProp(mat, kn+"vol.b", 2.0), 0.0, 100.0, "b/falloff", "exponential::b parameter in the ae^{-bh} formula", gui)
+				if gui: gui.newline("updir:", 0, level+1)
+				link += luxVector("updir", luxProp(mat, kn+"vol.updir", "0 0 1"), -1.0, 1.0, "updir", "Up direction vector", gui, 2.0)
+
+			return (str, link)
+
 		if mattype.get() == "carpaint":
 			if gui: gui.newline("name:", 0, level+1)
 			carname = luxProp(mat, kn+"carpaint.name", "white")
@@ -1806,7 +1887,7 @@ def luxMaterialBlock(name, luxname, key, mat, gui=None, level=0):
 		if mattype.get() == "substrate":
 			(str,link) = c((str,link), luxSpectrumTexture("Kd", keyname, "1.0 1.0 1.0", 1.0, "diffuse", "", mat, gui, level+1))
 			(str,link) = c((str,link), luxSpectrumTexture("Ks", keyname, "1.0 1.0 1.0", 1.0, "specular", "", mat, gui, level+1))
-			anisotropic = luxProp(mat, kn+"substrade.anisotropic", False)
+			anisotropic = luxProp(mat, kn+"substrate.anisotropic", False)
 			if gui:
 				gui.newline("")
 				Draw.Toggle("A", evtLuxGui, gui.x-gui.h, gui.y-gui.h-4, gui.h, gui.h, anisotropic.get()=="true", "anisotropic roughness", lambda e,v:anisotropic.set(["false","true"][bool(v)]))
@@ -1832,6 +1913,12 @@ def luxMaterial(mat, gui=None):
 		luxProp(mat, "link", "").set("".join(link))
 	return str
 
+def luxVolume(mat, gui=None):
+	str = ""
+	if mat:
+		(str, link) = luxMaterialBlock("", "", "", mat, gui, 0)
+		luxProp(mat, "link", "").set("".join(link))
+	return str
 
 
 def CBluxExport(default, run):
@@ -1995,6 +2082,8 @@ def luxDraw():
 			BGL.glColor3f(1.0,0.5,0.4);BGL.glRectf(170,y-74,250,y-70);BGL.glColor3f(0.9,0.9,0.9)
 			luxSurfaceIntegrator(scn, gui)
 			gui.newline("", 10)
+			luxVolumeIntegrator(scn, gui)
+			gui.newline("", 10)
 			luxSampler(scn, gui)
 			gui.newline("", 10)
 			luxPixelFilter(scn, gui)
@@ -2017,6 +2106,7 @@ def luxDraw():
 		lxs = luxProp(scn, "lxs", "true")
 		lxo = luxProp(scn, "lxo", "true")
 		lxm = luxProp(scn, "lxm", "true")
+		lxv = luxProp(scn, "lxv", "true")
 		if (run.get()=="true"):
 			Draw.Button("Render", 0, 10, y+20, 100, 36, "Render with Lux", lambda e,v:CBluxExport(dlt.get()=="true", True))
 			Draw.Button("Export Anim", 0, 110, y+20, 100, 36, "Render animation with Lux", lambda e,v:CBluxAnimExport(dlt.get()=="true", True))
@@ -2027,9 +2117,10 @@ def luxDraw():
 		Draw.Toggle("run", evtLuxGui, 320, y+40, 30, 16, run.get()=="true", "start Lux after export", lambda e,v: run.set(["false","true"][bool(v)]))
 		Draw.Toggle("def", evtLuxGui, 350, y+40, 30, 16, dlt.get()=="true", "save to default.lxs", lambda e,v: dlt.set(["false","true"][bool(v)]))
 		Draw.Toggle("clay", evtLuxGui, 380, y+40, 30, 16, clay.get()=="true", "all materials are rendered as white-matte", lambda e,v: clay.set(["false","true"][bool(v)]))
-		Draw.Toggle(".lxs", 0, 320, y+20, 30, 16, lxs.get()=="true", "export .lxs scene file", lambda e,v: lxs.set(["false","true"][bool(v)]))
-		Draw.Toggle(".lxo", 0, 350, y+20, 30, 16, lxo.get()=="true", "export .lxo geometry file", lambda e,v: lxo.set(["false","true"][bool(v)]))
-		Draw.Toggle(".lxm", 0, 380, y+20, 30, 16, lxm.get()=="true", "export .lxm material file", lambda e,v: lxm.set(["false","true"][bool(v)]))
+		Draw.Toggle(".lxs", 0, 290, y+20, 30, 16, lxs.get()=="true", "export .lxs scene file", lambda e,v: lxs.set(["false","true"][bool(v)]))
+		Draw.Toggle(".lxo", 0, 320, y+20, 30, 16, lxo.get()=="true", "export .lxo geometry file", lambda e,v: lxo.set(["false","true"][bool(v)]))
+		Draw.Toggle(".lxm", 0, 350, y+20, 30, 16, lxm.get()=="true", "export .lxm material file", lambda e,v: lxm.set(["false","true"][bool(v)]))
+		Draw.Toggle(".lxv", 0, 380, y+20, 30, 16, lxm.get()=="true", "export .lxv volume file", lambda e,v: lxm.set(["false","true"][bool(v)]))
 	BGL.glColor3f(0.9, 0.9, 0.9) ; BGL.glRasterPos2i(340,y+5) ; Draw.Text("Press Q or ESC to quit.", "tiny")
 	scrollbar.height = scrollbar.getTop() - y
 	scrollbar.draw()
