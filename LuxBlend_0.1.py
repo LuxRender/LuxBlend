@@ -1097,12 +1097,23 @@ def luxCamera(cam, context, gui=None):
 		if gui: gui.newline("  Shutter:")
 		str += luxFloat("shutteropen", luxProp(cam, "camera.shutteropen", 0.0), 0.0, 100.0, "open", "time in seconds when shutter opens", gui)
 		str += luxFloat("shutterclose", luxProp(cam, "camera.shutterclose", 1.0), 0.0, 100.0, "close", "time in seconds when shutter closes", gui)
+
+		useaspect = luxProp(cam, "useaspectratio", "false")
+		aspectratio = luxProp(cam, "ratio", 1.3333)
+		if camtype.get() in ["perspective", "orthographic", "environment"]:
+			if gui: gui.newline("  AspectRatio:")
+			luxBool("useaspectratio", useaspect, "Custom", "Define a custom frame aspect ratio", gui)
+			if useaspect.get() == "true":
+				str += luxFloat("frameaspectratio", aspectratio, 0.0001, 3.0, "aspectratio", "Frame aspect ratio", gui)
 		if camtype.get() in ["perspective", "orthographic"]:
 			if gui: gui.newline("  Shift:")
 			luxFloat("X", luxAttr(cam, "shiftX"), -2.0, 2.0, "X", "horizontal lens shift", gui)
 			luxFloat("Y", luxAttr(cam, "shiftY"), -2.0, 2.0, "Y", "vertical lens shift", gui)
 			if context:
-		    		ratio = float(context.sizeY)/float(context.sizeX)
+				if useaspect.get() == "true":
+					ratio = 1./aspectratio.get()
+				else:
+		    			ratio = float(context.sizeY)/float(context.sizeX)
 				if ratio < 1.0:
 					screenwindow = [(2*cam.shiftX-1)*scale, (2*cam.shiftX+1)*scale, (2*cam.shiftY-ratio)*scale, (2*cam.shiftY+ratio)*scale]
 				else:
