@@ -478,14 +478,12 @@ class luxExport:
 				  matrix[1][0], matrix[1][1], matrix[1][2], matrix[1][3],\
 				  matrix[2][0], matrix[2][1], matrix[2][2], matrix[2][3],\
 		  		  matrix[3][0], matrix[3][1], matrix[3][2], matrix[3][3]))
-			#bounds = obj.getBoundBox();
-		#	return "%s\n"%(luxProp(mat, "link", "").get())
-		mats = getMaterials(obj)
-		if (len(mats)>0) and (mats[0]!=None) and (luxProp(mats[0], "type", "").get()=="boundvolume"):
-			mat = mats[0]
-			(str, link) = luxMaterialBlock("", "", "", mat)
-			#str = luxVolume(mat)
-			file.write("%s"%link)
+			# TODO - radiance - add object bounds detection/export
+			mats = getMaterials(obj)
+			if (len(mats)>0) and (mats[0]!=None) and (luxProp(mats[0], "type", "").get()=="boundvolume"):
+				mat = mats[0]
+				(str, link) = luxMaterialBlock("", "", "", mat)
+				file.write("%s"%link)
 
 
 ######################################################
