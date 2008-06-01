@@ -1156,7 +1156,7 @@ def luxFilm(scn, gui=None):
 
 			if gui: gui.newline("  Display:")
 			str += luxInt("displayinterval", luxProp(scn, "film.displayinterval", 12), 5, 3600, "interval", "Set display Interval (seconds)", gui)
-
+			
 			if gui: gui.newline("  Write:")
 			str += luxInt("writeinterval", luxProp(scn, "film.writeinterval", 120), 5, 3600, "interval", "Set display Interval (seconds)", gui)
 
@@ -1177,8 +1177,10 @@ def luxFilm(scn, gui=None):
 			str += luxBool("write_tonemapped_igi", savetmigi, "Tonemapped IGI", "save tonemapped IGI file", gui)
 			str += luxBool("write_untonemapped_igi", saveigi, "Untonemapped IGI", "save untonemapped IGI file", gui)
 			if gui: gui.newline("  Resume:")
-			resumeflm = luxProp(scn, "film.write_resume_flm", "false")
-			str += luxBool("write_resume_flm", resumeflm, "Write Resume FLM", "Write a resume fleximage .flm file, or resume rendering if it already exists", gui)
+			resumeflm = luxProp(scn, "film.write_resume_flm", "true")
+			str += luxBool("write_resume_flm", resumeflm, "Write/Use FLM", "Write a resume fleximage .flm file, or resume rendering if it already exists", gui)
+			restartflm = luxProp(scn, "film.restart_resume_flm", "true")
+			str += luxBool("restart_resume_flm", restartflm, "Restart/Erase", "Restart with a black flm, even it a previous flm exists", gui)
 	return str
 
 
