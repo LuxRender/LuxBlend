@@ -170,7 +170,7 @@ class luxExport:
 				mats = getMaterials(obj)
 				if (len(mats)>0) and (mats[0]!=None) and ((mats[0].name=="PORTAL") or (luxProp(mats[0], "type", "").get()=="portal")):
 					self.portals.append([obj, matrix])
-				elif (luxProp(mats[0], "type", "").get()=="boundvolume"):
+				elif (len(mats)>0) and (luxProp(mats[0], "type", "").get()=="boundvolume"):
 					self.volumes.append([obj, matrix])
 				else:
 					for mat in mats:
