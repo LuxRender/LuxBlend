@@ -1146,6 +1146,11 @@ def luxFilm(scn, gui=None):
 			str += luxFloat("reinhard_postscale", luxProp(scn, "film.reinhard.postscale", 1.0), 0.0, 10.0, "post-scale", "Post Scale: See Lux Manual ;)", gui)
 			str += luxFloat("reinhard_burn", luxProp(scn, "film.reinhard.burn", 6.0), 0.1, 12.0, "burn", "12.0: no burn out, 0.1 lot of burn out", gui)
 
+			if gui: gui.newline("  Reject:")
+			str += luxInt("reject_warmup", luxProp(scn, "film.reject_warmup", 3), 0, 32768, "warmup_spp", "Specify amount of samples per pixel for high intensity rejection", gui)
+			debugmode = luxProp(scn, "film.debug", "false")
+			str += luxBool("debug", debugmode, "debug", "Turn on debug reporting and switch off reject", gui)
+
 			if gui: gui.newline("  Gamma:")
 			str += luxFloat("gamma", luxProp(scn, "film.gamma", 2.2), 0.1, 6.0, "gamma", "Output and RGC Gamma", gui)
 
@@ -1171,6 +1176,9 @@ def luxFilm(scn, gui=None):
 			saveigi = luxProp(scn, "film.write_untonemapped_igi", "false")
 			str += luxBool("write_tonemapped_igi", savetmigi, "Tonemapped IGI", "save tonemapped IGI file", gui)
 			str += luxBool("write_untonemapped_igi", saveigi, "Untonemapped IGI", "save untonemapped IGI file", gui)
+			if gui: gui.newline("  Resume:")
+			resumeflm = luxProp(scn, "film.write_resume_flm", "false")
+			str += luxBool("write_resume_flm", resumeflm, "Write Resume FLM", "Write a resume fleximage .flm file, or resume rendering if it already exists", gui)
 	return str
 
 
