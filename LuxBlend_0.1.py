@@ -392,8 +392,9 @@ class luxExport:
 	# exports meshes that uses instancing (meshes that are used by at least "instancing_threshold" objects)
 	#-------------------------------------------------
 	def exportMeshes(self, file):
-		instancing_threshold = 2 # getLuxProp(self.scene, "instancing_threshold", 2)
-		mesh_optimizing = True # getLuxProp(self.scene, "mesh_optimizing", False)
+		scn = Scene.GetCurrent()
+		instancing_threshold = luxProp(scn, "instancing_threshold", 2).get()
+		mesh_optimizing = luxProp(scn, "mesh_optimizing", True).get()
 		mesh = Mesh.New('')
 		for (mesh_name, objs) in self.meshes.items():
 			allow_instancing = True
@@ -421,7 +422,8 @@ class luxExport:
 	# exports objects to the file
 	#-------------------------------------------------
 	def exportObjects(self, file):
-		mesh_optimizing = True # getLuxProp(self.scene, "mesh_optimizing", False)
+		scn = Scene.GetCurrent()
+		mesh_optimizing = luxProp(scn, "mesh_optimizing", True).get()
 		mesh = Mesh.New('')
 		for [obj, matrix] in self.objects:
 			print "object: %s"%(obj.getName())
@@ -450,7 +452,8 @@ class luxExport:
 	# exports portals objects to the file
 	#-------------------------------------------------
 	def exportPortals(self, file):
-		mesh_optimizing = True # getLuxProp(self.scene, "mesh_optimizing", False)
+		scn = Scene.GetCurrent()
+		mesh_optimizing = luxProp(scn, "mesh_optimizing", True).get()
 		mesh = Mesh.New('')
 		for [obj, matrix] in self.portals:
 			print "portal: %s"%(obj.getName())
@@ -1464,11 +1467,13 @@ def luxSystem(scn, gui=None):
 		if gui: gui.newline("GAMMA:", 10)
 		luxBool("RGC", luxProp(scn, "RGC", "true"), "RGC", "use reverse gamma correction", gui)
 		luxBool("ColClamp", luxProp(scn, "colorclamp", "true"), "ColClamp", "clamp all colors to 0.0-0.9", gui)
-		if gui: gui.newline("MESH THR:", 10)
+		if gui: gui.newline("MESH:", 10)
+		luxBool("mesh_optimizing", luxProp(scn, "mesh_optimizing", "true"), "optimize meshes", "", gui, 2.0)
 		luxInt("trianglemesh thr", luxProp(scn, "trianglemesh_thr", 0), 0, 10000000, "trianglemesh threshold", "Vertex threshold for exporting (wald) trianglemesh object(s)", gui, 2.0)
 		if gui: gui.newline()
 		luxInt("barytrianglemesh thr", luxProp(scn, "barytrianglemesh_thr", 300000), 0, 100000000, "barytrianglemesh threshold", "Vertex threshold for exporting barytrianglemesh object(s) (slower but uses less memory)", gui, 2.0)
-
+		if gui: gui.newline("INSTANCING:", 10)
+		luxInt("instancing_threshold", luxProp(scn, "instancing_threshold", 2), 0, 1000000, "object instanding threshold", "", gui, 2.0)
 
 
 def scalelist(list, factor):
