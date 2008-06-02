@@ -231,6 +231,31 @@ class luxExport:
 			self.exportMaterial(file, mat)
 
 	#-------------------------------------------------
+	# getMeshType(self, vertcount)
+	# returns type of mesh as string to use depending on thresholds
+	#-------------------------------------------------
+	def getMeshType(self, vertcount):
+		scn = Scene.GetCurrent()
+		tri_thr = luxProp(scn, "trianglemesh_thr", 0).get()
+		btri_thr = luxProp(scn, "barytrianglemesh_thr", 300000).get()
+
+		if (tri_thr == btri_thr):
+			return "trianglemesh"
+
+		if (btri_thr > tri_thr):
+			if (vertcount > btri_thr):
+				return "barytrianglemesh"
+			else:
+				return "trianglemesh"
+		else:
+			if (vertcount >= tri_thr):
+				return "trianglemesh"
+			else:
+				return "barytrianglemesh"
+
+		return "trianglemesh"
+
+	#-------------------------------------------------
 	# exportMesh(self, file, mesh, mats, name, portal)
 	# exports mesh to the file without any optimization
 	#-------------------------------------------------
@@ -239,11 +264,12 @@ class luxExport:
 			mats = [dummyMat]
 		for matIndex in range(len(mats)):
 			if (mats[matIndex] != None):
+				mesh_str = getMeshType(len(mesh.verts))
 				if (portal):
-					file.write("\tShape \"trianglemesh\" \"integer indices\" [\n")
+					file.write("\tShape \"%s\" \"integer indices\" [\n"% mesh_str)
 				else:
 					self.exportMaterialLink(file, mats[matIndex])
-					file.write("\tPortalShape \"trianglemesh\" \"integer indices\" [\n")
+					file.write("\tPortalShape \"%s\" \"integer indices\" [\n"% mesh_str)
 				index = 0
 				ffaces = [f for f in mesh.faces if f.mat == matIndex]
 				for face in ffaces:
@@ -329,10 +355,11 @@ class luxExport:
 							index += 1
 						exportFaces.append(exportVIndices)
 					if (len(exportVerts)>0):
+						mesh_str = self.getMeshType(len(exportVerts))
 						if (portal):
-							file.write("\tPortalShape \"trianglemesh\" \"integer indices\" [\n")
+							file.write("\tPortalShape \"%s\" \"integer indices\" [\n"% mesh_str)
 						else:
-							file.write("\tShape \"trianglemesh\" \"integer indices\" [\n")
+							file.write("\tShape \"%s\" \"integer indices\" [\n"% mesh_str)
 						for face in exportFaces:
 							file.write("%d %d %d\n"%(face[0], face[1], face[2]))
 							if (len(face)==4):
@@ -1437,6 +1464,11 @@ def luxSystem(scn, gui=None):
 		if gui: gui.newline("GAMMA:", 10)
 		luxBool("RGC", luxProp(scn, "RGC", "true"), "RGC", "use reverse gamma correction", gui)
 		luxBool("ColClamp", luxProp(scn, "colorclamp", "true"), "ColClamp", "clamp all colors to 0.0-0.9", gui)
+		if gui: gui.newline("MESH THR:", 10)
+		luxInt("trianglemesh thr", luxProp(scn, "trianglemesh_thr", 0), 0, 10000000, "trianglemesh threshold", "Vertex threshold for exporting (wald) trianglemesh object(s)", gui, 2.0)
+		if gui: gui.newline()
+		luxInt("barytrianglemesh thr", luxProp(scn, "barytrianglemesh_thr", 300000), 0, 100000000, "barytrianglemesh threshold", "Vertex threshold for exporting barytrianglemesh object(s) (slower but uses less memory)", gui, 2.0)
+
 
 
 def scalelist(list, factor):
