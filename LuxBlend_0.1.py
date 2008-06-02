@@ -1402,9 +1402,18 @@ def luxEnvironment(scn, gui=None):
 def luxAccelerator(scn, gui=None):
 	str = ""
 	if scn:
-		acceltype = luxProp(scn, "accelerator.type", "kdtree")
-		str = luxIdentifier("Accelerator", acceltype, ["kdtree", "grid"], "ACCELERATOR", "select accelerator type", gui)
-		if acceltype.get() == "kdtree":
+		acceltype = luxProp(scn, "accelerator.type", "tabreckdtree")
+		str = luxIdentifier("Accelerator", acceltype, ["none", "tabreckdtree", "grid", "unsafekdtree"], "ACCEL", "select accelerator type", gui)
+		if acceltype.get() == "tabreckdtree":
+			if gui: gui.newline()
+			str += luxInt("intersectcost", luxProp(scn, "accelerator.kdtree.interscost", 80), 0, 1000, "inters.cost", "specifies how expensive ray-object intersections are", gui)
+			str += luxInt("traversalcost", luxProp(scn, "accelerator.kdtree.travcost", 1), 0, 1000, "trav.cost", "specifies how expensive traversing a ray through the kdtree is", gui)
+			if gui: gui.newline()
+			str += luxFloat("emptybonus", luxProp(scn, "accelerator.kdtree.emptybonus", 0.2), 0.0, 100.0, "empty.b", "promotes kd-tree nodes that represent empty space", gui)
+			if gui: gui.newline()
+			str += luxInt("maxprims", luxProp(scn, "accelerator.kdtree.maxprims", 1), 0, 1000, "maxprims", "maximum number of primitives in a kdtree volume before further splitting of the volume occurs", gui)
+			str += luxInt("maxdepth", luxProp(scn, "accelerator.kdtree.maxdepth", -1), -1, 100, "maxdepth", "If positive, the maximum depth of the tree. If negative this value is set automatically", gui)
+		if acceltype.get() == "unsafekdtree":
 			if gui: gui.newline()
 			str += luxInt("intersectcost", luxProp(scn, "accelerator.kdtree.interscost", 80), 0, 1000, "inters.cost", "specifies how expensive ray-object intersections are", gui)
 			str += luxInt("traversalcost", luxProp(scn, "accelerator.kdtree.travcost", 1), 0, 1000, "trav.cost", "specifies how expensive traversing a ray through the kdtree is", gui)
@@ -1425,7 +1434,7 @@ def luxSystem(scn, gui=None):
 		luxFile("datadir", luxProp(scn, "datadir", ""), "default out dir", "default.lxs save path", gui, 2.0)
 		if gui: gui.newline()
 		luxInt("threads", luxProp(scn, "threads", 1), 1, 100, "threads", "number of threads used for rendering", gui)
-		if gui: gui.newline()
+		if gui: gui.newline("GAMMA:", 10)
 		luxBool("RGC", luxProp(scn, "RGC", "true"), "RGC", "use reverse gamma correction", gui)
 		luxBool("ColClamp", luxProp(scn, "colorclamp", "true"), "ColClamp", "clamp all colors to 0.0-0.9", gui)
 
