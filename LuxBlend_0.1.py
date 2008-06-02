@@ -1468,12 +1468,12 @@ def luxSystem(scn, gui=None):
 		luxBool("RGC", luxProp(scn, "RGC", "true"), "RGC", "use reverse gamma correction", gui)
 		luxBool("ColClamp", luxProp(scn, "colorclamp", "true"), "ColClamp", "clamp all colors to 0.0-0.9", gui)
 		if gui: gui.newline("MESH:", 10)
-		luxBool("mesh_optimizing", luxProp(scn, "mesh_optimizing", "true"), "optimize meshes", "", gui, 2.0)
+		luxBool("mesh_optimizing", luxProp(scn, "mesh_optimizing", "true"), "optimize meshes", "Optimize meshes during export", gui, 2.0)
 		luxInt("trianglemesh thr", luxProp(scn, "trianglemesh_thr", 0), 0, 10000000, "trianglemesh threshold", "Vertex threshold for exporting (wald) trianglemesh object(s)", gui, 2.0)
 		if gui: gui.newline()
 		luxInt("barytrianglemesh thr", luxProp(scn, "barytrianglemesh_thr", 300000), 0, 100000000, "barytrianglemesh threshold", "Vertex threshold for exporting barytrianglemesh object(s) (slower but uses less memory)", gui, 2.0)
 		if gui: gui.newline("INSTANCING:", 10)
-		luxInt("instancing_threshold", luxProp(scn, "instancing_threshold", 2), 0, 1000000, "object instanding threshold", "", gui, 2.0)
+		luxInt("instancing_threshold", luxProp(scn, "instancing_threshold", 2), 0, 1000000, "object instanding threshold", "Threshold to created instanced objects", gui, 2.0)
 
 
 def scalelist(list, factor):
@@ -1954,8 +1954,11 @@ def luxMaterialBlock(name, luxname, key, mat, gui=None, level=0):
 			(str,link) = c((str,link), luxFloatTexture("cauchyb", keyname, 0.0, 0.0, 1.0, "cauchyb", "", mat, gui, level+1))
 			(str,link) = c((str,link), luxFloatTexture("bumpmap", keyname, 0.0, 0.0, 1.0, "bumpmap", "", mat, gui, level+1))
 		if mattype.get() == "matte":
+			orennayar = luxProp(mat, "orennayar", "false")
 			(str,link) = c((str,link), luxSpectrumTexture("Kd", keyname, "1.0 1.0 1.0", 1.0, "diffuse", "", mat, gui, level+1))
-			(str,link) = c((str,link), luxFloatTexture("sigma", keyname, 0.0, 0.0, 100.0, "sigma", "", mat, gui, level+1))
+			luxBool("orennayar", orennayar, "Oren-Nayar", "Enable Oren-Nayar BRDF", gui, 2.0)
+			if orennayar.get() == "true":
+				(str,link) = c((str,link), luxFloatTexture("sigma", keyname, 0.0, 0.0, 100.0, "sigma", "sigma value for Oren-Nayar BRDF", mat, gui, level+1))
 			(str,link) = c((str,link), luxFloatTexture("bumpmap", keyname, 0.0, 0.0, 1.0, "bumpmap", "", mat, gui, level+1))
 		if mattype.get() == "mattetranslucent":
 			(str,link) = c((str,link), luxSpectrumTexture("Kr", keyname, "1.0 1.0 1.0", 1.0, "reflection", "", mat, gui, level+1))
