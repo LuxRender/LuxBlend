@@ -947,13 +947,22 @@ def luxstr(str):
 
 usedproperties = {} # global variable to collect used properties for storing presets
 
+
 # class to access properties (for lux settings)
 class luxProp:
 	def __init__(self, obj, name, default):
 		self.obj = obj
 		self.name = name
-		if len(name)>31: print "Warning: property-name \"%s\" has more than 31 chars."%(name)
+#		if len(name)>31: print "Warning: property-name \"%s\" has more than 31 chars."%(name)
+		self.hashmode = len(name)>31   # activate hash mode for keynames longer 31 chars (limited by blenders ID-prop)
+		self.hashname = "__hash:%x"%(name.__hash__())
 		self.default = default
+	def parseassignment(self, s, name):
+		l = s.split(" = ")
+		if l[0] != name: print "Warning: property-name \"%s\" has hash-collide with \"%s\"."%(name, l[0])
+		return l[1]
+	def createassignment(self, name, value):
+		return "%s = %s"%(name, value)
 	def get(self):
 		global usedproperties, luxdefaults
 		if self.obj:
@@ -962,27 +971,36 @@ class luxProp:
 				usedproperties[self.name] = value
 				return value
 			except KeyError:
-				if self.obj.__class__.__name__ == "Scene": # luxdefaults only for global setting
-					try:
-						value = luxdefaults[self.name]
-						usedproperties[self.name] = value
-						return value
-					except KeyError:
-						usedproperties[self.name] = self.default
-						return self.default
-				usedproperties[self.name] = self.default
-				return self.default
+				try:
+					value = self.parseassignment(self.obj.properties['luxblend'][self.hashname], self.name)
+					usedproperties[self.name] = value
+					return value
+				except KeyError:
+					if self.obj.__class__.__name__ == "Scene": # luxdefaults only for global setting
+						try:
+							value = luxdefaults[self.name]
+							usedproperties[self.name] = value
+							return value
+						except KeyError:
+							usedproperties[self.name] = self.default
+							return self.default
+					usedproperties[self.name] = self.default
+					return self.default
 		return None
 	def set(self, value):
 		global newluxdefaults
 		if self.obj:
+			if self.hashmode: n, v = self.hashname, self.createassignment(self.name, value)
+			else: n, v = self.name, value
 			if value is not None:
-				try: self.obj.properties['luxblend'][self.name] = value
+				try:
+					self.obj.properties['luxblend'][n] = v
+					print "-- %s: %s"%(n,self.obj.properties['luxblend'][n])
 				except (KeyError, TypeError):
 					self.obj.properties['luxblend'] = {}
-					self.obj.properties['luxblend'][self.name] = value
+					self.obj.properties['luxblend'][n] = v
 			else:
-				try: del self.obj.properties['luxblend'][self.name]
+				try: del self.obj.properties['luxblend'][n]
 				except:	pass
 			if self.obj.__class__.__name__ == "Scene": # luxdefaults only for global setting
 				# value has changed, so this are user settings, remove preset reference
@@ -993,6 +1011,8 @@ class luxProp:
 	def delete(self):
 		if self.obj:
 			try: del self.obj.properties['luxblend'][self.name]
+			except:	pass
+			try: del self.obj.properties['luxblend'][self.hashname]
 			except:	pass
 	def getRGB(self):
 		l = self.get().split(" ")
@@ -1080,13 +1100,13 @@ def luxFloat(name, lux, min, max, caption, hint, gui, width=1.0):
 	if gui:
 		r = gui.getRect(width, 1)
 		Draw.Number(caption+": ", evtLuxGui, r[0], r[1], r[2], r[3], float(lux.get()), min, max, hint, lambda e,v: lux.set(v))
-	return " \"float %s\" [%f]"%(name, lux.get())
+	return " \"float %s\" [%f]"%(name, float(lux.get()))
 
 def luxInt(name, lux, min, max, caption, hint, gui, width=1.0):
 	if gui:
 		r = gui.getRect(width, 1)
 		Draw.Number(caption+": ", evtLuxGui, r[0], r[1], r[2], r[3], int(lux.get()), min, max, hint, lambda e,v: lux.set(v))
-	return " \"integer %s\" [%d]"%(name, lux.get())
+	return " \"integer %s\" [%d]"%(name, int(lux.get()))
 
 def luxBool(name, lux, caption, hint, gui, width=1.0):
 	if gui:
@@ -1435,8 +1455,10 @@ def luxEnvironment(scn, gui=None):
 				if map.get() != "":
 					str += mapstr
 				else:
-					worldcolor = Blender.World.Get('World').getHor()
-					str += " \"color L\" [%g %g %g]\n" %(worldcolor[0], worldcolor[1], worldcolor[2])
+					try:
+						worldcolor = Blender.World.Get('World').getHor()
+						str += " \"color L\" [%g %g %g]\n" %(worldcolor[0], worldcolor[1], worldcolor[2])
+					except: pass
 			if envtype.get() == "sunsky":
 				sun = None
 				for obj in scn.objects:
@@ -2571,13 +2593,14 @@ def luxButtonEvt(evt):  # function that handles button events
 			mats = getMaterialPresets()
 			matskeys = mats.keys()
 			matskeys.sort()
-			matsstr = "delete preset: %t"
+			matsstr = "load preset: %t"
 			for i, v in enumerate(matskeys): matsstr += "|%s %%x%d"%(v, i)
 			r = Draw.PupMenu(matsstr, 20)
 			if r >= 0:
 				name = matskeys[r]
 				try:
-					for k,v in mats[name].items(): activemat.properties['luxblend'][k] = v
+#					for k,v in mats[name].items(): activemat.properties['luxblend'][k] = v
+					for k,v in mats[name].items(): luxProp(activemat, k, None).set(v)
 				except: pass
 				Draw.Redraw()
 	if evt == evtSaveMaterial:
