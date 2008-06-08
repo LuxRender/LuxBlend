@@ -2295,13 +2295,13 @@ def luxMaterialBlock(name, luxname, key, mat, gui=None, level=0, str_opt=""):
 
 		# Object options (common)
 		if (level == 0) and (has_object_options == 1):
-			if gui: gui.newline("Mesh:", 12, level, icon, [0.6,0.6,0.4])
+			if gui: gui.newline("Mesh:", 2, level, icon, [0.6,0.6,0.4])
 			usesubdiv = luxProp(mat, "subdiv", "false")
 			luxBool("usesubdiv", usesubdiv, "Subdivision", "Enable Loop Subdivision options", gui, 1.0)
 			usedisp = luxProp(mat, "dispmap", "false")
 			luxBool("usedisp", usedisp, "Displacement Map", "Enable Displacement mapping options", gui, 1.0)
 			if usesubdiv.get() == "true" or usedisp.get() == "true":
-				luxInt("sublevels", luxProp(mat, "sublevels", 2), 0, 6, "sublevels", "The number of levels of object subdivision", gui, 2.0)
+				luxInt("sublevels", luxProp(mat, "sublevels", 2), 0, 12, "sublevels", "The number of levels of object subdivision", gui, 2.0)
 				sharpbound = luxProp(mat, "sharpbound", "false")
 				luxBool("sharpbound", sharpbound, "Sharpen Bounds", "Sharpen boundaries during subdivision", gui, 1.0)
 				nsmooth = luxProp(mat, "nsmooth", "true")
