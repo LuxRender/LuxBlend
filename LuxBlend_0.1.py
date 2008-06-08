@@ -993,9 +993,7 @@ class luxProp:
 			if self.hashmode: n, v = self.hashname, self.createassignment(self.name, value)
 			else: n, v = self.name, value
 			if value is not None:
-				try:
-					self.obj.properties['luxblend'][n] = v
-					print "-- %s: %s"%(n,self.obj.properties['luxblend'][n])
+				try: self.obj.properties['luxblend'][n] = v
 				except (KeyError, TypeError):
 					self.obj.properties['luxblend'] = {}
 					self.obj.properties['luxblend'][n] = v
