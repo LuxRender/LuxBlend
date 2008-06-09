@@ -1599,12 +1599,15 @@ def luxTexture(name, parentkey, type, default, min, max, caption, hint, mat, gui
 	if texture.get() == "imagemap":
 		str += luxOption("wrap", luxProp(mat, keyname+".wrap", "repeat"), ["repeat","black","clamp"], "repeat", "", gui, 1.1)
 		str += luxFile("filename", luxProp(mat, keyname+".filename", ""), "file", "texture file path", gui, 2.0)
-		str += luxFloat("gamma", luxProp(mat, keyname+".gamma", 1.0), 0.0, 6.0, "gamma", "", gui, 1.0)
-		str += luxFloat("gain", luxProp(mat, keyname+".gain", 1.0), 0.0, 10.0, "gain", "", gui, 1.0)
-		str += luxFloat("maxanisotropy", luxProp(mat, keyname+".maxanisotropy", 0.0), 0.0, 512.0, "anisotropy", "", gui, 0.75)
-		str += luxInt("nmipmaps", luxProp(mat, keyname+".nmipmaps", 0), 0, 32, "mipmaps", "", gui, 0.75)
-		trilinear = luxProp(mat, keyname+".trilin", "false")
-		str += luxBool("trilinear", trilinear, "trilinear", "", gui, 0.5)
+		str += luxFloat("gamma", luxProp(mat, keyname+".gamma", 1.0), 0.0, 6.0, "gamma", "", gui, 0.75)
+		str += luxFloat("gain", luxProp(mat, keyname+".gain", 1.0), 0.0, 10.0, "gain", "", gui, 0.5)
+		filttype = luxProp(mat, keyname+".filtertype", "bilinear")
+		filttypes = ["mipmap_ewa","mipmap_trilinear","bilinear","nearest"]
+		str += luxOption("filtertype", filttype, filttypes, "filtertype", "Choose the filtering method to use for the image texture", gui, 0.75)
+
+		if filttype.get() == "mipmap_ewa" or filttype.get() == "mipmap_trilinear":	
+			str += luxFloat("maxanisotropy", luxProp(mat, keyname+".maxanisotropy", 8.0), 1.0, 512.0, "maxaniso", "", gui, 1.0)
+			str += luxInt("discardmipmaps", luxProp(mat, keyname+".discardmipmaps", 0), 0, 1, "discardmips", "", gui, 1.0)
 
 		str += luxMapping(keyname, mat, gui, level+1)
 
