@@ -1450,6 +1450,9 @@ def luxEnvironment(scn, gui=None):
 			if envtype.get() == "infinite":
 				map = luxProp(scn, "env.infinite.mapname", "")
 				mapstr = luxFile("mapname", map, "map-file", "filename of the environment map", gui, 2.0)
+				mapstr += luxFloat("gamma", luxProp(scn, "env.infinite.gamma", 1.0), 0.0, 6.0, "gamma", "", gui, 1.0)
+				mapstr += luxFloat("gain", luxProp(scn, "env.infinite.gain", 1.0), 0.0, 10.0, "gain", "", gui, 1.0)
+				
 				if map.get() != "":
 					str += mapstr
 				else:
@@ -1457,6 +1460,8 @@ def luxEnvironment(scn, gui=None):
 						worldcolor = Blender.World.Get('World').getHor()
 						str += " \"color L\" [%g %g %g]\n" %(worldcolor[0], worldcolor[1], worldcolor[2])
 					except: pass
+
+
 			if envtype.get() == "sunsky":
 				sun = None
 				for obj in scn.objects:
