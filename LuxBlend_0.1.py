@@ -241,13 +241,16 @@ class luxExport:
 		if mat != dummyMat:
 			usesubdiv = luxProp(mat, "subdiv", "false")
 			usedisp = luxProp(mat, "dispmap", "false")
+			sharpbound = luxProp(mat, "sharpbound", "false")
+			nsmooth = luxProp(mat, "nsmooth", "true")
+			sdoffset = luxProp(mat, "sdoffset", 0.0)
 			dstr = ""
 			if usesubdiv.get() == "true":
 				nlevels = luxProp(mat, "sublevels", 1)
-				dstr += "\"loopsubdiv\" \"integer nlevels\" [%i]"% nlevels.get()
+				dstr += "\"loopsubdiv\" \"integer nlevels\" [%i] \"bool dmnormalsmooth\" [\"%s\"] \"bool dmsharpboundary\" [\"%s\"]"% (nlevels.get(), nsmooth.get(), sharpbound.get())
 			
 			if usedisp.get() == "true":
-				dstr += " \"string displacementmap\" [\"%s::dispmap.scale\"] \"float dmscale\" [-1.0]"%mat.getName() # scale is scaled in texture
+				dstr += " \"string displacementmap\" [\"%s::dispmap.scale\"] \"float dmscale\" [-1.0] \"float dmoffset\" [%f]"%(mat.getName(), sdoffset.get()) # scale is scaled in texture
 
 			if dstr != "": return dstr
 
@@ -1645,10 +1648,6 @@ def luxTexture(name, parentkey, type, default, min, max, caption, hint, mat, gui
 			str += luxRGB("v11", luxProp(mat, keyname+".v11", "1.0 1.0 1.0"), max, "v11", "", gui, 2.0)
 		str += luxMapping(keyname, mat, gui, level+1)
 
-	if texture.get() == "uv":
-		str += luxMapping(keyname, mat, gui, level+1)
-		# this texture nas no options 
-
 	if texture.get() == "windy":
 		str += lux3DMapping(keyname, mat, gui, level+1)
 		# this texture has no options 
@@ -1970,6 +1969,23 @@ def luxFloatTexture(name, key, default, min, max, caption, hint, mat, gui, level
 			link = " \"texture %s\" [\"%s\"]"%(name, texname+".scale")
 	return (str, link)
 
+def luxDispFloatTexture(name, key, default, min, max, caption, hint, mat, gui, level=0):
+	global icon_float
+	if gui: gui.newline(caption, 4, level, icon_float, scalelist([0.5,0.5,0.5],2.0/(level+2)))
+	str = ""
+	keyname = "%s:%s"%(key, name)
+	texname = "%s:%s"%(mat.getName(), keyname)
+	value = luxProp(mat, keyname, default)
+	link = luxFloat(name, value, min, max, "", hint, gui, 2.0)
+	tex = luxProp(mat, keyname+".textured", False)
+	if gui: Draw.Toggle("T", evtLuxGui, gui.x, gui.y-gui.h, gui.h, gui.h, tex.get()=="true", "use texture", lambda e,v:tex.set(["false","true"][bool(v)]))
+	if tex.get()=="true":
+		if gui: gui.newline("", -2)
+		(str, link) = luxTexture(name, key, "float", default, min, max, caption, hint, mat, gui, level+1)
+		str += "Texture \"%s\" \"float\" \"scale\" \"texture tex1\" [\"%s\"] \"float tex2\" [%s]\n"%(texname+".scale", texname, value.get())
+		link = " \"texture %s\" [\"%s\"]"%(name, texname+".scale")
+	return (str, link)
+
 def luxIORFloatTexture(name, key, default, min, max, caption, hint, mat, gui, level=0):
 	# IOR preset data
 	iornames = ["0Z *** Gases @ 0 C ***", "01 - Vacuum", "02 - Air @ STP", "03 - Air", "04 - Helium", "05 - Hydrogen", "06 - Carbon dioxide",
@@ -2287,7 +2303,7 @@ def luxMaterialBlock(name, luxname, key, mat, gui=None, level=0, str_opt=""):
 				nsmooth = luxProp(mat, "nsmooth", "true")
 				luxBool("nsmooth", nsmooth, "Smooth", "Smooth faces during subdivision", gui, 1.0)
 			if usedisp.get() == "true":
-				(str,ll) = c((str,link), luxFloatTexture("dispmap", keyname, 0.1, -10, 10.0, "dispmap", "Displacement Mapping amount", mat, gui, level+1))
+				(str,ll) = c((str,link), luxDispFloatTexture("dispmap", keyname, 0.1, -10, 10.0, "dispmap", "Displacement Mapping amount", mat, gui, level+1))
 				luxFloat("sdoffset",  luxProp(mat, "sdoffset", 0.0), 0.0, 1.0, "Offset", "Offset for displacement map", gui, 2.0)
 				usesubdiv.set("true");
 
