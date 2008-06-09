@@ -1965,38 +1965,10 @@ def luxFloatTexture(name, key, default, min, max, caption, hint, mat, gui, level
 			link = " \"texture %s\" [\"%s\"]"%(name, texname+".scale")
 	return (str, link)
 
-### NOTE - radiance - TODO finish and integrate
-#def luxRoughnessFloatTexture(name, key, default, min, max, caption, hint, mat, gui, level=0):
-#	global icon_float
-#	if gui: gui.newline(caption, 4, level, icon_float, scalelist([0.5,0.5,0.5],2.0/(level+2)))
-#	str = ""
-#	keyname = "%s:%s"%(key, name)
-#	texname = "%s:%s"%(mat.getName(), keyname)
-#	value = luxProp(mat, keyname, default)
-#	
-#	useexponent = luxProp(mat, keyname+".useexponent", "true")
-#	luxBool("useexponent", useexponent, "Exponent", "Enable input using exponent format", gui, 0.5)
-#
-#	if useexponent.get() == "true":
-#		expvalue = luxProp(mat, keyname+"exponent", int(math.ceil(1.0 / value.get())))
-#		luxInt(name, expvalue, 0, 1000000, "", hint, gui, 1.5)
-#		link = ""
-#	else:
-#		link = luxFloat(name, value, min, max, "", hint, gui, 1.5)
-#	tex = luxProp(mat, keyname+".textured", False)
-#	if gui: Draw.Toggle("T", evtLuxGui, gui.x, gui.y-gui.h, gui.h, gui.h, tex.get()=="true", "use texture", lambda e,v:tex.set(["false","true"][bool(v)]))
-#	if tex.get()=="true":
-#		if gui: gui.newline("", -2)
-#		(str, link) = luxTexture(name, key, "float", default, min, max, caption, hint, mat, gui, level+1)
-#		if value.get() != 1.0:
-#			str += "Texture \"%s\" \"float\" \"scale\" \"texture tex1\" [\"%s\"] \"float tex2\" [%s]\n"%(texname+".scale", texname, value.get())
-#			link = " \"texture %s\" [\"%s\"]"%(name, texname+".scale")
-#	return (str, link)
-
 def luxIORFloatTexture(name, key, default, min, max, caption, hint, mat, gui, level=0):
 	# IOR preset data
-	iornames = ["0Z *** Gases @ 0 °C ***", "01 - Vacuum", "02 - Air @ STP", "03 - Air", "04 - Helium", "05 - Hydrogen", "06 - Carbon dioxide",
-	"1Z *** LIQUIDS @ 20 °C ***", "11 - Benzene", "12 - Water", "13 - Ethyl alcohol", "14 - Carbon tetrachloride", "15 - Carbon disulfide", 
+	iornames = ["0Z *** Gases @ 0 C ***", "01 - Vacuum", "02 - Air @ STP", "03 - Air", "04 - Helium", "05 - Hydrogen", "06 - Carbon dioxide",
+	"1Z *** LIQUIDS @ 20 C ***", "11 - Benzene", "12 - Water", "13 - Ethyl alcohol", "14 - Carbon tetrachloride", "15 - Carbon disulfide", 
 	"2Z *** SOLIDS at room temperature ***", "21 - Diamond", "22 - Strontium titanate", "23 - Amber", "24 - Fused silica glass", "25 - sodium chloride", 
 	"3Z *** OTHER Materials ***", "31 - Pyrex (Borosilicate glass)", "32 - Ruby", "33 - Water ice", "34 - Cryolite", "35 - Acetone", "36 - Ethanol", "37 - Teflon", "38 - Glycerol", "39 - Acrylic glass", "40 - Rock salt", "41 - Crown glass (pure)", "42 - Salt (NaCl)", "43 - Polycarbonate", "44 - PMMA", "45 - PETg", "46 - PET", "47 - Flint glass (pure)", "48 - Crown glass (impure)", "49 - Fused Quartz", "50 - Bromine", "51 - Flint glass (impure)", "52 - Cubic zirconia", "53 - Moissanite", "54 - Cinnabar (Mercury sulfide)", "55 - Gallium(III) prosphide", "56 - Gallium(III) arsenide", "57 - Silicon"]
 	iorvals = [1.0, 1.0, 1.0002926, 1.000293, 1.000036, 1.000132, 1.00045,
