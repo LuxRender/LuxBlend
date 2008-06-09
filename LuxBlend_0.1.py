@@ -1947,7 +1947,9 @@ def luxSpectrumTexture(name, key, default, max, caption, hint, mat, gui, level=0
 		if gui: gui.newline("", -2)
 		(str, link) = luxTexture(name, key, "color", default, 0, max, caption, hint, mat, gui, level+1)
 		if value.getRGB() != (1.0, 1.0, 1.0):
-			str += "Texture \"%s\" \"color\" \"scale\" \"texture tex1\" [\"%s\"] \"color tex2\" [%s]\n"%(texname+".scale", texname, value.get())
+			if str == "": # handle special case if texture is a just a constant
+				str += "Texture \"%s\" \"color\" \"scale\" \"color tex1\" [%s] \"color tex2\" [%s]\n"%(texname+".scale", (link.rpartition("[")[2])[0:-1], value.get())
+			else: str += "Texture \"%s\" \"color\" \"scale\" \"texture tex1\" [\"%s\"] \"color tex2\" [%s]\n"%(texname+".scale", texname, value.get())
 			link = " \"texture %s\" [\"%s\"]"%(name, texname+".scale")
 	return (str, link)
 
@@ -1965,7 +1967,9 @@ def luxFloatTexture(name, key, default, min, max, caption, hint, mat, gui, level
 		if gui: gui.newline("", -2)
 		(str, link) = luxTexture(name, key, "float", default, min, max, caption, hint, mat, gui, level+1)
 		if value.get() != 1.0:
-			str += "Texture \"%s\" \"float\" \"scale\" \"texture tex1\" [\"%s\"] \"float tex2\" [%s]\n"%(texname+".scale", texname, value.get())
+			if str == "": # handle special case if texture is a just a constant
+				str += "Texture \"%s\" \"float\" \"scale\" \"float tex1\" [%s] \"float tex2\" [%s]\n"%(texname+".scale", (link.rpartition("[")[2])[0:-1], value.get())
+			else: str += "Texture \"%s\" \"float\" \"scale\" \"texture tex1\" [\"%s\"] \"float tex2\" [%s]\n"%(texname+".scale", texname, value.get())
 			link = " \"texture %s\" [\"%s\"]"%(name, texname+".scale")
 	return (str, link)
 
