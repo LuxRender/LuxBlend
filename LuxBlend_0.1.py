@@ -186,7 +186,7 @@ class luxExport:
 					self.objects.append([obj, matrix])
 			elif (obj_type == "Lamp"):
 				ltype = obj.getData(mesh=1).getType() # data
-				if (ltype == Lamp.Types["Lamp"]) or (ltype == Lamp.Types["Spot"]):
+				if (ltype == Lamp.Types["Lamp"]) or (ltype == Lamp.Types["Spot"]) or (ltype == Lamp.Types["Area"]):
 					self.lights.append([obj, matrix])
 					light = True
 		return light
@@ -492,9 +492,10 @@ class luxExport:
 	def exportLights(self, file):
 		for [obj, matrix] in self.lights:
 			ltype = obj.getData(mesh=1).getType() # data
-			if (ltype == Lamp.Types["Lamp"]) or (ltype == Lamp.Types["Spot"]):
+			if (ltype == Lamp.Types["Lamp"]) or (ltype == Lamp.Types["Spot"]) or (ltype == Lamp.Types["Area"]):
 				print "light: %s"%(obj.getName())
-				file.write("TransformBegin # %s\n"%obj.getName())
+				if ltype == Lamp.Types["Area"]: file.write("AttributeBegin # %s\n"%obj.getName())
+				else: file.write("TransformBegin # %s\n"%obj.getName())
 				file.write("\tTransform [%s %s %s %s  %s %s %s %s  %s %s %s %s  %s %s %s %s]\n"\
 					%(matrix[0][0], matrix[0][1], matrix[0][2], matrix[0][3],\
 					  matrix[1][0], matrix[1][1], matrix[1][2], matrix[1][3],\
@@ -507,9 +508,27 @@ class luxExport:
 				if ltype == Lamp.Types["Spot"]:
 					file.write("LightSource \"spot\" \"point from\" [0 0 0] \"point to\" [0 0 -1] \"float coneangle\" [%f] \"float conedeltaangle\" [%f]"\
 						%(obj.getData(mesh=1).spotSize*0.5, obj.getData(mesh=1).spotSize*0.5*obj.getData(mesh=1).spotBlend)) # data
-				file.write(" \"color I\" [%f %f %f]\n"%(col[0]*energy, col[1]*energy, col[2]*energy))
-				file.write("TransformEnd # %s\n"%obj.getName())
+				if ltype == Lamp.Types["Area"]:
+					file.write("\tAreaLightSource \"area\"")
+				file.write(" \"color L\" [%f %f %f]"%(col[0]*energy, col[1]*energy, col[2]*energy))
+				# luxRGB("L", luxProp(mat, kn+"light.l", "1.0 1.0 1.0"), 1.0, "L", "", gui)
+				# luxFloat("gain", luxProp(mat, kn+"light.gain", 1.0), 0.0, 100.0, "gain", "gain", gui)
+				# luxInt("nsamples", luxProp(mat, kn+"light.nsamples", 1), 1, 100, "samples", "number of samples", gui)
+				# luxString("lightgroup", luxProp(mat, kn+"light.lightgroup", ""), "light-group", "assign light to a named light-group", gui, 2.0)
 				file.write("\n")
+				if ltype == Lamp.Types["Area"]:
+					areax = obj.getData(mesh=1).getAreaSizeX()
+					# lamps "getAreaShape()" not implemented yet - so we can't detect shape! Using square as default
+					# todo: ideasman42
+					if (True): areay = areax
+					else: areay = obj.getData(mesh=1).getAreaSizeY()
+					file.write('\tShape "trianglemesh" "integer indices" [0 1 2 0 2 3] "point P" [-%(x)f %(y)f 0.0 %(x)f %(y)f 0.0 %(x)f -%(y)f 0.0 -%(x)f -%(y)f 0.0]\n'%{"x":areax/2, "y":areay/2})
+				if ltype == Lamp.Types["Area"]: file.write("AttributeEnd # %s\n"%obj.getName())
+				else: file.write("TransformEnd # %s\n"%obj.getName())
+				file.write("\n")
+
+
+
 
 	#-------------------------------------------------
 	# exportVolumes(self, file)
@@ -845,6 +864,7 @@ evtSaveMaterial = 96
 evtLoadMaterial = 95
 evtDeleteMaterial = 94
 evtPreviewMaterial = 93
+evtConvertMaterial = 92
 
 
 # default settings
@@ -2353,6 +2373,77 @@ def CBluxAnimExport(default, run):
 
 
 
+
+# convert a Blender material to lux material
+def convertMaterial(mat):
+	def dot(str):
+		if str != "": return str+"."
+		return str
+	def ddot(str):
+		if str != "": return str+":"
+		return str
+	def makeMatte(name):
+		luxProp(mat, dot(name)+"type", "").set("matte")
+		luxProp(mat, name+":Kd", "").setRGB((mat.R*mat.ref, mat.G*mat.ref, mat.B*mat.ref))
+	def makeSubstrate(name, roughness):
+		luxProp(mat, dot(name)+"type", "").set("substrate")
+		luxProp(mat, name+":Kd", "").setRGB((mat.R*mat.ref, mat.G*mat.ref, mat.B*mat.ref))
+		luxProp(mat, name+":Ks", "").setRGB((mat.specR*mat.spec, mat.specG*mat.spec, mat.specB*mat.spec))
+		luxProp(mat, name+":uroughness", 0.0).set(roughness)
+	def makeMirror(name):
+		luxProp(mat, dot(name)+"type", "").set("mirror")
+		luxProp(mat, name+":Kr", "").setRGB((mat.mirR, mat.mirG, mat.mirB))
+	def makeGlass(name):
+		luxProp(mat, dot(name)+"type", "").set("glass")
+		luxProp(mat, name+":Kr", "").setRGB((0.0, 0.0, 0.0))
+		luxProp(mat, name+":Kt", "").setRGB((mat.R, mat.G, mat.B))
+		luxProp(mat, name+":index.iorusepreset", "").set("false")
+		luxProp(mat, name+":index", 0.0).set(mat.getIOR())
+	def makeRoughglass(name, roughness):
+		luxProp(mat, dot(name)+"type", "").set("roughglass")
+		luxProp(mat, name+":Kr", "").setRGB((0.0, 0.0, 0.0))
+		luxProp(mat, name+":Kt", "").setRGB((mat.R, mat.G, mat.B))
+		luxProp(mat, name+":index.iorusepreset", "").set("false")
+		luxProp(mat, name+":index", 0.0).set(mat.getIOR())
+		luxProp(mat, name+":uroughness", 0.0).set(roughness)
+	print "convert Blender material \"%s\" to lux material"%(mat.name)
+	mat.properties['luxblend'] = {}
+	if mat.emit > 0.0001:
+		luxProp(mat, "type", "").set("light")
+		luxProp(mat, "light.l", "").setRGB((mat.R, mat.G, mat.B))
+		luxProp(mat, "light.gain", 1.0).set(mat.emit)
+		return
+	alpha = mat.alpha
+	if not(mat.mode & Material.Modes.RAYTRANSP): alpha = 1.0
+	alpha0name, alpha1name = "", ""
+	if (alpha > 0.0) and (alpha < 1.0):
+		luxProp(mat, "type", "").set("mix")
+		luxProp(mat, ":amount", 0.0).set(alpha)
+		alpha0name, alpha1name = "mat2", "mat1"
+	if alpha > 0.0:
+		mirror = mat.rayMirr
+		if not(mat.mode & Material.Modes.RAYMIRROR): mirror = 0.0
+		mirror0name, mirror1name = alpha1name, alpha1name
+		if (mirror > 0.0) and (mirror < 1.0):
+			luxProp(mat, dot(alpha1name)+"type", "").set("mix")
+			luxProp(mat, alpha1name+":amount", 0.0).set(mirror)
+			mirror0name, mirror1name = ddot(alpha1name)+"mat1", ddot(alpha1name)+"mat2"
+		if mirror > 0.0:
+			if mat.glossMir < 1.0: makeSubstrate(mirror1name, 1.0-mat.glossMir**2)
+			else: makeMirror(mirror1name)
+		if mirror < 1.0:
+			if mat.spec > 0.0: makeSubstrate(mirror0name, 1.0/mat.hard)
+			else: makeMatte(mirror0name)
+	if alpha < 1.0:
+		if mat.glossTra < 1.0: makeRoughnessGlass(alpha0name, 1.0-mat.glossTra**2)
+		else: makeGlass(alpha0name)
+	print mat.properties['luxblend'].convert_to_pyobject()
+
+
+
+
+
+
 activemat = None
 def setactivemat(mat):
 	global activemat
@@ -2396,6 +2487,7 @@ class scrollbar:
 		self.calcRects()
 		Draw.Redraw()
 	def Mouse(self):
+		self.calcRects()
 		coord, buttons = Window.GetMouseCoords(), Window.GetMouseButtons()
 		over = (coord[0]>=self.winrect[0]+self.rect[0]) and (coord[0]<=self.winrect[0]+self.rect[2]) and \
 		       (coord[1]>=self.winrect[1]+self.rect[1]) and (coord[1]<=self.winrect[1]+self.rect[3])
@@ -2473,6 +2565,7 @@ def luxDraw():
 				for i, v in enumerate(matnames): menustr = "%s %%x%d|%s"%(v, i, menustr)
 				gui.newline("MATERIAL:", 8) 
 				r = gui.getRect(1.1, 1)
+				Draw.Button("C", evtConvertMaterial, r[0]-gui.h, gui.y-gui.h, gui.h, gui.h, "convert blender material to lux material")
 				Draw.Menu(menustr, evtLuxGui, r[0], r[1], r[2], r[3], matindex, "", lambda e,v: setactivemat(mats[v]))
 				luxBool("", matfilter, "filter", "only show active object materials", gui, 0.3)
 				Draw.Button("Preview", evtPreviewMaterial, gui.x, gui.y-gui.h, 50, gui.h, "preview material")
@@ -2618,6 +2711,9 @@ def luxButtonEvt(evt):  # function that handles button events
 		if r >= 0:
 			saveMaterialPreset(matskeys[r], None)
 			Draw.Redraw()
+	if evt == evtConvertMaterial:
+		if activemat: convertMaterial(activemat)
+		Draw.Redraw()
 	if evt == evtPreviewMaterial:
 		if activemat:
 # not finished yet
