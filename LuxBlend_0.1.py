@@ -599,7 +599,7 @@ def save_lux(filename, unindexedname):
 	if envtype == "sunsky":
 		sun = None
 		for obj in scn.objects:
-			if obj.getType() == "Lamp":
+			if (obj.getType() == "Lamp") and ((obj.Layers & scn.Layers) > 0):
 				if obj.getData(mesh=1).getType() == 1: # sun object # data
 					sun = obj
 	if not(export.analyseScene()) and not(envtype == "infinite") and not((envtype == "sunsky") and (sun != None)):
@@ -1495,7 +1495,7 @@ def luxEnvironment(scn, gui=None):
 			if envtype.get() == "sunsky":
 				sun = None
 				for obj in scn.objects:
-					if obj.getType() == "Lamp":
+					if (obj.getType() == "Lamp") and ((obj.Layers & scn.Layers) > 0):
 						if obj.getData(mesh=1).getType() == 1: # sun object # data
 							sun = obj
 				if sun:
@@ -1601,6 +1601,9 @@ def luxTexture(name, parentkey, type, default, min, max, caption, hint, mat, gui
 	global icon_tex, icon_texcol, icon_texmix, icon_texmixcol, icon_texparam
 	def c(t1, t2):
 		return (t1[0]+t2[0], t1[1]+t2[1])
+	def alternativedefault(type, default):
+		if type=="float": return 0.0
+		else: return "0.0 0.0 0.0"
 	level = matlevel + texlevel
 	keyname = "%s:%s"%(parentkey, name)
 	texname = "%s:%s"%(mat.getName(), keyname)
@@ -1649,12 +1652,12 @@ def luxTexture(name, parentkey, type, default, min, max, caption, hint, mat, gui
 	if texture.get() == "mix":
 		(s, l) = c(("", ""), luxTexture("amount", keyname, "float", 0.5, 0.0, 1.0, "amount", "The degree of mix between the two textures", mat, gui, matlevel, texlevel+1))
 		(s, l) = c((s, l), luxTexture("tex1", keyname, type, default, min, max, "tex1", "", mat, gui, matlevel, texlevel+1))
-		(s, l) = c((s, l), luxTexture("tex2", keyname, type, default, min, max, "tex2", "", mat, gui, matlevel, texlevel+1))
+		(s, l) = c((s, l), luxTexture("tex2", keyname, type, alternativedefault(type, default), min, max, "tex2", "", mat, gui, matlevel, texlevel+1))
 		str = s + str + l
 
 	if texture.get() == "scale":
 		(s, l) = c(("", ""), luxTexture("tex1", keyname, type, default, min, max, "tex1", "", mat, gui, matlevel, texlevel+1))
-		(s, l) = c((s, l), luxTexture("tex2", keyname, type, default, min, max, "tex2", "", mat, gui, matlevel, texlevel+1))
+		(s, l) = c((s, l), luxTexture("tex2", keyname, type, alternativedefault(type, default), min, max, "tex2", "", mat, gui, matlevel, texlevel+1))
 		str = s + str + l
 
 	if texture.get() == "bilerp":
@@ -1685,14 +1688,14 @@ def luxTexture(name, parentkey, type, default, min, max, caption, hint, mat, gui
 		if dim.get() == 2: str += luxOption("aamode", luxProp(mat, keyname+".aamode", "closedform"), ["closedform","supersample","none"], "aamode", "antialiasing mode", gui, 0.6)
 		if gui: gui.newline("", -2)
 		(s, l) = c(("", ""), luxTexture("tex1", keyname, type, default, min, max, "tex1", "", mat, gui, matlevel, texlevel+1))
-		(s, l) = c((s, l), luxTexture("tex2", keyname, type, default, min, max, "tex2", "", mat, gui, matlevel, texlevel+1))
+		(s, l) = c((s, l), luxTexture("tex2", keyname, type, alternativedefault(type, default), min, max, "tex2", "", mat, gui, matlevel, texlevel+1))
 		str = s + str + l
 		if dim.get() == 2: str += luxMapping(keyname, mat, gui, level+1) 
 		if dim.get() == 3: str += lux3DMapping(keyname, mat, gui, level+1)
 
 	if texture.get() == "dots":
 		(s, l) = c(("", ""), luxTexture("inside", keyname, type, default, min, max, "inside", "", mat, gui, matlevel, texlevel+1))
-		(s, l) = c((s, l), luxTexture("outside", keyname, type, default, min, max, "outside", "", mat, gui, matlevel, texlevel+1))
+		(s, l) = c((s, l), luxTexture("outside", keyname, type, alternativedefault(type, default), min, max, "outside", "", mat, gui, matlevel, texlevel+1))
 		str = s + str + l
 		str += luxMapping(keyname, mat, gui, level+1)
 
@@ -1750,7 +1753,7 @@ def luxTexture(name, parentkey, type, default, min, max, caption, hint, mat, gui
 		str += luxFloat("contrast", luxProp(mat, keyname+".contrast", 1.0), 0.0, 5.0, "contrast", "", gui, 1.0)
 
 		(s, l) = c(("", ""), luxTexture("tex1", keyname, type, default, min, max, "tex1", "", mat, gui, matlevel, texlevel+1))
-		(s, l) = c((s, l), luxTexture("tex2", keyname, type, default, min, max, "tex2", "", mat, gui, matlevel, texlevel+1))
+		(s, l) = c((s, l), luxTexture("tex2", keyname, type, alternativedefault(type, default), min, max, "tex2", "", mat, gui, matlevel, texlevel+1))
 		str = s + str + l
 
 		str += lux3DMapping(keyname, mat, gui, level+1)
@@ -1787,7 +1790,7 @@ def luxTexture(name, parentkey, type, default, min, max, caption, hint, mat, gui
 		str += luxFloat("contrast", luxProp(mat, keyname+".contrast", 1.0), 0.0, 5.0, "contrast", "", gui, 1.0)
 
 		(s, l) = c(("", ""), luxTexture("tex1", keyname, type, default, min, max, "tex1", "", mat, gui, matlevel, texlevel+1))
-		(s, l) = c((s, l), luxTexture("tex2", keyname, type, default, min, max, "tex2", "", mat, gui, matlevel, texlevel+1))
+		(s, l) = c((s, l), luxTexture("tex2", keyname, type, alternativedefault(type, default), min, max, "tex2", "", mat, gui, matlevel, texlevel+1))
 		str = s + str + l
 
 		str += lux3DMapping(keyname, mat, gui, level+1)
@@ -1820,7 +1823,7 @@ def luxTexture(name, parentkey, type, default, min, max, caption, hint, mat, gui
 		str += luxFloat("contrast", luxProp(mat, keyname+".contrast", 1.0), 0.0, 5.0, "contrast", "", gui, 1.0)
 
 		(s, l) = c(("", ""), luxTexture("tex1", keyname, type, default, min, max, "tex1", "", mat, gui, matlevel, texlevel+1))
-		(s, l) = c((s, l), luxTexture("tex2", keyname, type, default, min, max, "tex2", "", mat, gui, matlevel, texlevel+1))
+		(s, l) = c((s, l), luxTexture("tex2", keyname, type, alternativedefault(type, default), min, max, "tex2", "", mat, gui, matlevel, texlevel+1))
 		str = s + str + l
 	
 		str += lux3DMapping(keyname, mat, gui, level+1)
@@ -1849,7 +1852,7 @@ def luxTexture(name, parentkey, type, default, min, max, caption, hint, mat, gui
 		str += luxFloat("contrast", luxProp(mat, keyname+".contrast", 1.0), 0.0, 5.0, "contrast", "", gui, 1.0)
 
 		(s, l) = c(("", ""), luxTexture("tex1", keyname, type, default, min, max, "tex1", "", mat, gui, matlevel, texlevel+1))
-		(s, l) = c((s, l), luxTexture("tex2", keyname, type, default, min, max, "tex2", "", mat, gui, matlevel, texlevel+1))
+		(s, l) = c((s, l), luxTexture("tex2", keyname, type, alternativedefault(type, default), min, max, "tex2", "", mat, gui, matlevel, texlevel+1))
 		str = s + str + l
 	
 		str += lux3DMapping(keyname, mat, gui, level+1)
@@ -1869,7 +1872,7 @@ def luxTexture(name, parentkey, type, default, min, max, caption, hint, mat, gui
 		str += luxFloat("contrast", luxProp(mat, keyname+".contrast", 1.0), 0.0, 5.0, "contrast", "", gui, 1.0)
 
 		(s, l) = c(("", ""), luxTexture("tex1", keyname, type, default, min, max, "tex1", "", mat, gui, matlevel, texlevel+1))
-		(s, l) = c((s, l), luxTexture("tex2", keyname, type, default, min, max, "tex2", "", mat, gui, matlevel, texlevel+1))
+		(s, l) = c((s, l), luxTexture("tex2", keyname, type, alternativedefault(type, default), min, max, "tex2", "", mat, gui, matlevel, texlevel+1))
 		str = s + str + l
 		
 		str += lux3DMapping(keyname, mat, gui, level+1)
@@ -1896,7 +1899,7 @@ def luxTexture(name, parentkey, type, default, min, max, caption, hint, mat, gui
 		str += luxFloat("contrast", luxProp(mat, keyname+".contrast", 1.0), 0.0, 5.0, "contrast", "", gui, 1.0)
 
 		(s, l) = c(("", ""), luxTexture("tex1", keyname, type, default, min, max, "tex1", "", mat, gui, matlevel, texlevel+1))
-		(s, l) = c((s, l), luxTexture("tex2", keyname, type, default, min, max, "tex2", "", mat, gui, matlevel, texlevel+1))
+		(s, l) = c((s, l), luxTexture("tex2", keyname, type, alternativedefault(type, default), min, max, "tex2", "", mat, gui, matlevel, texlevel+1))
 		str = s + str + l
 		
 		str += lux3DMapping(keyname, mat, gui, level+1)
@@ -1907,7 +1910,7 @@ def luxTexture(name, parentkey, type, default, min, max, caption, hint, mat, gui
 		str += luxFloat("contrast", luxProp(mat, keyname+".contrast", 1.0), 0.0, 5.0, "contrast", "", gui, 1.0)
 
 		(s, l) = c(("", ""), luxTexture("tex1", keyname, type, default, min, max, "tex1", "", mat, gui, matlevel, texlevel+1))
-		(s, l) = c((s, l), luxTexture("tex2", keyname, type, default, min, max, "tex2", "", mat, gui, matlevel, texlevel+1))
+		(s, l) = c((s, l), luxTexture("tex2", keyname, type, alternativedefault(type, default), min, max, "tex2", "", mat, gui, matlevel, texlevel+1))
 		str = s + str + l
 		
 		str += lux3DMapping(keyname, mat, gui, level+1)
@@ -1923,7 +1926,7 @@ def luxTexture(name, parentkey, type, default, min, max, caption, hint, mat, gui
 		str += luxFloat("contrast", luxProp(mat, keyname+".contrast", 1.0), 0.0, 5.0, "contrast", "", gui, 1.0)
 
 		(s, l) = c(("", ""), luxTexture("tex1", keyname, type, default, min, max, "tex1", "", mat, gui, matlevel, texlevel+1))
-		(s, l) = c((s, l), luxTexture("tex2", keyname, type, default, min, max, "tex2", "", mat, gui, matlevel, texlevel+1))
+		(s, l) = c((s, l), luxTexture("tex2", keyname, type, alternativedefault(type, default), min, max, "tex2", "", mat, gui, matlevel, texlevel+1))
 		str = s + str + l
 		
 		str += lux3DMapping(keyname, mat, gui, level+1)
@@ -1950,7 +1953,7 @@ def luxTexture(name, parentkey, type, default, min, max, caption, hint, mat, gui
 		str += luxFloat("contrast", luxProp(mat, keyname+".contrast", 1.0), 0.0, 5.0, "contrast", "", gui, 1.0)
 
 		(s, l) = c(("", ""), luxTexture("tex1", keyname, type, default, min, max, "tex1", "", mat, gui, matlevel, texlevel+1))
-		(s, l) = c((s, l), luxTexture("tex2", keyname, type, default, min, max, "tex2", "", mat, gui, matlevel, texlevel+1))
+		(s, l) = c((s, l), luxTexture("tex2", keyname, type, alternativedefault(type, default), min, max, "tex2", "", mat, gui, matlevel, texlevel+1))
 		str = s + str + l
 
 		str += lux3DMapping(keyname, mat, gui, level+1)
@@ -2110,7 +2113,7 @@ def luxMaterialBlock(name, luxname, key, mat, gui=None, level=0, str_opt=""):
 		if gui:
 			icon = icon_mat
 			if mattype.get() == "mix": icon = icon_matmix
-			if level == 0: gui.newline("Material:", 12, level, icon, [0.4,0.4,0.6])
+			if level == 0: gui.newline("Material type:", 12, level, icon, [0.4,0.4,0.6])
 			else: gui.newline(name+":", 12, level, icon, scalelist([0.4,0.4,0.6],2.0/(level+2)))
 		link = luxOption("type", mattype, materials, "  TYPE", "select material type", gui)
 		if gui: gui.newline()
