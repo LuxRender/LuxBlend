@@ -1106,8 +1106,12 @@ def luxOption(name, lux, options, caption, hint, gui, width=1.0):
 		try:
 			i = options.index(lux.get())
 		except ValueError:
-			print "value %s not found in options list"%(lux.get())
-			i = 0
+			try:
+				lux.set(lux.default) # not found, so try default value
+				i = options.index(lux.get())
+			except ValueError:
+				print "value %s not found in options list"%(lux.get())
+				i = 0
 		r = gui.getRect(width, 1)
 		Draw.Menu(menustr, evtLuxGui, r[0], r[1], r[2], r[3], i, hint, lambda e,v: lux.set(options[v]))
 	return " \"string %s\" [\"%s\"]"%(name, lux.get())
@@ -1208,7 +1212,7 @@ def luxCamera(cam, context, gui=None):
 			str += luxFloat("filmdiag", filmdiag, 0.1, 1000.0, "film-diag", "[mm]", gui)
 			if gui: gui.newline()
 			fstop = luxProp(cam, "camera.realistic.fstop", 1.0)
-			luxFloat("aperture_diameter", fstop, 0.0, 100.0, "f-stop", "", gui)
+			luxFloat("aperture_diameter", fstop, 0.1, 100.0, "f-stop", "", gui)
 			dofdist = luxAttr(cam, "dofDist")
 			luxFloat("focaldistance", dofdist, 0.0, 10000.0, "distance", "Distance from the camera at which objects will be in focus. Has no effect if Lens Radius is 0", gui)
 			if gui:
@@ -2606,7 +2610,7 @@ def luxDraw():
 				for i, v in enumerate(matnames): menustr = "%s %%x%d|%s"%(v, i, menustr)
 				gui.newline("MATERIAL:", 8) 
 				r = gui.getRect(1.1, 1)
-				Draw.Button("C", evtConvertMaterial, r[0]-gui.h, gui.y-gui.h, gui.h, gui.h, "convert blender material to lux material")
+# deactivated as its unfinised #	Draw.Button("C", evtConvertMaterial, r[0]-gui.h, gui.y-gui.h, gui.h, gui.h, "convert blender material to lux material")
 				Draw.Menu(menustr, evtLuxGui, r[0], r[1], r[2], r[3], matindex, "", lambda e,v: setactivemat(mats[v]))
 				luxBool("", matfilter, "filter", "only show active object materials", gui, 0.3)
 				Draw.Button("Preview", evtPreviewMaterial, gui.x, gui.y-gui.h, 50, gui.h, "preview material")
@@ -2786,7 +2790,7 @@ Draw.Register(luxDraw, luxEvent, luxButtonEvt)
 
 def setFocus(target):
 	currentscene = Scene.GetCurrent()
-	camObj = currentscene.getCurrentCamera()
+	camObj = currentscene.objects.camera # currentscene.getCurrentCamera()
 	if target == "S":
 		try:
 			refLoc = (Object.GetSelected()[0]).getLocation()
