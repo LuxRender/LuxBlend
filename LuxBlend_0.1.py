@@ -510,11 +510,7 @@ class luxExport:
 						%(obj.getData(mesh=1).spotSize*0.5, obj.getData(mesh=1).spotSize*0.5*obj.getData(mesh=1).spotBlend)) # data
 				if ltype == Lamp.Types["Area"]:
 					file.write("\tAreaLightSource \"area\"")
-				file.write(" \"color L\" [%f %f %f]"%(col[0]*energy, col[1]*energy, col[2]*energy))
-				# luxRGB("L", luxProp(mat, kn+"light.l", "1.0 1.0 1.0"), 1.0, "L", "", gui)
-				# luxFloat("gain", luxProp(mat, kn+"light.gain", 1.0), 0.0, 100.0, "gain", "gain", gui)
-				# luxInt("nsamples", luxProp(mat, kn+"light.nsamples", 1), 1, 100, "samples", "number of samples", gui)
-				# luxString("lightgroup", luxProp(mat, kn+"light.lightgroup", ""), "light-group", "assign light to a named light-group", gui, 2.0)
+				file.write(luxLight("", "", obj, None, 0))
 				file.write("\n")
 				if ltype == Lamp.Types["Area"]:
 					areax = obj.getData(mesh=1).getAreaSizeX()
@@ -2131,6 +2127,20 @@ def luxCauchyBFloatTexture(name, key, default, min, max, caption, hint, mat, gui
 			link = " \"texture %s\" [\"%s\"]"%(name, texname+".scale")
 	return (str, link)
 
+def luxLight(name, kn, mat, gui, level):
+	if gui:
+		if name != "": gui.newline(name+":", 10, level)
+		else: gui.newline("color:", 0, level+1)
+	link = luxRGB("L", luxProp(mat, kn+"light.l", "1.0 1.0 1.0"), 1.0, "L", "", gui)
+	if gui: gui.newline("")
+	link += luxFloat("gain", luxProp(mat, kn+"light.gain", 1.0), 0.0, 100.0, "gain", "gain", gui)
+	link += luxInt("nsamples", luxProp(mat, kn+"light.nsamples", 1), 1, 100, "samples", "number of samples", gui)
+	if gui: gui.newline("")
+	link += luxString("lightgroup", luxProp(mat, kn+"light.lightgroup", ""), "light-group", "assign light to a named light-group", gui, 2.0)
+	has_bump_options = 0
+	has_object_options = 1
+	return link
+
 def luxMaterialBlock(name, luxname, key, mat, gui=None, level=0, str_opt=""):
 	global icon_mat, icon_matmix
 	def c(t1, t2):
@@ -2162,15 +2172,7 @@ def luxMaterialBlock(name, luxname, key, mat, gui=None, level=0, str_opt=""):
 			has_object_options = 1
 		if mattype.get() == "light":
 			link = "AreaLightSource \"area\""
-			if gui: gui.newline("color:", 0, level+1)
-			link += luxRGB("L", luxProp(mat, kn+"light.l", "1.0 1.0 1.0"), 1.0, "L", "", gui)
-			if gui: gui.newline("")
-			link += luxFloat("gain", luxProp(mat, kn+"light.gain", 1.0), 0.0, 100.0, "gain", "gain", gui)
-			link += luxInt("nsamples", luxProp(mat, kn+"light.nsamples", 1), 1, 100, "samples", "number of samples", gui)
-			if gui: gui.newline("")
-			link += luxString("lightgroup", luxProp(mat, kn+"light.lightgroup", ""), "light-group", "assign light to a named light-group", gui, 2.0)
-			has_bump_options = 0
-			has_object_options = 1
+			link += luxLight("", kn, mat, gui, level)
 			return (str, link)
 		if mattype.get() == "boundvolume":
 			link = ""
@@ -2596,30 +2598,32 @@ def luxDraw():
 			BGL.glColor3f(1.0,0.5,0.4);BGL.glRectf(10,y-74,90,y-70);BGL.glColor3f(0.9,0.9,0.9)
 			obj = scn.objects.active
 			if obj:
-				matfilter = luxProp(scn, "matlistfilter", "false")
-				mats = getMaterials(obj, True)
-				if (activemat == None) and (len(mats) > 0):
-					setactivemat(mats[0])
-				if matfilter.get() == "false":
-					mats = Material.Get()
-				matindex = 0
-				for i, v in enumerate(mats):
-					if v==activemat: matindex = i
-				matnames = [m.getName() for m in mats]
-				menustr = "Material: %t"
-				for i, v in enumerate(matnames): menustr = "%s %%x%d|%s"%(v, i, menustr)
-				gui.newline("MATERIAL:", 8) 
-				r = gui.getRect(1.1, 1)
+				if obj.getType() == "Lamp": luxLight("LIGHT", "", obj, gui, 0)
+				else:
+					matfilter = luxProp(scn, "matlistfilter", "false")
+					mats = getMaterials(obj, True)
+					if (activemat == None) and (len(mats) > 0):
+						setactivemat(mats[0])
+					if matfilter.get() == "false":
+						mats = Material.Get()
+					matindex = 0
+					for i, v in enumerate(mats):
+						if v==activemat: matindex = i
+					matnames = [m.getName() for m in mats]
+					menustr = "Material: %t"
+					for i, v in enumerate(matnames): menustr = "%s %%x%d|%s"%(v, i, menustr)
+					gui.newline("MATERIAL:", 8) 
+					r = gui.getRect(1.1, 1)
 # deactivated as its unfinised #	Draw.Button("C", evtConvertMaterial, r[0]-gui.h, gui.y-gui.h, gui.h, gui.h, "convert blender material to lux material")
-				Draw.Menu(menustr, evtLuxGui, r[0], r[1], r[2], r[3], matindex, "", lambda e,v: setactivemat(mats[v]))
-				luxBool("", matfilter, "filter", "only show active object materials", gui, 0.3)
-				Draw.Button("Preview", evtPreviewMaterial, gui.x, gui.y-gui.h, 50, gui.h, "preview material")
-				Draw.Button("L", evtLoadMaterial, gui.x+50, gui.y-gui.h, gui.h, gui.h, "load a material preset")
-				Draw.Button("S", evtSaveMaterial, gui.x+50+gui.h, gui.y-gui.h, gui.h, gui.h, "save a material preset")
-				Draw.Button("D", evtDeleteMaterial, gui.x+50+gui.h*2, gui.y-gui.h, gui.h, gui.h, "delete a material preset")
-				if len(mats) > 0:
-					setactivemat(mats[matindex])
-					luxMaterial(activemat, gui)
+					Draw.Menu(menustr, evtLuxGui, r[0], r[1], r[2], r[3], matindex, "", lambda e,v: setactivemat(mats[v]))
+					luxBool("", matfilter, "filter", "only show active object materials", gui, 0.3)
+					Draw.Button("Preview", evtPreviewMaterial, gui.x, gui.y-gui.h, 50, gui.h, "preview material")
+					Draw.Button("L", evtLoadMaterial, gui.x+50, gui.y-gui.h, gui.h, gui.h, "load a material preset")
+					Draw.Button("S", evtSaveMaterial, gui.x+50+gui.h, gui.y-gui.h, gui.h, gui.h, "save a material preset")
+					Draw.Button("D", evtDeleteMaterial, gui.x+50+gui.h*2, gui.y-gui.h, gui.h, gui.h, "delete a material preset")
+					if len(mats) > 0:
+						setactivemat(mats[matindex])
+						luxMaterial(activemat, gui)
 		if luxpage.get() == 1:
 			BGL.glColor3f(1.0,0.5,0.4);BGL.glRectf(90,y-74,170,y-70);BGL.glColor3f(0.9,0.9,0.9)
 			cam = scn.getCurrentCamera()
