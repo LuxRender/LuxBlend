@@ -896,36 +896,415 @@ def getScenePresets():
 
 # radiance's hardcoded render presets:
 
-	# quick previews (biased)
-	presets['0A - Preview - Directlighting - progressive'] = {'pixelfilter.type':'gaussian','pixelfilter.gaussian.xwidth':2.0,'pixelfilter.gaussian.ywidth':2.0,'sampler.type':'lowdiscrepancy','sampler.lowdisc.pixelsampler':'lowdiscrepancy','sampler.lowdisc.pixelsamples':2,'sintegrator.type':'directlighting','sintegrator.dlighting.maxdepth':2,'sintegrator.dlighting.strategy':'all' }
-	presets['0B - Preview - Directlighting - tile'] = {'pixelfilter.type':'gaussian','pixelfilter.gaussian.xwidth':2.0,'pixelfilter.gaussian.ywidth':2.0,'sampler.type':'lowdiscrepancy','sampler.lowdisc.pixelsampler':'tile','sampler.lowdisc.pixelsamples':2,'sintegrator.type':'directlighting','sintegrator.dlighting.maxdepth':2,'sintegrator.dlighting.strategy':'all' }
+	presets = {
+	'Preview - Direct lighting only': {
+	'sintegrator.type': 'directlighting',
+	'sintegrator.dlighting.maxdepth': 2,
+	'sintegrator.dlighting.strategy': 'all',
+	'sampler.type': 'lowdiscrepancy',
+	'sampler.lowdisc.pixelsamples': 2,
+	'sampler.lowdisc.pixelsampler': 'lowdiscrepancy',
+	'pixelfilter.type': 'gaussian',
+	'pixelfilter.gaussian.xwidth': 1.0,
+	'pixelfilter.gaussian.ywidth': 1.0,
+	'pixelfilter.gaussian.alpha': 2.0,
+	},
+	'Preview - Full': {
+	'sintegrator.type': 'path',
+	'sintegrator.path.maxdepth': 3,
+	'sintegrator.path.strategy': 'all',
+	'sintegrator.path.rrstrategy': 'none',
+	'sampler.type': 'lowdiscrepancy',
+	'sampler.lowdisc.pixelsamples': 2,
+	'sampler.lowdisc.pixelsampler': 'lowdiscrepancy',
+	'pixelfilter.type': 'gaussian',
+	'pixelfilter.gaussian.ywidth': 1.0,
+	'pixelfilter.gaussian.xwidth': 1.0,
+	'pixelfilter.gaussian.alpha': 2.0,
+	},
 
-	presets['0C - Preview - Path Tracing - progressive'] = {'pixelfilter.type':'gaussian','pixelfilter.gaussian.xwidth':2.0,'pixelfilter.gaussian.ywidth':2.0,'sampler.type':'lowdiscrepancy','sampler.lowdisc.pixelsampler':'lowdiscrepancy','sampler.lowdisc.pixelsamples':2,'sintegrator.type':'path','sintegrator.path.maxdepth':3 }
-	presets['0D - Preview - Path Tracing - tile'] = {'pixelfilter.type':'gaussian','pixelfilter.gaussian.xwidth':2.0,'pixelfilter.gaussian.ywidth':2.0,'sampler.type':'lowdiscrepancy','sampler.lowdisc.pixelsampler':'tile','sampler.lowdisc.pixelsamples':2,'sintegrator.type':'path','sintegrator.path.maxdepth':3 }
+	'Medium - Path Tracing': {
+	'sintegrator.type': 'path',
+	'sintegrator.path.maxdepth': 5,
+	'sintegrator.path.strategy': 'auto',
+	'sintegrator.path.rrstrategy': 'efficiency',
+	'sampler.type': 'lowdiscrepancy',
+	'sampler.lowdisc.pixelsamples': 2,
+	'sampler.lowdisc.pixelsampler': 'lowdiscrepancy',
+	'pixelfilter.type': 'gaussian',
+	'pixelfilter.gaussian.ywidth': 1.0,
+	'pixelfilter.gaussian.xwidth': 1.0,
+	'pixelfilter.gaussian.alpha': 2.0,
+	},
+	'Medium - Bidir Path Tracing': {
+	'sintegrator.type': 'bidirectional',
+	'sintegrator.bidir.eyedepth': 5,
+	'sintegrator.bidir.lightdepth': 5,
+	'sintegrator.bidir.strategy': 'all',
+	'sampler.type': 'lowdiscrepancy',
+	'sampler.lowdisc.pixelsamples': 8,
+	'sampler.lowdisc.pixelsampler': 'lowdiscrepancy',
+	'pixelfilter.type': 'gaussian',
+	'pixelfilter.gaussian.ywidth': 1.0,
+	'pixelfilter.gaussian.xwidth': 1.0,
+	'pixelfilter.gaussian.alpha': 2.0,
+	},
+	'Medium - low MLT/Path Tracing (RECOMMENDED)': {
+	'sintegrator.type': 'path',
+	'sintegrator.path.maxdepth': 5,
+	'sintegrator.path.strategy': 'auto',
+	'sintegrator.path.rrstrategy': 'efficiency',
+	'sampler.type': 'metropolis',
+	'sampler.metro.lmprob': 0.4,
+	'sampler.metro.maxrejects': 128,
+	'sampler.metro.usevariance': 'false',
+	'sampler.metro.initsamples': 100000,
+	'sampler.metro.stratawidth': 256,
+	'pixelfilter.type': 'gaussian',
+	'pixelfilter.gaussian.ywidth': 1.0,
+	'pixelfilter.gaussian.xwidth': 1.0,
+	'pixelfilter.gaussian.alpha': 2.0,
+	},
+	'Medium - high MLT/Path Tracing (complex)': {
+	'sintegrator.type': 'path',
+	'sintegrator.path.maxdepth': 5,
+	'sintegrator.path.strategy': 'auto',
+	'sintegrator.path.rrstrategy': 'efficiency',
+	'sampler.type': 'metropolis',
+	'sampler.metro.lmprob': 0.2,
+	'sampler.metro.maxrejects': 128,
+	'sampler.metro.usevariance': 'false',
+	'sampler.metro.initsamples': 100000,
+	'sampler.metro.stratawidth': 256,
+	'pixelfilter.type': 'gaussian',
+	'pixelfilter.gaussian.ywidth': 1.0,
+	'pixelfilter.gaussian.xwidth': 1.0,
+	'pixelfilter.gaussian.alpha': 2.0,
+	},
+	'Medium - low vMLT/Path Tracing': {
+	'sintegrator.type': 'path',
+	'sintegrator.path.maxdepth': 5,
+	'sintegrator.path.strategy': 'auto',
+	'sintegrator.path.rrstrategy': 'efficiency',
+	'sampler.type': 'metropolis',
+	'sampler.metro.lmprob': 0.4,
+	'sampler.metro.maxrejects': 128,
+	'sampler.metro.usevariance': 'true',
+	'sampler.metro.initsamples': 100000,
+	'sampler.metro.stratawidth': 256,
+	'pixelfilter.type': 'gaussian',
+	'pixelfilter.gaussian.ywidth': 1.0,
+	'pixelfilter.gaussian.xwidth': 1.0,
+	'pixelfilter.gaussian.alpha': 2.0,
+	},
+	'Medium - low MLT/Bidir Path Tracing (experimental)': {
+	'sintegrator.type': 'bidirectional',
+	'sintegrator.bidir.eyedepth': 5,
+	'sintegrator.bidir.lightdepth': 5,
+	'sintegrator.bidir.strategy': 'auto',
+	'sampler.type': 'metropolis',
+	'sampler.metro.lmprob': 0.4,
+	'sampler.metro.maxrejects': 128,
+	'sampler.metro.usevariance': 'false',
+	'sampler.metro.initsamples': 100000,
+	'sampler.metro.stratawidth': 256,
+	'pixelfilter.type': 'gaussian',
+	'pixelfilter.gaussian.ywidth': 1.0,
+	'pixelfilter.gaussian.xwidth': 1.0,
+	'pixelfilter.gaussian.alpha': 2.0,
+	},
+	'Medium - high MLT/Bidir Path Tracing (experimental)': {
+	'sintegrator.type': 'bidirectional',
+	'sintegrator.bidir.eyedepth': 5,
+	'sintegrator.bidir.lightdepth': 5,
+	'sintegrator.bidir.strategy': 'auto',
+	'sampler.type': 'metropolis',
+	'sampler.metro.lmprob': 0.2,
+	'sampler.metro.maxrejects': 128,
+	'sampler.metro.usevariance': 'false',
+	'sampler.metro.initsamples': 100000,
+	'sampler.metro.stratawidth': 256,
+	'pixelfilter.type': 'gaussian',
+	'pixelfilter.gaussian.ywidth': 1.0,
+	'pixelfilter.gaussian.xwidth': 1.0,
+	'pixelfilter.gaussian.alpha': 2.0,
+	},
+	'Medium - low vMLT/Bidir Path Tracing (experimental)': {
+	'sintegrator.type': 'bidirectional',
+	'sintegrator.bidir.eyedepth': 5,
+	'sintegrator.bidir.lightdepth': 5,
+	'sintegrator.bidir.strategy': 'auto',
+	'sampler.type': 'metropolis',
+	'sampler.metro.lmprob': 0.4,
+	'sampler.metro.maxrejects': 128,
+	'sampler.metro.usevariance': 'true',
+	'sampler.metro.initsamples': 100000,
+	'sampler.metro.stratawidth': 256,
+	'pixelfilter.type': 'gaussian',
+	'pixelfilter.gaussian.ywidth': 1.0,
+	'pixelfilter.gaussian.xwidth': 1.0,
+	'pixelfilter.gaussian.alpha': 2.0,
+	},
 
-	presets['0x'] = { }
+	'Final - Path Tracing': {
+	'sintegrator.type': 'path',
+	'sintegrator.path.maxdepth': 10,
+	'sintegrator.path.strategy': 'all',
+	'sintegrator.path.rrstrategy': 'efficiency',
+	'sampler.type': 'lowdiscrepancy',
+	'sampler.lowdisc.pixelsamples': 8,
+	'sampler.lowdisc.pixelsampler': 'lowdiscrepancy',
+	'pixelfilter.type': 'mitchell',
+	'pixelfilter.mitchell.xwidth': 2.0,
+	'pixelfilter.mitchell.ywidth': 2.0,
+	},
+	'Final - Bidir Path Tracing': {
+	'sintegrator.type': 'bidirectional',
+	'sintegrator.bidir.eyedepth': 8,
+	'sintegrator.bidir.lightdepth': 8,
+	'sintegrator.bidir.strategy': 'all',
+	'sampler.type': 'lowdiscrepancy',
+	'sampler.lowdisc.pixelsamples': 8,
+	'sampler.lowdisc.pixelsampler': 'lowdiscrepancy',
+	'pixelfilter.type': 'mitchell',
+	'pixelfilter.mitchell.xwidth': 2.0,
+	'pixelfilter.mitchell.ywidth': 2.0,
+	},
+	'Final - low MLT/Path Tracing (RECOMMENDED)': {
+	'sintegrator.type': 'path',
+	'sintegrator.path.maxdepth': 10,
+	'sintegrator.path.strategy': 'all',
+	'sintegrator.path.rrstrategy': 'efficiency',
+	'sampler.type': 'metropolis',
+	'sampler.metro.lmprob': 0.4,
+	'sampler.metro.maxrejects': 128,
+	'sampler.metro.usevariance': 'false',
+	'sampler.metro.initsamples': 100000,
+	'sampler.metro.stratawidth': 256,
+	'pixelfilter.type': 'mitchell',
+	'pixelfilter.mitchell.xwidth': 2.0,
+	'pixelfilter.mitchell.ywidth': 2.0,
+	},
+	'Final - high MLT/Path Tracing (complex)': {
+	'sintegrator.type': 'path',
+	'sintegrator.path.maxdepth': 10,
+	'sintegrator.path.strategy': 'auto',
+	'sintegrator.path.rrstrategy': 'efficiency',
+	'sampler.type': 'metropolis',
+	'sampler.metro.lmprob': 0.2,
+	'sampler.metro.maxrejects': 128,
+	'sampler.metro.usevariance': 'false',
+	'sampler.metro.initsamples': 100000,
+	'sampler.metro.stratawidth': 256,
+	'pixelfilter.type': 'mitchell',
+	'pixelfilter.mitchell.xwidth': 2.0,
+	'pixelfilter.mitchell.ywidth': 2.0,
+	},
+	'Final - low vMLT/Path Tracing': {
+	'sintegrator.type': 'path',
+	'sintegrator.path.maxdepth': 10,
+	'sintegrator.path.strategy': 'all',
+	'sintegrator.path.rrstrategy': 'efficiency',
+	'sampler.type': 'metropolis',
+	'sampler.metro.lmprob': 0.4,
+	'sampler.metro.maxrejects': 128,
+	'sampler.metro.usevariance': 'true',
+	'sampler.metro.initsamples': 100000,
+	'sampler.metro.stratawidth': 256,
+	'pixelfilter.type': 'mitchell',
+	'pixelfilter.mitchell.xwidth': 2.0,
+	'pixelfilter.mitchell.ywidth': 2.0,
+	},
+	'Final - low MLT/Bidir Path Tracing (experimental)': {
+	'sintegrator.type': 'bidirectional',
+	'sintegrator.bidir.eyedepth': 8,
+	'sintegrator.bidir.lightdepth': 8,
+	'sintegrator.bidir.strategy': 'all',
+	'sampler.type': 'metropolis',
+	'sampler.metro.lmprob': 0.4,
+	'sampler.metro.maxrejects': 128,
+	'sampler.metro.usevariance': 'false',
+	'sampler.metro.initsamples': 100000,
+	'sampler.metro.stratawidth': 256,
+	'pixelfilter.type': 'mitchell',
+	'pixelfilter.mitchell.xwidth': 2.0,
+	'pixelfilter.mitchell.ywidth': 2.0,
+	},
+	'Final - high MLT/Bidir Path Tracing (experimental)': {
+	'sintegrator.type': 'bidirectional',
+	'sintegrator.bidir.eyedepth': 8,
+	'sintegrator.bidir.lightdepth': 8,
+	'sintegrator.bidir.strategy': 'auto',
+	'sampler.type': 'metropolis',
+	'sampler.metro.lmprob': 0.2,
+	'sampler.metro.maxrejects': 128,
+	'sampler.metro.usevariance': 'false',
+	'sampler.metro.initsamples': 100000,
+	'sampler.metro.stratawidth': 256,
+	'pixelfilter.type': 'mitchell',
+	'pixelfilter.mitchell.xwidth': 2.0,
+	'pixelfilter.mitchell.ywidth': 2.0,
+	},
+	'Final - low vMLT/Bidir Path Tracing (experimental)': {
+	'sintegrator.type': 'bidirectional',
+	'sintegrator.bidir.eyedepth': 8,
+	'sintegrator.bidir.lightdepth': 8,
+	'sintegrator.bidir.strategy': 'all',
+	'sampler.type': 'metropolis',
+	'sampler.metro.lmprob': 0.4,
+	'sampler.metro.maxrejects': 128,
+	'sampler.metro.usevariance': 'true',
+	'sampler.metro.initsamples': 100000,
+	'sampler.metro.stratawidth': 256,
+	'pixelfilter.type': 'mitchell',
+	'pixelfilter.mitchell.xwidth': 2.0,
+	'pixelfilter.mitchell.ywidth': 2.0,
+	},
 
-	# final renderings
-	presets['1A - Final - Path Tracing'] = {'pixelfilter.type':'mitchell','sampler.type':'lowdiscrepancy','sampler.lowdisc.pixelsampler':'lowdiscrepancy','sintegrator.type':'path','sintegrator.path.maxdepth':12 }
-	presets['1B - Final - low MLT/Path Tracing (outdoor)'] = {'pixelfilter.type':'mitchell','sampler.type':'metropolis','sampler.metro.lmprob':0.4,'sampler.metro.maxrejects':128,'sintegrator.type':'path','sintegrator.path.maxdepth':12 }
-	presets['1C - Final - medium MLT/Path Tracing (indoor)'] = {'pixelfilter.type':'mitchell','sampler.type':'metropolis','sampler.metro.lmprob':0.25,'sampler.metro.maxrejects':128,'sintegrator.type':'path','sintegrator.path.maxdepth':12 }
-	presets['1D - Final - medium vMLT/Path Tracing (indoor) (recommended)'] = {'pixelfilter.type':'mitchell','sampler.type':'metropolis','sampler.metro.lmprob':0.25,'sampler.metro.maxrejects':128,'sintegrator.type':'path','sintegrator.path.maxdepth':12 }
-	presets['1E - Final - high MLT/Path Tracing (complex)'] = {'pixelfilter.type':'mitchell','sampler.type':'metropolis','sampler.metro.lmprob':0.1,'sampler.metro.maxrejects':128,'sintegrator.type':'path','sintegrator.path.maxdepth':12 }
-	presets['1F - Final - ERPT/Path Tracing'] = {'pixelfilter.type':'mitchell','sampler.type':'erpt','sintegrator.type':'path','sintegrator.path.maxdepth':12 }
+	'Animation - Low': {
+	'sintegrator.type': 'path',
+	'sintegrator.path.maxdepth': 4,
+	'sintegrator.path.strategy': 'all',
+	'sintegrator.path.rrstrategy': 'none',
+	'sampler.type': 'lowdiscrepancy',
+	'sampler.lowdisc.pixelsamples': 8,
+	'sampler.lowdisc.pixelsampler': 'tile',
+	'pixelfilter.type': 'gaussian',
+	'pixelfilter.gaussian.xwidth': 2.0,
+	'pixelfilter.gaussian.ywidth': 2.0,
+	'pixelfilter.gaussian.alpha': 2.0,
+	},
+	'Animation - Medium': {
+	'sintegrator.type': 'path',
+	'sintegrator.path.maxdepth': 4,
+	'sintegrator.path.strategy': 'all',
+	'sintegrator.path.rrstrategy': 'none',
+	'sampler.type': 'lowdiscrepancy',
+	'sampler.lowdisc.pixelsamples': 64,
+	'sampler.lowdisc.pixelsampler': 'tile',
+	'pixelfilter.type': 'gaussian',
+	'pixelfilter.gaussian.xwidth': 2.0,
+	'pixelfilter.gaussian.ywidth': 2.0,
+	'pixelfilter.gaussian.alpha': 2.0,
+	},
+	'Animation - High': {
+	'sintegrator.type': 'path',
+	'sintegrator.path.maxdepth': 4,
+	'sintegrator.path.strategy': 'all',
+	'sintegrator.path.rrstrategy': 'none',
+	'sampler.type': 'lowdiscrepancy',
+	'sampler.lowdisc.pixelsamples': 256,
+	'sampler.lowdisc.pixelsampler': 'tile',
+	'pixelfilter.type': 'gaussian',
+	'pixelfilter.gaussian.xwidth': 2.0,
+	'pixelfilter.gaussian.ywidth': 2.0,
+	'pixelfilter.gaussian.alpha': 2.0,
+	},
+	'Animation - Very High': {
+	'sintegrator.type': 'path',
+	'sintegrator.path.maxdepth': 4,
+	'sintegrator.path.strategy': 'all',
+	'sintegrator.path.rrstrategy': 'none',
+	'sampler.type': 'lowdiscrepancy',
+	'sampler.lowdisc.pixelsamples': 512,
+	'sampler.lowdisc.pixelsampler': 'tile',
+	'pixelfilter.type': 'gaussian',
+	'pixelfilter.gaussian.xwidth': 2.0,
+	'pixelfilter.gaussian.ywidth': 2.0,
+	'pixelfilter.gaussian.alpha': 2.0,
+	},
 
-	presets['1x'] = { }
+	'Biased - Directlighting/Raytracing progressive (no GI)': {
+	'sintegrator.type': 'directlighting',
+	'sintegrator.dlighting.maxdepth': 10,
+	'sintegrator.dlighting.strategy': 'all',
+	'sampler.type': 'lowdiscrepancy',
+	'sampler.lowdisc.pixelsamples': 2,
+	'sampler.lowdisc.pixelsampler': 'lowdiscrepancy',
+	'pixelfilter.type': 'gaussian',
+	'pixelfilter.gaussian.xwidth': 1.0,
+	'pixelfilter.gaussian.ywidth': 1.0,
+	'pixelfilter.gaussian.alpha': 2.0,
+	},
+	'Biased - Directlighting/Raytracing (no GI)': {
+	'sintegrator.type': 'directlighting',
+	'sintegrator.dlighting.maxdepth': 10,
+	'sintegrator.dlighting.strategy': 'all',
+	'sampler.type': 'lowdiscrepancy',
+	'sampler.lowdisc.pixelsamples': 256,
+	'sampler.lowdisc.pixelsampler': 'tile',
+	'pixelfilter.type': 'gaussian',
+	'pixelfilter.gaussian.xwidth': 1.0,
+	'pixelfilter.gaussian.ywidth': 1.0,
+	'pixelfilter.gaussian.alpha': 2.0,
+	},
 
-	# empirical test/debugging reference renderings
-	presets['2A - Reference - Path Tracing'] = {'pixelfilter.type':'mitchell','sampler.type':'random','sampler.random.pixelsampler':'random','sintegrator.type':'path','sintegrator.path.maxdepth':1024 }
-	presets['2B - Reference - MLT/Path Tracing'] = {'pixelfilter.type':'mitchell','sampler.type':'metropolis','sampler.metro.usevariance':'true','sampler.metro.lmprob':0.25,'sampler.metro.maxrejects':8192,'sintegrator.type':'path','sintegrator.path.maxdepth':1024 }
+	'Biased - PhotonMap/FGather progressive (experimental)': {
+	'sintegrator.type': 'exphotonmap',
+	'sintegrator.photonmap.maxdepth': 5,
+	'sintegrator.photonmap.idphotons': 100000,
+	'sintegrator.photonmap.cphotons': 0,
+	'sintegrator.photonmap.fgathers': 32,
+	'sintegrator.photonmap.nused': 50,
+	'sintegrator.photonmap.gangle': 10.0,
+	'sintegrator.photonmap.fgather': 'true',
+	'sintegrator.photonmap.rrthres': 0.05,
+	'accelerator.kdtree.emptybonus': 0.2,
+	'sintegrator.photonmap.maxdist': 0.1,
+	'sampler.type': 'lowdiscrepancy',
+	'sampler.lowdisc.pixelsamples': 2,
+	'sampler.lowdisc.pixelsampler': 'lowdiscrepancy',
+	},
+	'Biased - PhotonMap/FGather (experimental)': {
+	'sintegrator.type': 'exphotonmap',
+	'sintegrator.photonmap.maxdepth': 5,
+	'sintegrator.photonmap.idphotons': 100000,
+	'sintegrator.photonmap.cphotons': 0,
+	'sintegrator.photonmap.fgathers': 32,
+	'sintegrator.photonmap.nused': 50,
+	'sintegrator.photonmap.gangle': 10.0,
+	'sintegrator.photonmap.fgather': 'true',
+	'sintegrator.photonmap.rrthres': 0.05,
+	'accelerator.kdtree.emptybonus': 0.2,
+	'sintegrator.photonmap.maxdist': 0.1,
+	'sampler.type': 'lowdiscrepancy',
+	'sampler.lowdisc.pixelsamples': 32,
+	'sampler.lowdisc.pixelsampler': 'tile',
+	},
+	'Biased - PhotonMap/FGather progressive w/caustics (experimental)': {
+	'sintegrator.type': 'exphotonmap',
+	'sintegrator.photonmap.maxdepth': 5,
+	'sintegrator.photonmap.idphotons': 100000,
+	'sintegrator.photonmap.cphotons': 20000,
+	'sintegrator.photonmap.fgathers': 32,
+	'sintegrator.photonmap.nused': 50,
+	'sintegrator.photonmap.gangle': 10.0,
+	'sintegrator.photonmap.fgather': 'true',
+	'sintegrator.photonmap.rrthres': 0.05,
+	'accelerator.kdtree.emptybonus': 0.2,
+	'sintegrator.photonmap.maxdist': 0.1,
+	'sampler.type': 'lowdiscrepancy',
+	'sampler.lowdisc.pixelsamples': 2,
+	'sampler.lowdisc.pixelsampler': 'lowdiscrepancy',
+	},
+	'Biased - PhotonMap/FGather w/caustics (experimental)': {
+	'sintegrator.type': 'exphotonmap',
+	'sintegrator.photonmap.maxdepth': 5,
+	'sintegrator.photonmap.idphotons': 100000,
+	'sintegrator.photonmap.cphotons': 20000,
+	'sintegrator.photonmap.fgathers': 32,
+	'sintegrator.photonmap.nused': 50,
+	'sintegrator.photonmap.gangle': 10.0,
+	'sintegrator.photonmap.fgather': 'true',
+	'sintegrator.photonmap.rrthres': 0.05,
+	'accelerator.kdtree.emptybonus': 0.2,
+	'sintegrator.photonmap.maxdist': 0.1,
+	'sampler.type': 'lowdiscrepancy',
+	'sampler.lowdisc.pixelsamples': 32,
+	'sampler.lowdisc.pixelsampler': 'tile',
+	}
 
-	presets['2x'] = { }
-
-	# Experimental
-	presets['3A - Experimental - BidirPath Tracing'] = {'pixelfilter.type':'mitchell','sampler.type':'lowdiscrepancy','sampler.lowdisc.pixelsampler':'lowdiscrepancy','sintegrator.type':'bidirectional' }
-	presets['3B - Experimental - medium MLT/BidirPath Tracing'] = {'pixelfilter.type':'mitchell','sampler.type':'metropolis','sampler.metro.lmprob':0.25,'sampler.metro.maxrejects':128,'sintegrator.type':'bidirectional' }
-
-
+	}
 
 	return presets
 def getMaterialPresets():
@@ -1418,12 +1797,12 @@ def luxSurfaceIntegrator(scn, gui=None):
 		if integratortype.get() == "path":
 			if gui: gui.newline("  Depth:")
 			str += luxInt("maxdepth", luxProp(scn, "sintegrator.path.maxdepth", 12), 0, 2048, "maxdepth", "The maximum recursion depth for ray casting", gui)
-			str += luxOption("strategy", luxProp(scn, "sintegrator.path2.strategy", "auto"), ["one", "all", "auto"], "strategy", "select directlighting strategy", gui)
+			str += luxOption("strategy", luxProp(scn, "sintegrator.path.strategy", "auto"), ["one", "all", "auto"], "strategy", "select directlighting strategy", gui)
 			if gui: gui.newline("  RR:")
-			rrstrat = luxProp(scn, "sintegrator.path2.rrstrategy", "efficiency")
+			rrstrat = luxProp(scn, "sintegrator.path.rrstrategy", "efficiency")
 			str += luxOption("rrstrategy", rrstrat, ["efficiency", "probability", "none"], "RR strategy", "select Russian Roulette path termination strategy", gui)
 			if rrstrat.get() == "probability":
-				str += luxFloat("rrcontinueprob", luxProp(scn, "sintegrator.path2.rrcontinueprob", 0.65), 0.0, 1.0, "rrprob", "Russian roulette continue probability", gui)
+				str += luxFloat("rrcontinueprob", luxProp(scn, "sintegrator.path.rrcontinueprob", 0.65), 0.0, 1.0, "rrprob", "Russian roulette continue probability", gui)
 		if integratortype.get() == "path2":
 			if gui: gui.newline("  Depth:")
 			str += luxInt("maxdepth", luxProp(scn, "sintegrator.path2.maxdepth", 12), 0, 2048, "maxdepth", "The maximum recursion depth for ray casting", gui)
@@ -1438,7 +1817,7 @@ def luxSurfaceIntegrator(scn, gui=None):
 			if gui: gui.newline("  Depth:")
 			str += luxInt("eyedepth", luxProp(scn, "sintegrator.bidir.eyedepth", 8), 0, 2048, "eyedepth", "The maximum recursion depth for ray casting", gui)
 			str += luxInt("lightdepth", luxProp(scn, "sintegrator.bidir.lightdepth", 8), 0, 2048, "lightdepth", "The maximum recursion depth for light ray casting", gui)
-			str += luxOption("strategy", luxProp(scn, "sintegrator.path2.strategy", "auto"), ["one", "all", "auto"], "strategy", "select directlighting strategy", gui)
+			str += luxOption("strategy", luxProp(scn, "sintegrator.bidir.strategy", "auto"), ["one", "all", "auto"], "strategy", "select directlighting strategy", gui)
 		if integratortype.get() == "exphotonmap":
 			if gui: gui.newline("  Photons:")
 			str += luxInt("indirectphotons", luxProp(scn, "sintegrator.photonmap.idphotons", 100000), 0, 10000000, "indirect", "The number of photons to shoot for caustics during preprocessing of the photon map", gui)
