@@ -2413,6 +2413,33 @@ def luxFloatTexture(name, key, default, min, max, caption, hint, mat, gui, level
 			link = " \"texture %s\" [\"%s\"]"%(name, texname+".scale")
 	return (str, link)
 
+def luxExponentTexture(name, key, default, min, max, caption, hint, mat, gui, level=0):
+	global icon_float
+	if gui: gui.newline(caption, 4, level, icon_float, scalelist([0.5,0.5,0.5],2.0/(level+2)))
+	str = ""
+	keyname = "%s:%s"%(key, name)
+	texname = "%s:%s"%(mat.getName(), keyname)
+	value = luxProp(mat, keyname, default)
+
+#	link = luxFloat(name, value, min, max, "", hint, gui, 2.0)
+	if gui:
+		r = gui.getRect(2.0, 1)
+		Draw.Number("", evtLuxGui, r[0], r[1], r[2], r[3], float(1.0/value.get()), 1.0, 1000000.0, hint, lambda e,v: value.set(1.0/v))
+	link = " \"float %s\" [%f]"%(name, float(value.get()))
+
+	tex = luxProp(mat, keyname+".textured", False)
+	if gui: Draw.Toggle("T", evtLuxGui, gui.x, gui.y-gui.h, gui.h, gui.h, tex.get()=="true", "use texture", lambda e,v:tex.set(["false","true"][bool(v)]))
+	if tex.get()=="true":
+		if gui: gui.newline("", -2)
+		(str, link) = luxTexture(name, key, "float", default, min, max, caption, hint, mat, gui, level+1)
+		if value.get() != 1.0:
+			if str == "": # handle special case if texture is a just a constant
+				str += "Texture \"%s\" \"float\" \"scale\" \"float tex1\" [%s] \"float tex2\" [%s]\n"%(texname+".scale", (link.rpartition("[")[2])[0:-1], value.get())
+			else: str += "Texture \"%s\" \"float\" \"scale\" \"texture tex1\" [\"%s\"] \"float tex2\" [%s]\n"%(texname+".scale", texname, value.get())
+			link = " \"texture %s\" [\"%s\"]"%(name, texname+".scale")
+	return (str, link)
+
+
 def luxDispFloatTexture(name, key, default, min, max, caption, hint, mat, gui, level=0):
 	global icon_float
 	if gui: gui.newline(caption, 4, level, icon_float, scalelist([0.5,0.5,0.5],2.0/(level+2)))
@@ -2455,9 +2482,9 @@ def luxIORFloatTexture(name, key, default, min, max, caption, hint, mat, gui, le
 		iorpreset = luxProp(mat, keyname+".iorpreset", "24 - Fused silica glass")
 		luxOption("iorpreset", iorpreset, iornames, "  PRESET", "select IOR preset", gui, 1.6)
 		idx = iornames.index(iorpreset.get())
-		print idx
+#		print idx
 		value.set(iorvals[idx])
-		link = ""
+		link = luxFloat(name, value, min, max, "", hint, None, 1.6)
 	else:
 		link = luxFloat(name, value, min, max, "", hint, gui, 1.6)
 
@@ -2492,7 +2519,7 @@ def luxCauchyBFloatTexture(name, key, default, min, max, caption, hint, mat, gui
 		idx = cauchybnames.index(cauchybpreset.get())
 		print idx
 		value.set(cauchybvals[idx])
-		link = ""
+		link = luxFloat(name, value, min, max, "", hint, None, 1.6)
 	else:
 		link = luxFloat(name, value, min, max, "", hint, gui, 1.6)
 
@@ -2610,6 +2637,7 @@ def luxMaterialBlock(name, luxname, key, mat, gui=None, level=0, str_opt=""):
 			(str,link) = c((str,link), luxSpectrumTexture("Kr", keyname, "1.0 1.0 1.0", 1.0, "reflection", "", mat, gui, level+1))
 			(str,link) = c((str,link), luxSpectrumTexture("Kt", keyname, "1.0 1.0 1.0", 1.0, "transmission", "", mat, gui, level+1))
 			(str,link) = c((str,link), luxIORFloatTexture("index", keyname, 1.5, 0.0, 100.0, "IOR", "", mat, gui, level+1))
+			link += luxBool("architectural", luxProp(mat, keyname+".architectural", "false"), "architectural", "Enable architectural glass", gui, 2.0)
 			chromadisp = luxProp(mat, keyname+".chromadisp", "false")
 			luxBool("chromadisp", chromadisp, "Chromatic Dispersion", "Enable Chromatic Dispersion", gui, 2.0)
 			if chromadisp.get() == "true":
@@ -2648,10 +2676,10 @@ def luxMaterialBlock(name, luxname, key, mat, gui=None, level=0, str_opt=""):
 				gui.newline("")
 				Draw.Toggle("A", evtLuxGui, gui.x-gui.h, gui.y-gui.h, gui.h, gui.h, anisotropic.get()=="true", "anisotropic roughness", lambda e,v:anisotropic.set(["false","true"][bool(v)]))
 			if anisotropic.get()=="true":
-				(str,link) = c((str,link), luxFloatTexture("uroughness", keyname, 0.1, 0.0, 1.0, "u-roughness", "", mat, gui, level+1))
-				(str,link) = c((str,link), luxFloatTexture("vroughness", keyname, 0.1, 0.0, 1.0, "v-roughness", "", mat, gui, level+1))
+				(str,link) = c((str,link), luxExponentTexture("uroughness", keyname, 0.002, 0.0, 1.0, "u-exponent", "", mat, gui, level+1))
+				(str,link) = c((str,link), luxExponentTexture("vroughness", keyname, 0.002, 0.0, 1.0, "v-exponent", "", mat, gui, level+1))
 			else:
-				(s, l) = luxFloatTexture("uroughness", keyname, 0.1, 0.0, 1.0, "roughness", "", mat, gui, level+1)
+				(s, l) = luxExponentTexture("uroughness", keyname, 0.002, 0.0, 1.0, "exponent", "", mat, gui, level+1)
 				(str,link) = c((str,link), (s, l))
 				link += l.replace("uroughness", "vroughness", 1)
 				
@@ -2669,10 +2697,10 @@ def luxMaterialBlock(name, luxname, key, mat, gui=None, level=0, str_opt=""):
 				gui.newline("")
 				Draw.Toggle("A", evtLuxGui, gui.x-gui.h, gui.y-gui.h, gui.h, gui.h, anisotropic.get()=="true", "anisotropic roughness", lambda e,v:anisotropic.set(["false","true"][bool(v)]))
 			if anisotropic.get()=="true":
-				(str,link) = c((str,link), luxFloatTexture("uroughness", keyname, 0.1, 0.0, 1.0, "u-roughness", "", mat, gui, level+1))
-				(str,link) = c((str,link), luxFloatTexture("vroughness", keyname, 0.1, 0.0, 1.0, "v-roughness", "", mat, gui, level+1))
+				(str,link) = c((str,link), luxExponentTexture("uroughness", keyname, 0.002, 0.0, 1.0, "u-exponent", "", mat, gui, level+1))
+				(str,link) = c((str,link), luxExponentTexture("vroughness", keyname, 0.002, 0.0, 1.0, "v-exponent", "", mat, gui, level+1))
 			else:
-				(s, l) = luxFloatTexture("uroughness", keyname, 0.1, 0.0, 1.0, "roughness", "", mat, gui, level+1)
+				(s, l) = luxExponentTexture("uroughness", keyname, 0.002, 0.0, 1.0, "exponent", "", mat, gui, level+1)
 				(str,link) = c((str,link), (s, l))
 				link += l.replace("uroughness", "vroughness", 1)
 			has_bump_options = 1
@@ -2685,10 +2713,10 @@ def luxMaterialBlock(name, luxname, key, mat, gui=None, level=0, str_opt=""):
 				gui.newline("")
 				Draw.Toggle("A", evtLuxGui, gui.x-gui.h, gui.y-gui.h, gui.h, gui.h, anisotropic.get()=="true", "anisotropic roughness", lambda e,v:anisotropic.set(["false","true"][bool(v)]))
 			if anisotropic.get()=="true":
-				(str,link) = c((str,link), luxFloatTexture("uroughness", keyname, 0.1, 0.0, 1.0, "u-roughness", "", mat, gui, level+1))
-				(str,link) = c((str,link), luxFloatTexture("vroughness", keyname, 0.1, 0.0, 1.0, "v-roughness", "", mat, gui, level+1))
+				(str,link) = c((str,link), luxExponentTexture("uroughness", keyname, 0.002, 0.0, 1.0, "u-exponent", "", mat, gui, level+1))
+				(str,link) = c((str,link), luxExponentTexture("vroughness", keyname, 0.002, 0.0, 1.0, "v-exponent", "", mat, gui, level+1))
 			else:
-				(s, l) = luxFloatTexture("uroughness", keyname, 0.1, 0.0, 1.0, "roughness", "", mat, gui, level+1)
+				(s, l) = luxExponentTexture("uroughness", keyname, 0.002, 0.0, 1.0, "exponent", "", mat, gui, level+1)
 				(str,link) = c((str,link), (s, l))
 				link += l.replace("uroughness", "vroughness", 1)
 			(str,link) = c((str,link), luxIORFloatTexture("index", keyname, 1.5, 0.0, 100.0, "IOR", "", mat, gui, level+1))
@@ -2706,10 +2734,10 @@ def luxMaterialBlock(name, luxname, key, mat, gui=None, level=0, str_opt=""):
 				gui.newline("")
 				Draw.Toggle("A", evtLuxGui, gui.x-gui.h, gui.y-gui.h, gui.h, gui.h, anisotropic.get()=="true", "anisotropic roughness", lambda e,v:anisotropic.set(["false","true"][bool(v)]))
 			if anisotropic.get()=="true":
-				(str,link) = c((str,link), luxFloatTexture("uroughness", keyname, 0.1, 0.0, 1.0, "u-roughness", "", mat, gui, level+1))
-				(str,link) = c((str,link), luxFloatTexture("vroughness", keyname, 0.1, 0.0, 1.0, "v-roughness", "", mat, gui, level+1))
+				(str,link) = c((str,link), luxExponentTexture("uroughness", keyname, 0.002, 0.0, 1.0, "u-exponent", "", mat, gui, level+1))
+				(str,link) = c((str,link), luxExponentTexture("vroughness", keyname, 0.002, 0.0, 1.0, "v-exponent", "", mat, gui, level+1))
 			else:
-				(s, l) = luxFloatTexture("uroughness", keyname, 0.1, 0.0, 1.0, "roughness", "", mat, gui, level+1)
+				(s, l) = luxFloatTexture("uroughness", keyname, 0.002, 0.0, 1.0, "exponent", "", mat, gui, level+1)
 				(str,link) = c((str,link), (s, l))
 				link += l.replace("uroughness", "vroughness", 1)
 			has_bump_options = 1
@@ -2722,10 +2750,10 @@ def luxMaterialBlock(name, luxname, key, mat, gui=None, level=0, str_opt=""):
 				gui.newline("")
 				Draw.Toggle("A", evtLuxGui, gui.x-gui.h, gui.y-gui.h, gui.h, gui.h, anisotropic.get()=="true", "anisotropic roughness", lambda e,v:anisotropic.set(["false","true"][bool(v)]))
 			if anisotropic.get()=="true":
-				(str,link) = c((str,link), luxFloatTexture("uroughness", keyname, 0.1, 0.0, 1.0, "u-roughness", "", mat, gui, level+1))
-				(str,link) = c((str,link), luxFloatTexture("vroughness", keyname, 0.1, 0.0, 1.0, "v-roughness", "", mat, gui, level+1))
+				(str,link) = c((str,link), luxExponentTexture("uroughness", keyname, 0.002, 0.0, 1.0, "u-exponent", "", mat, gui, level+1))
+				(str,link) = c((str,link), luxExponentTexture("vroughness", keyname, 0.002, 0.0, 1.0, "v-exponent", "", mat, gui, level+1))
 			else:
-				(s, l) = luxFloatTexture("uroughness", keyname, 0.1, 0.0, 1.0, "roughness", "", mat, gui, level+1)
+				(s, l) = luxExponentTexture("uroughness", keyname, 0.002, 0.0, 1.0, "exponent", "", mat, gui, level+1)
 				(str,link) = c((str,link), (s, l))
 				link += l.replace("uroughness", "vroughness", 1)
 			has_bump_options = 1
@@ -2816,6 +2844,7 @@ def convertMaterial(mat):
 		luxProp(mat, name+":Kd", "").setRGB((mat.R*mat.ref, mat.G*mat.ref, mat.B*mat.ref))
 		luxProp(mat, name+":Ks", "").setRGB((mat.specR*mat.spec, mat.specG*mat.spec, mat.specB*mat.spec))
 		luxProp(mat, name+":uroughness", 0.0).set(roughness)
+		luxProp(mat, name+":vroughness", 0.0).set(roughness)
 	def makeMirror(name):
 		luxProp(mat, dot(name)+"type", "").set("mirror")
 		luxProp(mat, name+":Kr", "").setRGB((mat.mirR, mat.mirG, mat.mirB))
@@ -2832,6 +2861,7 @@ def convertMaterial(mat):
 		luxProp(mat, name+":index.iorusepreset", "").set("false")
 		luxProp(mat, name+":index", 0.0).set(mat.getIOR())
 		luxProp(mat, name+":uroughness", 0.0).set(roughness)
+		luxProp(mat, name+":vroughness", 0.0).set(roughness)
 	print "convert Blender material \"%s\" to lux material"%(mat.name)
 	mat.properties['luxblend'] = {}
 	if mat.emit > 0.0001:
@@ -2977,7 +3007,7 @@ def luxDraw():
 			BGL.glColor3f(1.0,0.5,0.4);BGL.glRectf(10,y-74,90,y-70);BGL.glColor3f(0.9,0.9,0.9)
 			obj = scn.objects.active
 			if obj:
-				if obj.getType() == "Lamp": luxLight("LIGHT", "", obj, gui, 0)
+				if (obj.getType() == "Lamp") and (obj.getData(mesh=1).getType() != 1): luxLight("LIGHT", "", obj, gui, 0)
 				else:
 					matfilter = luxProp(scn, "matlistfilter", "false")
 					mats = getMaterials(obj, True)
