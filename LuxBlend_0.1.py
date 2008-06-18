@@ -2737,7 +2737,7 @@ def luxMaterialBlock(name, luxname, key, mat, gui=None, level=0, str_opt=""):
 				(str,link) = c((str,link), luxExponentTexture("uroughness", keyname, 0.002, 0.0, 1.0, "u-exponent", "", mat, gui, level+1))
 				(str,link) = c((str,link), luxExponentTexture("vroughness", keyname, 0.002, 0.0, 1.0, "v-exponent", "", mat, gui, level+1))
 			else:
-				(s, l) = luxFloatTexture("uroughness", keyname, 0.002, 0.0, 1.0, "exponent", "", mat, gui, level+1)
+				(s, l) = luxExponentTexture("uroughness", keyname, 0.002, 0.0, 1.0, "exponent", "", mat, gui, level+1)
 				(str,link) = c((str,link), (s, l))
 				link += l.replace("uroughness", "vroughness", 1)
 			has_bump_options = 1
