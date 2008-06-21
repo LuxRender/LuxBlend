@@ -1,15 +1,15 @@
 #!BPY
 """Registration info for Blender menus:
-Name: 'LuxBlend-v0.1-alpha-MatEditor...'
+Name: 'LuxBlend v0.5 Exporter'
 Blender: 240
 Group: 'Export'
-Tooltip: 'Export to LuxRender v0.1 scene format (.lxs)'
+Tooltip: 'Export to LuxRender v0.5 scene format (.lxs)'
 """
 #
 # ***** BEGIN GPL LICENSE BLOCK *****
 #
 # --------------------------------------------------------------------------
-# LuxBlend v0.1 alpha-MatEditor exporter
+# LuxBlend v0.5 exporter
 # --------------------------------------------------------------------------
 #
 # Authors:
@@ -609,7 +609,7 @@ def save_lux(filename, unindexedname):
 		print("Exporting scene to '" + filename + "'...\n")
 		file = open(filename, 'w')
 		##### Write Header ######
-		file.write("# Lux Render v0.1 Scene File\n")
+		file.write("# Lux Render v0.5 Scene File\n")
 		file.write("# Exported by LuxBlend_0.1_alpha-MatEditor\n")
 		file.write("\n")
 	
@@ -1752,7 +1752,7 @@ def luxPixelFilter(scn, gui=None):
 def luxSampler(scn, gui=None):
 	str = ""
 	if scn:
-		samplertype = luxProp(scn, "sampler.type", "lowdiscrepancy")
+		samplertype = luxProp(scn, "sampler.type", "metropolis")
 		str = luxIdentifier("Sampler", samplertype, ["metropolis", "erpt", "lowdiscrepancy", "random", "halton"], "SAMPLER", "select sampler type", gui)
 		if samplertype.get() == "metropolis":
 			str += luxInt("initsamples", luxProp(scn, "sampler.metro.initsamples", 100000), 1, 1000000, "initsamples", "", gui)
@@ -1790,7 +1790,7 @@ def luxSurfaceIntegrator(scn, gui=None):
 		integratortype = luxProp(scn, "sintegrator.type", "path")
 		str = luxIdentifier("SurfaceIntegrator", integratortype, ["directlighting", "path", "path2", "bidirectional", "exphotonmap"], "INTEGRATOR", "select surface integrator type", gui)
 		if integratortype.get() == "directlighting":
-			str += luxOption("strategy", luxProp(scn, "sintegrator.dlighting.strategy", "all"), ["one", "all", "weighted"], "strategy", "select directlighting strategy", gui)
+			str += luxOption("strategy", luxProp(scn, "sintegrator.dlighting.strategy", "auto"), ["one", "all", "auto"], "strategy", "select directlighting strategy", gui)
 			if gui: gui.newline("  Depth:")
 			str += luxInt("maxdepth", luxProp(scn, "sintegrator.dlighting.maxdepth", 5), 0, 2048, "max-depth", "The maximum recursion depth for ray casting", gui)
 			if gui: gui.newline()
@@ -2969,7 +2969,7 @@ def luxDraw():
 
 	y = int(scrollbar.getTop()) # 420
 	BGL.glColor3f(0.1,0.1,0.1); BGL.glRectf(0,0,440,y)
-	BGL.glColor3f(0.9,0.9,0.9); BGL.glRasterPos2i(10,y-15); Draw.Text("LuxBlend v0.5alpha-MatEditor :::...")
+	BGL.glColor3f(0.9,0.9,0.9); BGL.glRasterPos2i(10,y-15); Draw.Text("LuxBlend v0.5 :::...")
 
 	scn = Scene.GetCurrent()
 	if scn:
@@ -3221,7 +3221,7 @@ def setFocus(target):
 
 
 
-print "\n\nLuxBlend v0.5alphaCVS\n"
+print "\n\nLuxBlend v0.5\n"
 
 luxpathprop = luxProp(Scene.GetCurrent(), "lux", "")
 luxpath = luxpathprop.get()
