@@ -505,14 +505,17 @@ class luxExport:
 				energy = obj.getData(mesh=1).energy # data
 				if ltype == Lamp.Types["Lamp"]:
 					file.write("LightSource \"point\"")
+					file.write(luxLamp("", "", obj, None, 0))
 				if ltype == Lamp.Types["Spot"]:
 					file.write("LightSource \"spot\" \"point from\" [0 0 0] \"point to\" [0 0 -1] \"float coneangle\" [%f] \"float conedeltaangle\" [%f]"\
 						%(obj.getData(mesh=1).spotSize*0.5, obj.getData(mesh=1).spotSize*0.5*obj.getData(mesh=1).spotBlend)) # data
+					file.write(luxLamp("", "", obj, None, 0))
 				if ltype == Lamp.Types["Area"]:
 					file.write("\tAreaLightSource \"area\"")
-				file.write(luxLight("", "", obj, None, 0))
+					file.write(luxLight("", "", obj, None, 0))
 				file.write("\n")
 				if ltype == Lamp.Types["Area"]:
+					file.write(luxLight("", "", obj, None, 0))
 					areax = obj.getData(mesh=1).getAreaSizeX()
 					# lamps "getAreaShape()" not implemented yet - so we can't detect shape! Using square as default
 					# todo: ideasman42
@@ -1602,8 +1605,8 @@ def luxCamera(cam, context, gui=None):
 			print "calculated film distance: %f mm"%(filmdistance * 1000.0)
 			str += " \"float filmdistance\" [%f]"%(filmdistance*1000.0)
 		if gui: gui.newline("  Clipping:")
-		str += luxFloat("hither", luxAttr(cam, "clipStart"), 0.0, 100.0, "hither", "near clip distance", gui)
-		str += luxFloat("yon", luxAttr(cam, "clipEnd"), 1.0, 10000.0, "yon", "far clip distance", gui)
+		str += luxFloat("hither", luxAttr(cam, "clipStart"), 0.0, 100.0, "start", "near clip distance", gui)
+		str += luxFloat("yon", luxAttr(cam, "clipEnd"), 1.0, 10000.0, "end", "far clip distance", gui)
 		if camtype.get() in ["perspective", "orthographic"]:
 			if gui: gui.newline("  DOF:")
 			str += luxBool("autofocus",luxProp(cam, "camera.autofocus", "true"), "autofocus", "Enable automatic focus", gui)
@@ -2533,6 +2536,15 @@ def luxCauchyBFloatTexture(name, key, default, min, max, caption, hint, mat, gui
 			link = " \"texture %s\" [\"%s\"]"%(name, texname+".scale")
 	return (str, link)
 
+def luxLamp(name, kn, mat, gui, level):
+	if gui:
+		if name != "": gui.newline(name+":", 10, level)
+		else: gui.newline("color:", 0, level+1)
+	link = luxRGB("I", luxProp(mat, kn+"light.i", "1.0 1.0 1.0"), 1.0, "L", "", gui)
+	if gui: gui.newline("")
+	link += luxFloat("gain", luxProp(mat, kn+"light.gain", 1.0), 0.0, 100.0, "gain", "gain", gui)
+	return link
+
 def luxLight(name, kn, mat, gui, level):
 	if gui:
 		if name != "": gui.newline(name+":", 10, level)
@@ -3007,7 +3019,10 @@ def luxDraw():
 			BGL.glColor3f(1.0,0.5,0.4);BGL.glRectf(10,y-74,90,y-70);BGL.glColor3f(0.9,0.9,0.9)
 			obj = scn.objects.active
 			if obj:
-				if (obj.getType() == "Lamp") and (obj.getData(mesh=1).getType() != 1): luxLight("LIGHT", "", obj, gui, 0)
+				if (obj.getType() == "Lamp"):
+					ltype = obj.getData(mesh=1).getType() # data
+					if (ltype == Lamp.Types["Area"]): luxLight("LIGHT", "", obj, gui, 0)
+					elif (ltype == Lamp.Types["Spot"]) or (ltype == Lamp.Types["Lamp"]): luxLamp("LIGHT", "", obj, gui, 0)
 				else:
 					matfilter = luxProp(scn, "matlistfilter", "false")
 					mats = getMaterials(obj, True)
