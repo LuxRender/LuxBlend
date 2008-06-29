@@ -1791,7 +1791,7 @@ def luxSurfaceIntegrator(scn, gui=None):
 	str = ""
 	if scn:
 		integratortype = luxProp(scn, "sintegrator.type", "path")
-		str = luxIdentifier("SurfaceIntegrator", integratortype, ["directlighting", "path", "path2", "bidirectional", "exphotonmap"], "INTEGRATOR", "select surface integrator type", gui)
+		str = luxIdentifier("SurfaceIntegrator", integratortype, ["directlighting", "path", "path2", "bidirectional", "exphotonmap", "distributedpath", "particletracing"], "INTEGRATOR", "select surface integrator type", gui)
 		if integratortype.get() == "directlighting":
 			str += luxOption("strategy", luxProp(scn, "sintegrator.dlighting.strategy", "auto"), ["one", "all", "auto"], "strategy", "select directlighting strategy", gui)
 			if gui: gui.newline("  Depth:")
@@ -1834,6 +1834,18 @@ def luxSurfaceIntegrator(scn, gui=None):
 			str += luxBool("finalgather",luxProp(scn, "sintegrator.photonmap.fgather", "true"), "finalgather", "Enable use of final gather during rendering", gui)
 			str += luxInt("finalgathersamples", luxProp(scn, "sintegrator.photonmap.fgathers", 32), 1, 1024, "samples", "The number of finalgather samples to take per pixel during rendering", gui)
 			str += luxFloat("gatherangle", luxProp(scn, "sintegrator.photonmap.gangle", 10.0), 0.0, 360.0, "gatherangle", "Angle for final gather", gui)
+		if integratortype.get() == "distributedpath":
+			str += luxOption("strategy", luxProp(scn, "sintegrator.distributedpath.strategy", "auto"), ["one", "all", "auto"], "strategy", "select directlighting strategy", gui)
+			if gui: gui.newline("  Depths:")
+			str += luxInt("diffusedepth", luxProp(scn, "sintegrator.distributedpath.diffusedepth", 5), 0, 2048, "diffuse-depth", "The maximum recursion depth for diffuse ray casting", gui)
+			str += luxInt("glossydepth", luxProp(scn, "sintegrator.distributedpath.glossydepth", 5), 0, 2048, "glossy-depth", "The maximum recursion depth for glossy ray casting", gui)
+			str += luxInt("speculardepth", luxProp(scn, "sintegrator.distributedpath.speculardepth", 5), 0, 2048, "specular-depth", "The maximum recursion depth for specular ray casting", gui)
+			if gui: gui.newline()
+		if integratortype.get() == "particletracing":
+			if gui: gui.newline("  Depth:")
+			str += luxInt("maxdepth", luxProp(scn, "sintegrator.particletracing.maxdepth", 5), 0, 2048, "maxdepth", "The maximum recursion depth for light ray casting", gui)
+			if gui: gui.newline("  RR:")
+			str += luxFloat("rrcontinueprob", luxProp(scn, "sintegrator.particletracing.rrcontinueprob", 0.65), 0.0, 1.0, "rrprob", "Russian roulette continue probability", gui)
 	return str
 
 def luxVolumeIntegrator(scn, gui=None):
