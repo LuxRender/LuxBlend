@@ -1773,17 +1773,17 @@ def luxSampler(scn, gui=None):
 			str += luxInt("stratawidth", luxProp(scn, "sampler.erpt.stratawidth", 256), 1, 32768, "stratawidth", "The number of x/y strata for stratified sampling of seeds", gui)
 		if samplertype.get() == "lowdiscrepancy":
 			if gui: gui.newline("  PixelSampler:")
-			str += luxOption("pixelsampler", luxProp(scn, "sampler.lowdisc.pixelsampler", "lowdiscrepancy"), ["linear", "tile", "random", "vegas","lowdiscrepancy"], "pixel-sampler", "select pixel-sampler", gui)
+			str += luxOption("pixelsampler", luxProp(scn, "sampler.lowdisc.pixelsampler", "lowdiscrepancy"), ["linear", "tile", "random", "vegas","lowdiscrepancy","hilbert"], "pixel-sampler", "select pixel-sampler", gui)
 			str += luxInt("pixelsamples", luxProp(scn, "sampler.lowdisc.pixelsamples", 4), 1, 512, "samples", "Average number of samples taken per pixel. More samples create a higher quality image at the cost of render time", gui)
 		if samplertype.get() == "random":
 			if gui: gui.newline("  PixelSampler:")
-			str += luxOption("pixelsampler", luxProp(scn, "sampler.random.pixelsampler", "vegas"), ["linear", "tile", "random", "vegas","lowdiscrepancy"], "pixel-sampler", "select pixel-sampler", gui)
+			str += luxOption("pixelsampler", luxProp(scn, "sampler.random.pixelsampler", "vegas"), ["linear", "tile", "random", "vegas","lowdiscrepancy","hilbert"], "pixel-sampler", "select pixel-sampler", gui)
 			if gui: gui.newline()
 			str += luxInt("xsamples", luxProp(scn, "sampler.random.xsamples", 2), 1, 512, "xsamples", "Allows you to specify how many samples per pixel are taking in the x direction", gui)
 			str += luxInt("ysamples", luxProp(scn, "sampler.random.ysamples", 2), 1, 512, "ysamples", "Allows you to specify how many samples per pixel are taking in the y direction", gui)
 		if samplertype.get() == "halton":
 			if gui: gui.newline("  PixelSampler:")
-			str += luxOption("pixelsampler", luxProp(scn, "sampler.halton.pixelsampler", "lowdiscrepancy"), ["linear", "tile", "random", "vegas","lowdiscrepancy"], "pixel-sampler", "select pixel-sampler", gui)
+			str += luxOption("pixelsampler", luxProp(scn, "sampler.halton.pixelsampler", "lowdiscrepancy"), ["linear", "tile", "random", "vegas","lowdiscrepancy","hilbert"], "pixel-sampler", "select pixel-sampler", gui)
 			str += luxInt("pixelsamples", luxProp(scn, "sampler.halton.pixelsamples", 4), 1, 512, "samples", "Average number of samples taken per pixel. More samples create a higher quality image at the cost of render time", gui)
 	return str			
 
@@ -1791,7 +1791,7 @@ def luxSurfaceIntegrator(scn, gui=None):
 	str = ""
 	if scn:
 		integratortype = luxProp(scn, "sintegrator.type", "path")
-		str = luxIdentifier("SurfaceIntegrator", integratortype, ["directlighting", "path", "path2", "bidirectional", "exphotonmap", "distributedpath", "particletracing"], "INTEGRATOR", "select surface integrator type", gui)
+		str = luxIdentifier("SurfaceIntegrator", integratortype, ["directlighting", "path", "path2", "bidirectional", "exphotonmap", "distributedpath", "particletracing", "importancepath"], "INTEGRATOR", "select surface integrator type", gui)
 		if integratortype.get() == "directlighting":
 			str += luxOption("strategy", luxProp(scn, "sintegrator.dlighting.strategy", "auto"), ["one", "all", "auto"], "strategy", "select directlighting strategy", gui)
 			if gui: gui.newline("  Depth:")
@@ -1837,8 +1837,8 @@ def luxSurfaceIntegrator(scn, gui=None):
 		if integratortype.get() == "distributedpath":
 			str += luxOption("strategy", luxProp(scn, "sintegrator.distributedpath.strategy", "auto"), ["one", "all", "auto"], "strategy", "select directlighting strategy", gui)
 			if gui: gui.newline("  Depths:")
-			str += luxInt("diffusedepth", luxProp(scn, "sintegrator.distributedpath.diffusedepth", 5), 0, 2048, "diffuse-depth", "The maximum recursion depth for diffuse ray casting", gui)
-			str += luxInt("glossydepth", luxProp(scn, "sintegrator.distributedpath.glossydepth", 5), 0, 2048, "glossy-depth", "The maximum recursion depth for glossy ray casting", gui)
+			str += luxInt("diffusedepth", luxProp(scn, "sintegrator.distributedpath.diffusedepth", 3), 0, 2048, "diffuse-depth", "The maximum recursion depth for diffuse ray casting", gui)
+			str += luxInt("glossydepth", luxProp(scn, "sintegrator.distributedpath.glossydepth", 2), 0, 2048, "glossy-depth", "The maximum recursion depth for glossy ray casting", gui)
 			str += luxInt("speculardepth", luxProp(scn, "sintegrator.distributedpath.speculardepth", 5), 0, 2048, "specular-depth", "The maximum recursion depth for specular ray casting", gui)
 			if gui: gui.newline()
 		if integratortype.get() == "particletracing":
@@ -1846,6 +1846,19 @@ def luxSurfaceIntegrator(scn, gui=None):
 			str += luxInt("maxdepth", luxProp(scn, "sintegrator.particletracing.maxdepth", 5), 0, 2048, "maxdepth", "The maximum recursion depth for light ray casting", gui)
 			if gui: gui.newline("  RR:")
 			str += luxFloat("rrcontinueprob", luxProp(scn, "sintegrator.particletracing.rrcontinueprob", 0.65), 0.0, 1.0, "rrprob", "Russian roulette continue probability", gui)
+		if integratortype.get() == "importancepath":
+			if gui: gui.newline("  Depth:")
+			str += luxInt("maxdepth", luxProp(scn, "sintegrator.importancepath.maxdepth", 10), 0, 2048, "maxdepth", "The maximum recursion depth for ray casting", gui)
+			str += luxInt("importancephotons", luxProp(scn, "sintegrator.importancepath.importancephotons", 200000), 0, 10000000, "impphotons", "The number of importance sampling photons to shoot before rendering", gui)
+			str += luxFloat("maxdist", luxProp(scn, "sintegrator.photonmap.maxdist", 0.5), 0.0, 10.0, "maxdist", "The maximum distance between a point being shaded and a photon that can contribute to that point", gui)
+			str += luxInt("impdepth", luxProp(scn, "sintegrator.importancepath.impdepth", 3), 0, 2048, "impdepth", "The maximum recursion depth for importance sampling", gui)
+			str += luxInt("impwidth", luxProp(scn, "sintegrator.importancepath.impwidth", 8), 0, 2048, "impwidth", "The width for importance sampling", gui)
+			str += luxOption("strategy", luxProp(scn, "sintegrator.importancepath.strategy", "auto"), ["one", "all", "auto"], "strategy", "select directlighting strategy", gui)
+			if gui: gui.newline("  RR:")
+			rrstrat = luxProp(scn, "sintegrator.importancepath.rrstrategy", "efficiency")
+			str += luxOption("rrstrategy", rrstrat, ["efficiency", "probability", "none"], "RR strategy", "select Russian Roulette path termination strategy", gui)
+			if rrstrat.get() == "probability":
+				str += luxFloat("rrcontinueprob", luxProp(scn, "sintegrator.importancepath.rrcontinueprob", 0.65), 0.0, 1.0, "rrprob", "Russian roulette continue probability", gui)
 	return str
 
 def luxVolumeIntegrator(scn, gui=None):
