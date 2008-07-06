@@ -1,15 +1,15 @@
 #!BPY
 """Registration info for Blender menus:
-Name: 'LuxBlend v0.5 Exporter'
+Name: 'LuxBlend CVS Exporter'
 Blender: 240
 Group: 'Export'
-Tooltip: 'Export to LuxRender v0.5 scene format (.lxs)'
+Tooltip: 'Export to LuxRender CVS scene format (.lxs)'
 """
 #
 # ***** BEGIN GPL LICENSE BLOCK *****
 #
 # --------------------------------------------------------------------------
-# LuxBlend v0.5 exporter
+# LuxBlend CVS exporter
 # --------------------------------------------------------------------------
 #
 # Authors:
@@ -612,7 +612,7 @@ def save_lux(filename, unindexedname):
 		print("Exporting scene to '" + filename + "'...\n")
 		file = open(filename, 'w')
 		##### Write Header ######
-		file.write("# Lux Render v0.5 Scene File\n")
+		file.write("# Lux Render CVS Scene File\n")
 		file.write("# Exported by LuxBlend_0.1_alpha-MatEditor\n")
 		file.write("\n")
 	
@@ -3014,7 +3014,7 @@ def luxDraw():
 
 	y = int(scrollbar.getTop()) # 420
 	BGL.glColor3f(0.1,0.1,0.1); BGL.glRectf(0,0,440,y)
-	BGL.glColor3f(0.9,0.9,0.9); BGL.glRasterPos2i(10,y-15); Draw.Text("LuxBlend v0.5 :::...")
+	BGL.glColor3f(0.9,0.9,0.9); BGL.glRasterPos2i(10,y-15); Draw.Text("LuxBlend CVS :::...")
 
 	scn = Scene.GetCurrent()
 	if scn:
@@ -3269,7 +3269,7 @@ def setFocus(target):
 
 
 
-print "\n\nLuxBlend v0.5\n"
+print "\n\nLuxBlend CVS\n"
 
 luxpathprop = luxProp(Scene.GetCurrent(), "lux", "")
 luxpath = luxpathprop.get()
