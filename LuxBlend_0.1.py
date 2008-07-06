@@ -1626,13 +1626,26 @@ def luxCamera(cam, context, gui=None):
 		str += luxFloat("yon", luxAttr(cam, "clipEnd"), 1.0, 10000.0, "end", "far clip distance", gui)
 		if camtype.get() in ["perspective", "orthographic"]:
 			if gui: gui.newline("  DOF:")
-			str += luxBool("autofocus",luxProp(cam, "camera.autofocus", "true"), "autofocus", "Enable automatic focus", gui)
+			focustype = luxProp(cam, "camera.focustype", "autofocus")
+			luxOption("focustype", focustype, ["autofocus", "manual", "object"], "Focus Type", "Choose the focus behaviour", gui)
 			str += luxFloat("lensradius", luxProp(cam, "camera.lensradius", 0.0), 0.0, 1.0, "lens-radius", "Defines the lens radius. Values higher than 0. enable DOF and control the amount", gui)
-			dofdist = luxAttr(cam, "dofDist")
-			str += luxFloat("focaldistance", dofdist, 0.0, 100.0, "distance", "Distance from the camera at which objects will be in focus. Has no effect if Lens Radius is 0", gui)
-			if gui:
-				Draw.Button("S", evtLuxGui, gui.x, gui.y-gui.h, gui.h, gui.h, "focus selected object", lambda e,v:setFocus("S"))
-				Draw.Button("C", evtLuxGui, gui.x+gui.h, gui.y-gui.h, gui.h, gui.h, "focus cursor", lambda e,v:setFocus("C"))
+
+			if focustype.get() == "autofocus":
+				str += luxBool("autofocus",luxProp(cam, "camera.autofocus", "true"), "autofocus", "Enable automatic focus", gui)
+			if focustype.get() == "object":
+				objectfocus = luxProp(cam, "camera.objectfocus", "")
+				luxString("objectfocus", objectfocus, "object", "Always focus camera on named object", gui, 1.0)
+				dofdist = luxAttr(cam, "dofDist")
+				str += luxFloat("focaldistance", dofdist, 0.0, 100.0, "distance", "Distance from the camera at which objects will be in focus. Has no effect if Lens Radius is 0", gui)
+				if objectfocus.get() != "":
+					setFocus(objectfocus.get())
+			if focustype.get() == "manual":
+				dofdist = luxAttr(cam, "dofDist")
+				str += luxFloat("focaldistance", dofdist, 0.0, 100.0, "distance", "Distance from the camera at which objects will be in focus. Has no effect if Lens Radius is 0", gui)
+				if gui:
+					Draw.Button("S", evtLuxGui, gui.x, gui.y-gui.h, gui.h, gui.h, "focus selected object", lambda e,v:setFocus("S"))
+					Draw.Button("C", evtLuxGui, gui.x+gui.h, gui.y-gui.h, gui.h, gui.h, "focus cursor", lambda e,v:setFocus("C"))
+
 		if gui: gui.newline("  Shutter:")
 		str += luxFloat("shutteropen", luxProp(cam, "camera.shutteropen", 0.0), 0.0, 100.0, "open", "time in seconds when shutter opens", gui)
 		str += luxFloat("shutterclose", luxProp(cam, "camera.shutterclose", 1.0), 0.0, 100.0, "close", "time in seconds when shutter closes", gui)
@@ -3298,8 +3311,10 @@ def setFocus(target):
 			refLoc = (Object.GetSelected()[0]).getLocation()
 		except:
 			print "select an object to focus\n"
-	if target == "C":
+	elif target == "C":
 		refLoc = Window.GetCursorPos()
+	else:
+		refLoc = (Object.Get(target)).getLocation()
 	dist = Mathutils.Vector(refLoc) - Mathutils.Vector(camObj.getLocation())
 	camDir = camObj.getMatrix()[2]*(-1.0)
 	camObj.getData(mesh=1).dofDist = (camDir[0]*dist[0]+camDir[1]*dist[1]+camDir[2]*dist[2])/camDir.length # data
