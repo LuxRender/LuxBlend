@@ -1688,8 +1688,8 @@ def luxFilm(scn, gui=None):
 			context = scn.getRenderingContext()
 			if context:
 				if gui: gui.newline("  Resolution:")
-				luxInt("xresolution", luxAttr(context, "sizeX"), 0, 4096, "X", "width of the render", gui, 0.666)
-				luxInt("yresolution", luxAttr(context, "sizeY"), 0, 4096, "Y", "height of the render", gui, 0.666)
+				luxInt("xresolution", luxAttr(context, "sizeX"), 0, 8192, "X", "width of the render", gui, 0.666)
+				luxInt("yresolution", luxAttr(context, "sizeY"), 0, 8192, "Y", "height of the render", gui, 0.666)
 				scale = luxProp(scn, "film.scale", "100 %")
 				luxOption("", scale, ["100 %", "75 %", "50 %", "25 %"], "scale", "scale resolution", gui, 0.666)
 				scale = int(scale.get()[:-1])
