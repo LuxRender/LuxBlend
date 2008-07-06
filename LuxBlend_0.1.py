@@ -721,7 +721,7 @@ def save_lux(filename, unindexedname):
 
 
 #########################################################################
-###	 LAUNCH LuxRender AND RENDER CURRENT SCENE (WINDOWS AND MACOS)
+###	 LAUNCH LuxRender AND RENDER CURRENT SCENE
 #########################################################################
 
 def launchLux(filename):
@@ -751,6 +751,34 @@ def launchLux(filename):
 	print("Running Luxrender:\n"+cmd)
 	os.system(cmd)
 
+def launchLuxWait(filename):
+	ostype = osys.platform
+	#get blenders 'bpydata' directory
+	datadir=Blender.Get("datadir")
+	
+	scn = Scene.GetCurrent()
+	ic = luxProp(scn, "lux", "").get()
+	checkluxpath = luxProp(scn, "checkluxpath", True).get()
+	if checkluxpath:
+		if sys.exists(ic) != 1:
+			Draw.PupMenu("Error: Lux renderer not found. Please set path on System page.%t|OK")
+			return		
+	threads = luxProp(scn, "threads", 1).get()
+		
+	if ostype == "win32":
+		cmd = "start /b /WAIT /belownormal \"\" \"%s\" \"%s\" --threads=%d"%(ic, filename, threads)		
+
+	if ostype == "darwin":
+		cmd = "(%s --threads=%d %s)&"%(ic, threads, filename)
+
+	if ostype == "linux2":
+		cmd = "(%s --threads=%d %s)&"%(ic, threads, filename)
+
+	# call external shell script to start Lux	
+	print("Running Luxrender:\n"+cmd)
+	#os.spawnv(os.P_WAIT, cmd, 0)
+	os.system(cmd)
+
 #### SAVE ANIMATION ####	
 def save_anim(filename):
 	global MatSaved
@@ -760,15 +788,28 @@ def save_anim(filename):
 	endF = Blender.Get('endframe')
 	scn = Scene.GetCurrent()
 
-	for i in range (startF, endF):
+	Run = luxProp(scn, "run", "true").get()
+
+	print("\n\nRendering animation (frame %i to %i)\n\n"%(startF, endF))
+
+	for i in range (startF, endF+1):
 		Blender.Set('curframe', i)
+		print("Rendering frame %i"%(i))
 		Blender.Redraw()
 		frameindex = ("-%05d" % (i)) + ".lxs"
 		indexedname = sys.makename(filename, frameindex)
 		unindexedname = filename
 		luxProp(scn, "filename", Blender.Get("filename")).set(sys.makename(filename, "-%05d" %  (Blender.Get('curframe'))))
-		save_lux(indexedname, unindexedname)
+
+		if Run == "true":
+			if save_lux(filename, unindexedname):
+				launchLuxWait(filename)
+		else:
+			save_lux(indexedname, unindexedname)
+
 		MatSaved = 1
+
+	print("\n\nFinished Rendering animation\n")
 
 #### SAVE STILL (hackish...) ####
 def save_still(filename):
@@ -3119,7 +3160,7 @@ def luxDraw():
 		lxv = luxProp(scn, "lxv", "true")
 		if (run.get()=="true"):
 			Draw.Button("Render", 0, 10, y+20, 100, 36, "Render with Lux", lambda e,v:CBluxExport(dlt.get()=="true", True))
-			Draw.Button("Export Anim", 0, 110, y+20, 100, 36, "Render animation with Lux", lambda e,v:CBluxAnimExport(dlt.get()=="true", True))
+			Draw.Button("Render Anim", 0, 110, y+20, 100, 36, "Render animation with Lux", lambda e,v:CBluxAnimExport(dlt.get()=="true", True))
 		else:
 			Draw.Button("Export", 0, 10, y+20, 100, 36, "Export", lambda e,v:CBluxExport(dlt.get()=="true", False))
 			Draw.Button("Export Anim", 0, 110, y+20, 100, 36, "Export animation", lambda e,v:CBluxAnimExport(dlt.get()=="true", False))
