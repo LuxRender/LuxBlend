@@ -744,29 +744,10 @@ def launchLux(filename):
 	threads = luxProp(scn, "threads", 1).get()
 		
 	if ostype == "win32":
-		
-#		# create 'LuxWrapper.cmd' and write two lines of code into it
-#		f = open(datadir + "\LuxWrapper.cmd", 'w')
-#		f.write("cd /d " + sys.dirname(ic) + "\n")
-#		f.write("start /b /belownormal " + sys.basename(ic) + " %1 \n")
-#		f.close()
-		
-#		# call external shell script to start Lux
-#		cmd= "\"" + datadir + "\LuxWrapper.cmd " + filename + "\""
-
 		cmd = "start /b /belownormal \"\" \"%s\" \"%s\" --threads=%d"%(ic, filename, threads)		
 
 	if ostype == "darwin":
-		
-		#create 'LuxWrapper.cmd' and write two lines of code into it
-		f = open(datadir + "/LuxWrapper.command", 'w')
-		f.write("cd " + sys.dirname(ic) + "\n")
-		f.write("./luxrender " + filename +"\n")  # todo: use the sys.basename(ic) here
-		f.close()
-		com = "chmod 775 " + datadir + "/LuxWrapper.command"
-		os.system(com)
-		
-		cmd	= datadir + "/LuxWrapper.command"
+		cmd = "(%s --threads=%d %s)&"%(ic, threads, filename)
 
 	if ostype == "linux2":
 		cmd = "(%s --threads=%d %s)&"%(ic, threads, filename)
