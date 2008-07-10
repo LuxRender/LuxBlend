@@ -45,6 +45,7 @@ Tooltip: 'Export to LuxRender CVS scene format (.lxs)'
 import math
 import os
 import sys as osys
+import subprocess
 import Blender
 from Blender import Mesh, Scene, Object, Material, Texture, Window, sys, Draw, BGL, Mathutils, Lamp, Image
 
@@ -741,10 +742,7 @@ def launchLux(filename):
 	if ostype == "win32":
 		cmd = "start /b /belownormal \"\" \"%s\" \"%s\" --threads=%d"%(ic, filename, threads)		
 
-	if ostype == "darwin":
-		cmd = "(%s --threads=%d %s)&"%(ic, threads, filename)
-
-	if ostype == "linux2":
+	if ostype == "linux2" or ostype == "darwin":
 		cmd = "(%s --threads=%d %s)&"%(ic, threads, filename)
 
 	# call external shell script to start Lux	
@@ -767,17 +765,14 @@ def launchLuxWait(filename):
 		
 	if ostype == "win32":
 		cmd = "start /b /WAIT /belownormal \"\" \"%s\" \"%s\" --threads=%d"%(ic, filename, threads)		
+		# call external shell script to start Lux	
+		#print("Running Luxrender:\n"+cmd)
+		#os.spawnv(os.P_WAIT, cmd, 0)
+		os.system(cmd)
 
-	if ostype == "darwin":
-		cmd = "(%s --threads=%d %s)&"%(ic, threads, filename)
-
-	if ostype == "linux2":
-		cmd = "(%s --threads=%d %s)&"%(ic, threads, filename)
-
-	# call external shell script to start Lux	
-	print("Running Luxrender:\n"+cmd)
-	#os.spawnv(os.P_WAIT, cmd, 0)
-	os.system(cmd)
+	if ostype == "linux2" or ostype == "darwin":
+		cmd = "%s --threads=%d %s"%(ic, threads, filename)
+		subprocess.call(cmd,shell=True)
 
 #### SAVE ANIMATION ####	
 def save_anim(filename):
