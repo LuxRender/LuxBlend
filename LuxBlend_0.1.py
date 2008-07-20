@@ -1943,7 +1943,7 @@ def luxEnvironment(scn, gui=None):
 				if rot.get() != 0:
 					str += "\tRotate %d 0 0 1\n"%(rot.get())
 			str += "\t"+lsstr
-			str += luxInt("nsamples", luxProp(scn, "env.samples", 1), 1, 100, "samples", "number of samples", gui)
+			#str += luxInt("nsamples", luxProp(scn, "env.samples", 1), 1, 100, "samples", "number of samples", gui)
 			if gui: gui.newline()
 			if envtype.get() == "infinite":
 				map = luxProp(scn, "env.infinite.mapname", "")
@@ -2634,7 +2634,7 @@ def luxLight(name, kn, mat, gui, level):
 	link = luxRGB("L", luxProp(mat, kn+"light.l", "1.0 1.0 1.0"), 1.0, "L", "", gui)
 	if gui: gui.newline("")
 	link += luxFloat("gain", luxProp(mat, kn+"light.gain", 1.0), 0.0, 100.0, "gain", "gain", gui)
-	link += luxInt("nsamples", luxProp(mat, kn+"light.nsamples", 1), 1, 100, "samples", "number of samples", gui)
+	#link += luxInt("nsamples", luxProp(mat, kn+"light.nsamples", 1), 1, 100, "samples", "number of samples", gui)
 	if gui: gui.newline("")
 	link += luxString("lightgroup", luxProp(mat, kn+"light.lightgroup", ""), "light-group", "assign light to a named light-group", gui, 2.0)
 	has_bump_options = 0
