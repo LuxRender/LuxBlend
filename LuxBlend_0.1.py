@@ -1944,10 +1944,12 @@ def luxEnvironment(scn, gui=None):
 					str += "\tRotate %d 0 0 1\n"%(rot.get())
 			str += "\t"+lsstr
 			#str += luxInt("nsamples", luxProp(scn, "env.samples", 1), 1, 100, "samples", "number of samples", gui)
-			if gui: gui.newline()
 			if envtype.get() == "infinite":
+				mapping = luxProp(scn, "env.infinite.mapping", "latlong")
+				mappings = ["latlong","angular","vcross"]
+				mapstr = luxOption("mapping", mapping, mappings, "mapping", "Select mapping type", gui, 1.0)
 				map = luxProp(scn, "env.infinite.mapname", "")
-				mapstr = luxFile("mapname", map, "map-file", "filename of the environment map", gui, 2.0)
+				mapstr += luxFile("mapname", map, "map-file", "filename of the environment map", gui, 2.0)
 				mapstr += luxFloat("gamma", luxProp(scn, "env.infinite.gamma", 1.0), 0.0, 6.0, "gamma", "", gui, 1.0)
 				mapstr += luxFloat("gain", luxProp(scn, "env.infinite.gain", 1.0), 0.0, 10.0, "gain", "", gui, 1.0)
 				
