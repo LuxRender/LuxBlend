@@ -294,9 +294,7 @@ class luxExport:
 					if (len(face)==3):
 						triFaces.append([index, index+1, index+2])
 					else:
-						triFaces.append([index, index+1, index+2])
-						triFaces.append([index, index+2, index+3])
-#						quadFaces.append([index, index+1, index+2, index+3])
+						quadFaces.append([index, index+1, index+2, index+3])
 					index += len(face.verts)
 				# Dade - output indices
 				if (len(triFaces) > 0):
@@ -395,9 +393,7 @@ class luxExport:
 							if (len(face)==3):
 								triFaces.append(face)
 							else:
-								triFaces.append([face[0], face[1], face[2]])
-								triFaces.append([face[0], face[2], face[3]])
-#								quadFaces.append(face)
+								quadFaces.append(face)
 						# Dade - output indices
 						if (len(triFaces) > 0):
 							file.write("\"integer triindices\" [\n")
