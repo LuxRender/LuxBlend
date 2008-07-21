@@ -294,14 +294,17 @@ class luxExport:
 					if (len(face)==3):
 						triFaces.append([index, index+1, index+2])
 					else:
-						quadFaces.append([index, index+1, index+2, index+3])
+						triFaces.append([index, index+1, index+2])
+						triFaces.append([index, index+2, index+3])
+#						quadFaces.append([index, index+1, index+2, index+3])
 					index += len(face.verts)
 				# Dade - output indices
 				if (len(triFaces) > 0):
 					file.write("\"integer triindices\" [\n")
 					for face in triFaces:
 						file.write("%d %d %d\n"% (face[0], face[1], face[2]))
-					file.write("\t] ")
+					if (len(quadFaces) > 0):
+						file.write("\t] ")
 				if (len(quadFaces) > 0):
 					file.write("\"integer quadindices\" [\n")
 					for face in quadFaces:
@@ -353,17 +356,13 @@ class luxExport:
 						exportVIndices = []
 						index = 0
 						for vertex in face:
-#							v = [vertex.co[0], vertex.co[1], vertex.co[2]]
 							v = [vertex.co]
 							if normalFltr[shape]:
 								if (face.smooth):
-#									v.extend(vertex.no)
 									v.append(vertex.no)
 								else:
-#									v.extend(face.no)
 									v.append(face.no)
 							if (uvFltr[shape]) and (mesh.faceUV):
-#								v.extend(face.uv[index])
 								v.append(face.uv[index])
 							blenderVIndex = vertex.index
 							newExportVIndex = -1
@@ -396,37 +395,31 @@ class luxExport:
 							if (len(face)==3):
 								triFaces.append(face)
 							else:
-								quadFaces.append(face)
-
+								triFaces.append([face[0], face[1], face[2]])
+								triFaces.append([face[0], face[2], face[3]])
+#								quadFaces.append(face)
 						# Dade - output indices
 						if (len(triFaces) > 0):
 							file.write("\"integer triindices\" [\n")
 							for face in triFaces:
 								file.write("%d %d %d\n"% (face[0], face[1], face[2]))
-							file.write("\t] ")
+							if (len(quadFaces) > 0):
+								file.write("\t] ")
 						if (len(quadFaces) > 0):
 							file.write("\"integer quadindices\" [\n")
 							for face in quadFaces:
 								file.write("%d %d %d %d\n"% (face[0], face[1], face[2], face[3]))
 						file.write("\t] \"point P\" [\n");
-#						for vertex in exportVerts:
-#							file.write("%f %f %f\n"%(vertex[0], vertex[1], vertex[2]))
 						file.write("".join(["%f %f %f\n"%tuple(vertex[0]) for vertex in exportVerts]))
 						if normalFltr[shape]:
 							file.write("\t] \"normal N\" [\n")
-#							for vertex in exportVerts:
-#								file.write("%f %f %f\n"%(vertex[3], vertex[4], vertex[5]))
 							file.write("".join(["%f %f %f\n"%tuple(vertex[1]) for vertex in exportVerts])) 
 							if (uvFltr[shape]) and (mesh.faceUV):
 								file.write("\t] \"float UV\" [\n")
-#								for vertex in exportVerts:
-#									file.write("%f %f\n"%(vertex[6], vertex[7]))
 								file.write("".join(["%f %f\n"%tuple(vertex[2]) for vertex in exportVerts])) 
 						else:			
 							if (uvFltr[shape]) and (mesh.faceUV):
 								file.write("\t] \"float UV\" [\n")
-#								for vertex in exportVerts:
-#									file.write("%f %f\n"%(vertex[3], vertex[4]))
 								file.write("".join(["%f %f\n"%tuple(vertex[1]) for vertex in exportVerts])) 
 						file.write("\t]\n")
 						print "  shape(%s): %d vertices, %d faces"%(shapeText[shape], len(exportVerts), len(exportFaces))
