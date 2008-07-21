@@ -239,37 +239,36 @@ class luxExport:
 		scn = Scene.GetCurrent()
 		tri_thr = luxProp(scn, "trianglemesh_thr", 0).get()
 		btri_thr = luxProp(scn, "barytrianglemesh_thr", 300000).get()
-		if mat != dummyMat:
-			usesubdiv = luxProp(mat, "subdiv", "false")
-			usedisp = luxProp(mat, "dispmap", "false")
-			sharpbound = luxProp(mat, "sharpbound", "false")
-			nsmooth = luxProp(mat, "nsmooth", "true")
-			sdoffset = luxProp(mat, "sdoffset", 0.0)
-			dstr = ""
-			if usesubdiv.get() == "true":
-				nlevels = luxProp(mat, "sublevels", 1)
-				dstr += "\"loopsubdiv\" \"integer nlevels\" [%i] \"bool dmnormalsmooth\" [\"%s\"] \"bool dmsharpboundary\" [\"%s\"]"% (nlevels.get(), nsmooth.get(), sharpbound.get())
-			
-			if usedisp.get() == "true":
-				dstr += " \"string displacementmap\" [\"%s::dispmap.scale\"] \"float dmscale\" [-1.0] \"float dmoffset\" [%f]"%(mat.getName(), sdoffset.get()) # scale is scaled in texture
-
-			if dstr != "": return dstr
-
+#		if mat != dummyMat:
+#			usesubdiv = luxProp(mat, "subdiv", "false")
+#			usedisp = luxProp(mat, "dispmap", "false")
+#			sharpbound = luxProp(mat, "sharpbound", "false")
+#			nsmooth = luxProp(mat, "nsmooth", "true")
+#			sdoffset = luxProp(mat, "sdoffset", 0.0)
+#			dstr = ""
+#			if usesubdiv.get() == "true":
+#				nlevels = luxProp(mat, "sublevels", 1)
+#				dstr += "\"loopsubdiv\" \"integer nlevels\" [%i] \"bool dmnormalsmooth\" [\"%s\"] \"bool dmsharpboundary\" [\"%s\"]"% (nlevels.get(), nsmooth.get(), sharpbound.get())
+#			
+#			if usedisp.get() == "true":
+#				dstr += " \"string displacementmap\" [\"%s::dispmap.scale\"] \"float dmscale\" [-1.0] \"float dmoffset\" [%f]"%(mat.getName(), sdoffset.get()) # scale is scaled in texture
+#
+#			if dstr != "": return dstr
+#
+		res = "\"mesh\" \"string quadtype\" [\"quadrilateral\"] "
 		if (tri_thr == btri_thr):
-			return "trianglemesh"
-
+			return res + "\"string tritype\" [\"wald\"]"
 		if (btri_thr > tri_thr):
 			if (vertcount > btri_thr):
-				return "\"barytrianglemesh\""
+				return res + "\"string tritype\" [\"bary\"]"
 			else:
-				return "\"trianglemesh\""
+				return res + "\"string tritype\" [\"wald\"]"
 		else:
 			if (vertcount >= tri_thr):
-				return "\"trianglemesh\""
+				return res + "\"string tritype\" [\"wald\"]"
 			else:
-				return "\"barytrianglemesh\""
-
-		return "trianglemesh"
+				return res + "\"string tritype\" [\"bary\"]"
+		return res + "\"string tritype\" [\"wald\"]"
 
 	#-------------------------------------------------
 	# exportMesh(self, file, mesh, mats, name, portal)
@@ -280,19 +279,33 @@ class luxExport:
 			mats = [dummyMat]
 		for matIndex in range(len(mats)):
 			if (mats[matIndex] != None):
-				mesh_str = getMeshType(len(mesh.verts), mats[matIndex])
+				mesh_str = self.getMeshType(len(mesh.verts), mats[matIndex])
 				if (portal):
-					file.write("\tShape %s \"integer indices\" [\n"% mesh_str)
+					file.write("\tPortalShape %s "% mesh_str)
 				else:
 					self.exportMaterialLink(file, mats[matIndex])
-					file.write("\tPortalShape %s \"integer indices\" [\n"% mesh_str)
+					file.write("\tShape %s "% mesh_str)
+				# Dade - split faces between triangles and quads
 				index = 0
+				triFaces = []
+				quadFaces = []
 				ffaces = [f for f in mesh.faces if f.mat == matIndex]
 				for face in ffaces:
-					file.write("%d %d %d\n"%(index, index+1, index+2))
-					if (len(face)==4):
-						file.write("%d %d %d\n"%(index, index+2, index+3))
+					if (len(face)==3):
+						triFaces.append([index, index+1, index+2])
+					else:
+						quadFaces.append([index, index+1, index+2, index+3])
 					index += len(face.verts)
+				# Dade - output indices
+				if (len(triFaces) > 0):
+					file.write("\"integer triindices\" [\n")
+					for face in triFaces:
+						file.write("%d %d %d\n"% (face[0], face[1], face[2]))
+					file.write("\t] ")
+				if (len(quadFaces) > 0):
+					file.write("\"integer quadindices\" [\n")
+					for face in quadFaces:
+						file.write("%d %d %d %d\n"% (face[0], face[1], face[2], face[3]))
 				file.write("\t] \"point P\" [\n");
 				for face in ffaces:
 					for vertex in face:
@@ -305,7 +318,7 @@ class luxExport:
 							normal = vertex.no
 						file.write("%f %f %f\n"% tuple(normal))
 				if (mesh.faceUV):
-					file.write("\t] \"float uv\" [\n")
+					file.write("\t] \"float UV\" [\n")
 					for face in ffaces:
 						for uv in face.uv:
 							file.write("%f %f\n"% tuple(uv))
@@ -373,13 +386,28 @@ class luxExport:
 					if (len(exportVerts)>0):
 						mesh_str = self.getMeshType(len(exportVerts), mats[matIndex])
 						if (portal):
-							file.write("\tPortalShape %s \"integer indices\" [\n"% mesh_str)
+							file.write("\tPortalShape %s "% mesh_str)
 						else:
-							file.write("\tShape %s \"integer indices\" [\n"% mesh_str)
+							file.write("\tShape %s "% mesh_str)
+						# Dade - split faces between triangles and quads
+						triFaces = []
+						quadFaces = []
 						for face in exportFaces:
-							file.write("%d %d %d\n"%(face[0], face[1], face[2]))
-							if (len(face)==4):
-								file.write("%d %d %d\n"%(face[0], face[2], face[3]))
+							if (len(face)==3):
+								triFaces.append(face)
+							else:
+								quadFaces.append(face)
+
+						# Dade - output indices
+						if (len(triFaces) > 0):
+							file.write("\"integer triindices\" [\n")
+							for face in triFaces:
+								file.write("%d %d %d\n"% (face[0], face[1], face[2]))
+							file.write("\t] ")
+						if (len(quadFaces) > 0):
+							file.write("\"integer quadindices\" [\n")
+							for face in quadFaces:
+								file.write("%d %d %d %d\n"% (face[0], face[1], face[2], face[3]))
 						file.write("\t] \"point P\" [\n");
 #						for vertex in exportVerts:
 #							file.write("%f %f %f\n"%(vertex[0], vertex[1], vertex[2]))
@@ -390,13 +418,13 @@ class luxExport:
 #								file.write("%f %f %f\n"%(vertex[3], vertex[4], vertex[5]))
 							file.write("".join(["%f %f %f\n"%tuple(vertex[1]) for vertex in exportVerts])) 
 							if (uvFltr[shape]) and (mesh.faceUV):
-								file.write("\t] \"float uv\" [\n")
+								file.write("\t] \"float UV\" [\n")
 #								for vertex in exportVerts:
 #									file.write("%f %f\n"%(vertex[6], vertex[7]))
 								file.write("".join(["%f %f\n"%tuple(vertex[2]) for vertex in exportVerts])) 
 						else:			
 							if (uvFltr[shape]) and (mesh.faceUV):
-								file.write("\t] \"float uv\" [\n")
+								file.write("\t] \"float UV\" [\n")
 #								for vertex in exportVerts:
 #									file.write("%f %f\n"%(vertex[3], vertex[4]))
 								file.write("".join(["%f %f\n"%tuple(vertex[1]) for vertex in exportVerts])) 
