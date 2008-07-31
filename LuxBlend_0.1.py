@@ -77,6 +77,13 @@ def rg(col):
 			ncol = 0.0
 	return ncol
 
+def texturegamma():
+	scn = Scene.GetCurrent()
+	if luxProp(scn, "RGC", "true").get()=="true":
+		return luxProp(scn, "film.gamma", 2.2).get()
+	else:
+		return 1.0
+
 def exportMaterial(mat):
 	str = "# Material '%s'\n" %mat.name
 	return str+luxMaterial(mat)+"\n"
@@ -737,13 +744,20 @@ def launchLux(filename):
 		if sys.exists(ic) != 1:
 			Draw.PupMenu("Error: Lux renderer not found. Please set path on System page.%t|OK")
 			return		
+	autothreads = luxProp(scn, "autothreads", "true").get()
 	threads = luxProp(scn, "threads", 1).get()
 		
 	if ostype == "win32":
-		cmd = "start /b /belownormal \"\" \"%s\" \"%s\" --threads=%d"%(ic, filename, threads)		
+		if(autothreads=="true"):
+			cmd = "start /b /belownormal \"\" \"%s\" \"%s\" "%(ic, filename)		
+		else:
+			cmd = "start /b /belownormal \"\" \"%s\" \"%s\" --threads=%d"%(ic, filename, threads)		
 
 	if ostype == "linux2" or ostype == "darwin":
-		cmd = "(%s --threads=%d %s)&"%(ic, threads, filename)
+		if(autothreads=="true"):
+			cmd = "(%s %s)&"%(ic, filename)
+		else:
+			cmd = "(%s --threads=%d %s)&"%(ic, threads, filename)
 
 	# call external shell script to start Lux	
 	print("Running Luxrender:\n"+cmd)
@@ -761,17 +775,24 @@ def launchLuxWait(filename):
 		if sys.exists(ic) != 1:
 			Draw.PupMenu("Error: Lux renderer not found. Please set path on System page.%t|OK")
 			return		
+	autothreads = luxProp(scn, "autothreads", "true").get()
 	threads = luxProp(scn, "threads", 1).get()
 		
 	if ostype == "win32":
-		cmd = "start /b /WAIT /belownormal \"\" \"%s\" \"%s\" --threads=%d"%(ic, filename, threads)		
+		if(autothreads=="true"):
+			cmd = "start /b /WAIT /belownormal \"\" \"%s\" \"%s\" "%(ic, filename)		
+		else:
+			cmd = "start /b /WAIT /belownormal \"\" \"%s\" \"%s\" --threads=%d"%(ic, filename, threads)		
 		# call external shell script to start Lux	
 		#print("Running Luxrender:\n"+cmd)
 		#os.spawnv(os.P_WAIT, cmd, 0)
 		os.system(cmd)
 
 	if ostype == "linux2" or ostype == "darwin":
-		cmd = "%s --threads=%d %s"%(ic, threads, filename)
+		if(autothreads=="true"):
+			cmd = "%s %s"%(ic, filename)
+		else:
+			cmd = "%s --threads=%d %s"%(ic, threads, filename)
 		subprocess.call(cmd,shell=True)
 
 #### SAVE ANIMATION ####	
@@ -1400,6 +1421,16 @@ class luxProp:
 					usedproperties[self.name] = self.default
 					return self.default
 		return None
+	def getobj(self):
+		if self.obj:
+			return self.obj
+		else:
+			return None
+	def getname(self):
+		if self.name:
+			return self.name
+		else:
+			return None
 	def set(self, value):
 		global newluxdefaults
 		if self.obj:
@@ -1450,6 +1481,16 @@ class luxAttr:
 	def get(self):
 		if self.obj:
 			return getattr(self.obj, self.name)
+		else:
+			return None
+	def getobj(self):
+		if self.obj:
+			return self.obj
+		else:
+			return None
+	def getname(self):
+		if self.name:
+			return self.name
 		else:
 			return None
 	def set(self, value):
@@ -1507,15 +1548,114 @@ def luxOption(name, lux, options, caption, hint, gui, width=1.0):
 	return " \"string %s\" [\"%s\"]"%(name, lux.get())
 
 def luxIdentifier(name, lux, options, caption, hint, gui, width=1.0):
-	if gui: gui.newline(caption+":", 8)
+	if gui: gui.newline(caption+":", 8, 0, None, [0.4,0.4,0.6])
 	luxOption(name, lux, options, caption, hint, gui, width)
 	return "%s \"%s\""%(name, lux.get())
 
 def luxFloat(name, lux, min, max, caption, hint, gui, width=1.0):
 	if gui:
+		# Value
+		r = gui.getRect(width-0.12, 1)
+		Draw.Number(caption+": ", evtLuxGui, r[0], r[1], r[2], r[3], float(lux.get()), min, max, hint, lambda e,v: lux.set(v))
+
+		# IPO Curve
+		obj = lux.getobj()
+		keyname = lux.getname()
+
+		useipo = luxProp(obj, keyname+".IPOuse", "false")
+		i = gui.getRect(0.12, 1)
+		Draw.Toggle("I", evtLuxGui, i[0], i[1], i[2], i[3], useipo.get()=="true", "Use IPO Curve", lambda e,v: useipo.set(["false","true"][bool(v)]))
+		
+		if useipo.get() == "true":
+			if gui: gui.newline(caption+"IPO:", 8, 0, None, [0.5,0.45,0.35])
+			curve = luxProp(obj, keyname+".IPOCurveName", "") 
+			if curve.get() == "":
+				c = gui.getRect(2.0, 1)
+			else:
+				c = gui.getRect(1.1, 1)
+			
+			Draw.String("Ipo:", evtLuxGui, c[0], c[1], c[2], c[3], curve.get(), 250, "Set IPO Name", lambda e,v: curve.set(v))
+			
+			usemapping = luxProp(obj, keyname+".IPOmap", "false")
+			icu_value = 0
+
+			# Apply IPO to value
+			if curve.get() != "":
+				try:
+					ipoob = Blender.Ipo.Get(curve.get())
+				except: 
+					curve.set("")
+				pass
+				if curve.get() != "":
+					names = list([x[0] for x in ipoob.curveConsts.items()])
+					ipotype = luxProp(obj, keyname+".IPOCurveType", "OB_LOCZ")
+					luxOption("ipocurve", ipotype, names, "IPO Curve", "Set IPO Curve", gui, 0.6)
+
+					icu = ipoob[eval("Blender.Ipo.%s" % (ipotype.get()))]
+					icu_value = icu[Blender.Get('curframe')]
+					if usemapping.get() == "false": # if true is set during mapping below
+						lux.set(icu_value)	
+
+					# Mapping options
+					m = gui.getRect(0.3, 1)
+					Draw.Toggle("Map", evtLuxGui, m[0], m[1], m[2], m[3], usemapping.get()=="true", "Edit Curve mapping", lambda e,v: usemapping.set(["false","true"][bool(v)]))
+					if usemapping.get() == "true":
+						if gui: gui.newline(caption+"IPO:", 8, 0, None, [0.5,0.45,0.35])
+						fmin = luxProp(obj, keyname+".IPOCurvefmin", 0.0)
+						luxFloatNoIPO("ipofmin", fmin, -100, 100, "fmin", "Map minimum value from Curve", gui, 0.5)
+						fmax = luxProp(obj, keyname+".IPOCurvefmax", 1.0)
+						luxFloatNoIPO("ipofmax", fmax, -100, 100, "fmax", "Map maximum value from Curve", gui, 0.5)
+						tmin = luxProp(obj, keyname+".IPOCurvetmin", min)
+						luxFloatNoIPO("ipotmin", tmin, min, max, "tmin", "Map miminum value to", gui, 0.5)
+						tmax = luxProp(obj, keyname+".IPOCurvetmax", max)
+						luxFloatNoIPO("ipotmax", tmax, min, max, "tmax", "Map maximum value to", gui, 0.5)
+
+						sval = (icu_value - float(fmin.get())) / (float(fmax.get()) - float(fmin.get()))
+						lux.set(float(tmin.get()) + (sval * (float(tmax.get()) - float(tmin.get()))))
+
+						# invert
+						#v = gui.getRect(0.5, 1)
+						#Draw.Toggle("Invert", evtLuxGui, v[0], v[1], v[2], v[3], useipo.get()=="true", "Invert Curve values", lambda e,v: useipo.set(["false","true"][bool(v)]))
+	else:
+		obj = lux.getobj()
+		keyname = lux.getname()
+		useipo = luxProp(obj, keyname+".IPOuse", "false")
+		if useipo.get() == "true":
+			curve = luxProp(obj, keyname+".IPOCurveName", "") 
+			try:
+				ipoob = Blender.Ipo.Get(curve.get())
+			except: 
+				curve.set("")
+			pass
+			usemapping = luxProp(obj, keyname+".IPOmap", "false")
+			icu_value = 0
+			if curve.get() != "":
+				names = list([x[0] for x in ipoob.curveConsts.items()])
+				ipotype = luxProp(obj, keyname+".IPOCurveType", "OB_LOCZ")
+
+				icu = ipoob[eval("Blender.Ipo.%s" % (ipotype.get()))]
+				icu_value = icu[Blender.Get('curframe')]
+				if usemapping.get() == "false": # if true is set during mapping below
+					lux.set(icu_value)	
+
+			if usemapping.get() == "true":
+				if gui: gui.newline(caption+"IPO:", 8, 0, None, [0.5,0.45,0.35])
+				fmin = luxProp(obj, keyname+".IPOCurvefmin", 0.0)
+				fmax = luxProp(obj, keyname+".IPOCurvefmax", 1.0)
+				tmin = luxProp(obj, keyname+".IPOCurvetmin", min)
+				tmax = luxProp(obj, keyname+".IPOCurvetmax", max)
+				sval = (icu_value - float(fmin.get())) / (float(fmax.get()) - float(fmin.get()))
+				lux.set(float(tmin.get()) + (sval * (float(tmax.get()) - float(tmin.get()))))
+
+	return " \"float %s\" [%f]"%(name, float(lux.get()))
+
+def luxFloatNoIPO(name, lux, min, max, caption, hint, gui, width=1.0):
+	if gui:
 		r = gui.getRect(width, 1)
 		Draw.Number(caption+": ", evtLuxGui, r[0], r[1], r[2], r[3], float(lux.get()), min, max, hint, lambda e,v: lux.set(v))
 	return " \"float %s\" [%f]"%(name, float(lux.get()))
+
+
 
 def luxInt(name, lux, min, max, caption, hint, gui, width=1.0):
 	if gui:
@@ -1701,13 +1841,10 @@ def luxFilm(scn, gui=None):
 	
 			if gui: gui.newline("  Tonemap:")
 			str += luxFloat("reinhard_prescale", luxProp(scn, "film.reinhard.prescale", 1.0), 0.0, 10.0, "pre-scale", "Pre Scale: See Lux Manual ;)", gui)
-			str += luxFloat("reinhard_postscale", luxProp(scn, "film.reinhard.postscale", 1.0), 0.0, 10.0, "post-scale", "Post Scale: See Lux Manual ;)", gui)
+			str += luxFloat("reinhard_postscale", luxProp(scn, "film.reinhard.postscale", 1.2), 0.0, 10.0, "post-scale", "Post Scale: See Lux Manual ;)", gui)
 			str += luxFloat("reinhard_burn", luxProp(scn, "film.reinhard.burn", 6.0), 0.1, 12.0, "burn", "12.0: no burn out, 0.1 lot of burn out", gui)
 			palpha = luxProp(scn, "film.premultiplyalpha", "true")
 			str += luxBool("premultiplyalpha", palpha, "premultiplyalpha", "Pre multiply film alpha channel during normalization", gui)
-
-			if gui: gui.newline("  Gamma:")
-			str += luxFloat("gamma", luxProp(scn, "film.gamma", 2.2), 0.1, 6.0, "gamma", "Output and RGC Gamma", gui)
 
 			if gui: gui.newline("  Display:")
 			str += luxInt("displayinterval", luxProp(scn, "film.displayinterval", 12), 5, 3600, "interval", "Set display Interval (seconds)", gui)
@@ -1740,6 +1877,119 @@ def luxFilm(scn, gui=None):
 			str += luxInt("reject_warmup", luxProp(scn, "film.reject_warmup", 3), 0, 32768, "warmup_spp", "Specify amount of samples per pixel for high intensity rejection", gui)
 			debugmode = luxProp(scn, "film.debug", "false")
 			str += luxBool("debug", debugmode, "debug", "Turn on debug reporting and switch off reject", gui)
+
+			# Colorspace
+			if gui: gui.newline("  Colorspace:")
+
+			cspaceusepreset = luxProp(scn, "film.colorspaceusepreset", "true")
+			luxBool("colorspaceusepreset", cspaceusepreset, "Preset", "Select from a list of predefined presets", gui, 0.4)
+
+			# Default values for 'sRGB - HDTV (ITU-R BT.709-5)'
+			cspacewhiteX = luxProp(scn, "film.cspacewhiteX", 0.314275)
+			cspacewhiteY = luxProp(scn, "film.cspacewhiteY", 0.329411)
+			cspaceredX = luxProp(scn, "film.cspaceredX", 0.63)
+			cspaceredY = luxProp(scn, "film.cspaceredY", 0.34)
+			cspacegreenX = luxProp(scn, "film.cspacegreenX", 0.31)
+			cspacegreenY = luxProp(scn, "film.cspacegreenY", 0.595)
+			cspaceblueX = luxProp(scn, "film.cspaceblueX", 0.155)
+			cspaceblueY = luxProp(scn, "film.cspaceblueY", 0.07)
+			gamma = luxProp(scn, "film.gamma", 2.2)
+
+			if(cspaceusepreset.get() == "true"):
+				# preset controls
+				cspace = luxProp(scn, "film.colorspace", "sRGB - HDTV (ITU-R BT.709-5)")
+				cspaces = ["sRGB - HDTV (ITU-R BT.709-5)", "ROMM RGB", "Adobe RGB 98", "Apple RGB", "NTSC (FCC 1953, ITU-R BT.470-2 System M)", "NTSC (1979) (SMPTE C, SMPTE-RP 145)", "PAL/SECAM (EBU 3213, ITU-R BT.470-6)", "CIE (1931) E"]
+				luxOption("colorspace", cspace, cspaces, "Colorspace", "select output working colorspace", gui, 1.6)
+
+				if cspace.get()=="ROMM RGB":
+					cspacewhiteX.set(0.346); cspacewhiteY.set(0.359) # D50
+					cspaceredX.set(0.7347); cspaceredY.set(0.2653)
+					cspacegreenX.set(0.1596); cspacegreenY.set(0.8404)
+					cspaceblueX.set(0.0366); cspaceblueY.set(0.0001)
+				elif cspace.get()=="Adobe RGB 98":
+					cspacewhiteX.set(0.313); cspacewhiteY.set(0.329) # D65
+					cspaceredX.set(0.64); cspaceredY.set(0.34)
+					cspacegreenX.set(0.21); cspacegreenY.set(0.71)
+					cspaceblueX.set(0.15); cspaceblueY.set(0.06)
+				elif cspace.get()=="Apple RGB":
+					cspacewhiteX.set(0.313); cspacewhiteY.set(0.329) # D65
+					cspaceredX.set(0.625); cspaceredY.set(0.34)
+					cspacegreenX.set(0.28); cspacegreenY.set(0.595)
+					cspaceblueX.set(0.155); cspaceblueY.set(0.07)
+				elif cspace.get()=="NTSC (FCC 1953, ITU-R BT.470-2 System M)":
+					cspacewhiteX.set(0.310); cspacewhiteY.set(0.316) # C
+					cspaceredX.set(0.67); cspaceredY.set(0.33)
+					cspacegreenX.set(0.21); cspacegreenY.set(0.71)
+					cspaceblueX.set(0.14); cspaceblueY.set(0.08)
+				elif cspace.get()=="NTSC (1979) (SMPTE C, SMPTE-RP 145)":
+					cspacewhiteX.set(0.313); cspacewhiteY.set(0.329) # D65
+					cspaceredX.set(0.63); cspaceredY.set(0.34)
+					cspacegreenX.set(0.31); cspacegreenY.set(0.595)
+					cspaceblueX.set(0.155); cspaceblueY.set(0.07)
+				elif cspace.get()=="PAL/SECAM (EBU 3213, ITU-R BT.470-6)":
+					cspacewhiteX.set(0.313); cspacewhiteY.set(0.329) # D65
+					cspaceredX.set(0.64); cspaceredY.set(0.33)
+					cspacegreenX.set(0.29); cspacegreenY.set(0.60)
+					cspaceblueX.set(0.15); cspaceblueY.set(0.06)
+				elif cspace.get()=="CIE (1931) E":
+					cspacewhiteX.set(0.333); cspacewhiteY.set(0.333) # E
+					cspaceredX.set(0.7347); cspaceredY.set(0.2653)
+					cspacegreenX.set(0.2738); cspacegreenY.set(0.7174)
+					cspaceblueX.set(0.1666); cspaceblueY.set(0.0089)
+
+				whitepointusecspace = luxProp(scn, "film.whitepointusecolorspace", "true")
+				luxBool("whitepointusecolorspace", whitepointusecspace, "Colorspace Whitepoint", "Use default whitepoint for selected colorspace", gui, 1.0)
+				gammausecspace = luxProp(scn, "film.gammausecolorspace", "true")
+				luxBool("gammausecolorspace", gammausecspace, "Colorspace Gamma", "Use default output gamma for selected colorspace", gui, 1.0)
+
+				if(whitepointusecspace.get() == "false"):
+					if gui: gui.newline("  Whitepoint:")
+					whitepointusepreset = luxProp(scn, "film.whitepointusepreset", "true")
+					luxBool("whitepointusepreset", whitepointusepreset, "Preset", "Select from a list of predefined presets", gui, 0.4)
+
+					if(whitepointusepreset.get() == "true"):
+						whitepointpresets = ["E", "D50", "D55", "D65", "D75", "A", "B", "C", "9300", "F2", "F7", "F11"]
+						whitepointpreset = luxProp(scn, "film.whitepointpreset", "D65")
+						luxOption("whitepointpreset", whitepointpreset, whitepointpresets, "  PRESET", "select Whitepoint preset", gui, 1.6)
+
+						if whitepointpreset.get()=="E": cspacewhiteX.set(0.333); cspacewhiteY.set(0.333)
+						elif whitepointpreset.get()=="D50": cspacewhiteX.set(0.346); cspacewhiteY.set(0.359)
+						elif whitepointpreset.get()=="D55": cspacewhiteX.set(0.332); cspacewhiteY.set(0.347)
+						elif whitepointpreset.get()=="D65": cspacewhiteX.set(0.313); cspacewhiteY.set(0.329)
+						elif whitepointpreset.get()=="D75": cspacewhiteX.set(0.299); cspacewhiteY.set(0.315)
+						elif whitepointpreset.get()=="A": cspacewhiteX.set(0.448); cspacewhiteY.set(0.407)
+						elif whitepointpreset.get()=="B": cspacewhiteX.set(0.348); cspacewhiteY.set(0.352)
+						elif whitepointpreset.get()=="C": cspacewhiteX.set(0.310); cspacewhiteY.set(0.316)
+						elif whitepointpreset.get()=="9300": cspacewhiteX.set(0.285); cspacewhiteY.set(0.293)
+						elif whitepointpreset.get()=="F2": cspacewhiteX.set(0.372); cspacewhiteY.set(0.375)
+						elif whitepointpreset.get()=="F7": cspacewhiteX.set(0.313); cspacewhiteY.set(0.329)
+						elif whitepointpreset.get()=="F11": cspacewhiteX.set(0.381); cspacewhiteY.set(0.377)
+					else:
+						luxFloat("white X", cspacewhiteX, 0.0, 1.0, "white X", "Whitepoint X weight", gui, 0.8)
+						luxFloat("white Y", cspacewhiteY, 0.0, 1.0, "white Y", "Whitepoint Y weight", gui, 0.8)
+
+				if(gammausecspace.get() == "false"):
+					if gui: gui.newline("  Gamma:")
+					luxFloat("gamma", gamma, 0.1, 6.0, "gamma", "Output and RGC Gamma", gui, 2.0)
+			else:
+				# manual controls
+				luxFloat("white X", cspacewhiteX, 0.0, 1.0, "white X", "Whitepoint X weight", gui, 0.8)
+				luxFloat("white Y", cspacewhiteY, 0.0, 1.0, "white Y", "Whitepoint Y weight", gui, 0.8)
+				luxFloat("red X", cspaceredX, 0.0, 1.0, "red X", "Red component X weight", gui, 1.0)
+				luxFloat("red Y", cspaceredY, 0.0, 1.0, "red Y", "Red component Y weight", gui, 1.0)
+				luxFloat("green X", cspacegreenX, 0.0, 1.0, "green X", "Green component X weight", gui, 1.0)
+				luxFloat("green Y", cspacegreenY, 0.0, 1.0, "green Y", "Green component Y weight", gui, 1.0)
+				luxFloat("blue X", cspaceblueX, 0.0, 1.0, "blue X", "Blue component X weight", gui, 1.0)
+				luxFloat("blue Y", cspaceblueY, 0.0, 1.0, "blue Y", "Blue component Y weight", gui, 1.0)
+				if gui: gui.newline("  Gamma:")
+				luxFloat("gamma", gamma, 0.1, 6.0, "gamma", "Output and RGC Gamma", gui, 2.0)
+
+			str += " \"float colorspace_white\" [%f %f]"%(cspacewhiteX.get(), cspacewhiteY.get())
+			str += " \"float colorspace_red\" [%f %f]"%(cspaceredX.get(), cspaceredY.get())
+			str += " \"float colorspace_green\" [%f %f]"%(cspacegreenX.get(), cspacegreenY.get())
+			str += " \"float colorspace_blue\" [%f %f]"%(cspaceblueX.get(), cspaceblueY.get())
+			str += " \"float gamma\" [%f]"%(gamma.get())
+
 	return str
 
 
@@ -1782,14 +2032,32 @@ def luxSampler(scn, gui=None):
 	if scn:
 		samplertype = luxProp(scn, "sampler.type", "metropolis")
 		str = luxIdentifier("Sampler", samplertype, ["metropolis", "erpt", "lowdiscrepancy", "random", "halton"], "SAMPLER", "select sampler type", gui)
+		showadvanced = luxProp(scn, "sampler.metro.showadvanced", "false")
+		luxBool("advanced", showadvanced, "Advanced", "Show advanced options", gui, 0.6)
+		showhelp = luxProp(scn, "sampler.metro.showhelp", "false")
+		luxBool("help", showhelp, "Help", "Show Help Information", gui, 0.4)
 		if samplertype.get() == "metropolis":
-			str += luxInt("initsamples", luxProp(scn, "sampler.metro.initsamples", 100000), 1, 1000000, "initsamples", "", gui)
-			if gui: gui.newline("  Mutation:")
-			str += luxInt("maxconsecrejects", luxProp(scn, "sampler.metro.maxrejects", 256), 0, 32768, "max.rejects", "number of consecutive rejects before a new mutation is forced", gui)
+			# Default parameters
+			#if gui: gui.newline("  Mutation:")
+			if gui: gui.newline("  Mutation:", 8, 0, None, [0.4,0.4,0.4])
 			str += luxFloat("largemutationprob", luxProp(scn, "sampler.metro.lmprob", 0.25), 0.0, 1.0, "LM.prob.", "probability of generation a large sample (mutation)", gui)
-			if gui: gui.newline()
-			str += luxInt("stratawidth", luxProp(scn, "sampler.metro.stratawidth", 256), 1, 32768, "stratawidth", "The number of x/y strata for stratified sampling of seeds", gui)
-			str += luxBool("usevariance",luxProp(scn, "sampler.metro.usevariance", "false"), "usevariance", "Accept based on variance", gui)
+			str += luxInt("maxconsecrejects", luxProp(scn, "sampler.metro.maxrejects", 256), 0, 32768, "max.rejects", "number of consecutive rejects before a new mutation is forced", gui)
+
+			# Advanced parameters
+			if showadvanced.get()=="true":
+				#if gui: gui.newline("  Screen:", 8, 0, None, [0.3,0.3,0.3])
+				if gui: gui.newline("  Screen:")
+				str += luxInt("initsamples", luxProp(scn, "sampler.metro.initsamples", 100000), 1, 1000000, "initsamples", "", gui)
+				str += luxInt("stratawidth", luxProp(scn, "sampler.metro.stratawidth", 256), 1, 32768, "stratawidth", "The number of x/y strata for stratified sampling of seeds", gui)
+				str += luxBool("usevariance",luxProp(scn, "sampler.metro.usevariance", "false"), "usevariance", "Accept based on variance", gui, 1.2)
+				str += luxBool("useqr",luxProp(scn, "sampler.metro.useqr", "false"), "QMC", "Use Quasi Monte Carlo sequences", gui, 0.8)
+
+			if showhelp.get()=="true":
+				if gui: gui.newline("  Description:", 8, 0, None, [0.4,0.5,0.56])
+				r = gui.getRect(2,1); BGL.glRasterPos2i(r[0],r[1]+5) 
+				Draw.Text("A Metropolis-Hastings mutating sampler which implements MLT", 'small')	
+
+
 		if samplertype.get() == "erpt":
 			str += luxInt("initsamples", luxProp(scn, "sampler.erpt.initsamples", 100000), 1, 1000000, "initsamples", "", gui)
 			if gui: gui.newline("  Mutation:")
@@ -1872,30 +2140,30 @@ def luxSurfaceIntegrator(scn, gui=None):
 		if integratortype.get() == "distributedpath":
 			str += luxOption("strategy", luxProp(scn, "sintegrator.distributedpath.strategy", "auto"), ["one", "all", "auto"], "strategy", "select directlighting strategy", gui)
 			if gui: gui.newline("  Direct:")
-			#str += luxBool("directsampleall",luxProp(scn, "sintegrator.distributedpath.directsampleall", "true"), "Direct ALL", "Include diffuse direct light sample at first vertex", gui, 0.75)
+			str += luxBool("directsampleall",luxProp(scn, "sintegrator.distributedpath.directsampleall", "true"), "Direct ALL", "Include diffuse direct light sample at first vertex", gui, 0.75)
 			str += luxInt("directsamples", luxProp(scn, "sintegrator.distributedpath.directsamples", 1), 0, 1024, "s", "The number of direct light samples to take at the eye vertex", gui, 0.25)
-			#str += luxBool("indirectsampleall",luxProp(scn, "sintegrator.distributedpath.indirectsampleall", "false"), "Indirect ALL", "Include diffuse direct light sample at first vertex", gui, 0.75)
+			str += luxBool("indirectsampleall",luxProp(scn, "sintegrator.distributedpath.indirectsampleall", "false"), "Indirect ALL", "Include diffuse direct light sample at first vertex", gui, 0.75)
 			str += luxInt("indirectsamples", luxProp(scn, "sintegrator.distributedpath.indirectsamples", 1), 0, 1024, "s", "The number of direct light samples to take at the remaining vertices", gui, 0.25)
 			if gui: gui.newline("  Diffuse:")
 			str += luxInt("diffusereflectdepth", luxProp(scn, "sintegrator.distributedpath.diffusereflectdepth", 3), 0, 2048, "Reflect", "The maximum recursion depth for diffuse reflection ray casting", gui, 0.5)
 			str += luxInt("diffusereflectsamples", luxProp(scn, "sintegrator.distributedpath.diffusereflectsamples", 1), 0, 1024, "s", "The number of diffuse reflection samples to take at the eye vertex", gui, 0.25)
 			str += luxInt("diffuserefractdepth", luxProp(scn, "sintegrator.distributedpath.diffuserefractdepth", 5), 0, 2048, "Refract", "The maximum recursion depth for diffuse refraction ray casting", gui, 0.5)
 			str += luxInt("diffuserefractsamples", luxProp(scn, "sintegrator.distributedpath.diffuserefractsamples", 1), 0, 1024, "s", "The number of diffuse refraction samples to take at the eye vertex", gui, 0.25)
-			#str += luxBool("directdiffuse",luxProp(scn, "sintegrator.distributedpath.directdiffuse", "true"), "DL", "Include diffuse direct light sample at first vertex", gui, 0.25)
-			#str += luxBool("indirectdiffuse",luxProp(scn, "sintegrator.distributedpath.indirectdiffuse", "true"), "IDL", "Include diffuse indirect light sample at first vertex", gui, 0.25)
+			str += luxBool("directdiffuse",luxProp(scn, "sintegrator.distributedpath.directdiffuse", "true"), "DL", "Include diffuse direct light sample at first vertex", gui, 0.25)
+			str += luxBool("indirectdiffuse",luxProp(scn, "sintegrator.distributedpath.indirectdiffuse", "true"), "IDL", "Include diffuse indirect light sample at first vertex", gui, 0.25)
 			if gui: gui.newline("  Glossy:")
 			str += luxInt("glossyreflectdepth", luxProp(scn, "sintegrator.distributedpath.glossyreflectdepth", 2), 0, 2048, "Reflect", "The maximum recursion depth for glossy reflection ray casting", gui, 0.5)
 			str += luxInt("glossyreflectsamples", luxProp(scn, "sintegrator.distributedpath.glossyreflectsamples", 1), 0, 1024, "s", "The number of glossy reflection samples to take at the eye vertex", gui, 0.25)
 			str += luxInt("glossyrefractdepth", luxProp(scn, "sintegrator.distributedpath.glossyrefractdepth", 5), 0, 2048, "Refract", "The maximum recursion depth for glossy refraction ray casting", gui, 0.5)
 			str += luxInt("glossyrefractsamples", luxProp(scn, "sintegrator.distributedpath.glossyrefractsamples", 1), 0, 1024, "s", "The number of glossy refraction samples to take at the eye vertex", gui, 0.25)
-			#str += luxBool("directglossy",luxProp(scn, "sintegrator.distributedpath.directglossy", "true"), "DL", "Include glossy direct light sample at first vertex", gui, 0.25)
-			#str += luxBool("indirectglossy",luxProp(scn, "sintegrator.distributedpath.indirectglossy", "true"), "IDL", "Include glossy indirect light sample at first vertex", gui, 0.25)
+			str += luxBool("directglossy",luxProp(scn, "sintegrator.distributedpath.directglossy", "true"), "DL", "Include glossy direct light sample at first vertex", gui, 0.25)
+			str += luxBool("indirectglossy",luxProp(scn, "sintegrator.distributedpath.indirectglossy", "true"), "IDL", "Include glossy indirect light sample at first vertex", gui, 0.25)
 			if gui: gui.newline("  Specular:")
 			str += luxInt("specularreflectdepth", luxProp(scn, "sintegrator.distributedpath.specularreflectdepth", 3), 0, 2048, "Reflect", "The maximum recursion depth for specular reflection ray casting", gui, 1.0)
 			str += luxInt("specularrefractdepth", luxProp(scn, "sintegrator.distributedpath.specularrefractdepth", 5), 0, 2048, "Refract", "The maximum recursion depth for specular refraction ray casting", gui, 1.0)
-			#if gui: gui.newline("  Caustics:")
-			#str += luxBool("causticsondiffuse",luxProp(scn, "sintegrator.distributedpath.causticsondiffuse", "false"), "Caustics on Diffuse", "Enable caustics on diffuse surfaces (warning: might generate bright pixels)", gui, 1.0)
-			#str += luxBool("causticsonglossy",luxProp(scn, "sintegrator.distributedpath.causticsonglossy", "true"), "Caustics on Glossy", "Enable caustics on glossy surfaces (warning: might generate bright pixels)", gui, 1.0)
+			if gui: gui.newline("  Caustics:")
+			str += luxBool("causticsondiffuse",luxProp(scn, "sintegrator.distributedpath.causticsondiffuse", "false"), "Caustics on Diffuse", "Enable caustics on diffuse surfaces (warning: might generate bright pixels)", gui, 1.0)
+			str += luxBool("causticsonglossy",luxProp(scn, "sintegrator.distributedpath.causticsonglossy", "true"), "Caustics on Glossy", "Enable caustics on glossy surfaces (warning: might generate bright pixels)", gui, 1.0)
 
 		if integratortype.get() == "particletracing":
 			if gui: gui.newline("  Depth:")
@@ -1950,7 +2218,7 @@ def luxEnvironment(scn, gui=None):
 				mapstr = luxOption("mapping", mapping, mappings, "mapping", "Select mapping type", gui, 1.0)
 				map = luxProp(scn, "env.infinite.mapname", "")
 				mapstr += luxFile("mapname", map, "map-file", "filename of the environment map", gui, 2.0)
-				mapstr += luxFloat("gamma", luxProp(scn, "env.infinite.gamma", 1.0), 0.0, 6.0, "gamma", "", gui, 1.0)
+				mapstr += luxFloat("gamma", luxProp(scn, "env.infinite.gamma", texturegamma()), 0.0, 6.0, "gamma", "", gui, 1.0)
 				mapstr += luxFloat("gain", luxProp(scn, "env.infinite.gain", 1.0), 0.0, 10.0, "gain", "", gui, 1.0)
 				
 				if map.get() != "":
@@ -1969,16 +2237,37 @@ def luxEnvironment(scn, gui=None):
 						if obj.getData(mesh=1).getType() == 1: # sun object # data
 							sun = obj
 				if sun:
+					str += luxFloat("relsize", luxProp(scn, "env.sunsky.relisze", 1.0), 0.0, 100.0, "rel.size", "relative sun size", gui)
 					invmatrix = Mathutils.Matrix(sun.getInverseMatrix())
 					str += " \"vector sundir\" [%f %f %f]\n" %(invmatrix[0][2], invmatrix[1][2], invmatrix[2][2])
 					str += luxFloat("gain", luxProp(scn, "env.sunsky.gain", 1.0), 0.0, 100.0, "gain", "Sky gain", gui)
-					str += luxFloat("turbidity", luxProp(scn, "env.sunsky.turbidity", 2.0), 1.5, 5.0, "turbidity", "Sky turbidity", gui)
-					if gui: gui.newline()
-					str += luxFloat("relsize", luxProp(scn, "env.sunsky.relisze", 1.0), 0.0, 100.0, "rel.size", "relative sun size", gui)
+					str += luxFloat("turbidity", luxProp(scn, "env.sunsky.turbidity", 2.2), 1.5, 5.0, "turbidity", "Sky turbidity", gui)
 				else:
 					if gui:
 						gui.newline(); r = gui.getRect(2,1); BGL.glRasterPos2i(r[0],r[1]+5) 
 						Draw.Text("create a blender Sun Lamp")
+
+#				if gui: gui.newline()
+#				suncalc = luxProp(scn, "env.sunsky.suncalc", "false")
+#				luxBool("suncalc", suncalc, "Sunlight Calculator", "Use inbuilt sunposition calculator", gui, 2.0)
+#
+#				if suncalc.get() == "true":
+#					if gui: gui.newline("  Location:")
+#					location = luxProp(scn, "env.sunsky.suncalclocation", "BELGIUM - Brussels")
+#					locations = ["BELGIUM - Brussels"]
+#					str = luxOption("location", location, locations, "Location", "", gui, 2.0)
+#				
+#					luxFloat("lat", luxProp(scn, "env.sunsky.suncalclatitude", 50.48), -90.0, 90.0, "lat", "Latitude", gui, 1.0)
+#					luxFloat("long", luxProp(scn, "env.sunsky.suncalclongitude", 4.21), -360.0, 360.0, "long", "Longitude", gui, 1.0)
+#					if gui: gui.newline("  Date:")
+#					luxInt("day", luxProp(scn, "env.sunsky.suncalcday", 1), 1, 31, "D", "Day", gui, 0.5)
+#					luxInt("month", luxProp(scn, "env.sunsky.suncalcmonth", 1), 1, 12, "M", "Month", gui, 0.5)
+#					luxInt("year", luxProp(scn, "env.sunsky.suncalcyear", 2008), -3000, 3000, "Y", "Year", gui, 0.5)
+#
+#					if gui: gui.newline("  Time:")
+#					luxInt("hour", luxProp(scn, "env.sunsky.suncalchour", 12), 0, 24, "H", "Hour", gui, 0.5)
+#					luxInt("minute", luxProp(scn, "env.sunsky.suncalcminute", 0), 0, 60, "M", "Minute", gui, 0.5)
+#					luxInt("second", luxProp(scn, "env.sunsky.suncalcsecond", 0), 0, 60, "S", "Second", gui, 0.5)
 			str += "\n"
 	return str
 
@@ -2015,11 +2304,14 @@ def luxSystem(scn, gui=None):
 		luxFile("filename", luxProp(scn, "lux", ""), "lux-file", "filename and path of the lux executable", gui, 2.0)
 		if gui: gui.newline()
 		luxFile("datadir", luxProp(scn, "datadir", ""), "default out dir", "default.lxs save path", gui, 2.0)
-		if gui: gui.newline()
-		luxInt("threads", luxProp(scn, "threads", 1), 1, 100, "threads", "number of threads used for rendering", gui)
+		if gui: gui.newline("THREADS:", 10)
+		autothreads = luxProp(scn, "autothreads", "true")
+		luxBool("autothreads", autothreads, "Auto Detect", "Automatically use all available processors", gui, 1.0)
+		if autothreads.get()=="false":
+			luxInt("threads", luxProp(scn, "threads", 1), 1, 100, "threads", "number of threads used for rendering", gui, 1.0)
 		if gui: gui.newline("GAMMA:", 10)
 		luxBool("RGC", luxProp(scn, "RGC", "true"), "RGC", "use reverse gamma correction", gui)
-		luxBool("ColClamp", luxProp(scn, "colorclamp", "true"), "ColClamp", "clamp all colors to 0.0-0.9", gui)
+		luxBool("ColClamp", luxProp(scn, "colorclamp", "false"), "ColClamp", "clamp all colors to 0.0-0.9", gui)
 		if gui: gui.newline("MESH:", 10)
 		luxBool("mesh_optimizing", luxProp(scn, "mesh_optimizing", "true"), "optimize meshes", "Optimize meshes during export", gui, 2.0)
 		luxInt("trianglemesh thr", luxProp(scn, "trianglemesh_thr", 0), 0, 10000000, "trianglemesh threshold", "Vertex threshold for exporting (wald) trianglemesh object(s)", gui, 2.0)
@@ -2107,7 +2399,7 @@ def luxTexture(name, parentkey, type, default, min, max, caption, hint, mat, gui
 	if texture.get() == "imagemap":
 		str += luxOption("wrap", luxProp(mat, keyname+".wrap", "repeat"), ["repeat","black","clamp"], "repeat", "", gui, 1.1)
 		str += luxFile("filename", luxProp(mat, keyname+".filename", ""), "file", "texture file path", gui, 2.0)
-		str += luxFloat("gamma", luxProp(mat, keyname+".gamma", 1.0), 0.0, 6.0, "gamma", "", gui, 0.75)
+		str += luxFloat("gamma", luxProp(mat, keyname+".gamma", texturegamma()), 0.0, 6.0, "gamma", "", gui, 0.75)
 		str += luxFloat("gain", luxProp(mat, keyname+".gain", 1.0), 0.0, 10.0, "gain", "", gui, 0.5)
 		filttype = luxProp(mat, keyname+".filtertype", "bilinear")
 		filttypes = ["mipmap_ewa","mipmap_trilinear","bilinear","nearest"]
@@ -2653,6 +2945,9 @@ def luxMaterialBlock(name, luxname, key, mat, gui=None, level=0, str_opt=""):
 	if kn != "": kn += "."
 	if keyname == "": matname = mat.getName()
 	else: matname = "%s:%s"%(mat.getName(), keyname)
+
+
+
 	if mat:
 		mattype = luxProp(mat, kn+"type", "matte")
 		materials = ["carpaint","glass","matte","mattetranslucent","metal","mirror","plastic","roughglass","shinymetal","substrate","mix","null"]
@@ -2663,6 +2958,10 @@ def luxMaterialBlock(name, luxname, key, mat, gui=None, level=0, str_opt=""):
 			if level == 0: gui.newline("Material type:", 12, level, icon, [0.4,0.4,0.6])
 			else: gui.newline(name+":", 12, level, icon, scalelist([0.4,0.4,0.6],2.0/(level+2)))
 		link = luxOption("type", mattype, materials, "  TYPE", "select material type", gui)
+		showadvanced = luxProp(mat, kn+"showadvanced", "false")
+		luxBool("advanced", showadvanced, "Advanced", "Show advanced options", gui, 0.6)
+		showhelp = luxProp(mat, kn+"showhelp", "false")
+		luxBool("help", showhelp, "Help", "Show Help Information", gui, 0.4)
 		if gui: gui.newline()
 		has_object_options = 0 # disable object options by default
 		has_bump_options   = 0 # disable bump mapping options by default
@@ -3136,20 +3435,23 @@ def luxDraw():
 			BGL.glColor3f(1.0,0.5,0.4);BGL.glRectf(90,y-74,170,y-70);BGL.glColor3f(0.9,0.9,0.9)
 			cam = scn.getCurrentCamera()
 			if cam:
+				r = gui.getRect(1.1, 1)
 				luxCamera(cam.data, scn.getRenderingContext(), gui)
 			gui.newline("", 10)
 			luxEnvironment(scn, gui)
 		if luxpage.get() == 2:
 			BGL.glColor3f(1.0,0.5,0.4);BGL.glRectf(170,y-74,250,y-70);BGL.glColor3f(0.9,0.9,0.9)
+			r = gui.getRect(1.1, 1)
+			luxSampler(scn, gui)
+			gui.newline("", 10)
 			luxSurfaceIntegrator(scn, gui)
 			gui.newline("", 10)
 			luxVolumeIntegrator(scn, gui)
 			gui.newline("", 10)
-			luxSampler(scn, gui)
-			gui.newline("", 10)
 			luxPixelFilter(scn, gui)
 		if luxpage.get() == 3:
 			BGL.glColor3f(1.0,0.5,0.4);BGL.glRectf(250,y-74,330,y-70);BGL.glColor3f(0.9,0.9,0.9)
+			r = gui.getRect(1.1, 1)
 			luxFilm(scn, gui)
 		if luxpage.get() == 4:
 			BGL.glColor3f(1.0,0.5,0.4);BGL.glRectf(330,y-74,410,y-70);BGL.glColor3f(0.9,0.9,0.9)
