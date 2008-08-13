@@ -167,10 +167,13 @@ class luxExport:
 	# analyseObject(self, obj, matrix, name)
 	# called by analyseScene to build the lists before export
 	#-------------------------------------------------
-	def analyseObject(self, obj, matrix, name):
+	def analyseObject(self, obj, matrix, name, isOriginal=True):
 		light = False
 		if (obj.users > 0):
 			obj_type = obj.getType()
+			if (obj.enableDupFrames and isOriginal):
+				for o, m in obj.DupObjects:
+					self.analyseObject(o, m, "%s.%s"%(name, o.getName()), False)	
 			if (obj.enableDupGroup or obj.enableDupVerts):
 				for o, m in obj.DupObjects:
 					self.analyseObject(o, m, "%s.%s"%(name, o.getName()))	
