@@ -637,7 +637,7 @@ def save_lux(filename, unindexedname):
 			forwards = -matrix[2]
 			target = pos + forwards
 			up = matrix[1]
-			file.write("LookAt %f %f %f %f %f %f %f %f %f\n" % ( pos[0], pos[1], pos[2], target[0], target[1], target[2], up[0], up[1], up[2] ))
+			file.write("LookAt %f %f %f \n       %f %f %f \n       %f %f %f\n\n" % ( pos[0], pos[1], pos[2], target[0], target[1], target[2], up[0], up[1], up[2] ))
 			file.write(luxCamera(camObj.data, scn.getRenderingContext()))
 			file.write("\n")
 		file.write("\n")
@@ -1548,12 +1548,12 @@ def luxOption(name, lux, options, caption, hint, gui, width=1.0):
 				i = 0
 		r = gui.getRect(width, 1)
 		Draw.Menu(menustr, evtLuxGui, r[0], r[1], r[2], r[3], i, hint, lambda e,v: lux.set(options[v]))
-	return " \"string %s\" [\"%s\"]"%(name, lux.get())
+	return "\n   \"string %s\" [\"%s\"]"%(name, lux.get())
 
 def luxIdentifier(name, lux, options, caption, hint, gui, width=1.0):
 	if gui: gui.newline(caption+":", 8, 0, None, [0.4,0.4,0.6])
 	luxOption(name, lux, options, caption, hint, gui, width)
-	return "%s \"%s\""%(name, lux.get())
+	return "\n%s \"%s\""%(name, lux.get())
 
 def luxFloat(name, lux, min, max, caption, hint, gui, width=1.0):
 	if gui:
@@ -1650,13 +1650,13 @@ def luxFloat(name, lux, min, max, caption, hint, gui, width=1.0):
 				sval = (icu_value - float(fmin.get())) / (float(fmax.get()) - float(fmin.get()))
 				lux.set(float(tmin.get()) + (sval * (float(tmax.get()) - float(tmin.get()))))
 
-	return " \"float %s\" [%f]"%(name, float(lux.get()))
+	return "\n   \"float %s\" [%f]"%(name, float(lux.get()))
 
 def luxFloatNoIPO(name, lux, min, max, caption, hint, gui, width=1.0):
 	if gui:
 		r = gui.getRect(width, 1)
 		Draw.Number(caption+": ", evtLuxGui, r[0], r[1], r[2], r[3], float(lux.get()), min, max, hint, lambda e,v: lux.set(v))
-	return " \"float %s\" [%f]"%(name, float(lux.get()))
+	return "\n   \"float %s\" [%f]"%(name, float(lux.get()))
 
 
 
@@ -1664,27 +1664,27 @@ def luxInt(name, lux, min, max, caption, hint, gui, width=1.0):
 	if gui:
 		r = gui.getRect(width, 1)
 		Draw.Number(caption+": ", evtLuxGui, r[0], r[1], r[2], r[3], int(lux.get()), min, max, hint, lambda e,v: lux.set(v))
-	return " \"integer %s\" [%d]"%(name, int(lux.get()))
+	return "\n   \"integer %s\" [%d]"%(name, int(lux.get()))
 
 def luxBool(name, lux, caption, hint, gui, width=1.0):
 	if gui:
 		r = gui.getRect(width, 1)
 		Draw.Toggle(caption, evtLuxGui, r[0], r[1], r[2], r[3], lux.get()=="true", hint, lambda e,v: lux.set(["false","true"][bool(v)]))
-	return " \"bool %s\" [\"%s\"]"%(name, lux.get())
+	return "\n   \"bool %s\" [\"%s\"]"%(name, lux.get())
 
 def luxString(name, lux, caption, hint, gui, width=1.0):
 	if gui:
 		r = gui.getRect(width, 1)
 		Draw.String(caption+": ", evtLuxGui, r[0], r[1], r[2], r[3], lux.get(), 250, hint, lambda e,v: lux.set(v))
 	if lux.get()==lux.default: return ""
-	else: return " \"string %s\" [\"%s\"]"%(name, luxstr(lux.get()))
+	else: return "\n   \"string %s\" [\"%s\"]"%(name, luxstr(lux.get()))
 
 def luxFile(name, lux, caption, hint, gui, width=1.0):
 	if gui:
 		r = gui.getRect(width, 1)
 		Draw.String(caption+": ", evtLuxGui, r[0], r[1], r[2]-r[3]-2, r[3], lux.get(), 250, hint, lambda e,v: lux.set(v))
 		Draw.Button("...", 0, r[0]+r[2]-r[3], r[1], r[3], r[3], "click to open file selector", lambda e,v:Window.FileSelector(lambda s:lux.set(s), "Select %s"%(caption), lux.get()))
-	return " \"string %s\" [\"%s\"]"%(name, luxstr(lux.get()))
+	return "\n   \"string %s\" [\"%s\"]"%(name, luxstr(lux.get()))
 
 def luxRGB(name, lux, max, caption, hint, gui, width=2.0):
 	if gui:
@@ -1706,8 +1706,8 @@ def luxRGB(name, lux, max, caption, hint, gui, width=2.0):
 		if max > 1.0:
 			Draw.Number("s:", evtLuxGui, r[0]+r[3]+3*w, r[1], w, r[3], drawS.val, 0.0, max, "color scale", lambda e,v: lux.setRGB((drawR.val*v,drawG.val*v,drawB.val*v)))
 	if max <= 1.0:
-		return " \"color %s\" [%s]"%(name, lux.getRGC())
-	return " \"color %s\" [%s]"%(name, lux.get())
+		return "\n   \"color %s\" [%s]"%(name, lux.getRGC())
+	return "\n   \"color %s\" [%s]"%(name, lux.get())
 
 def luxVector(name, lux, min, max, caption, hint, gui, width=2.0):
 	if gui:
@@ -1718,7 +1718,7 @@ def luxVector(name, lux, min, max, caption, hint, gui, width=2.0):
 		drawX = Draw.Number("x:", evtLuxGui, r[0], r[1], w, r[3], drawX.val, min, max, "", lambda e,v: lux.setVector((v,drawY.val,drawZ.val)))
 		drawY = Draw.Number("y:", evtLuxGui, r[0]+w, r[1], w, r[3], drawY.val, min, max, "", lambda e,v: lux.setVector((drawX.val,v,drawZ.val)))
 		drawZ = Draw.Number("z:", evtLuxGui, r[0]+2*w, r[1], w, r[3], drawZ.val, min, max, "", lambda e,v: lux.setVector((drawX.val,drawY.val,v)))
-	return " \"vector %s\" [%s]"%(name, lux.get())
+	return "\n   \"vector %s\" [%s]"%(name, lux.get())
 
 
 
@@ -1755,10 +1755,10 @@ def luxCamera(cam, context, gui=None):
 			print "calculated focal length: %f mm"%(focal * 1000.0)
 			aperture_diameter = focal / fstop.get()
 			print "calculated aperture diameter: %f mm"%(aperture_diameter * 1000.0)
-			str += " \"float aperture_diameter\" [%f]"%(aperture_diameter*1000.0)
+			str += "\n   \"float aperture_diameter\" [%f]"%(aperture_diameter*1000.0)
 			filmdistance = dofdist.get() * focal / (dofdist.get() - focal)
 			print "calculated film distance: %f mm"%(filmdistance * 1000.0)
-			str += " \"float filmdistance\" [%f]"%(filmdistance*1000.0)
+			str += "\n   \"float filmdistance\" [%f]"%(filmdistance*1000.0)
 		if gui: gui.newline("  Clipping:")
 		str += luxFloat("hither", luxAttr(cam, "clipStart"), 0.0, 100.0, "start", "near clip distance", gui)
 		str += luxFloat("yon", luxAttr(cam, "clipEnd"), 1.0, 10000.0, "end", "far clip distance", gui)
@@ -1813,7 +1813,7 @@ def luxCamera(cam, context, gui=None):
 					(x1,y1,x2,y2) = context.border
 					screenwindow = [screenwindow[0]*(1-x1)+screenwindow[1]*x1, screenwindow[0]*(1-x2)+screenwindow[1]*x2,\
 							screenwindow[2]*(1-y1)+screenwindow[3]*y1, screenwindow[2]*(1-y2)+screenwindow[3]*y2]
-				str += " \"float screenwindow\" [%f %f %f %f]"%(screenwindow[0], screenwindow[1], screenwindow[2], screenwindow[3])
+				str += "\n   \"float screenwindow\" [%f %f %f %f]"%(screenwindow[0], screenwindow[1], screenwindow[2], screenwindow[3])
 	return str
 
 
@@ -1835,9 +1835,9 @@ def luxFilm(scn, gui=None):
 				if context.borderRender:
 					(x1,y1,x2,y2) = context.border
 					if (x1==x2) and (y1==y2): print "WARNING: empty render-region, use SHIFT-B to set render region in Blender."
-					str += " \"integer xresolution\" [%d] \"integer yresolution\" [%d]"%(luxAttr(context, "sizeX").get()*scale/100*(x2-x1), luxAttr(context, "sizeY").get()*scale/100*(y2-y1))
+					str += "\n   \"integer xresolution\" [%d] \n   \"integer yresolution\" [%d]"%(luxAttr(context, "sizeX").get()*scale/100*(x2-x1), luxAttr(context, "sizeY").get()*scale/100*(y2-y1))
 				else:
-					str += " \"integer xresolution\" [%d] \"integer yresolution\" [%d]"%(luxAttr(context, "sizeX").get()*scale/100, luxAttr(context, "sizeY").get()*scale/100)
+					str += "\n   \"integer xresolution\" [%d] \n   \"integer yresolution\" [%d]"%(luxAttr(context, "sizeX").get()*scale/100, luxAttr(context, "sizeY").get()*scale/100)
 
 			if gui: gui.newline("  Halt:")
 			str += luxInt("haltspp", luxProp(scn, "haltspp", 0), 0, 32768, "haltspp", "Stop rendering after specified amount of samples per pixel / 0 = never halt", gui)
@@ -1855,8 +1855,15 @@ def luxFilm(scn, gui=None):
 			if gui: gui.newline("  Write:")
 			str += luxInt("writeinterval", luxProp(scn, "film.writeinterval", 120), 5, 3600, "interval", "Set display Interval (seconds)", gui)
 
-			fn = luxProp(scn, "filename", "default-%05d" %  (Blender.Get('curframe')))
-			str += luxString("filename", fn, "File name", "save file name", None)
+			# override output image dir in case of command line batch mode 
+			overrideop = luxProp(scn, "overrideoutputpath", "")
+			if overrideop.get() != "":
+				filebase = os.path.splitext(os.path.basename(Blender.Get('filename')))[0]
+				filename = overrideop.get() + "/" + filebase + "-%05d" %  (Blender.Get('curframe'))
+				str += "\n   \"string filename\" [\"%s\"]"%(filename)
+			else:
+				fn = luxProp(scn, "filename", "default-%05d" %  (Blender.Get('curframe')))
+				str += luxString("filename", fn, "File name", "save file name", None)
 
 			if gui: gui.newline("  Formats:")
 			savetga = luxProp(scn, "film.write_tonemapped_tga", "true")
@@ -1987,11 +1994,11 @@ def luxFilm(scn, gui=None):
 				if gui: gui.newline("  Gamma:")
 				luxFloat("gamma", gamma, 0.1, 6.0, "gamma", "Output and RGC Gamma", gui, 2.0)
 
-			str += " \"float colorspace_white\" [%f %f]"%(cspacewhiteX.get(), cspacewhiteY.get())
-			str += " \"float colorspace_red\" [%f %f]"%(cspaceredX.get(), cspaceredY.get())
-			str += " \"float colorspace_green\" [%f %f]"%(cspacegreenX.get(), cspacegreenY.get())
-			str += " \"float colorspace_blue\" [%f %f]"%(cspaceblueX.get(), cspaceblueY.get())
-			str += " \"float gamma\" [%f]"%(gamma.get())
+			str += "\n   \"float colorspace_white\" [%f %f]"%(cspacewhiteX.get(), cspacewhiteY.get())
+			str += "\n   \"float colorspace_red\" [%f %f]"%(cspaceredX.get(), cspaceredY.get())
+			str += "\n   \"float colorspace_green\" [%f %f]"%(cspacegreenX.get(), cspacegreenY.get())
+			str += "\n   \"float colorspace_blue\" [%f %f]"%(cspaceblueX.get(), cspaceblueY.get())
+			str += "\n   \"float gamma\" [%f]"%(gamma.get())
 
 	return str
 
@@ -2229,7 +2236,7 @@ def luxEnvironment(scn, gui=None):
 				else:
 					try:
 						worldcolor = Blender.World.Get('World').getHor()
-						str += " \"color L\" [%g %g %g]\n" %(worldcolor[0], worldcolor[1], worldcolor[2])
+						str += "\n   \"color L\" [%g %g %g]\n" %(worldcolor[0], worldcolor[1], worldcolor[2])
 					except: pass
 
 
@@ -2242,7 +2249,7 @@ def luxEnvironment(scn, gui=None):
 				if sun:
 					str += luxFloat("relsize", luxProp(scn, "env.sunsky.relisze", 1.0), 0.0, 100.0, "rel.size", "relative sun size", gui)
 					invmatrix = Mathutils.Matrix(sun.getInverseMatrix())
-					str += " \"vector sundir\" [%f %f %f]\n" %(invmatrix[0][2], invmatrix[1][2], invmatrix[2][2])
+					str += "\n   \"vector sundir\" [%f %f %f]\n" %(invmatrix[0][2], invmatrix[1][2], invmatrix[2][2])
 					str += luxFloat("gain", luxProp(scn, "env.sunsky.gain", 1.0), 0.0, 100.0, "gain", "Sky gain", gui)
 					str += luxFloat("turbidity", luxProp(scn, "env.sunsky.turbidity", 2.2), 1.5, 5.0, "turbidity", "Sky turbidity", gui)
 				else:
@@ -3224,8 +3231,6 @@ def CBluxAnimExport(default, run):
 		Window.FileSelector(save_anim, "Export", sys.makename(Blender.Get("filename"), ".lxs"))
 
 
-
-
 # convert a Blender material to lux material
 def convertMaterial(mat):
 	def dot(str):
@@ -3603,7 +3608,6 @@ def luxButtonEvt(evt):  # function that handles button events
 			launchLux(filename)
 
 
-Draw.Register(luxDraw, luxEvent, luxButtonEvt)
 
 def setFocus(target):
 	currentscene = Scene.GetCurrent()
@@ -3622,34 +3626,81 @@ def setFocus(target):
 	camObj.getData(mesh=1).dofDist = (camDir[0]*dist[0]+camDir[1]*dist[1]+camDir[2]*dist[2])/camDir.length # data
 
 
+# Parse command line arguments for batch mode rendering if supplied
+try: pyargs = osys.argv[osys.argv.index('--')+1:]
+except: pyargs = []
 
+if pyargs != [] and pyargs[0] == "--batch":
+	print "\n\nLuxBlend CVS - BATCH mode\n"
 
+	scene = Scene.GetCurrent()
+	context = scene.getRenderingContext()
 
+	luxpath = ""
 
+	import getopt
+	o, a = getopt.getopt(pyargs[1:], 's:e:l:o:t:none')
+	opts = {}
+	for k,v in o:
+		opts[k] = v
+	if opts.has_key('-s'):
+		print "Start frame: %s" %opts['-s']
+		context.startFrame(int(opts['-s']))
+	else:
+		print "Error: Start frame not supplied (-s)"; osys.exit(1)
+	if opts.has_key('-e'):
+		print "End frame: %s" %opts['-e']
+		context.endFrame(int(opts['-e']))
+	else:
+		print "Error: End frame not supplied (-e)"; osys.exit(1)
+	if opts.has_key('-l'):
+		print "Path to lux binary: %s" %opts['-l']
+		luxpathprop = luxProp(scene, "lux", "")
+		luxpathprop.set(opts['-l'])
+	else:
+		print "Error: path to lux binary not supplied (-l)"; osys.exit(1)	
+	if opts.has_key('-o'):
+		print "Image output path: %s" %opts['-o']
+		luxProp(scene, "overrideoutputpath", "").set(opts['-o'])
+	else:
+		print "Error: image output path not supplied (-o)"; osys.exit(1)	
+	if opts.has_key('-t'):
+		print "Temporary export path: %s" %opts['-t']
+		luxProp(scene, "datadir", "").set(opts['-t'])
+	else:
+		print "Error: Temporary export path not supplied (-t)"; osys.exit(1)			
 
-print "\n\nLuxBlend CVS\n"
+	luxProp(scene, "run", True).set("true")
+	CBluxAnimExport(True, True)
+	osys.exit(0)
 
-luxpathprop = luxProp(Scene.GetCurrent(), "lux", "")
-luxpath = luxpathprop.get()
-luxrun = luxProp(Scene.GetCurrent(), "run", True).get()
-checkluxpath = luxProp(Scene.GetCurrent(), "checkluxpath", True).get()
-
-if checkluxpath and luxrun:
-	if (luxpath is None) or (sys.exists(luxpath)<=0):
-		# luxpath not valid, so delete entry from .blend scene file ...
-		luxpathprop.delete()
-		# and re-get luxpath, so we get the path from default-settings
-		luxpath = luxpathprop.get()
-		if (luxpath is None) or (sys.exists(luxpath)<=0):
-			print "WARNING: LuxPath \"%s\" is not valid\n"%(luxpath)
-			scn = Scene.GetCurrent()
-			if scn:
-				r = Draw.PupMenu("Installation: Set path to the lux render software?%t|Yes%x1|No%x0|Never%x2")
-				if r == 1:
-					Window.FileSelector(lambda s:luxProp(scn, "lux", "").set(s), "Select Lux executable")
-					saveluxdefaults()
-				if r == 2:
-					newluxdefaults["checkluxpath"] = False
-					saveluxdefaults()
 else:
-	print "Lux path check disabled\n"
+	print "\n\nLuxBlend CVS - UI mode\n"
+	Draw.Register(luxDraw, luxEvent, luxButtonEvt) # init GUI
+
+
+
+	luxpathprop = luxProp(Scene.GetCurrent(), "lux", "")
+	luxpath = luxpathprop.get()
+	luxrun = luxProp(Scene.GetCurrent(), "run", True).get()
+	checkluxpath = luxProp(Scene.GetCurrent(), "checkluxpath", True).get()
+
+	if checkluxpath and luxrun:
+		if (luxpath is None) or (sys.exists(luxpath)<=0):
+			# luxpath not valid, so delete entry from .blend scene file ...
+			luxpathprop.delete()
+			# and re-get luxpath, so we get the path from default-settings
+			luxpath = luxpathprop.get()
+			if (luxpath is None) or (sys.exists(luxpath)<=0):
+				print "WARNING: LuxPath \"%s\" is not valid\n"%(luxpath)
+				scn = Scene.GetCurrent()
+				if scn:
+					r = Draw.PupMenu("Installation: Set path to the lux render software?%t|Yes%x1|No%x0|Never%x2")
+					if r == 1:
+						Window.FileSelector(lambda s:luxProp(scn, "lux", "").set(s), "Select Lux executable")
+						saveluxdefaults()
+					if r == 2:
+						newluxdefaults["checkluxpath"] = False
+						saveluxdefaults()
+	else	:
+		print "Lux path check disabled\n"
