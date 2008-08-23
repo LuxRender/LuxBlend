@@ -2228,7 +2228,7 @@ def luxEnvironment(scn, gui=None):
 				mapstr = luxOption("mapping", mapping, mappings, "mapping", "Select mapping type", gui, 1.0)
 				map = luxProp(scn, "env.infinite.mapname", "")
 				mapstr += luxFile("mapname", map, "map-file", "filename of the environment map", gui, 2.0)
-				mapstr += luxFloat("gamma", luxProp(scn, "env.infinite.gamma", texturegamma()), 0.0, 6.0, "gamma", "", gui, 1.0)
+				mapstr += luxFloat("gamma", luxProp(scn, "env.infinite.gamma", 2.2), 0.0, 6.0, "gamma", "", gui, 1.0)
 				mapstr += luxFloat("gain", luxProp(scn, "env.infinite.gain", 1.0), 0.0, 10.0, "gain", "", gui, 1.0)
 				
 				if map.get() != "":
