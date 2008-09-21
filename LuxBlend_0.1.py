@@ -1536,6 +1536,12 @@ class luxProp:
 			except:	pass
 			try: del self.obj.properties['luxblend'][self.hashname]
 			except:	pass
+	def getFloat(self):
+		try: return float(self.get())
+		except: return float(self.default)
+	def getInt(self):
+		try: return int(self.get())
+		except: return int(self.default)
 	def getRGB(self):
 		l = self.get().split(" ")
 		if len(l) != 3: l = self.default.split(" ")
@@ -1563,6 +1569,10 @@ class luxAttr:
 			return getattr(self.obj, self.name)
 		else:
 			return None
+	def getFloat(self):
+		return float(self.get())
+	def getInt(self):
+		return int(self.get())
 	def getobj(self):
 		if self.obj:
 			return self.obj
@@ -1663,8 +1673,7 @@ def luxFloat(name, lux, min, max, caption, hint, gui, width=1.0):
 			r = gui.getRect(width, 1)
 
 		# Value
-		Draw.Number(caption+": ", evtLuxGui, r[0], r[1], r[2], r[3], float(lux.get()), min, max, hint, lambda e,v: lux.set(v))
-
+		Draw.Number(caption+": ", evtLuxGui, r[0], r[1], r[2], r[3], lux.getFloat(), min, max, hint, lambda e,v: lux.set(v))
 		if (luxProp(Scene.GetCurrent(), "useparamkeys", "false").get()=="true"):
 			# IPO Curve
 			obj = lux.getobj()
@@ -1756,21 +1765,21 @@ def luxFloat(name, lux, min, max, caption, hint, gui, width=1.0):
 					sval = (icu_value - float(fmin.get())) / (float(fmax.get()) - float(fmin.get()))
 					lux.set(float(tmin.get()) + (sval * (float(tmax.get()) - float(tmin.get()))))
 
-	return "\n   \"float %s\" [%f]"%(name, float(lux.get()))
+	return "\n   \"float %s\" [%f]"%(name, lux.getFloat())
 
 def luxFloatNoIPO(name, lux, min, max, caption, hint, gui, width=1.0):
 	if gui:
 		r = gui.getRect(width, 1)
-		Draw.Number(caption+": ", evtLuxGui, r[0], r[1], r[2], r[3], float(lux.get()), min, max, hint, lambda e,v: lux.set(v))
-	return "\n   \"float %s\" [%f]"%(name, float(lux.get()))
+		Draw.Number(caption+": ", evtLuxGui, r[0], r[1], r[2], r[3], lux.getFloat(), min, max, hint, lambda e,v: lux.set(v))
+	return "\n   \"float %s\" [%f]"%(name, lux.getFloat())
 
 
 
 def luxInt(name, lux, min, max, caption, hint, gui, width=1.0):
 	if gui:
 		r = gui.getRect(width, 1)
-		Draw.Number(caption+": ", evtLuxGui, r[0], r[1], r[2], r[3], int(lux.get()), min, max, hint, lambda e,v: lux.set(v))
-	return "\n   \"integer %s\" [%d]"%(name, int(lux.get()))
+		Draw.Number(caption+": ", evtLuxGui, r[0], r[1], r[2], r[3], lux.getInt(), min, max, hint, lambda e,v: lux.set(v))
+	return "\n   \"integer %s\" [%d]"%(name, lux.getInt())
 
 def luxBool(name, lux, caption, hint, gui, width=1.0):
 	if gui:
@@ -3360,6 +3369,11 @@ def luxMaterialBlock(name, luxname, key, mat, gui=None, level=0, str_opt=""):
 def luxMaterial(mat, gui=None):
 	str = ""
 	if mat:
+		if luxProp(mat, "type", "").get()=="": # lux material not defined yet
+			print "Blender material \"%s\" has no lux material definition, converting..."%(mat.getName())
+			try:
+				convertMaterial(mat) # try converting the blender material to a lux material
+			except: pass
 		(str, link) = luxMaterialBlock("", "", "", mat, gui, 0)
 		if luxProp(mat, "type", "matte").get() != "light":
 			link = "NamedMaterial \"%s\""%(mat.getName())
@@ -3394,6 +3408,7 @@ def CBluxAnimExport(default, run):
 		Window.FileSelector(save_anim, "Export", sys.makename(Blender.Get("filename"), ".lxs"))
 
 
+
 # convert a Blender material to lux material
 def convertMaterial(mat):
 	def dot(str):
@@ -3402,24 +3417,238 @@ def convertMaterial(mat):
 	def ddot(str):
 		if str != "": return str+":"
 		return str
+	def mapConstDict(value, constant_dict, lux_dict, default=None):
+		for k,v in constant_dict.items():
+			if (v == value) and (lux_dict.has_key(k)):
+				return lux_dict[k]
+		return default
+
+	def convertMapping(name, tex):
+		if tex.texco == Texture.TexCo["UV"]:
+			luxProp(mat, dot(name)+"mapping","").set("uv")
+			luxProp(mat, dot(name)+"uscale", 1.0).set(tex.size[0])
+			luxProp(mat, dot(name)+"vscale", 1.0).set(-tex.size[1])
+			luxProp(mat, dot(name)+"udelta", 0.0).set(tex.ofs[0]+0.5*(1.0-tex.size[0]))
+			luxProp(mat, dot(name)+"vdelta", 0.0).set(-tex.ofs[1]-0.5*(1.0-tex.size[1]))
+			if tex.mapping != Texture.Mappings["FLAT"]:
+				print "Material Conversion Warning: for UV-texture-input only FLAT mapping is supported\n" 
+		else:
+			if tex.mapping == Texture.Mappings["FLAT"]:
+				luxProp(mat, dot(name)+"mapping","").set("planar")
+			elif tex.mapping == Texture.Mappings["TUBE"]:
+				luxProp(mat, dot(name)+"mapping","").set("cylindrical")
+			elif tex.mapping == Texture.Mappings["SPHERE"]:
+				luxProp(mat, dot(name)+"mapping","").set("spherical")
+			else: luxProp(mat, dot(name)+"mapping","").set("planar")
+		luxProp(mat, dot(name)+"3dscale", "1.0 1.0 1.0").setVector((1.0/tex.size[0], 1.0/tex.size[1], 1.0/tex.size[2]))
+		luxProp(mat, dot(name)+"3dtranslate", "0.0 0.0 0.0").setVector((-tex.ofs[0], -tex.ofs[1], -tex.ofs[2]))
+
+	def convertColorband(colorband):
+		# colorbands are not supported in lux - so lets extract a average low-side and high-side color
+                cb = [colorband[0]] + colorband[:] + [colorband[-1]]
+		cb[0][4], cb[-1][4] = 0.0, 1.0
+		low, high = [0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0]
+		for i in range(1, len(cb)):
+			for c in range(4):
+				low[c] += (cb[i-1][c]*(1.0-cb[i-1][4]) + cb[i][c]*(1.0-cb[i][4])) * (cb[i][4]-cb[i-1][4])
+				high[c] += (cb[i-1][c]*cb[i-1][4] + cb[i][c]*cb[i][4]) * (cb[i][4]-cb[i-1][4])
+		return low, high
+
+	def createLuxTexture(name, tex):
+		texture = tex.tex
+		convertMapping(name, tex)
+		if (texture.type == Texture.Types["IMAGE"]) and (texture.image) and (texture.image.filename!=""):
+			luxProp(mat, dot(name)+"texture", "").set("imagemap")
+			luxProp(mat, dot(name)+"filename", "").set(texture.image.filename)
+			luxProp(mat, dot(name)+"wrap", "").set(mapConstDict(texture.extend, Texture.ExtendModes, {"REPEAT":"repeat", "EXTEND":"clamp", "CLIP":"black"}, ""))
+		else:
+			if tex.texco != Texture.TexCo["GLOB"]:
+				print "Material Conversion Warning: procedural textures supports global mapping only\n"
+			noiseDict = {"BLENDER":"blender_original", "CELLNOISE":"cell_noise", "IMPROVEDPERLIN":"improved_perlin", "PERLIN":"original_perlin", "VORONOICRACKLE":"voronoi_crackle", "VORONOIF1":"voronoi_f1", "VORONOIF2":"voronoi_f2", "VORONOIF2F1":"voronoi_f2f1", "VORONOIF3":"voronoi_f3", "VORONOIF4":"voronoi_f4"}
+			luxProp(mat, dot(name)+"bright", 1.0).set(texture.brightness)
+			luxProp(mat, dot(name)+"contrast", 1.0).set(texture.contrast)
+			if texture.type == Texture.Types["CLOUDS"]:
+				luxProp(mat, dot(name)+"texture", "").set("blender_clouds")
+				luxProp(mat, dot(name)+"mtype", "").set(mapConstDict(texture.stype, Texture.STypes, {"CLD_DEFAULT":"default", "CLD_COLOR":"color"}, ""))
+				luxProp(mat, dot(name)+"noisetype", "").set({"soft":"soft_noise", "hard":"hard_noise"}[texture.noiseType])
+				luxProp(mat, dot(name)+"noisesize", 0.25).set(texture.noiseSize)
+				luxProp(mat, dot(name)+"noisedepth", 2).set(texture.noiseDepth)
+				luxProp(mat, dot(name)+"noisebasis", "").set(mapConstDict(texture.noiseBasis, Texture.Noise, noiseDict, ""))
+			elif texture.type == Texture.Types["WOOD"]:
+				luxProp(mat, dot(name)+"texture", "").set("blender_wood")
+				luxProp(mat, dot(name)+"mtype", "").set(mapConstDict(texture.stype, Texture.STypes, {"WOD_BANDS":"bands", "WOD_RINGS":"rings", "WOD_BANDNOISE":"bandnoise", "WOD_RINGNOISE":"ringnoise"}, ""))
+				luxProp(mat, dot(name)+"noisebasis2", "").set(mapConstDict(texture.noiseBasis2, Texture.Noise, {"SINE":"sin", "SAW":"saw", "TRI":"tri"}, ""))
+				luxProp(mat, dot(name)+"noisebasis", "").set(mapConstDict(texture.noiseBasis, Texture.Noise, noiseDict, ""))
+				luxProp(mat, dot(name)+"noisetype", "").set({"soft":"soft_noise", "hard":"hard_noise"}[texture.noiseType])
+				luxProp(mat, dot(name)+"noisesize", 0.25).set(texture.noiseSize)
+				luxProp(mat, dot(name)+"turbulance", 0.25).set(texture.turbulence)
+			elif texture.type == Texture.Types["MUSGRAVE"]:
+				luxProp(mat, dot(name)+"texture", "").set("blender_musgrave")
+				luxProp(mat, dot(name)+"mtype", "").set(mapConstDict(texture.stype, Texture.STypes, {"MUS_MFRACTAL":"multifractal", "MUS_RIDGEDMF":"ridged_multifractal", "MUS_HYBRIDMF":"hybrid_multifractal", "MUS_HTERRAIN":"hetero_terrain", "MUS_FBM":"fbm"}, ""))
+				luxProp(mat, dot(name)+"noisebasis", "").set(mapConstDict(texture.noiseBasis, Texture.Noise, noiseDict, ""))
+				luxProp(mat, dot(name)+"noisesize", 0.25).set(texture.noiseSize)
+				# bug in blender python API: value of "hFracDim" is casted to Integer instead of Float (reported to Ideasman42 - will be fixed after Blender 2.47)
+				if texture.hFracDim != 0.0: luxProp(mat, dot(name)+"h", 1.0).set(texture.hFracDim) # bug in blender API, "texture.hFracDim" returns a Int instead of a Float
+				else: luxProp(mat, dot(name)+"h", 1.0).set(0.5) # use a default value
+				# bug in blender python API: values "offset" and "gain" are missing in Python-API (reported to Ideasman42 - will be fixed after Blender 2.47)
+				try:
+					luxProp(mat, dot(name)+"offset", 1.0).set(texture.offset)
+					luxProp(mat, dot(name)+"gain", 1.0).set(texture.gain)
+				except AttributeError: pass
+				luxProp(mat, dot(name)+"lacu", 2.0).set(texture.lacunarity)
+				luxProp(mat, dot(name)+"octs", 2.0).set(texture.octs)
+				luxProp(mat, dot(name)+"outscale", 1.0).set(texture.iScale)
+			elif texture.type == Texture.Types["MARBLE"]:
+				luxProp(mat, dot(name)+"texture", "").set("blender_marble")
+				luxProp(mat, dot(name)+"mtype", "").set(mapConstDict(texture.stype, Texture.STypes, {"MBL_SOFT":"soft", "MBL_SHARP":"sharp", "MBL_SHARPER":"sharper"}, ""))
+				luxProp(mat, dot(name)+"noisetype", "").set({"soft":"soft_noise", "hard":"hard_noise"}[texture.noiseType])
+				luxProp(mat, dot(name)+"turbulance", 0.25).set(texture.turbulence)
+				luxProp(mat, dot(name)+"noisedepth", 2).set(texture.noiseDepth)
+				luxProp(mat, dot(name)+"noisebasis", "").set(mapConstDict(texture.noiseBasis, Texture.Noise, noiseDict, ""))
+				luxProp(mat, dot(name)+"noisebasis2", "").set(mapConstDict(texture.noiseBasis2, Texture.Noise, {"SINE":"sin", "SAW":"saw", "TRI":"tri"}, ""))
+				luxProp(mat, dot(name)+"noisesize", 0.25).set(texture.noiseSize)
+			elif texture.type == Texture.Types["VORONOI"]:
+				luxProp(mat, dot(name)+"texture", "").set("blender_voronoi")
+				luxProp(mat, dot(name)+"distmetric", "").set({0:"actual_distance", 1:"distance_squared", 2:"manhattan", 3:"chebychev", 4:"minkovsky_half", 5:"minkovsky_four", 6:"minkovsky"}[texture.distMetric])
+				luxProp(mat, dot(name)+"outscale", 1.0).set(texture.iScale)
+				luxProp(mat, dot(name)+"noisesize", 0.25).set(texture.noiseSize)
+				luxProp(mat, dot(name)+"minkosky_exp", 2.5).set(texture.exp)
+				luxProp(mat, dot(name)+"w1", 1.0).set(texture.weight1)
+				luxProp(mat, dot(name)+"w2", 0.0).set(texture.weight2)
+				luxProp(mat, dot(name)+"w3", 0.0).set(texture.weight3)
+				luxProp(mat, dot(name)+"w4", 0.0).set(texture.weight4)
+			elif texture.type == Texture.Types["NOISE"]:
+				luxProp(mat, dot(name)+"texture", "").set("blender_noise")
+			elif texture.type == Texture.Types["DISTNOISE"]:
+				luxProp(mat, dot(name)+"texture", "").set("blender_distortednoise")
+				luxProp(mat, dot(name)+"distamount", 1.0).set(texture.distAmnt)
+				luxProp(mat, dot(name)+"noisesize", 0.25).set(texture.noiseSize)
+				luxProp(mat, dot(name)+"noisebasis", "").set(mapConstDict(texture.noiseBasis, Texture.Noise, noiseDict, ""))
+				luxProp(mat, dot(name)+"noisebasis2", "").set(mapConstDict(texture.noiseBasis2, Texture.Noise, noiseDict, ""))
+			elif texture.type == Texture.Types["MAGIC"]:
+				luxProp(mat, dot(name)+"texture", "").set("blender_magic")
+				luxProp(mat, dot(name)+"turbulance", 0.25).set(texture.turbulence)
+				luxProp(mat, dot(name)+"noisedepth", 2).set(texture.noiseDepth)
+			elif texture.type == Texture.Types["STUCCI"]:
+				luxProp(mat, dot(name)+"texture", "").set("blender_stucci")
+				luxProp(mat, dot(name)+"mtype", "").set(mapConstDict(texture.stype, Texture.STypes, {"STC_PLASTIC":"Plastic", "MSTC_WALLIN":"Wall In", "STC_WALLOUT":"Wall Out"}, ""))
+				luxProp(mat, dot(name)+"noisetype", "").set({"soft":"soft_noise", "hard":"hard_noise"}[texture.noiseType])
+				luxProp(mat, dot(name)+"noisesize", 0.25).set(texture.noiseSize)
+				luxProp(mat, dot(name)+"turbulance", 0.25).set(texture.turbulence)
+				luxProp(mat, dot(name)+"noisebasis", "").set(mapConstDict(texture.noiseBasis, Texture.Noise, noiseDict, ""))
+			elif texture.type == Texture.Types["BLEND"]:
+				luxProp(mat, dot(name)+"texture", "").set("blender_blend")
+				luxProp(mat, dot(name)+"type", "").set(mapConstDict(texture.stype, Texture.STypes, {"BLN_LIN":"lin", "BLN_QUAD":"quad", "BLN_EASE":"ease", "BLN_DIAG":"diag", "BLN_SPHERE":"sphere", "BLN_HALO":"halo", "BLN_RADIAL":"radial"}, ""))
+				luxProp(mat, dot(name)+"flipXY", "false").set({0:"false", 1:"true"}[texture.rot90])
+			else:
+				print "Material Conversion Warning: SORRY, this procedural texture isn\'t implemented in conversion\n"
+
+	def convertTextures(basename, texs, type="float", channel="col", val=1.0):
+		tex = texs.pop()
+		texture = tex.tex
+		isImagemap = (texture.type == Texture.Types["IMAGE"]) and (texture.image) and (texture.image.filename!="")
+		if channel == "col":
+			if texture.flags & Texture.Flags["COLORBAND"] > 0:
+				cbLow, cbHigh = convertColorband(texture.colorband)
+				val1, alpha1, val2, alpha2 = (cbLow[0],cbLow[1],cbLow[2]), cbLow[3]*tex.colfac, (cbHigh[0], cbHigh[1], cbHigh[2]), cbHigh[3]*tex.colfac
+				if tex.noRGB:
+					lum1, lum2 = (val1[0]+val1[1]+val1[2])/3.0, (val2[0]+val2[1]+val2[2])/3.0
+					val1, val2 = (tex.col[0]*lum1,tex.col[1]*lum1,tex.col[2]*lum1), (tex.col[0]*lum2,tex.col[1]*lum2,tex.col[2]*lum2)
+			elif isImagemap and not(tex.noRGB): val1, alpha1, val2, alpha2 = (0.0,0.0,0.0), tex.colfac, (1.0,1.0,1.0), tex.colfac
+			else: val1, alpha1, val2, alpha2 = tex.col, 0.0, tex.col, tex.colfac
+		elif channel == "nor": val1, alpha1, val2, alpha2 = tex.norfac * 0.01, 0.0, tex.norfac * 0.01, 1.0
+		else: val1, alpha1, val2, alpha2 = 1.0, 0.0, 1.0, tex.varfac
+		if (tex.neg)^((channel=="nor") and (tex.mtNor<0)): val1, alpha1, val2, alpha2 = val2, alpha2, val1, alpha1
+		luxProp(mat, dot(basename)+"textured", "").set("true")
+
+		name = basename
+		if (alpha1 < 1.0) or (alpha2 < 1.0): # texture with transparency
+			luxProp(mat, dot(basename)+"texture", "").set("mix")
+			if alpha1 == alpha2: # constant alpha
+				luxProp(mat, ddot(basename)+"amount.value", 1.0).set(alpha1)
+			else:
+				createLuxTexture(ddot(basename)+"amount", tex)
+				luxProp(mat, ddot(basename)+"amount:tex1.value", 1.0).set(alpha1)
+				luxProp(mat, ddot(basename)+"amount:tex2.value", 1.0).set(alpha2)
+			# transparent to next texture
+			name = ddot(basename)+"tex1"
+			if len(texs) > 0:
+				convertTextures(ddot(basename)+"tex1", texs, type, channel, val)
+			else:
+				if type=="float": luxProp(mat, ddot(basename)+"tex1.value", 1.0).set(val);
+				else: luxProp(mat, ddot(basename)+"tex1.value", "1.0 1.0 1.0").setRGB((val[0], val[1], val[2]))
+			name = ddot(basename)+"tex2"
+		if val1 == val2: # texture with different colors / value
+			if type == "col": luxProp(mat, dot(name)+"value", "1.0 1.0 1.0").setRGB(val1)
+			else: luxProp(mat, dot(name)+"value", 1.0).set(val1)
+		else:
+			createLuxTexture(name, tex)
+			if type == "col": luxProp(mat, ddot(name)+"tex1.value", "1.0 1.0 1.0").setRGB(val1)
+			else: luxProp(mat, ddot(name)+"tex1.value", 1.0).set(val1)
+			if type == "col": luxProp(mat, ddot(name)+"tex2.value", "1.0 1.0 1.0").setRGB(val2)
+			else: luxProp(mat, ddot(name)+"tex2.value", 1.0).set(val2)
+
+
+	def convertDiffuseTexture(name):
+		texs = []
+		for tex in mat.getTextures():
+			if tex and (tex.mapto & Texture.MapTo["COL"] > 0) and (tex.tex) and (tex.tex.type != Texture.Types["NONE"]): texs.append(tex)
+		if len(texs) > 0:
+			luxProp(mat, name, "").setRGB((mat.ref, mat.ref, mat.ref))
+			convertTextures(name, texs, "col", "col", (mat.R, mat.G, mat.B))
+	def convertSpecularTexture(name):
+		texs = []
+		for tex in mat.getTextures():
+			if tex and (tex.mapto & Texture.MapTo["CSP"] > 0) and (tex.tex) and (tex.tex.type != Texture.Types["NONE"]): texs.append(tex)
+		if len(texs) > 0:
+			luxProp(mat, name, "").setRGB((mat.ref*mat.spec, mat.ref*mat.spec, mat.ref*mat.spec))
+			convertTextures(name, texs, "col", "col", (mat.specR, mat.specG, mat.specB))
+	def convertMirrorTexture(name):
+		texs = []
+		for tex in mat.getTextures():
+			if tex and (tex.mapto & Texture.MapTo["CMIR"] > 0) and (tex.tex) and (tex.tex.type != Texture.Types["NONE"]): texs.append(tex)
+		if len(texs) > 0:
+			luxProp(mat, name, "").setRGB((mat.ref, mat.ref, mat.ref))
+			convertTextures(name, texs, "col", "col", (mat.mirR, mat.mirG, mat.mirB))
+	def convertBumpTexture(basename):
+		texs = []
+		for tex in mat.getTextures():
+			if tex and (tex.mapto & Texture.MapTo["NOR"] > 0) and (tex.tex) and (tex.tex.type != Texture.Types["NONE"]): texs.append(tex)
+		if len(texs) > 0:
+			name = basename+":bumpmap"
+			luxProp(mat, basename+".usebump", "").set("true")
+			luxProp(mat, dot(name)+"textured", "").set("true")
+			luxProp(mat, name, "").set(1.0)
+			convertTextures(name, texs, "float", "nor", 0.0)
+
 	def makeMatte(name):
 		luxProp(mat, dot(name)+"type", "").set("matte")
 		luxProp(mat, name+":Kd", "").setRGB((mat.R*mat.ref, mat.G*mat.ref, mat.B*mat.ref))
+		convertDiffuseTexture(name+":Kd")
+		convertBumpTexture(name)
 	def makeSubstrate(name, roughness):
 		luxProp(mat, dot(name)+"type", "").set("substrate")
 		luxProp(mat, name+":Kd", "").setRGB((mat.R*mat.ref, mat.G*mat.ref, mat.B*mat.ref))
-		luxProp(mat, name+":Ks", "").setRGB((mat.specR*mat.spec, mat.specG*mat.spec, mat.specB*mat.spec))
+		luxProp(mat, name+":Ks", "").setRGB((mat.specR*mat.spec*0.5, mat.specG*mat.spec*0.5, mat.specB*mat.spec*0.5))
 		luxProp(mat, name+":uroughness", 0.0).set(roughness)
 		luxProp(mat, name+":vroughness", 0.0).set(roughness)
+		convertDiffuseTexture(name+":Kd")
+		convertSpecularTexture(name+":Ks")
+		convertBumpTexture(name)
 	def makeMirror(name):
 		luxProp(mat, dot(name)+"type", "").set("mirror")
 		luxProp(mat, name+":Kr", "").setRGB((mat.mirR, mat.mirG, mat.mirB))
+		convertMirrorTexture(name+":Kr")
+		convertBumpTexture(name)
 	def makeGlass(name):
 		luxProp(mat, dot(name)+"type", "").set("glass")
 		luxProp(mat, name+":Kr", "").setRGB((0.0, 0.0, 0.0))
 		luxProp(mat, name+":Kt", "").setRGB((mat.R, mat.G, mat.B))
 		luxProp(mat, name+":index.iorusepreset", "").set("false")
 		luxProp(mat, name+":index", 0.0).set(mat.getIOR())
+		convertMirrorTexture(name+":Kr")
+		convertDiffuseTexture(name+":Kt")
+		convertBumpTexture(name)
 	def makeRoughglass(name, roughness):
 		luxProp(mat, dot(name)+"type", "").set("roughglass")
 		luxProp(mat, name+":Kr", "").setRGB((0.0, 0.0, 0.0))
@@ -3428,6 +3657,9 @@ def convertMaterial(mat):
 		luxProp(mat, name+":index", 0.0).set(mat.getIOR())
 		luxProp(mat, name+":uroughness", 0.0).set(roughness)
 		luxProp(mat, name+":vroughness", 0.0).set(roughness)
+		convertMirrorTexture(name+":Kr")
+		convertDiffuseTexture(name+":Kt")
+		convertBumpTexture(name)
 	print "convert Blender material \"%s\" to lux material"%(mat.name)
 	mat.properties['luxblend'] = {}
 	if mat.emit > 0.0001:
@@ -3448,7 +3680,7 @@ def convertMaterial(mat):
 		mirror0name, mirror1name = alpha1name, alpha1name
 		if (mirror > 0.0) and (mirror < 1.0):
 			luxProp(mat, dot(alpha1name)+"type", "").set("mix")
-			luxProp(mat, alpha1name+":amount", 0.0).set(mirror)
+			luxProp(mat, alpha1name+":amount", 0.0).set(1.0 - mirror)
 			mirror0name, mirror1name = ddot(alpha1name)+"mat1", ddot(alpha1name)+"mat2"
 		if mirror > 0.0:
 			if mat.glossMir < 1.0: makeSubstrate(mirror1name, 1.0-mat.glossMir**2)
@@ -3459,8 +3691,9 @@ def convertMaterial(mat):
 	if alpha < 1.0:
 		if mat.glossTra < 1.0: makeRoughnessGlass(alpha0name, 1.0-mat.glossTra**2)
 		else: makeGlass(alpha0name)
-	print mat.properties['luxblend'].convert_to_pyobject()
 
+def convertAllMaterials():
+	for mat in Material.Get(): convertMaterial(mat)
 
 
 
@@ -3597,7 +3830,7 @@ def luxDraw():
 					for i, v in enumerate(matnames): menustr = "%s %%x%d|%s"%(v, i, menustr)
 					gui.newline("MATERIAL:", 8) 
 					r = gui.getRect(1.1, 1)
-# deactivated as its unfinised #	Draw.Button("C", evtConvertMaterial, r[0]-gui.h, gui.y-gui.h, gui.h, gui.h, "convert blender material to lux material")
+					Draw.Button("C", evtConvertMaterial, r[0]-gui.h, gui.y-gui.h, gui.h, gui.h, "convert blender material to lux material")
 					Draw.Menu(menustr, evtLuxGui, r[0], r[1], r[2], r[3], matindex, "", lambda e,v: setactivemat(mats[v]))
 					luxBool("", matfilter, "filter", "only show active object materials", gui, 0.3)
 					Draw.Button("Preview", evtPreviewMaterial, gui.x, gui.y-gui.h, 50, gui.h, "preview material")
@@ -3634,6 +3867,9 @@ def luxDraw():
 			luxSystem(scn, gui)
 			gui.newline("", 10)
 			luxAccelerator(scn, gui)
+			gui.newline("MATERIALS:", 10)
+			r = gui.getRect(2,1)
+			Draw.Button("convert all blender materials", 0, r[0], r[1], r[2], r[3], "convert all blender-materials to lux-materials", lambda e,v:convertAllMaterials())
 			gui.newline("SETTINGS:", 10)
 			r = gui.getRect(2,1)
 			Draw.Button("save defaults", 0, r[0], r[1], r[2], r[3], "save current settings as defaults", lambda e,v:saveluxdefaults())
