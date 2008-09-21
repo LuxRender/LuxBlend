@@ -15,9 +15,6 @@ Tooltip: 'Export to LuxRender CVS scene format (.lxs)'
 # Authors:
 # radiance, zuegs, ideasman42, luxblender
 #
-# Based on:
-# * Indigo exporter 
-#
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
 # as published by the Free Software Foundation; either version 2
@@ -100,6 +97,8 @@ def exportMaterialGeomTag(mat):
 
 dummyMat = 2394723948 # random identifier for dummy material
 clayMat = None
+
+matpreview_buf = BGL.Buffer(BGL.GL_BYTE, [140,140,3]) # GL buffer for material previews
 
 #-------------------------------------------------
 # getMaterials(obj)
@@ -600,7 +599,7 @@ def save_lux(filename, unindexedname):
 	
 	vol_filename = os.path.join(filepath, filebase + "-vol.lxv")
 	vol_pfilename = filebase + "-vol.lxv"
-	
+
 	### Zuegs: initialization for export class
 	export = luxExport(Blender.Scene.GetCurrent())
 
@@ -622,6 +621,7 @@ def save_lux(filename, unindexedname):
 		##### Determine/open files
 		print("Exporting scene to '" + filename + "'...\n")
 		file = open(filename, 'w')
+
 		##### Write Header ######
 		file.write("# Lux Render CVS Scene File\n")
 		file.write("# Exported by LuxBlend_0.1_alpha-MatEditor\n")
@@ -766,6 +766,43 @@ def launchLux(filename):
 	print("Running Luxrender:\n"+cmd)
 	os.system(cmd)
 
+def launchLuxPiped():
+	ostype = osys.platform
+	#get blenders 'bpydata' directory
+	datadir=Blender.Get("datadir")
+	
+	scn = Scene.GetCurrent()
+	ic = luxProp(scn, "lux", "").get()
+	checkluxpath = luxProp(scn, "checkluxpath", True).get()
+	if checkluxpath:
+		if sys.exists(ic) != 1:
+			Draw.PupMenu("Error: Lux renderer not found. Please set path on System page.%t|OK")
+			return		
+	autothreads = luxProp(scn, "autothreads", "true").get()
+	threads = luxProp(scn, "threads", 1).get()
+		
+	if ostype == "win32":
+		if(autothreads=="true"):
+			cmd = "%s - "%(ic)		
+		else:
+			cmd = "%s - --threads=%d"%(ic, threads)		
+
+	if ostype == "linux2" or ostype == "darwin":
+		if(autothreads=="true"):
+			cmd = "(%s %s)&"%(ic, filename)
+		else:
+			cmd = "(%s --threads=%d %s)&"%(ic, threads, filename)
+
+	# call external shell script to start Lux	
+	print("Running Luxrender:\n"+cmd)
+
+	import subprocess, os
+
+	PIPE = subprocess.PIPE
+	p = subprocess.Popen(cmd, stdin=PIPE)
+	
+	return p.stdin
+
 def launchLuxWait(filename):
 	ostype = osys.platform
 	#get blenders 'bpydata' directory
@@ -863,6 +900,19 @@ def decodeIconStr(s):
 				offset += 1
 	return buf
 
+def decodeLogoStr(s):
+	buf = BGL.Buffer(BGL.GL_BYTE, [18,118,4])
+	offset = 0
+	for y in range(18):
+		for x in range(118):
+			for c in range(4):
+				buf[y][x][c] = int(base64value(s[offset])*4.048)
+				offset += 1
+	return buf
+
+icon_luxblend = decodeLogoStr("///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A/gAA/gAA/gAA/gAA/gAA/gAA/gAa/gA5/gAZ/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A/gAA/gAA/gAA/gAA/gAA/gAA/gAj/gA//gAh/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A/gAA/gAA/gAA/gAA/gAA/gAA/gAC/gAO/gAC/gAB/gAS/gAQ/gAA/gAA/gAA/gAA/gAA///A///A///A/gAA/gAZ/gAu/gA7/gA//gA//gA//gA//gA//gA//gA//gAd/gAA/gAZ/gAu/gA//gA//gA//gA//gA//gA//gA3/gAm/gAI/gAE/gAz/gA//gA//gAZ/gAA/gAA/gAA/gAZ/gA//gA//gAm/gAR/gA//gA//gA//gA//gA//gA//gA//gA//gA//gA//gAz/gAd/gAE/gAA/gA//gA//gAd/gAA/gAI/gAm/gA3/gA//gA//gA//gAR/gAA/gAA/gAA/gAA/gAA/gAu/gA//gAu/gAA/gAA/gAA/gAA/gAA/gAA/gAd/gA//gA//gAA/gAE/gAd/gAz/gA//gA//gA//gA//gA//gA7/gAq/gAV/gAA///A///A///A///A///A///A/gAA/gAA/gAA/gAI/gAK/gAA/gAA/gAA/gAA/gAn/gA//gA//gAc/gAA/gAA/gAA/gAA///A///A///A/gAi/gA//gA//gA//gA//gA//gA//gA//gA//gA//gA//gAd/gAZ/gA//gA//gA//gA//gA//gA//gA//gA//gA//gA//gA7/gAE/gAE/gAz/gA//gA//gAR/gAA/gAZ/gA//gA//gAm/gAA/gAR/gA//gA//gA//gA//gA//gA//gA//gA//gA//gA//gA//gA//gAz/gAA/gA//gA//gAd/gAI/gA7/gA//gA//gA//gA//gA//gAR/gAA/gAA/gAA/gAA/gAA/gAu/gA//gAu/gAA/gAA/gAA/gAA/gAA/gAA/gAd/gA//gA//gAA/gAu/gA//gA//gA//gA//gA//gA//gA//gA//gA//gA//gAi///A///A///A///A///A///A/gAA/gAA/gAA/gAv/gA4/gAA/gAA/gAA/gAD/gA9/gA//gA//gAz/gAA/gAA/gAA/gAA///A///A///A/gA//gA//gAq/gAI/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAu/gA//gA3/gAI/gAA/gAA/gAA/gAA/gAA/gAd/gA//gA//gAR/gAA/gAM/gA7/gA//gA7/gAZ/gA//gA//gAz/gAA/gAA/gAR/gA//gA//gAR/gAA/gAA/gAA/gAA/gAA/gAA/gAE/gAd/gA//gA//gAM/gA//gA//gAd/gAd/gA//gA//gAd/gAI/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAu/gA//gAu/gAA/gAA/gAA/gAA/gAA/gAA/gAd/gA//gA//gAA/gA//gA//gAq/gAA/gAA/gAA/gAA/gAA/gAE/gAq/gA//gA////A///A///A///A///A///A/gAA/gAA/gAA/gAN/gAQ/gAA/gAA/gAA/gAA/gAs/gA//gA//gA+/gAs/gAp/gAZ/gAA///A///A///A/gA//gA//gAd/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAu/gA//gAu/gAA/gAA/gAA/gAA/gAA/gAA/gAR/gA//gA//gAR/gAA/gAA/gAM/gA7/gA//gA//gA//gAz/gAE/gAA/gAA/gAR/gA//gA//gAR/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAR/gA//gA//gAR/gA//gA//gAd/gAd/gA//gA//gAu/gAu/gAu/gAu/gAu/gAu/gAu/gAu/gAu/gAM/gAu/gA//gAu/gAA/gAA/gAA/gAA/gAA/gAA/gAd/gA//gA//gAA/gA//gA//gAd/gAA/gAA/gAA/gAA/gAA/gAA/gAd/gA//gA////A///A///A///A///A///A/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAI/gAA/gAE/gAZ/gAw/gA//gA//gA//gA//gAh///A///A///A/gA//gA//gAd/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAu/gA//gAu/gAA/gAA/gAA/gAA/gAA/gAA/gAR/gA//gA//gAR/gAA/gAA/gAA/gAR/gA//gA//gA//gAI/gAA/gAA/gAA/gAR/gA//gA//gAm/gAd/gAd/gAd/gAd/gAd/gAd/gAd/gA3/gA//gA3/gAA/gA//gA//gAd/gAd/gA//gA//gA//gA//gA//gA//gA//gA//gA//gA//gA//gAR/gAu/gA//gAu/gAA/gAA/gAA/gAA/gAA/gAA/gAd/gA//gA//gAA/gA//gA//gAd/gAA/gAA/gAA/gAA/gAA/gAA/gAd/gA//gA////A///A///A///A///A///A/gAl/gAL/gAA/gAA/gAA/gAA/gAf/gA+/gAd/gAA/gAA/gAT/gA//gA//gA//gA//gA6///A///A///A/gA//gA//gAd/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAu/gA//gAu/gAA/gAA/gAA/gAA/gAA/gAA/gAR/gA//gA//gAR/gAA/gAA/gAE/gAz/gA//gA//gA//gAz/gAE/gAA/gAA/gAR/gA//gA//gA//gA//gA//gA//gA//gA//gA//gA//gA//gA//gAd/gAA/gA//gA//gAd/gAd/gA//gA//gAR/gAR/gAR/gAR/gAR/gAR/gAd/gA//gA//gAR/gAu/gA//gAu/gAA/gAA/gAA/gAA/gAA/gAA/gAd/gA//gA//gAA/gA//gA//gAd/gAA/gAA/gAA/gAA/gAA/gAA/gAd/gA//gA////A///A///A///A///A///A/gAl/gAK/gAA/gAA/gAA/gAA/gAf/gA+/gAd/gAA/gAA/gAT/gA//gA//gA//gA//gA6///A///A///A/gA//gA//gAd/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAu/gA//gAu/gAA/gAA/gAA/gAA/gAA/gAA/gAR/gA//gA//gAR/gAA/gAA/gAz/gA//gA7/gAd/gA//gA//gAm/gAA/gAA/gAR/gA//gA//gAm/gAd/gAd/gAd/gAd/gAd/gAd/gAd/gAu/gA//gA//gAI/gA//gA//gAd/gAd/gA//gA//gAd/gAR/gAR/gAR/gAR/gAR/gAq/gA//gA//gAR/gAu/gA//gA7/gAZ/gAR/gAR/gAR/gAR/gAV/gAz/gA//gA//gAA/gA3/gA//gA7/gAi/gAd/gAd/gAd/gAd/gAd/gAu/gA//gA////A///A///A///A///A///A/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAI/gAA/gAE/gAa/gAw/gA//gA//gA//gA//gAg///A///A///A/gA//gA//gAd/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAu/gA//gAu/gAA/gAA/gAA/gAA/gAA/gAA/gAR/gA//gA//gAR/gAA/gAm/gA//gA7/gAM/gAA/gAZ/gA//gA//gAm/gAA/gAR/gA//gA//gAR/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAR/gA//gA//gAR/gA//gA//gAd/gAE/gAz/gA//gA//gA//gA//gA//gA//gA//gA//gA//gAz/gAA/gAV/gA//gA//gA//gA//gA//gA//gA//gA//gA//gA//gAi/gAA/gAV/gA7/gA//gA//gA//gA//gA//gA//gA//gA//gA//gA////A///A///A///A///A///A/gAA/gAA/gAA/gAO/gAR/gAA/gAA/gAA/gAA/gAt/gA//gA//gA+/gAs/gAq/gAZ/gAA///A///A///A/gA//gA//gAd/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAi/gAu/gAi/gAA/gAA/gAA/gAA/gAA/gAA/gAM/gAu/gAu/gAM/gAm/gA//gA7/gAM/gAA/gAA/gAA/gAm/gA//gA//gAd/gAR/gA//gA//gAd/gAR/gAR/gAR/gAR/gAR/gAR/gAR/gAq/gA//gA//gAM/gA//gA//gAd/gAA/gAA/gAZ/gAm/gAu/gAu/gAu/gAu/gAu/gAq/gAZ/gAA/gAA/gAA/gAI/gAd/gAu/gAu/gAu/gAu/gAu/gAu/gAi/gAV/gAA/gAA/gAA/gAE/gAV/gAd/gAd/gAd/gAd/gAd/gAd/gAu/gA//gA////A///A///A///A///A///A/gAA/gAA/gAA/gAv/gA4/gAA/gAA/gAA/gAD/gA9/gA//gA//gAz/gAA/gAA/gAA/gAA///A///A///A/gA//gA//gAd/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAR/gA//gA//gA//gA//gA//gA//gA//gA//gA//gA//gA//gA//gAm/gAA/gA//gA//gAd/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAd/gA//gA////A///A///A///A///A///A/gAA/gAA/gAA/gAI/gAK/gAA/gAA/gAA/gAA/gAn/gA//gA//gAc/gAA/gAA/gAA/gAA///A///A///A/gA//gA//gAd/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAM/gAu/gAu/gAu/gAu/gAu/gAu/gAu/gAu/gAu/gAu/gAm/gAR/gAA/gAA/gA//gA//gAd/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAd/gA//gA////A///A///A///A///A///A/gAA/gAA/gAA/gAA/gAA/gAA/gAC/gAO/gAC/gAB/gAS/gAP/gAA/gAA/gAA/gAA/gAA///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A/gAA/gAA/gAA/gAA/gAA/gAA/gAj/gA//gAh/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A/gAA/gAA/gAA/gAA/gAA/gAA/gAa/gA5/gAY/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A")
+
+
 icon_blender = decodeIconStr("///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A27wA27wA27wA27wA27wAFFFGIIIsNNN5IIIsFFFG27wA27wA27wA27wA27wA///A27wA27wA27wA27wA27wAFFFmnnn9sss/kkk9FFFm27wA27wA27wA27wA27wA///A27wA27wA27wA27wA27wAEEEvwww/AAA/sss/EEEv27wA27wA27wA27wA27wA///A27wA27wA27wA27wA27wAFFFxzzz/xxx/vvv/FFFx27wA27wA27wA27wA27wA///A27wAGGGRLLLtKKK7KKK9JJJ/111/ppp/xxx/III/JJJ9JJJ7LLLtGGGR27wA///AGGGQPPP8xxx/444/vvv/555/333/999/zzz/xxx/jjj/nnn/nnn/OOO8GGGQ///ALLL2222/zzz/lll/+++/888/666/444/222/000/yyy/aaa/nnn/vvv/LLL2///AMMMxqqq/+++/ttt/////AAA/888/666/444/AAA/000/iii/zzz/nnn/MMMx///AGGGKLLLqKKK7ZZZ/yyy/yyy/yyy/888/vvv/ttt/rrr/VVV/JJJ7LLLqGGGK///A27wA27wA27wAJJJ1999+////sss5UUU8qqq5777/333+III127wA27wA27wA///A27wA27wA27wAHHHJMMMzUUU7GGGpHHHIGGGpSSS7MMMzHHHJ27wA27wA27wA///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A")
 icon_col = decodeIconStr("///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A27wA27wA27wA27wAVIAPXKB5VIAS27wA27wA27wA27wA///A///A///A///A///A27wA27wA27wAVIAPXKB8shU/XLC9VIAS27wA27wA27wA///A///A///A///A///A27wA27wAVIAPXKB8ymU/7xd/0qb/XLC9VIAS27wA27wA///A///A///A///A///A27wAVIAPXKA8xkO/7uW/7wa/7xd/0qb/XLC9VIAS27wA///A///A///A///A///AVIAPXKA8xiJ/6rO/6sS/7uW/7wZ/7xd/0qa/XLC9VIAS///A///A///A///A///AXKA1ypd/+6z/6rO/6rO/6sS/7uW/7vZ/7xd/shT/XKB5///A///A///A///A///AVJAMYMC873w/+6z/6rO/6rO/6sS/7uV/ymT/XKB8VIAP///A///A///A///A///A27wAVJAMYMC873w/+6z/6rO/6rO/xkN/XKB8VIAP27wA///A///A///A///A///A27wA27wAVJAMYMC873w/+6z/xiJ/XKA8VIAP27wA27wA///A///A///A///A///A27wA27wA27wAVJAMYMC8xpc/XKA8VIAP27wA27wA27wA///A///A///A///A///A27wA27wA27wA27wAVJAMXKA1VIAP27wA27wA27wA27wA///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A")
 icon_float = decodeIconStr("///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A27wA27wA27wA27wAMMMSOOO5MMMP27wA27wA27wA27wA///A///A///A///A///A27wA27wA27wAMMMSPPP9nnn/PPP8MMMP27wA27wA27wA///A///A///A///A///A27wA27wAMMMSPPP9ttt/333/vvv/PPP8MMMP27wA27wA///A///A///A///A///A27wAMMMSOOO9ppp/zzz/111/333/vvv/PPP8MMMP27wA///A///A///A///A///AMMMSOOO9lll/uuu/www/zzz/111/333/vvv/PPP8MMMP///A///A///A///A///AOOO5sss/666/sss/uuu/www/zzz/111/333/kkk/PPP1///A///A///A///A///AMMMPQQQ8444/666/ttt/uuu/www/zzz/ppp/OOO8MMMM///A///A///A///A///A27wAMMMPQQQ8444/666/ttt/uuu/mmm/OOO8MMMM27wA///A///A///A///A///A27wA27wAMMMPQQQ8444/555/jjj/OOO8MMMM27wA27wA///A///A///A///A///A27wA27wA27wAMMMPQQQ8ppp/OOO8MMMM27wA27wA27wA///A///A///A///A///A27wA27wA27wA27wAMMMPOOO1MMMM27wA27wA27wA27wA///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A")
@@ -878,12 +928,38 @@ icon_texmixcol = decodeIconStr("///A///A///A///A///A///A///A///A///A///A///A///A
 icon_texparam = decodeIconStr("///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A27wAOOO5GGG/BBB9AAA5AAAwAAAnAAAO27wA27wA27wA27wA27wA27wA///A875F27wAYYYZPPP/KKK/III/BBB/AAA/AAA/AAAxAAAB27wA27wA27wA27wA///AoooO875K27wAaaaTRRR/eee/lll/SSS/AAA/AAA/AAAk27wA27wA27wA27wA///AeeeX222V876J27wAbbbkSSS/iii/mmm/TTT/AAA/AAA/CCCW27wA27wA27wA///AXXXfxxxftttW887I27wAcccwSSS/OOO/PPP/III/RRR/CCC/CCC3CCCL27wA///ATTTmtttsQQQvbbbd887H27wAdddrVVV/PPP/hhh/222/lll/NNN/HFE/KFCo///APPPssss3HHH6NNNwZZZd988G27wA27wAXXXlXXX/999/333/jhg/ZPK/WOJ5///AMMMvsss/jjj1XXXxrrrf333R998F27xA27wAYYYvggg/554/meX/eUO/ZQL////AJJJyvvv/jjj/oooztttoyyyc444Q999E27xAfffAYXW7jeZ/4yt/pfX/gWP////AHHH0zzz/iii/jjj+oooytttnlllggggX+99D27xALFAFKGD9wql/2wr/peW////AFFF3333/HHH/QQQ/jjj9mmmyDDD8KKKxTTTe555D26xAIFDKMHE+0vq/1uo////ADDD6666/HHH/QQQ/jjj/kkk8DDD+BBB+JJJyrrrR+++C26xAKFDROKG/wog+///ABBB9555/777/333/000/www/rrr9bbb6fffv000Y555M///B26xAKFCYOKF0///ABBB5BBB9DDD6EEE4GGG1IIIzKKKxNNNtPPPmSSSfUUUXUUUODDDE26xA27wA///A")
 
 
+icon_c_filter = decodeIconStr("///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///AAAASGGG1BBBsAAAW27wA27wA27wA27wA27wA27wA27wAAAAWBBBsGGGyAAAU///AHHHx555/333/ddd/AAAl27wA27wA27wA27wA27wAAAAlddd/333/555/FFFz///AAAAUMMM8eee/555/ccc/AAAT27wA27wA27wAAAATccc/555/eee/MMM8AAAV///A27wAAAAAAAAbfff/222/GGG1AAAA27wAAAAAGGG1222/fff/AAAbAAAA27wA///A27wA27wAAAAAFFFz222/hhh/AAAW27wAAAAWhhh/222/FFFzAAAA27wA27wA///A27wA27wA27wAAAAQccc/333/EEEz27wAEEEz333/ccc/AAAQ27wA27wA27wA///A27wA27wA27wA27wAGGG1444/aaa/AAAdaaa/444/GGG127wA27wA27wA27wA///A27wA27wA27wA27wAAAAakkk/000/UUU/000/kkk/AAAa27wA27wA27wA27wA///A27wA27wA27wA27wAAAACGGG1xxx/555/xxx/GGG1AAAC27wA27wA27wA27wA///A27wA27wA27wA27wA27wAAAAFAAAoJJJ1AAAoAAAF27wA27wA27wA27wA27wA///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A")
+
+icon_c_camera = decodeIconStr("///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A27wA27wA27wA27wAAAAAAAABAAABAAABAAABAAAA27wA27wA27wA27wA///A///ANNN6MMM/MMM/JJJ/MMM/LLL/LLL/LLL/LLL/MMM/MMM/MMM/MMM/OOO6///A///AMMM/vvv/ttt/ccc/mmm/jjj/ggg/hhh/jjj/ooo/sss/www/iii/MMM////A///AMMM/uuu/eee/RRR/XXX/ZZZ/mmm/xxx/ppp/ggg/jjj/ppp/eee/MMM////A///AMMM/ttt/aaa/OOO/WWW/rrr/aaa/TTT/jjj/zzz/hhh/lll/ccc/MMM////A///AMMM/sss/XXX/LLL/ggg/QQQ/HHH/KKK/QQQ/hhh/rrr/ggg/bbb/MMM////A///AMMM/rrr/VVV/JJJ/ooo/QQQ/TTT/III/JJJ/RRR/yyy/ddd/ZZZ/MMM////A///AMMM/sss/UUU/JJJ/eee/eee/www/RRR/EEE/VVV/ooo/ccc/ZZZ/MMM////A///AMMM/uuu/VVV/KKK/RRR/kkk/fff/QQQ/OOO/ooo/bbb/eee/ZZZ/MMM////A///AMMM/xxx/WWW/LLL/NNN/SSS/eee/ooo/hhh/YYY/YYY/ggg/ZZZ/MMM////A///AMMM/zzz/vvv/aaa/fff/VVV/OOO/PPP/RRR/bbb/mmm/sss/fff/NNN9///A///ANNN6MLJ/MJE/IHG/OOO+ggg/bbb/ccc/eee/jjj/NNN+MMM/NNN9MMMP///A///A27wAMHAl9jA/NIApMMMmWWW/888/////888/bbb/NNNmAAAA27wA27wA///A///A27wALGAPMHAoMHASMMMGSSS/777/////888/WWW/NNNF27wA27wA27wA///A///A27wA27wA27wA27wA27wARRRiPPP+QQQ/RRR+VVVi27wA27wA27wA27wA///A")
+
+icon_c_environment = decodeIconStr("///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///AGMV1HNV7HNV7HNV7HNV7HNV7HNV7HNV7HNV7HNV7HNV7GMV1///A///A///A///AHNV7y0u/z0u/y0t/xzs/wyr/wyq/vxp/uxo/twn/svm/HNV7///A///A///A///AIOW8341/tvm/qtj/qtj/qtj/qtj/qtj/qtj/qtj/two/HNV7///A///A///A///AINV8sts/cdc/qrp/uxp/qtj/qtj/qtj/qtj/qtj/tvo/HNU7///A///A///A///AGMV7svy/Ubh/VZb/ZZZ/xyt/ruk/qtj/qtj/rul/bcb/GLU7///A///A///A///AGMV7twz/Uci/Uci/Tbg/TUU/ssq/y0u/vxr/TVT/fko/GMV7///A///A///A///AGMV7vy0/Vdj/Zgl/Xfk/Uci/RWZ/TVV/PSU/Tag/hnr/GMV7///A///A///A///AGMV7wz1/gmq/023/txz/Xfk/Uci/Uci/Uci/Uci/jos/GMV7///A///A///A///AGMV7y02/jos/////023/Zgl/Uci/Uci/Uci/Uci/kpt/GMV7///A///A///A///AGMV7z23/ahm/jos/gmq/Vdj/Uci/Uci/Uci/Uci/mru/GMV7///A///A///A///AGMV7x02/023/y02/wz1/vy0/uxz/swy/rux/ptw/lqu/GMV7///A///A///A///AGMV1GMV7GMV7GMV7GMV7GMV7GMV7GMV7GMV7GMV7GMV7GMV1///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A")
+
+icon_c_sampler = decodeIconStr("///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A27wA27wA27wAMMMXSSS3MMMg27wA27wA27wA27wAMMMdTTT2MMMc27wA27wA27wA27wA27wAMMMSggg/////XXX+MMMB27wA27wA27wAUUU8////jjj/MMMT27wA27wA27wAMMMIYYY8+++/xxx/NNNuMMMCMMMCMMMCMMMCNNNqwww/////ZZZ9MMMJ27wAMMMASSS0666/+++/fff/bbb/bbb/eee/eee/bbb/bbb/ddd/999/777/SSS327wAMMMGjjj/////////////////////////////////////////////////lll/MMMI27wARRRz555/999/ccc/YYY/YYY+aaa+bbb+YYY+YYY+bbb/999/666/RRR2MMMB27wAMMMHWWW7999/yyy/NNNu27wA27wA27wA27wANNNtxxx/+++/YYY8MMMI27wAVVqARfzGOTZZeee/////WWW+QctHRfzLRfzLRfzGUUU8////hhh/OSYaRfzGVVqARfzGRezcRfz5PXj8STV5NPSiRezcRfz5Rfz5RezcNQThRST6PYk7Rfz5RezcRfzGRfzLRfz5////////Rfz5RfzMRfz5////////Rfz5RfzMRfz5////////Rfz5RfzLRfzLRfz5////////Rfz5RfzMRfz5////////Rfz5RfzMRfz5////////Rfz5RfzLRfzGRezcRfz5Rfz5RezcRfzKRezcRfz5Rfz5RezcRfzKRezcRfz5Rfz5RezcRfzGVVqARfzGRfzLRfzLRfzGVVqARfzGRfzLRfzLRfzGVVqARfzGRfzLRfzLRfzGVVqA///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A")
+
+icon_c_integrator = decodeIconStr("///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A27wA27wAAAAAEJPYHMT0MRY+GLS0EJPYAAAA27wA27wA27wA27wA27wA27wA27wA27wAAAVAEJPoVai/lr0/elv/Xeo/LRZ/EIPnDHOEAAVA27wA27wA27wA27wA27wA27wAEIPcZel/rw5/cir/NTb/SYi/PWh/MSb/QVd/KPW6EJPfAJSB27wA27wA27wAAAAAHMT4ty7/hmv/FKQyDGMXEJP7bhq/nt2/pv4/sy6/diq/EJQuIIQC27wA27wAFIQGRWd/u08/TYf/CFKQDGLfUai/flv/Zfp/SZj/bgp/rx6/fks/EJQuAJSB27wAAJSBINT7uz8/glt/EIOqGKQ4Xeo/SYi/KQY/SZk/IOW/Ydl/ty7/diq/EJPg27wA27wAEJPhflt/u08/Yel/JOW/QXi/HNV/TZi/Yfp/GLS6EJPuejr/tz8/HMT6AMMB27wAGGMCFLRxiow/u08/ciq/SZk/Yeo/gnw/Vaj/DINhDGJQQVd/u08/SXe/FIQG27wA27wAFJODFKRyhmu/u08/sy7/pv4/cir/FJQ7CGLTEIPudir/uz8/JOU6AMMB27wA27wA27wAFJODEJPjKPW8UZh/RXg/RYj/QXg/MSa/Zfo/pv4/diq/EJPg27wA27wA27wA27wA27wA27wAFKQDEIPLEJPtPVe/ahr/flv/jpz/diq/FJQtAJSB27wA27wA27wA27wA27wA27wA27wA27wAAMMBEJPeGLS5OUb/INU5EJPeAMMB27wA27wA27wA27wA27wA27wA27wA27wA27wA27wA27wAAAAAEIQEAAVA27wA27wA27wA27wA///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A")
+
+icon_c_volumeintegrator = decodeIconStr("///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A27wA27wA27wA27wAMMMAMMMWNNN8NNN9MMMWMMMA27wA27wA27wA27wA///A27wA27wAAAAAEJPYIMS3MRY/KOU/gik/ggg/TTT/MMMzMMMR27wA27wA27wA27wA27wAAAVAFJPtVai/lr0/elv/Xeo/LRZ/NQU/ggh/ddd/RRR/MMMvMMMN27wA27wA27wAHKOvZel/rw5/cir/NTb/SYi/PWh/MSb/QVd/LQW/TWZ/aaa/PPP/MMMh27wAAAAAIMS/ty7/hmv/OSX/gik/HMS/bhq/nt2/pv4/sy6/diq/MQV/hhh/MMM/27wAFIQGRWd/u08/TYf/lmn/bdf/Uai/flv/Zfp/SZj/bgp/rx6/fks/NRV/MMN/27wAAJSBINT/uz8/glt/TWa/LPU/Xeo/SYi/KQY/SZk/IOW/Ydl/ty7/diq/IKO/27wA27wAIKO/flt/u08/Yel/JOW/QXi/HNV/TZi/Yfp/INT/LOT/ejr/tz8/IMT/AMMB27wAMMM/SWb/iow/u08/ciq/SZk/Yeo/gnw/Vaj/PRU/XXY/QVd/u08/SXe/FIQG27wAMMM/899/PTY/hmu/u08/sy7/pv4/cir/HLR/UVX/KOT/dir/uz8/JOU/AMMB27wAMMM/////vww/WZd/MRX/UZh/RXg/RYj/QXg/MSa/Zfo/pv4/diq/IKO/27wA27wAMMM/////999/////999/123/VZd/PVe/ahr/flv/jpz/diq/RUa/MMN/27wA27wAMMMxRRR/rrr/888/////////+++/jmp/MRX/OUb/NRX/WYb/PQQ/MMMx27wA27wA27wANNNEMMMaMMMxWWW/www/+++/999/uuu/UUV/MMMxMMMaNNNE27wA27wA///A27wA27wA27wA27wANNNIMMMfMMM1MMM1MMMfNNNI27wA27wA27wA27wA///A")
+
+icon_help = decodeIconStr("///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A27wA27wA27wAAAAOGGGtFFF4HHH6GGG3GGGqAAAK27wA27wA27wA///A///A///A27wAAAABEEEnNNN7vvv/666/888/888/vvv/III7EEEgAAAA27wA///A///A///A27wAEEEmfff+333/333/333/lll/999/999/999/WWW8EEEd27wA///A///A///AAAAPSSS7333/zzz/111/xxx/III/+++/777/999/999/JJJ6AAAJ///A///A///AFFFtxxx/yyy/xxx/zzz/444/999/777/666/777/999/ppp/FFFh///A///A///AEEE4555/uuu/vvv/xxx/ttt/MMM/yyy/666/666/777/111/GGGy///A///A///AJJJ7666/sss/ttt/vvv/yyy/ttt/HHH/yyy/666/555/777/FFF5///A///A///ADDD3777/sss/qqq/lll/vvv/yyy/sss/EEE/777/444/xxx/GGGv///A///A///ADDDq000/xxx/iii/FFF/kkk/lll/hhh/HHH/555/333/kkk/DDDe///A///A///AAAAJNNN8999/rrr/iii/DDD/DDD/GGG/000/000/000/GGG6AAAE///A///A///A27wACCCcccc9999/yyy/ttt/sss/www/000/000/QQQ8CCCT27wA///A///A///A27wA27wACCCXMMM7www/444/777/000/ooo+III5BBBR27wA27wA///A///A///A27wA27wA27wAAAAFBBBbEEEsEEE1FFFqBBBZAAAD27wA27wA27wA///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A")
+
+
 def drawIcon(icon, x, y):
 	BGL.glEnable(BGL.GL_BLEND)
 	BGL.glBlendFunc(BGL.GL_SRC_ALPHA, BGL.GL_ONE_MINUS_SRC_ALPHA) 
 	BGL.glRasterPos2f(int(x)+0.5, int(y)+0.5)
 	BGL.glDrawPixels(16, 16, BGL.GL_RGBA, BGL.GL_UNSIGNED_BYTE, icon)
 	BGL.glDisable(BGL.GL_BLEND)
+
+def drawLogo(icon, x, y):
+	BGL.glEnable(BGL.GL_BLEND)
+	BGL.glBlendFunc(BGL.GL_SRC_ALPHA, BGL.GL_ONE_MINUS_SRC_ALPHA) 
+	BGL.glRasterPos2f(int(x)+0.5, int(y)+0.5)
+	BGL.glDrawPixels(118, 18, BGL.GL_RGBA, BGL.GL_UNSIGNED_BYTE, icon)
+	BGL.glDisable(BGL.GL_BLEND)
+
+def drawMatPreview(x, y):
+	BGL.glRasterPos2f(int(x)+0.5, int(y)+0.5)
+	BGL.glDrawPixels(140, 140, BGL.GL_RGB, BGL.GL_UNSIGNED_BYTE, matpreview_buf)
 
 
 ######################################################
@@ -1373,6 +1449,7 @@ def saveMaterialPreset(name, d):
 		savePreset('luxblend_materials', name, d)
 	except: pass
 
+
 # **************************************************
 
 
@@ -1530,7 +1607,14 @@ class luxGui:
 		if icon!=None: drawIcon(icon, 2+level*10, self.y-16)
 		self.resethmax = True
 		BGL.glColor3f(0.9,0.9,0.9); BGL.glRasterPos2i(20+level*10,self.y-self.h+5); Draw.Text(title)
-		
+	
+def luxHelp(name, lux, caption, hint, gui, width=1.0):
+	if gui:
+		r = gui.getRect(width, 1)
+		Draw.Toggle(caption, evtLuxGui, r[0], r[1], r[2], r[3], lux.get()=="true", hint, lambda e,v: lux.set(["false","true"][bool(v)]))
+		drawIcon(icon_help, r[0], r[1])
+
+	return "\n   \"bool %s\" [\"%s\"]"%(name, lux.get())
 
 # lux parameter types
 def luxOption(name, lux, options, caption, hint, gui, width=1.0):
@@ -1550,105 +1634,127 @@ def luxOption(name, lux, options, caption, hint, gui, width=1.0):
 		Draw.Menu(menustr, evtLuxGui, r[0], r[1], r[2], r[3], i, hint, lambda e,v: lux.set(options[v]))
 	return "\n   \"string %s\" [\"%s\"]"%(name, lux.get())
 
-def luxIdentifier(name, lux, options, caption, hint, gui, width=1.0):
-	if gui: gui.newline(caption+":", 8, 0, None, [0.4,0.4,0.6])
+def luxOptionRect(name, lux, options, caption, hint, gui, x, y, xx, yy):
+	if gui:
+		menustr = caption+": %t"
+		for i, v in enumerate(options): menustr = "%s %%x%d|%s"%(v, i, menustr)
+		try:
+			i = options.index(lux.get())
+		except ValueError:
+			try:
+				lux.set(lux.default) # not found, so try default value
+				i = options.index(lux.get())
+			except ValueError:
+				print "value %s not found in options list"%(lux.get())
+				i = 0
+		Draw.Menu(menustr, evtLuxGui, x, y, xx, yy, i, hint, lambda e,v: lux.set(options[v]))
+	return "\n   \"string %s\" [\"%s\"]"%(name, lux.get())
+
+def luxIdentifier(name, lux, options, caption, hint, gui, icon=None, width=1.0):
+	if gui: gui.newline(caption+":", 8, 0, icon, [0.4,0.4,0.6])
 	luxOption(name, lux, options, caption, hint, gui, width)
 	return "\n%s \"%s\""%(name, lux.get())
 
 def luxFloat(name, lux, min, max, caption, hint, gui, width=1.0):
 	if gui:
+		if (luxProp(Scene.GetCurrent(), "useparamkeys", "false").get()=="true"):
+			r = gui.getRect(width-0.12, 1)
+		else:
+			r = gui.getRect(width, 1)
+
 		# Value
-		r = gui.getRect(width-0.12, 1)
 		Draw.Number(caption+": ", evtLuxGui, r[0], r[1], r[2], r[3], float(lux.get()), min, max, hint, lambda e,v: lux.set(v))
 
-		# IPO Curve
-		obj = lux.getobj()
-		keyname = lux.getname()
-
-		useipo = luxProp(obj, keyname+".IPOuse", "false")
-		i = gui.getRect(0.12, 1)
-		Draw.Toggle("I", evtLuxGui, i[0], i[1], i[2], i[3], useipo.get()=="true", "Use IPO Curve", lambda e,v: useipo.set(["false","true"][bool(v)]))
-		
-		if useipo.get() == "true":
-			if gui: gui.newline(caption+"IPO:", 8, 0, None, [0.5,0.45,0.35])
-			curve = luxProp(obj, keyname+".IPOCurveName", "") 
-			if curve.get() == "":
-				c = gui.getRect(2.0, 1)
-			else:
-				c = gui.getRect(1.1, 1)
+		if (luxProp(Scene.GetCurrent(), "useparamkeys", "false").get()=="true"):
+			# IPO Curve
+			obj = lux.getobj()
+			keyname = lux.getname()
+	
+			useipo = luxProp(obj, keyname+".IPOuse", "false")
+			i = gui.getRect(0.12, 1)
+			Draw.Toggle("I", evtLuxGui, i[0], i[1], i[2], i[3], useipo.get()=="true", "Use IPO Curve", lambda e,v: useipo.set(["false","true"][bool(v)]))
 			
-			Draw.String("Ipo:", evtLuxGui, c[0], c[1], c[2], c[3], curve.get(), 250, "Set IPO Name", lambda e,v: curve.set(v))
-			
-			usemapping = luxProp(obj, keyname+".IPOmap", "false")
-			icu_value = 0
+			if useipo.get() == "true":
+				if gui: gui.newline(caption+"IPO:", 8, 0, None, [0.5,0.45,0.35])
+				curve = luxProp(obj, keyname+".IPOCurveName", "") 
+				if curve.get() == "":
+					c = gui.getRect(2.0, 1)
+				else:
+					c = gui.getRect(1.1, 1)
+				
+				Draw.String("Ipo:", evtLuxGui, c[0], c[1], c[2], c[3], curve.get(), 250, "Set IPO Name", lambda e,v: curve.set(v))
+				
+				usemapping = luxProp(obj, keyname+".IPOmap", "false")
+				icu_value = 0
+	
+				# Apply IPO to value
+				if curve.get() != "":
+					try:
+						ipoob = Blender.Ipo.Get(curve.get())
+					except: 
+						curve.set("")
+					pass
+					if curve.get() != "":
+						names = list([x[0] for x in ipoob.curveConsts.items()])
+						ipotype = luxProp(obj, keyname+".IPOCurveType", "OB_LOCZ")
+						luxOption("ipocurve", ipotype, names, "IPO Curve", "Set IPO Curve", gui, 0.6)
+	
+						icu = ipoob[eval("Blender.Ipo.%s" % (ipotype.get()))]
+						icu_value = icu[Blender.Get('curframe')]
+						if usemapping.get() == "false": # if true is set during mapping below
+							lux.set(icu_value)	
+	
+						# Mapping options
+						m = gui.getRect(0.3, 1)
+						Draw.Toggle("Map", evtLuxGui, m[0], m[1], m[2], m[3], usemapping.get()=="true", "Edit Curve mapping", lambda e,v: usemapping.set(["false","true"][bool(v)]))
+						if usemapping.get() == "true":
+							if gui: gui.newline(caption+"IPO:", 8, 0, None, [0.5,0.45,0.35])
+							fmin = luxProp(obj, keyname+".IPOCurvefmin", 0.0)
+							luxFloatNoIPO("ipofmin", fmin, -100, 100, "fmin", "Map minimum value from Curve", gui, 0.5)
+							fmax = luxProp(obj, keyname+".IPOCurvefmax", 1.0)
+							luxFloatNoIPO("ipofmax", fmax, -100, 100, "fmax", "Map maximum value from Curve", gui, 0.5)
+							tmin = luxProp(obj, keyname+".IPOCurvetmin", min)
+							luxFloatNoIPO("ipotmin", tmin, min, max, "tmin", "Map miminum value to", gui, 0.5)
+							tmax = luxProp(obj, keyname+".IPOCurvetmax", max)
+							luxFloatNoIPO("ipotmax", tmax, min, max, "tmax", "Map maximum value to", gui, 0.5)
+	
+							sval = (icu_value - float(fmin.get())) / (float(fmax.get()) - float(fmin.get()))
+							lux.set(float(tmin.get()) + (sval * (float(tmax.get()) - float(tmin.get()))))
 
-			# Apply IPO to value
-			if curve.get() != "":
+							# invert
+							#v = gui.getRect(0.5, 1)
+							#Draw.Toggle("Invert", evtLuxGui, v[0], v[1], v[2], v[3], useipo.get()=="true", "Invert Curve values", lambda e,v: useipo.set(["false","true"][bool(v)]))
+	else:
+		if (luxProp(Scene.GetCurrent(), "useparamkeys", "false").get()=="true"):
+			obj = lux.getobj()
+			keyname = lux.getname()
+			useipo = luxProp(obj, keyname+".IPOuse", "false")
+			if useipo.get() == "true":
+				curve = luxProp(obj, keyname+".IPOCurveName", "") 
 				try:
 					ipoob = Blender.Ipo.Get(curve.get())
 				except: 
 					curve.set("")
 				pass
+				usemapping = luxProp(obj, keyname+".IPOmap", "false")
+				icu_value = 0
 				if curve.get() != "":
 					names = list([x[0] for x in ipoob.curveConsts.items()])
 					ipotype = luxProp(obj, keyname+".IPOCurveType", "OB_LOCZ")
-					luxOption("ipocurve", ipotype, names, "IPO Curve", "Set IPO Curve", gui, 0.6)
-
+	
 					icu = ipoob[eval("Blender.Ipo.%s" % (ipotype.get()))]
 					icu_value = icu[Blender.Get('curframe')]
 					if usemapping.get() == "false": # if true is set during mapping below
 						lux.set(icu_value)	
-
-					# Mapping options
-					m = gui.getRect(0.3, 1)
-					Draw.Toggle("Map", evtLuxGui, m[0], m[1], m[2], m[3], usemapping.get()=="true", "Edit Curve mapping", lambda e,v: usemapping.set(["false","true"][bool(v)]))
-					if usemapping.get() == "true":
-						if gui: gui.newline(caption+"IPO:", 8, 0, None, [0.5,0.45,0.35])
-						fmin = luxProp(obj, keyname+".IPOCurvefmin", 0.0)
-						luxFloatNoIPO("ipofmin", fmin, -100, 100, "fmin", "Map minimum value from Curve", gui, 0.5)
-						fmax = luxProp(obj, keyname+".IPOCurvefmax", 1.0)
-						luxFloatNoIPO("ipofmax", fmax, -100, 100, "fmax", "Map maximum value from Curve", gui, 0.5)
-						tmin = luxProp(obj, keyname+".IPOCurvetmin", min)
-						luxFloatNoIPO("ipotmin", tmin, min, max, "tmin", "Map miminum value to", gui, 0.5)
-						tmax = luxProp(obj, keyname+".IPOCurvetmax", max)
-						luxFloatNoIPO("ipotmax", tmax, min, max, "tmax", "Map maximum value to", gui, 0.5)
-
-						sval = (icu_value - float(fmin.get())) / (float(fmax.get()) - float(fmin.get()))
-						lux.set(float(tmin.get()) + (sval * (float(tmax.get()) - float(tmin.get()))))
-
-						# invert
-						#v = gui.getRect(0.5, 1)
-						#Draw.Toggle("Invert", evtLuxGui, v[0], v[1], v[2], v[3], useipo.get()=="true", "Invert Curve values", lambda e,v: useipo.set(["false","true"][bool(v)]))
-	else:
-		obj = lux.getobj()
-		keyname = lux.getname()
-		useipo = luxProp(obj, keyname+".IPOuse", "false")
-		if useipo.get() == "true":
-			curve = luxProp(obj, keyname+".IPOCurveName", "") 
-			try:
-				ipoob = Blender.Ipo.Get(curve.get())
-			except: 
-				curve.set("")
-			pass
-			usemapping = luxProp(obj, keyname+".IPOmap", "false")
-			icu_value = 0
-			if curve.get() != "":
-				names = list([x[0] for x in ipoob.curveConsts.items()])
-				ipotype = luxProp(obj, keyname+".IPOCurveType", "OB_LOCZ")
-
-				icu = ipoob[eval("Blender.Ipo.%s" % (ipotype.get()))]
-				icu_value = icu[Blender.Get('curframe')]
-				if usemapping.get() == "false": # if true is set during mapping below
-					lux.set(icu_value)	
-
-			if usemapping.get() == "true":
-				if gui: gui.newline(caption+"IPO:", 8, 0, None, [0.5,0.45,0.35])
-				fmin = luxProp(obj, keyname+".IPOCurvefmin", 0.0)
-				fmax = luxProp(obj, keyname+".IPOCurvefmax", 1.0)
-				tmin = luxProp(obj, keyname+".IPOCurvetmin", min)
-				tmax = luxProp(obj, keyname+".IPOCurvetmax", max)
-				sval = (icu_value - float(fmin.get())) / (float(fmax.get()) - float(fmin.get()))
-				lux.set(float(tmin.get()) + (sval * (float(tmax.get()) - float(tmin.get()))))
+	
+				if usemapping.get() == "true":
+					if gui: gui.newline(caption+"IPO:", 8, 0, None, [0.5,0.45,0.35])
+					fmin = luxProp(obj, keyname+".IPOCurvefmin", 0.0)
+					fmax = luxProp(obj, keyname+".IPOCurvefmax", 1.0)
+					tmin = luxProp(obj, keyname+".IPOCurvetmin", min)
+					tmax = luxProp(obj, keyname+".IPOCurvetmax", max)
+					sval = (icu_value - float(fmin.get())) / (float(fmax.get()) - float(fmin.get()))
+					lux.set(float(tmin.get()) + (sval * (float(tmax.get()) - float(tmin.get()))))
 
 	return "\n   \"float %s\" [%f]"%(name, float(lux.get()))
 
@@ -1724,10 +1830,11 @@ def luxVector(name, lux, min, max, caption, hint, gui, width=2.0):
 
 # lux individual identifiers
 def luxCamera(cam, context, gui=None):
+	global icon_c_camera
 	str = ""
 	if cam:
 		camtype = luxProp(cam, "camera.type", "perspective")
-		str = luxIdentifier("Camera", camtype, ["perspective","orthographic","environment","realistic"], "CAMERA", "select camera type", gui)
+		str = luxIdentifier("Camera", camtype, ["perspective","orthographic","environment","realistic"], "CAMERA", "select camera type", gui, icon_c_camera)
 		scale = 1.0
 		if camtype.get() == "perspective":
 			str += luxFloat("fov", luxAttr(cam, "angle"), 8.0, 170.0, "fov", "camera field-of-view angle", gui)
@@ -2004,10 +2111,11 @@ def luxFilm(scn, gui=None):
 
 
 def luxPixelFilter(scn, gui=None):
+	global icon_c_filter
 	str = ""
 	if scn:
 		filtertype = luxProp(scn, "pixelfilter.type", "mitchell")
-		str = luxIdentifier("PixelFilter", filtertype, ["box", "gaussian", "mitchell", "sinc", "triangle"], "FILTER", "select pixel filter type", gui)
+		str = luxIdentifier("PixelFilter", filtertype, ["box", "gaussian", "mitchell", "sinc", "triangle"], "FILTER", "select pixel filter type", gui, icon_c_filter)
 		if filtertype.get() == "box":
 			if gui: gui.newline()
 			str += luxFloat("xwidth", luxProp(scn, "pixelfilter.box.xwidth", 0.5), 0.0, 10.0, "x-width", "Width of the filter in the x direction", gui)
@@ -2038,14 +2146,15 @@ def luxPixelFilter(scn, gui=None):
 	return str			
 
 def luxSampler(scn, gui=None):
+	global icon_c_sampler, icon_help
 	str = ""
 	if scn:
 		samplertype = luxProp(scn, "sampler.type", "metropolis")
-		str = luxIdentifier("Sampler", samplertype, ["metropolis", "erpt", "lowdiscrepancy", "random", "halton"], "SAMPLER", "select sampler type", gui)
+		str = luxIdentifier("Sampler", samplertype, ["metropolis", "erpt", "lowdiscrepancy", "random", "halton"], "SAMPLER", "select sampler type", gui, icon_c_sampler)
 		showadvanced = luxProp(scn, "sampler.metro.showadvanced", "false")
 		luxBool("advanced", showadvanced, "Advanced", "Show advanced options", gui, 0.6)
 		showhelp = luxProp(scn, "sampler.metro.showhelp", "false")
-		luxBool("help", showhelp, "Help", "Show Help Information", gui, 0.4)
+		luxHelp("help", showhelp, "Help", "Show Help Information", gui, 0.4)
 		if samplertype.get() == "metropolis":
 			# Default parameters
 			#if gui: gui.newline("  Mutation:")
@@ -2063,7 +2172,7 @@ def luxSampler(scn, gui=None):
 				str += luxBool("useqr",luxProp(scn, "sampler.metro.useqr", "false"), "QMC", "Use Quasi Monte Carlo sequences", gui, 0.8)
 
 			if showhelp.get()=="true":
-				if gui: gui.newline("  Description:", 8, 0, None, [0.4,0.5,0.56])
+				if gui: gui.newline("  Description:", 8, 0, icon_help, [0.4,0.5,0.56])
 				r = gui.getRect(2,1); BGL.glRasterPos2i(r[0],r[1]+5) 
 				Draw.Text("A Metropolis-Hastings mutating sampler which implements MLT", 'small')	
 
@@ -2091,10 +2200,11 @@ def luxSampler(scn, gui=None):
 	return str			
 
 def luxSurfaceIntegrator(scn, gui=None):
+	global icon_c_integrator
 	str = ""
 	if scn:
 		integratortype = luxProp(scn, "sintegrator.type", "path")
-		str = luxIdentifier("SurfaceIntegrator", integratortype, ["directlighting", "path", "path2", "bidirectional", "exphotonmap", "distributedpath", "particletracing", "importancepath"], "INTEGRATOR", "select surface integrator type", gui)
+		str = luxIdentifier("SurfaceIntegrator", integratortype, ["directlighting", "path", "path2", "bidirectional", "exphotonmap", "distributedpath", "particletracing", "importancepath"], "INTEGRATOR", "select surface integrator type", gui, icon_c_integrator)
 		if integratortype.get() == "directlighting":
 			str += luxOption("strategy", luxProp(scn, "sintegrator.dlighting.strategy", "auto"), ["one", "all", "auto"], "strategy", "select directlighting strategy", gui)
 			if gui: gui.newline("  Depth:")
@@ -2197,10 +2307,11 @@ def luxSurfaceIntegrator(scn, gui=None):
 	return str
 
 def luxVolumeIntegrator(scn, gui=None):
+	global icon_c_volumeintegrator
 	str = ""
 	if scn:
 		integratortype = luxProp(scn, "vintegrator.type", "single")
-		str = luxIdentifier("VolumeIntegrator", integratortype, ["emission", "single"], "VOLUME INT", "select volume integrator type", gui)
+		str = luxIdentifier("VolumeIntegrator", integratortype, ["emission", "single"], "VOLUME INT", "select volume integrator type", gui, icon_c_volumeintegrator)
 		if integratortype.get() == "emission":
 			str += luxFloat("stepsize", luxProp(scn, "vintegrator.emission.stepsize", 1.0), 0.0, 100.0, "stepsize", "Stepsize for volumes", gui)
 		if integratortype.get() == "single":
@@ -2208,10 +2319,11 @@ def luxVolumeIntegrator(scn, gui=None):
 	return str
 
 def luxEnvironment(scn, gui=None):
+	global icon_c_environment
 	str = ""
 	if scn:
 		envtype = luxProp(scn, "env.type", "infinite")
-		lsstr = luxIdentifier("LightSource", envtype, ["none", "infinite", "sunsky"], "ENVIRONMENT", "select environment light type", gui)
+		lsstr = luxIdentifier("LightSource", envtype, ["none", "infinite", "sunsky"], "ENVIRONMENT", "select environment light type", gui, icon_c_environment)
 		if gui: gui.newline()
 		str = ""
 		if envtype.get() != "none":
@@ -2310,8 +2422,9 @@ def luxAccelerator(scn, gui=None):
 
 def luxSystem(scn, gui=None):
 	if scn:
-		if gui: gui.newline("SYSTEM:", 10)
-		luxFile("filename", luxProp(scn, "lux", ""), "lux-file", "filename and path of the lux executable", gui, 2.0)
+		if gui: gui.newline("PATHS:", 10)
+		luxFile("GUI filename", luxProp(scn, "lux", ""), "lux-file", "filename and path of the lux GUI executable", gui, 2.0)
+		luxFile("Console filename", luxProp(scn, "luxconsole", ""), "lux-file-console", "filename and path of the lux console executable", gui, 2.0)
 		if gui: gui.newline()
 		luxFile("datadir", luxProp(scn, "datadir", ""), "default out dir", "default.lxs save path", gui, 2.0)
 		if gui: gui.newline("THREADS:", 10)
@@ -2319,6 +2432,11 @@ def luxSystem(scn, gui=None):
 		luxBool("autothreads", autothreads, "Auto Detect", "Automatically use all available processors", gui, 1.0)
 		if autothreads.get()=="false":
 			luxInt("threads", luxProp(scn, "threads", 1), 1, 100, "threads", "number of threads used for rendering", gui, 1.0)
+
+		if gui: gui.newline("ANIM:", 10)
+		useparamkeys = luxProp(scn, "useparamkeys", "false")
+		luxBool("useparamkeys", useparamkeys, "Enable Parameter IPO Keyframing", "Enables keyframing of luxblend parameters", gui, 2.0)
+
 		if gui: gui.newline("GAMMA:", 10)
 		luxBool("RGC", luxProp(scn, "RGC", "true"), "RGC", "use reverse gamma correction", gui)
 		luxBool("ColClamp", luxProp(scn, "colorclamp", "false"), "ColClamp", "clamp all colors to 0.0-0.9", gui)
@@ -2945,6 +3063,27 @@ def luxLight(name, kn, mat, gui, level):
 	has_object_options = 1
 	return link
 
+
+def MatPreview_Sphereset(mat, state):
+	if state=="true":
+		luxProp(mat, "matprev_sphere", "true").set("true")
+		luxProp(mat, "matprev_plane", "false").set("false")
+		luxProp(mat, "matprev_torus", "false").set("false")
+
+def MatPreview_Planeset(mat, state):
+	if state=="true":
+		luxProp(mat, "matprev_sphere", "true").set("false")
+		luxProp(mat, "matprev_plane", "false").set("true")
+		luxProp(mat, "matprev_torus", "false").set("false")
+
+def MatPreview_Torusset(mat, state):
+	if state=="true":
+		luxProp(mat, "matprev_sphere", "true").set("false")
+		luxProp(mat, "matprev_plane", "false").set("false")
+		luxProp(mat, "matprev_torus", "false").set("true")
+
+
+
 def luxMaterialBlock(name, luxname, key, mat, gui=None, level=0, str_opt=""):
 	global icon_mat, icon_matmix
 	def c(t1, t2):
@@ -2956,8 +3095,6 @@ def luxMaterialBlock(name, luxname, key, mat, gui=None, level=0, str_opt=""):
 	if keyname == "": matname = mat.getName()
 	else: matname = "%s:%s"%(mat.getName(), keyname)
 
-
-
 	if mat:
 		mattype = luxProp(mat, kn+"type", "matte")
 		materials = ["carpaint","glass","matte","mattetranslucent","metal","mirror","plastic","roughglass","shinymetal","substrate","mix","null"]
@@ -2967,11 +3104,37 @@ def luxMaterialBlock(name, luxname, key, mat, gui=None, level=0, str_opt=""):
 			if mattype.get() == "mix": icon = icon_matmix
 			if level == 0: gui.newline("Material type:", 12, level, icon, [0.4,0.4,0.6])
 			else: gui.newline(name+":", 12, level, icon, scalelist([0.4,0.4,0.6],2.0/(level+2)))
+
+
 		link = luxOption("type", mattype, materials, "  TYPE", "select material type", gui)
 		showadvanced = luxProp(mat, kn+"showadvanced", "false")
 		luxBool("advanced", showadvanced, "Advanced", "Show advanced options", gui, 0.6)
 		showhelp = luxProp(mat, kn+"showhelp", "false")
-		luxBool("help", showhelp, "Help", "Show Help Information", gui, 0.4)
+		luxHelp("help", showhelp, "Help", "Show Help Information", gui, 0.4)
+
+		# Material preview
+		if gui and level == 0: 
+			gui.newline()
+			r = gui.getRect(1.1, 7)
+			drawMatPreview(r[0]-82, r[1]+4);
+
+			# preview mode toggle buttons
+			prev_sphere = luxProp(mat, "matprev_sphere", "true")
+			Draw.Toggle("S", evtLuxGui, r[0]-108, r[1]+122, 22, 22, prev_sphere.get()=="true", "Draw Sphere", lambda e,v: MatPreview_Sphereset(mat, ["false","true"][bool(v)]))
+			prev_plane = luxProp(mat, "matprev_plane", "false")
+			Draw.Toggle("P", evtLuxGui, r[0]-108, r[1]+96, 22, 22, prev_plane.get()=="true", "Draw 2D Plane", lambda e,v: MatPreview_Planeset(mat, ["false","true"][bool(v)]))
+			prev_torus = luxProp(mat, "matprev_torus", "false")
+			Draw.Toggle("T", evtLuxGui, r[0]-108, r[1]+70, 22, 22, prev_torus.get()=="true", "Draw Torus", lambda e,v: MatPreview_Torusset(mat, ["false","true"][bool(v)]))
+
+			# Zoom option
+			zoom = luxProp(mat, "matprev_zoom", "false")
+			Draw.Toggle("Zoom", evtLuxGui, r[0]+66, r[1]+122, 50, 18, zoom.get()=="true", "Zoom", lambda e,v: zoom.set(["false","true"][bool(v)]))
+
+			# Preview Quality
+			qs = ["low","medium","high","very high"]
+			quality = luxProp(mat, "matprev_quality", "high")
+			luxOptionRect("quality", quality, qs, "  Quality", "select preview quality", gui, r[0]+200, r[1]+122, 88, 18)
+
 		if gui: gui.newline()
 		has_object_options = 0 # disable object options by default
 		has_bump_options   = 0 # disable bump mapping options by default
@@ -3368,11 +3531,16 @@ scrollbar = scrollbar()
 
 # gui main draw
 def luxDraw():
+	global icon_luxblend
+
 	BGL.glClear(BGL.GL_COLOR_BUFFER_BIT)
 
 	y = int(scrollbar.getTop()) # 420
 	BGL.glColor3f(0.1,0.1,0.1); BGL.glRectf(0,0,440,y)
-	BGL.glColor3f(0.9,0.9,0.9); BGL.glRasterPos2i(10,y-15); Draw.Text("LuxBlend CVS :::...")
+	BGL.glColor3f(1.0,0.5,0.0); BGL.glRasterPos2i(130,y-21); Draw.Text("CVS")
+	BGL.glColor3f(0.9,0.9,0.9);
+
+	drawLogo(icon_luxblend, 6, y-25);
 
 	scn = Scene.GetCurrent()
 	if scn:
@@ -3407,7 +3575,7 @@ def luxDraw():
 		Draw.Button("Output", evtLuxGui, 250, y-70, 80, 16, "", lambda e,v:luxpage.set(3))
 		Draw.Button("System", evtLuxGui, 330, y-70, 80, 16, "", lambda e,v:luxpage.set(4))
 		if luxpage.get() == 0:
-			BGL.glColor3f(1.0,0.5,0.4);BGL.glRectf(10,y-74,90,y-70);BGL.glColor3f(0.9,0.9,0.9)
+			BGL.glColor3f(1.0,0.5,0.0);BGL.glRectf(10,y-74,90,y-70);BGL.glColor3f(0.9,0.9,0.9)
 			obj = scn.objects.active
 			if obj:
 				if (obj.getType() == "Lamp"):
@@ -3440,7 +3608,7 @@ def luxDraw():
 						setactivemat(mats[matindex])
 						luxMaterial(activemat, gui)
 		if luxpage.get() == 1:
-			BGL.glColor3f(1.0,0.5,0.4);BGL.glRectf(90,y-74,170,y-70);BGL.glColor3f(0.9,0.9,0.9)
+			BGL.glColor3f(1.0,0.5,0.0);BGL.glRectf(90,y-74,170,y-70);BGL.glColor3f(0.9,0.9,0.9)
 			cam = scn.getCurrentCamera()
 			if cam:
 				r = gui.getRect(1.1, 1)
@@ -3448,7 +3616,7 @@ def luxDraw():
 			gui.newline("", 10)
 			luxEnvironment(scn, gui)
 		if luxpage.get() == 2:
-			BGL.glColor3f(1.0,0.5,0.4);BGL.glRectf(170,y-74,250,y-70);BGL.glColor3f(0.9,0.9,0.9)
+			BGL.glColor3f(1.0,0.5,0.0);BGL.glRectf(170,y-74,250,y-70);BGL.glColor3f(0.9,0.9,0.9)
 			r = gui.getRect(1.1, 1)
 			luxSampler(scn, gui)
 			gui.newline("", 10)
@@ -3458,11 +3626,11 @@ def luxDraw():
 			gui.newline("", 10)
 			luxPixelFilter(scn, gui)
 		if luxpage.get() == 3:
-			BGL.glColor3f(1.0,0.5,0.4);BGL.glRectf(250,y-74,330,y-70);BGL.glColor3f(0.9,0.9,0.9)
+			BGL.glColor3f(1.0,0.5,0.0);BGL.glRectf(250,y-74,330,y-70);BGL.glColor3f(0.9,0.9,0.9)
 			r = gui.getRect(1.1, 1)
 			luxFilm(scn, gui)
 		if luxpage.get() == 4:
-			BGL.glColor3f(1.0,0.5,0.4);BGL.glRectf(330,y-74,410,y-70);BGL.glColor3f(0.9,0.9,0.9)
+			BGL.glColor3f(1.0,0.5,0.0);BGL.glRectf(330,y-74,410,y-70);BGL.glColor3f(0.9,0.9,0.9)
 			luxSystem(scn, gui)
 			gui.newline("", 10)
 			luxAccelerator(scn, gui)
@@ -3478,6 +3646,8 @@ def luxDraw():
 		lxo = luxProp(scn, "lxo", "true")
 		lxm = luxProp(scn, "lxm", "true")
 		lxv = luxProp(scn, "lxv", "true")
+		net = luxProp(scn, "netrenderctl", "false")
+		donet = luxProp(scn, "donetrender", "true")
 		if (run.get()=="true"):
 			Draw.Button("Render", 0, 10, y+20, 100, 36, "Render with Lux", lambda e,v:CBluxExport(dlt.get()=="true", True))
 			Draw.Button("Render Anim", 0, 110, y+20, 100, 36, "Render animation with Lux", lambda e,v:CBluxAnimExport(dlt.get()=="true", True))
@@ -3581,33 +3751,104 @@ def luxButtonEvt(evt):  # function that handles button events
 	if evt == evtConvertMaterial:
 		if activemat: convertMaterial(activemat)
 		Draw.Redraw()
-	if evt == evtPreviewMaterial:
+	if evt == evtPreviewMaterial: ## or evt == evtLuxGui or evt == evtLoadMaterial:
 		if activemat:
-# not finished yet
-#			Draw.PupBlock("Preview settings", [("diameter", Draw.Create(1.0), 0.0, 100.0, "help")])
-			datadir = Blender.Get("datadir")
-			filename = datadir + os.sep + "preview.lxs"
-			file = open(filename, 'w')
-			file.write('LookAt 0.0 -5.0 1.0 0.0 -4.0 1.0 0.0 0.0 1.0\nCamera "perspective" "float fov" [22.5] "float screenwindow" [-1.0 1.0 -1.21 0.29]\n')
-			file.write('Film "multiimage" "integer xresolution" [400] "integer yresolution" [300] "integer ldr_displayinterval" [5] "integer ldr_writeinterval" [3600] "string tonemapper" ["reinhard"]\n')
-			file.write('Sampler "erpt"\nSurfaceIntegrator "path"\n')
-			file.write('WorldBegin\n')
-			file.write(luxMaterial(activemat))
-			file.write('AttributeBegin\nTransform [0.5 0.0 0.0 0.0  0.0 0.5 0.0 0.0  0.0 0.0 0.5 0.0  0.0 0.0 0.5 1.0]\n')
-			file.write(luxProp(activemat,"link","").get()+'\n')
-			file.write('Shape "sphere" "float radius" [1.0]\nAttributeEnd\n')
-			file.write('AttributeBegin\nTransform [5.0 0.0 0.0 0.0  0.0 5.0 0.0 0.0  0.0 0.0 5.0 0.0  0.0 0.0 0.0 1.0]\n')
-			file.write('Material "matte" "float Kd" [0.8 0.8 0.8]\n')
-			file.write('Shape "disk" "float radius" [1.0]\nAttributeEnd\n')
-			file.write('AttributeBegin\nTransform [0.5 0.0 0.0 0.0  0.0 0.5 0.0 0.0  0.0 0.0 -0.5 0.0  0.5 -0.5 2.0 1.0]\n')
-			file.write('AreaLightSource "area" "color L" [1.0 1.0 1.0]\n')
-#			file.write('Shape "trianglemesh" "integer indices" [0 1 2 0 2 3] "point P" [-1.0 1.0 0.0 1.0 1.0 0.0 1.0 -1.0 0.0 -1.0 -1.0 0.0]\nAttributeEnd\n')
-			file.write('Shape "disk" "float radius" [1.0]\nAttributeEnd\n')
-			file.write('WorldEnd\n')
-			file.close()
-			launchLux(filename)
+			Blender.Window.WaitCursor(True)
+			scn = Scene.GetCurrent()
+			consolebin = luxProp(scn, "luxconsole", "").get()
+			consolebin += " -b -"
+			PIPE = subprocess.PIPE
+			p = subprocess.Popen(consolebin, bufsize=58800, stdin=PIPE, stdout=PIPE, stderr=PIPE)
+
+			prev_sphere = luxProp(activemat, "matprev_sphere", "true")
+			prev_plane = luxProp(activemat, "matprev_plane", "false")
+			prev_torus = luxProp(activemat, "matprev_torus", "false")
+
+			# Zoom
+			if luxProp(activemat, "matprev_zoom", "false").get() == "true":
+				p.stdin.write('LookAt 0.250000 -1.500000 0.750000 0.250000 -0.500000 0.750000 0.000000 0.000000 1.000000\nCamera "perspective" "float fov" [22.5]\n')
+			else:
+				p.stdin.write('LookAt 0.0 -3.0 0.5 0.0 -2.0 0.5 0.0 0.0 1.0\nCamera "perspective" "float fov" [22.5]\n')
+
+			p.stdin.write('Film "fleximage" "integer xresolution" [140] "integer yresolution" [140] "integer displayinterval" [3] "integer ldr_writeinterval" [3600] "string tonemapper" ["reinhard"] "integer haltspp" [1] "integer reject_warmup" [32]\n')
+			p.stdin.write('PixelFilter "sinc"\n')
+
+			quality = luxProp(activemat, "matprev_quality", "high")
+			if quality.get()=="low":
+				p.stdin.write('Sampler "lowdiscrepancy" "string pixelsampler" ["hilbert"] "integer pixelsamples" [2]')
+			elif quality.get()=="medium":
+				p.stdin.write('Sampler "lowdiscrepancy" "string pixelsampler" ["hilbert"] "integer pixelsamples" [4]')
+			elif quality.get()=="high":
+				p.stdin.write('Sampler "lowdiscrepancy" "string pixelsampler" ["hilbert"] "integer pixelsamples" [8]')
+			else: 
+				p.stdin.write('Sampler "lowdiscrepancy" "string pixelsampler" ["hilbert"] "integer pixelsamples" [32]')
+
+			if(prev_plane.get()=="false"):
+				p.stdin.write('SurfaceIntegrator "distributedpath" "integer directsamples" [1] "integer diffusereflectdepth" [1] "integer diffusereflectsamples" [4] "integer diffuserefractdepth" [4] "integer diffuserefractsamples" [1] "integer glossyreflectdepth" [1] "integer glossyreflectsamples" [2] "integer glossyrefractdepth" [4] "integer glossyrefractsamples" [1] "integer specularreflectdepth" [2] "integer specularrefractdepth" [4]\n')
+			else:
+				p.stdin.write('SurfaceIntegrator "distributedpath" "integer directsamples" [1] "integer diffusereflectdepth" [0] "integer diffusereflectsamples" [0] "integer diffuserefractdepth" [0] "integer diffuserefractsamples" [0] "integer glossyreflectdepth" [0] "integer glossyreflectsamples" [0] "integer glossyrefractdepth" [0] "integer glossyrefractsamples" [0] "integer specularreflectdepth" [1] "integer specularrefractdepth" [1]\n')
+			p.stdin.write('WorldBegin\n')
+
+			if(prev_sphere.get()=="true"):
+				p.stdin.write('AttributeBegin\nTransform [0.5 0.0 0.0 0.0  0.0 0.5 0.0 0.0  0.0 0.0 0.5 0.0  0.0 0.0 0.5 1.0]\n')
+			elif (prev_plane.get()=="true"):
+				p.stdin.write('AttributeBegin\nTransform [0.649999976158 0.0 0.0 0.0  0.0 4.90736340453e-008 0.649999976158 0.0  0.0 -0.649999976158 4.90736340453e-008 0.0  0.0 0.0 0.5 1.0]\n')
+			else:
+				p.stdin.write('AttributeBegin\nTransform [0.35 -0.35 0.0 0.0  0.25 0.25 0.35 0.0  -0.25 -0.25 0.35 0.0  0.0 0.0 0.5 1.0]\n')
+
+			p.stdin.write(luxMaterial(activemat))
+			p.stdin.write(luxProp(activemat,"link","").get()+'\n')
+			if(prev_sphere.get()=="true"):
+				p.stdin.write('Shape "sphere" "float radius" [1.0]\nAttributeEnd\n')
+			elif (prev_plane.get()=="true"):
+				p.stdin.write('	Shape "trianglemesh" "integer indices" [ 0 1 2 0 2 3 ] "point P" [ 1.0 1.0 0.0 -1.0 1.0 0.0 -1.0 -1.0 -0.0 1.0 -1.0 -0.0 ] "float uv" [ 0.0 0.0 1.0 0.0 1.0 1.0 0.0 1.0 ]\nAttributeEnd\n')
+			elif (prev_torus.get()=="true"):
+				p.stdin.write('Shape "torus" "float radius" [1.0]\nAttributeEnd\n')
+
+			# Checkerboard floor
+			if(prev_plane.get()=="false"):
+				p.stdin.write('AttributeBegin\nTransform [5.0 0.0 0.0 0.0  0.0 5.0 0.0 0.0  0.0 0.0 5.0 0.0  0.0 0.0 0.0 1.0]\n')
+
+				p.stdin.write('Texture "checks" "color" "checkerboard"')
+   				p.stdin.write('"integer dimension" [2] "string aamode" ["supersample"] "color tex1" [0.9 0.9 0.9] "color tex2" [0.0 0.0 0.0]')
+   				p.stdin.write('"string mapping" ["uv"] "float uscale" [36.8] "float vscale" [36.0]')
+				p.stdin.write('Material "matte" "texture Kd" ["checks"]\n')
+
+				p.stdin.write('Shape "loopsubdiv" "integer nlevels" [3] "bool dmnormalsmooth" ["true"] "bool dmsharpboundary" ["true"] ')
+				p.stdin.write('"integer indices" [ 0 1 2 0 2 3 1 0 4 1 4 5 5 4 6 5 6 7 ]')
+				p.stdin.write('"point P" [ 1.000000 1.000000 0.000000 -1.000000 1.000000 0.000000 -1.000000 -1.000000 0.000000 1.000000 -1.000000 0.000000 1.000000 3.000000 0.000000 -1.000000 3.000000 0.000000 1.000000 3.000000 2.000000 -1.000000 3.000000 2.000000')
+				p.stdin.write('] "normal N" [ 0.000000 0.000000 1.000000 0.000000 0.000000 1.000000 0.000000 0.000000 1.000000 0.000000 0.000000 1.000000 0.000000 -0.707083 0.707083 0.000000 -0.707083 0.707083 0.000000 -1.000000 0.000000 0.000000 -1.000000 0.000000')
+				p.stdin.write('] "float uv" [ 0.333334 0.000000 0.333334 0.333334 0.000000 0.333334 0.000000 0.000000 0.666667 0.000000 0.666667 0.333333 1.000000 0.000000 1.000000 0.333333 ]')
+				p.stdin.write('AttributeEnd\n')
 
 
+			# Lightsource
+			if(prev_plane.get()=="false"):
+				p.stdin.write('AttributeBegin\nTransform [1.0 0.0 0.0 0.0  0.0 1.0 0.0 0.0  0.0 0.0 1.0 0.0  1.0 -1.0 4.0 1.0]\n')
+			else:
+				p.stdin.write('AttributeBegin\nTransform [1.0 0.0 0.0 0.0  0.0 1.0 0.0 0.0  0.0 0.0 1.0 0.0  1.0 -4.0 1.0 1.0]\n')
+			p.stdin.write('LightSource "point"')
+			#p.stdin.write('AreaLightSource "area" "color L" [1.0 1.0 1.0]\n')
+			#p.stdin.write('Shape "disk" "float radius" [1.0]\nAttributeEnd\n')
+			p.stdin.write('WorldEnd\n')
+			p.stdin.close()
+
+			data = p.communicate()[0]
+
+			if(len(data) < 58800):
+				return
+
+			global matpreview_buf
+
+			offset = 0
+			for y in range(139, -1, -1):
+				for x in range(140):
+					for c in range(3):
+						matpreview_buf[y][x][c] = ord(data[offset])
+						offset += 1
+
+			Draw.Redraw()
+			Blender.Window.WaitCursor(False)
 
 def setFocus(target):
 	currentscene = Scene.GetCurrent()
@@ -3677,8 +3918,6 @@ if pyargs != [] and pyargs[0] == "--batch":
 else:
 	print "\n\nLuxBlend CVS - UI mode\n"
 	Draw.Register(luxDraw, luxEvent, luxButtonEvt) # init GUI
-
-
 
 	luxpathprop = luxProp(Scene.GetCurrent(), "lux", "")
 	luxpath = luxpathprop.get()
