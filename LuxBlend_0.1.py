@@ -3992,9 +3992,8 @@ def luxButtonEvt(evt):  # function that handles button events
 			Blender.Window.WaitCursor(True)
 			scn = Scene.GetCurrent()
 			consolebin = luxProp(scn, "luxconsole", "").get()
-			consolebin += " -b -"
 			PIPE = subprocess.PIPE
-			p = subprocess.Popen(consolebin, bufsize=58800, stdin=PIPE, stdout=PIPE, stderr=PIPE)
+			p = subprocess.Popen((consolebin, '-b', '-'), bufsize=58800, stdin=PIPE, stdout=PIPE, stderr=PIPE)
 
 			prev_sphere = luxProp(activemat, "matprev_sphere", "true")
 			prev_plane = luxProp(activemat, "matprev_plane", "false")
@@ -4067,9 +4066,9 @@ def luxButtonEvt(evt):  # function that handles button events
 			#p.stdin.write('AreaLightSource "area" "color L" [1.0 1.0 1.0]\n')
 			#p.stdin.write('Shape "disk" "float radius" [1.0]\nAttributeEnd\n')
 			p.stdin.write('WorldEnd\n')
-			p.stdin.close()
 
 			data = p.communicate()[0]
+			p.stdin.close()
 
 			if(len(data) < 58800):
 				return
