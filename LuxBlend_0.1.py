@@ -3214,11 +3214,18 @@ def luxMaterialBlock(name, luxname, key, mat, gui=None, level=0, str_opt=""):
 			(str,link) = c((str,link), luxSpectrumTexture("Kr", keyname, "1.0 1.0 1.0", 1.0, "reflection", "", mat, gui, level+1))
 			(str,link) = c((str,link), luxSpectrumTexture("Kt", keyname, "1.0 1.0 1.0", 1.0, "transmission", "", mat, gui, level+1))
 			(str,link) = c((str,link), luxIORFloatTexture("index", keyname, 1.5, 0.0, 100.0, "IOR", "", mat, gui, level+1))
-			link += luxBool("architectural", luxProp(mat, keyname+".architectural", "false"), "architectural", "Enable architectural glass", gui, 2.0)
-			chromadisp = luxProp(mat, keyname+".chromadisp", "false")
-			luxBool("chromadisp", chromadisp, "Chromatic Dispersion", "Enable Chromatic Dispersion", gui, 2.0)
-			if chromadisp.get() == "true":
-				(str,link) = c((str,link), luxCauchyBFloatTexture("cauchyb", keyname, 0.0, 0.0, 1.0, "cauchyb", "", mat, gui, level+1))
+			architectural = luxProp(mat, keyname+".architectural", "false")
+			link += luxBool("architectural", architectural, "architectural", "Enable architectural glass", gui, 2.0)
+			if architectural.get() == "false":
+				chromadisp = luxProp(mat, keyname+".chromadisp", "false")
+				luxBool("chromadisp", chromadisp, "Chromatic Dispersion", "Enable Chromatic Dispersion", gui, 2.0)
+				if chromadisp.get() == "true":
+					(str,link) = c((str,link), luxCauchyBFloatTexture("cauchyb", keyname, 0.0, 0.0, 1.0, "cauchyb", "", mat, gui, level+1))
+				thinfilm = luxProp(mat, keyname+".thinfilm", "false")
+				luxBool("thinfilm", thinfilm, "Thin Film Coating", "Enable Thin Film Coating", gui, 2.0)
+				if thinfilm.get() == "true":
+					(str,link) = c((str,link), luxFloatTexture("film", keyname, 100.0, 0.0, 1000000.0, "film", "thickness of film coating in nanometers", mat, gui, level+1))
+					(str,link) = c((str,link), luxIORFloatTexture("filmindex", keyname, 1.5, 0.0, 100.0, "film IOR", "film coating index of refraction", mat, gui, level+1))
 			has_bump_options = 1
 			has_object_options = 1
 		if mattype.get() == "matte":
@@ -3264,6 +3271,12 @@ def luxMaterialBlock(name, luxname, key, mat, gui=None, level=0, str_opt=""):
 			has_object_options = 1
 		if mattype.get() == "mirror":
 			(str,link) = c((str,link), luxSpectrumTexture("Kr", keyname, "1.0 1.0 1.0", 1.0, "reflection", "", mat, gui, level+1))
+			thinfilm = luxProp(mat, keyname+".thinfilm", "false")
+			luxBool("thinfilm", thinfilm, "Thin Film Coating", "Enable Thin Film Coating", gui, 2.0)
+			if thinfilm.get() == "true":
+				(str,link) = c((str,link), luxFloatTexture("film", keyname, 100.0, 0.0, 1000000.0, "film", "thickness of film coating in nanometers", mat, gui, level+1))
+				(str,link) = c((str,link), luxIORFloatTexture("filmindex", keyname, 1.5, 0.0, 100.0, "film IOR", "film coating index of refraction", mat, gui, level+1))
+
 			has_bump_options = 1
 			has_object_options = 1
 		if mattype.get() == "plastic":
