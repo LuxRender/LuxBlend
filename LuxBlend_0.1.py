@@ -3330,6 +3330,13 @@ def luxMaterialBlock(name, luxname, key, mat, gui=None, level=0, str_opt=""):
 				(s, l) = luxExponentTexture("uroughness", keyname, 0.002, 0.0, 1.0, "exponent", "", mat, gui, level+1)
 				(str,link) = c((str,link), (s, l))
 				link += l.replace("uroughness", "vroughness", 1)
+
+			thinfilm = luxProp(mat, keyname+".thinfilm", "false")
+			luxBool("thinfilm", thinfilm, "Thin Film Coating", "Enable Thin Film Coating", gui, 2.0)
+			if thinfilm.get() == "true":
+				(str,link) = c((str,link), luxFloatTexture("film", keyname, 100.0, 0.0, 1000000.0, "film", "thickness of film coating in nanometers", mat, gui, level+1))
+				(str,link) = c((str,link), luxIORFloatTexture("filmindex", keyname, 1.5, 0.0, 100.0, "film IOR", "film coating index of refraction", mat, gui, level+1))
+
 			has_bump_options = 1
 			has_object_options = 1
 		if mattype.get() == "substrate":
