@@ -1169,9 +1169,9 @@ def getScenePresets():
 	'sampler.type': 'lowdiscrepancy',
 	'sampler.lowdisc.pixelsamples': 8,
 	'sampler.lowdisc.pixelsampler': 'lowdiscrepancy',
-	'pixelfilter.type': 'mitchell',
-	'pixelfilter.mitchell.xwidth': 2.0,
-	'pixelfilter.mitchell.ywidth': 2.0,
+	'pixelfilter.type': 'sinc',
+	'pixelfilter.sinc.xwidth': 2.0,
+	'pixelfilter.sinc.ywidth': 2.0,
 	},
 	'Final - Bidir Path Tracing': {
 	'sintegrator.type': 'bidirectional',
@@ -1181,9 +1181,9 @@ def getScenePresets():
 	'sampler.type': 'lowdiscrepancy',
 	'sampler.lowdisc.pixelsamples': 8,
 	'sampler.lowdisc.pixelsampler': 'lowdiscrepancy',
-	'pixelfilter.type': 'mitchell',
-	'pixelfilter.mitchell.xwidth': 2.0,
-	'pixelfilter.mitchell.ywidth': 2.0,
+	'pixelfilter.type': 'sinc',
+	'pixelfilter.sinc.xwidth': 2.0,
+	'pixelfilter.sinc.ywidth': 2.0,
 	},
 	'Final - low MLT/Path Tracing (RECOMMENDED)': {
 	'sintegrator.type': 'path',
@@ -1196,9 +1196,9 @@ def getScenePresets():
 	'sampler.metro.usevariance': 'false',
 	'sampler.metro.initsamples': 100000,
 	'sampler.metro.stratawidth': 256,
-	'pixelfilter.type': 'mitchell',
-	'pixelfilter.mitchell.xwidth': 2.0,
-	'pixelfilter.mitchell.ywidth': 2.0,
+	'pixelfilter.type': 'sinc',
+	'pixelfilter.sinc.xwidth': 2.0,
+	'pixelfilter.sinc.ywidth': 2.0,
 	},
 	'Final - high MLT/Path Tracing (complex)': {
 	'sintegrator.type': 'path',
@@ -1211,9 +1211,9 @@ def getScenePresets():
 	'sampler.metro.usevariance': 'false',
 	'sampler.metro.initsamples': 100000,
 	'sampler.metro.stratawidth': 256,
-	'pixelfilter.type': 'mitchell',
-	'pixelfilter.mitchell.xwidth': 2.0,
-	'pixelfilter.mitchell.ywidth': 2.0,
+	'pixelfilter.type': 'sinc',
+	'pixelfilter.sinc.xwidth': 2.0,
+	'pixelfilter.sinc.ywidth': 2.0,
 	},
 	'Final - low vMLT/Path Tracing': {
 	'sintegrator.type': 'path',
@@ -1226,9 +1226,9 @@ def getScenePresets():
 	'sampler.metro.usevariance': 'true',
 	'sampler.metro.initsamples': 100000,
 	'sampler.metro.stratawidth': 256,
-	'pixelfilter.type': 'mitchell',
-	'pixelfilter.mitchell.xwidth': 2.0,
-	'pixelfilter.mitchell.ywidth': 2.0,
+	'pixelfilter.type': 'sinc',
+	'pixelfilter.sinc.xwidth': 2.0,
+	'pixelfilter.sinc.ywidth': 2.0,
 	},
 	'Final - low MLT/Bidir Path Tracing (experimental)': {
 	'sintegrator.type': 'bidirectional',
@@ -1241,9 +1241,9 @@ def getScenePresets():
 	'sampler.metro.usevariance': 'false',
 	'sampler.metro.initsamples': 100000,
 	'sampler.metro.stratawidth': 256,
-	'pixelfilter.type': 'mitchell',
-	'pixelfilter.mitchell.xwidth': 2.0,
-	'pixelfilter.mitchell.ywidth': 2.0,
+	'pixelfilter.type': 'sinc',
+	'pixelfilter.sinc.xwidth': 2.0,
+	'pixelfilter.sinc.ywidth': 2.0,
 	},
 	'Final - high MLT/Bidir Path Tracing (experimental)': {
 	'sintegrator.type': 'bidirectional',
@@ -1256,9 +1256,9 @@ def getScenePresets():
 	'sampler.metro.usevariance': 'false',
 	'sampler.metro.initsamples': 100000,
 	'sampler.metro.stratawidth': 256,
-	'pixelfilter.type': 'mitchell',
-	'pixelfilter.mitchell.xwidth': 2.0,
-	'pixelfilter.mitchell.ywidth': 2.0,
+	'pixelfilter.type': 'sinc',
+	'pixelfilter.sinc.xwidth': 2.0,
+	'pixelfilter.sinc.ywidth': 2.0,
 	},
 	'Final - low vMLT/Bidir Path Tracing (experimental)': {
 	'sintegrator.type': 'bidirectional',
@@ -1271,9 +1271,9 @@ def getScenePresets():
 	'sampler.metro.usevariance': 'true',
 	'sampler.metro.initsamples': 100000,
 	'sampler.metro.stratawidth': 256,
-	'pixelfilter.type': 'mitchell',
-	'pixelfilter.mitchell.xwidth': 2.0,
-	'pixelfilter.mitchell.ywidth': 2.0,
+	'pixelfilter.type': 'sinc',
+	'pixelfilter.sinc.xwidth': 2.0,
+	'pixelfilter.sinc.ywidth': 2.0,
 	},
 
 	'Animation - Low': {
@@ -2006,7 +2006,7 @@ def luxFilm(scn, gui=None):
 			restartflm = luxProp(scn, "film.restart_resume_flm", "false")
 			str += luxBool("restart_resume_flm", restartflm, "Restart/Erase", "Restart with a black flm, even it a previous flm exists", gui)
 			if gui: gui.newline("  Reject:")
-			str += luxInt("reject_warmup", luxProp(scn, "film.reject_warmup", 128), 0, 32768, "warmup_spp", "Specify amount of samples per pixel for high intensity rejection", gui)
+			str += luxInt("reject_warmup", luxProp(scn, "film.reject_warmup", 64), 0, 32768, "warmup_spp", "Specify amount of samples per pixel for high intensity rejection", gui)
 			debugmode = luxProp(scn, "film.debug", "false")
 			str += luxBool("debug", debugmode, "debug", "Turn on debug reporting and switch off reject", gui)
 
@@ -2193,9 +2193,9 @@ def luxSampler(scn, gui=None):
 
 
 		if samplertype.get() == "erpt":
-			str += luxInt("initsamples", luxProp(scn, "sampler.erpt.initsamples", 100000), 1, 1000000, "initsamples", "", gui)
 			if gui: gui.newline("  Mutation:")
 			str += luxInt("chainlength", luxProp(scn, "sampler.erpt.chainlength", 512), 1, 32768, "chainlength", "The number of mutations from a given seed", gui)
+			str += luxInt("initsamples", luxProp(scn, "sampler.erpt.initsamples", 100000), 1, 1000000, "initsamples", "", gui)
 			if gui: gui.newline()
 			str += luxInt("stratawidth", luxProp(scn, "sampler.erpt.stratawidth", 256), 1, 32768, "stratawidth", "The number of x/y strata for stratified sampling of seeds", gui)
 		if samplertype.get() == "lowdiscrepancy":
@@ -2205,13 +2205,7 @@ def luxSampler(scn, gui=None):
 		if samplertype.get() == "random":
 			if gui: gui.newline("  PixelSampler:")
 			str += luxOption("pixelsampler", luxProp(scn, "sampler.random.pixelsampler", "vegas"), ["linear", "tile", "random", "vegas","lowdiscrepancy","hilbert"], "pixel-sampler", "select pixel-sampler", gui)
-			if gui: gui.newline()
-			str += luxInt("xsamples", luxProp(scn, "sampler.random.xsamples", 2), 1, 512, "xsamples", "Allows you to specify how many samples per pixel are taking in the x direction", gui)
-			str += luxInt("ysamples", luxProp(scn, "sampler.random.ysamples", 2), 1, 512, "ysamples", "Allows you to specify how many samples per pixel are taking in the y direction", gui)
-		if samplertype.get() == "halton":
-			if gui: gui.newline("  PixelSampler:")
-			str += luxOption("pixelsampler", luxProp(scn, "sampler.halton.pixelsampler", "lowdiscrepancy"), ["linear", "tile", "random", "vegas","lowdiscrepancy","hilbert"], "pixel-sampler", "select pixel-sampler", gui)
-			str += luxInt("pixelsamples", luxProp(scn, "sampler.halton.pixelsamples", 4), 1, 512, "samples", "Average number of samples taken per pixel. More samples create a higher quality image at the cost of render time", gui)
+			str += luxInt("pixelsamples", luxProp(scn, "sampler.random.pixelsamples", 4), 1, 512, "samples", "Average number of samples taken per pixel. More samples create a higher quality image at the cost of render time", gui)
 	return str			
 
 def luxSurfaceIntegrator(scn, gui=None):
