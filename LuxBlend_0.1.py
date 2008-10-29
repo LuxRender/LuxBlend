@@ -758,9 +758,9 @@ def launchLux(filename):
 
 	if ostype == "linux2" or ostype == "darwin":
 		if(autothreads=="true"):
-			cmd = "(%s %s)&"%(ic, filename)
+			cmd = "(%s -i 12 -u 192.168.1.200 %s)&"%(ic, filename)
 		else:
-			cmd = "(%s --threads=%d %s)&"%(ic, threads, filename)
+			cmd = "(%s -i 12 -u 192.168.1.200 --threads=%d %s)&"%(ic, threads, filename)
 
 	# call external shell script to start Lux	
 	print("Running Luxrender:\n"+cmd)
@@ -1665,7 +1665,7 @@ def luxIdentifier(name, lux, options, caption, hint, gui, icon=None, width=1.0):
 	luxOption(name, lux, options, caption, hint, gui, width)
 	return "\n%s \"%s\""%(name, lux.get())
 
-def luxFloat(name, lux, min, max, caption, hint, gui, width=1.0):
+def luxFloat(name, lux, min, max, caption, hint, gui, width=1.0, useslider=0):
 	if gui:
 		if (luxProp(Scene.GetCurrent(), "useparamkeys", "false").get()=="true"):
 			r = gui.getRect(width-0.12, 1)
@@ -1673,7 +1673,10 @@ def luxFloat(name, lux, min, max, caption, hint, gui, width=1.0):
 			r = gui.getRect(width, 1)
 
 		# Value
-		Draw.Number(caption+": ", evtLuxGui, r[0], r[1], r[2], r[3], lux.getFloat(), min, max, hint, lambda e,v: lux.set(v))
+		if(useslider==1):
+			Draw.Slider(caption+": ", evtLuxGui, r[0], r[1], r[2], r[3], lux.getFloat(), min, max, 0, hint, lambda e,v: lux.set(v))
+		else:
+			Draw.Number(caption+": ", evtLuxGui, r[0], r[1], r[2], r[3], lux.getFloat(), min, max, hint, lambda e,v: lux.set(v))
 		if (luxProp(Scene.GetCurrent(), "useparamkeys", "false").get()=="true"):
 			# IPO Curve
 			obj = lux.getobj()
@@ -1767,10 +1770,13 @@ def luxFloat(name, lux, min, max, caption, hint, gui, width=1.0):
 
 	return "\n   \"float %s\" [%f]"%(name, lux.getFloat())
 
-def luxFloatNoIPO(name, lux, min, max, caption, hint, gui, width=1.0):
+def luxFloatNoIPO(name, lux, min, max, caption, hint, gui, width=1.0, useslider=0):
 	if gui:
 		r = gui.getRect(width, 1)
-		Draw.Number(caption+": ", evtLuxGui, r[0], r[1], r[2], r[3], lux.getFloat(), min, max, hint, lambda e,v: lux.set(v))
+		if(useslider==1):
+			Draw.Slider(caption+": ", evtLuxGui, r[0], r[1], r[2], r[3], lux.getFloat(), min, max, 0, hint, lambda e,v: lux.set(v))
+		else:
+			Draw.Number(caption+": ", evtLuxGui, r[0], r[1], r[2], r[3], lux.getFloat(), min, max, hint, lambda e,v: lux.set(v))
 	return "\n   \"float %s\" [%f]"%(name, lux.getFloat())
 
 
@@ -2000,7 +2006,7 @@ def luxFilm(scn, gui=None):
 			restartflm = luxProp(scn, "film.restart_resume_flm", "false")
 			str += luxBool("restart_resume_flm", restartflm, "Restart/Erase", "Restart with a black flm, even it a previous flm exists", gui)
 			if gui: gui.newline("  Reject:")
-			str += luxInt("reject_warmup", luxProp(scn, "film.reject_warmup", 3), 0, 32768, "warmup_spp", "Specify amount of samples per pixel for high intensity rejection", gui)
+			str += luxInt("reject_warmup", luxProp(scn, "film.reject_warmup", 128), 0, 32768, "warmup_spp", "Specify amount of samples per pixel for high intensity rejection", gui)
 			debugmode = luxProp(scn, "film.debug", "false")
 			str += luxBool("debug", debugmode, "debug", "Turn on debug reporting and switch off reject", gui)
 
@@ -2123,7 +2129,7 @@ def luxPixelFilter(scn, gui=None):
 	global icon_c_filter
 	str = ""
 	if scn:
-		filtertype = luxProp(scn, "pixelfilter.type", "mitchell")
+		filtertype = luxProp(scn, "pixelfilter.type", "sinc")
 		str = luxIdentifier("PixelFilter", filtertype, ["box", "gaussian", "mitchell", "sinc", "triangle"], "FILTER", "select pixel filter type", gui, icon_c_filter)
 		if filtertype.get() == "box":
 			if gui: gui.newline()
@@ -2159,7 +2165,7 @@ def luxSampler(scn, gui=None):
 	str = ""
 	if scn:
 		samplertype = luxProp(scn, "sampler.type", "metropolis")
-		str = luxIdentifier("Sampler", samplertype, ["metropolis", "erpt", "lowdiscrepancy", "random", "halton"], "SAMPLER", "select sampler type", gui, icon_c_sampler)
+		str = luxIdentifier("Sampler", samplertype, ["metropolis", "erpt", "lowdiscrepancy", "random"], "SAMPLER", "select sampler type", gui, icon_c_sampler)
 		showadvanced = luxProp(scn, "sampler.metro.showadvanced", "false")
 		luxBool("advanced", showadvanced, "Advanced", "Show advanced options", gui, 0.6)
 		showhelp = luxProp(scn, "sampler.metro.showhelp", "false")
@@ -2601,14 +2607,14 @@ def luxTexture(name, parentkey, type, default, min, max, caption, hint, mat, gui
 	if texture.get() == "fbm":
 		str += luxInt("octaves", luxProp(mat, keyname+".octaves", 8), 1, 100, "octaves", "", gui, 1.1)
 		if gui: gui.newline("", -2)
-		str += luxFloat("roughness", luxProp(mat, keyname+".roughness", 0.5), 0.0, 1.0, "roughness", "", gui, 2.0)
+		str += luxFloat("roughness", luxProp(mat, keyname+".roughness", 0.5), 0.0, 1.0, "roughness", "", gui, 2.0, 1)
 		if gui: gui.newline("", -2)
 		str += lux3DMapping(keyname, mat, gui, level+1)
 
 	if texture.get() == "marble":
 		str += luxInt("octaves", luxProp(mat, keyname+".octaves", 8), 1, 100, "octaves", "", gui, 1.1)
 		if gui: gui.newline("", -2)
-		str += luxFloat("roughness", luxProp(mat, keyname+".roughness", 0.5), 0.0, 1.0, "roughness", "", gui, 2.0)
+		str += luxFloat("roughness", luxProp(mat, keyname+".roughness", 0.5), 0.0, 1.0, "roughness", "", gui, 2.0, 1)
 		if gui: gui.newline("", -2)
 		str += luxFloat("nscale", luxProp(mat, keyname+".nscale", 1.0), 0.0, 100.0, "nscale", "Scaling factor for the noise input", gui, 1.0)
 		str += luxFloat("variation", luxProp(mat, keyname+".variation", 0.2), 0.0, 100.0, "variation", "A scaling factor for the noise input function", gui, 1.0)
@@ -2618,7 +2624,7 @@ def luxTexture(name, parentkey, type, default, min, max, caption, hint, mat, gui
 	if texture.get() == "wrinkled":
 		str += luxInt("octaves", luxProp(mat, keyname+".octaves", 8), 1, 100, "octaves", "", gui, 1.1)
 		if gui: gui.newline("", -2)
-		str += luxFloat("roughness", luxProp(mat, keyname+".roughness", 0.5), 0.0, 1.0, "roughness", "", gui, 2.0)
+		str += luxFloat("roughness", luxProp(mat, keyname+".roughness", 0.5), 0.0, 1.0, "roughness", "", gui, 2.0, 1)
 		if gui: gui.newline("", -2)
 		str += lux3DMapping(keyname, mat, gui, level+1)
 
@@ -2891,7 +2897,7 @@ def luxTexture(name, parentkey, type, default, min, max, caption, hint, mat, gui
 
 def luxSpectrumTexture(name, key, default, max, caption, hint, mat, gui, level=0):
 	global icon_col
-	if gui: gui.newline(caption, 4, level, icon_col, scalelist([0.5,0.5,0.5],2.0/(level+2)))
+	if gui: gui.newline(caption, 4, level, icon_col, scalelist([0.5,0.6,0.5],2.0/(level+2)))
 	str = ""
 	keyname = "%s:%s"%(key, name)
 	texname = "%s:%s"%(mat.getName(), keyname)
@@ -2911,7 +2917,7 @@ def luxSpectrumTexture(name, key, default, max, caption, hint, mat, gui, level=0
 
 def luxFloatTexture(name, key, default, min, max, caption, hint, mat, gui, level=0):
 	global icon_float
-	if gui: gui.newline(caption, 4, level, icon_float, scalelist([0.5,0.5,0.5],2.0/(level+2)))
+	if gui: gui.newline(caption, 4, level, icon_float, scalelist([0.5,0.5,0.6],2.0/(level+2)))
 	str = ""
 	keyname = "%s:%s"%(key, name)
 	texname = "%s:%s"%(mat.getName(), keyname)
@@ -2929,13 +2935,36 @@ def luxFloatTexture(name, key, default, min, max, caption, hint, mat, gui, level
 			link = " \"texture %s\" [\"%s\"]"%(name, texname+".scale")
 	return (str, link)
 
+def luxFloatSliderTexture(name, key, default, min, max, caption, hint, mat, gui, level=0):
+        global icon_float
+        if gui: gui.newline(caption, 4, level, icon_float, scalelist([0.5,0.5,0.6],2.0/(level+2)))
+        str = ""
+        keyname = "%s:%s"%(key, name)
+        texname = "%s:%s"%(mat.getName(), keyname)
+        value = luxProp(mat, keyname, default)
+        link = luxFloat(name, value, min, max, caption, hint, gui, 2.0, 1)
+        tex = luxProp(mat, keyname+".textured", False)
+        if gui: Draw.Toggle("T", evtLuxGui, gui.x, gui.y-gui.h, gui.h, gui.h, tex.get()=="true", "use texture", lambda e,v:tex.set(["false","true"][bool(v)]))
+        if tex.get()=="true":
+                if gui: gui.newline("", -2)
+                (str, link) = luxTexture(name, key, "float", default, min, max, caption, hint, mat, gui, level+1)
+                if value.get() != 1.0:
+                        if str == "": # handle special case if texture is a just a constant
+                                str += "Texture \"%s\" \"float\" \"scale\" \"float tex1\" [%s] \"float tex2\" [%s]\n"%(texname+".scale", (link.rpartition("[")[2])[0:-1], value.get())
+                        else: str += "Texture \"%s\" \"float\" \"scale\" \"texture tex1\" [\"%s\"] \"float tex2\" [%s]\n"%(texname+".scale", texname, value.get())
+                        link = " \"texture %s\" [\"%s\"]"%(name, texname+".scale")
+        return (str, link)
+
+
 def luxExponentTexture(name, key, default, min, max, caption, hint, mat, gui, level=0):
 	global icon_float
-	if gui: gui.newline(caption, 4, level, icon_float, scalelist([0.5,0.5,0.5],2.0/(level+2)))
+	if gui: gui.newline(caption, 4, level, icon_float, scalelist([0.5,0.5,0.6],2.0/(level+2)))
 	str = ""
 	keyname = "%s:%s"%(key, name)
 	texname = "%s:%s"%(mat.getName(), keyname)
 	value = luxProp(mat, keyname, default)
+
+	if(value.get() == None): value.set(0.002)
 
 #	link = luxFloat(name, value, min, max, "", hint, gui, 2.0)
 	if gui:
@@ -2958,7 +2987,7 @@ def luxExponentTexture(name, key, default, min, max, caption, hint, mat, gui, le
 
 def luxDispFloatTexture(name, key, default, min, max, caption, hint, mat, gui, level=0):
 	global icon_float
-	if gui: gui.newline(caption, 4, level, icon_float, scalelist([0.5,0.5,0.5],2.0/(level+2)))
+	if gui: gui.newline(caption, 4, level, icon_float, scalelist([0.5,0.5,0.6],2.0/(level+2)))
 	str = ""
 	keyname = "%s:%s"%(key, name)
 	texname = "%s:%s"%(mat.getName(), keyname)
@@ -2985,7 +3014,7 @@ def luxIORFloatTexture(name, key, default, min, max, caption, hint, mat, gui, le
 	1.470, 1.470, 1.760, 1.31, 1.388, 1.36, 1.36, 1.35, 1.4729, 1.490, 1.516, 1.50, 1.544, 1.584, 1.4893, 1.57, 1.575, 1.60, 1.485, 1.46, 1.661, 1.523, 2.15, 2.419, 2.65, 3.02, 3.5, 3.927, 4.01]
 
 	global icon_float
-	if gui: gui.newline(caption, 4, level, icon_float, scalelist([0.5,0.5,0.5],2.0/(level+2)))
+	if gui: gui.newline(caption, 4, level, icon_float, scalelist([0.5,0.5,0.6],2.0/(level+2)))
 	str = ""
 	keyname = "%s:%s"%(key, name)
 	texname = "%s:%s"%(mat.getName(), keyname)
@@ -3000,9 +3029,9 @@ def luxIORFloatTexture(name, key, default, min, max, caption, hint, mat, gui, le
 		idx = iornames.index(iorpreset.get())
 #		print idx
 		value.set(iorvals[idx])
-		link = luxFloat(name, value, min, max, "", hint, None, 1.6)
+		link = luxFloat(name, value, min, max, "IOR", hint, None, 1.6)
 	else:
-		link = luxFloat(name, value, min, max, "", hint, gui, 1.6)
+		link = luxFloat(name, value, min, max, "IOR", hint, gui, 1.6, 1)
 
 	tex = luxProp(mat, keyname+".textured", False)
 	if gui: Draw.Toggle("T", evtLuxGui, gui.x, gui.y-gui.h, gui.h, gui.h, tex.get()=="true", "use texture", lambda e,v:tex.set(["false","true"][bool(v)]))
@@ -3020,7 +3049,7 @@ def luxCauchyBFloatTexture(name, key, default, min, max, caption, hint, mat, gui
 	cauchybvals = [ 0.00354, 0.00420, 0.00459, 0.00531, 0.00743, 0.01342 ]
 
 	global icon_float
-	if gui: gui.newline(caption, 4, level, icon_float, scalelist([0.5,0.5,0.5],2.0/(level+2)))
+	if gui: gui.newline(caption, 4, level, icon_float, scalelist([0.5,0.5,0.6],2.0/(level+2)))
 	str = ""
 	keyname = "%s:%s"%(key, name)
 	texname = "%s:%s"%(mat.getName(), keyname)
@@ -3035,9 +3064,9 @@ def luxCauchyBFloatTexture(name, key, default, min, max, caption, hint, mat, gui
 		idx = cauchybnames.index(cauchybpreset.get())
 		print idx
 		value.set(cauchybvals[idx])
-		link = luxFloat(name, value, min, max, "", hint, None, 1.6)
+		link = luxFloat(name, value, min, max, "cauchyb", hint, None, 1.6)
 	else:
-		link = luxFloat(name, value, min, max, "", hint, gui, 1.6)
+		link = luxFloat(name, value, min, max, "cauchyb", hint, gui, 1.6, 1)
 
 	tex = luxProp(mat, keyname+".textured", False)
 	if gui: Draw.Toggle("T", evtLuxGui, gui.x, gui.y-gui.h, gui.h, gui.h, tex.get()=="true", "use texture", lambda e,v:tex.set(["false","true"][bool(v)]))
@@ -3122,7 +3151,8 @@ def luxMaterialBlock(name, luxname, key, mat, gui=None, level=0, str_opt=""):
 		luxHelp("help", showhelp, "Help", "Show Help Information", gui, 0.4)
 
 		# Material preview
-		if gui and level == 0: 
+		showmatpreview = luxProp(Scene.GetCurrent(), "showmatpreview", "true")
+		if gui and level == 0 and showmatpreview.get()=="true": 
 			gui.newline()
 			r = gui.getRect(1.1, 7)
 			drawMatPreview(r[0]-82, r[1]+4);
@@ -3135,14 +3165,23 @@ def luxMaterialBlock(name, luxname, key, mat, gui=None, level=0, str_opt=""):
 			prev_torus = luxProp(mat, "matprev_torus", "false")
 			Draw.Toggle("T", evtLuxGui, r[0]-108, r[1]+70, 22, 22, prev_torus.get()=="true", "Draw Torus", lambda e,v: MatPreview_Torusset(mat, ["false","true"][bool(v)]))
 
-			# Zoom option
+			# Zoom toggle
 			zoom = luxProp(mat, "matprev_zoom", "false")
 			Draw.Toggle("Zoom", evtLuxGui, r[0]+66, r[1]+122, 50, 18, zoom.get()=="true", "Zoom", lambda e,v: zoom.set(["false","true"][bool(v)]))
+
+			# Light Direction/Position and Area light toggle
+			lightdir = luxProp(mat, "matprev_dir", "1 1 1")
+			Draw.Normal(evtLuxGui, r[0]+66, r[1]+28,50, 50, lightdir.getVector(), 'Light Direction', lambda e,v: lightdir.setVector(v))
+			Draw.Toggle("Area", evtLuxGui, r[0]+66, r[1]+5, 50, 18, zoom.get()=="true", "Area", lambda e,v: zoom.set(["false","true"][bool(v)]))
 
 			# Preview Quality
 			qs = ["low","medium","high","very high"]
 			quality = luxProp(mat, "matprev_quality", "high")
 			luxOptionRect("quality", quality, qs, "  Quality", "select preview quality", gui, r[0]+200, r[1]+122, 88, 18)
+
+			# Update preview
+			Draw.Button("Update Preview", evtPreviewMaterial, r[0]+120, r[1]+5, 167, 18, "Update Material Preview")
+
 
 		if gui: gui.newline()
 		has_object_options = 0 # disable object options by default
@@ -3213,19 +3252,19 @@ def luxMaterialBlock(name, luxname, key, mat, gui=None, level=0, str_opt=""):
 		if mattype.get() == "glass":
 			(str,link) = c((str,link), luxSpectrumTexture("Kr", keyname, "1.0 1.0 1.0", 1.0, "reflection", "", mat, gui, level+1))
 			(str,link) = c((str,link), luxSpectrumTexture("Kt", keyname, "1.0 1.0 1.0", 1.0, "transmission", "", mat, gui, level+1))
-			(str,link) = c((str,link), luxIORFloatTexture("index", keyname, 1.5, 0.0, 100.0, "IOR", "", mat, gui, level+1))
+			(str,link) = c((str,link), luxIORFloatTexture("index", keyname, 1.5, 1.0, 6.0, "IOR", "", mat, gui, level+1))
 			architectural = luxProp(mat, keyname+".architectural", "false")
 			link += luxBool("architectural", architectural, "architectural", "Enable architectural glass", gui, 2.0)
 			if architectural.get() == "false":
 				chromadisp = luxProp(mat, keyname+".chromadisp", "false")
-				luxBool("chromadisp", chromadisp, "Chromatic Dispersion", "Enable Chromatic Dispersion", gui, 2.0)
+				luxBool("chromadisp", chromadisp, "Dispersive Refraction", "Enable Chromatic Dispersion", gui, 2.0)
 				if chromadisp.get() == "true":
 					(str,link) = c((str,link), luxCauchyBFloatTexture("cauchyb", keyname, 0.0, 0.0, 1.0, "cauchyb", "", mat, gui, level+1))
 				thinfilm = luxProp(mat, keyname+".thinfilm", "false")
 				luxBool("thinfilm", thinfilm, "Thin Film Coating", "Enable Thin Film Coating", gui, 2.0)
 				if thinfilm.get() == "true":
-					(str,link) = c((str,link), luxFloatTexture("film", keyname, 100.0, 0.0, 1000000.0, "film", "thickness of film coating in nanometers", mat, gui, level+1))
-					(str,link) = c((str,link), luxIORFloatTexture("filmindex", keyname, 1.5, 0.0, 100.0, "film IOR", "film coating index of refraction", mat, gui, level+1))
+					(str,link) = c((str,link), luxFloatSliderTexture("film", keyname, 200.0, 1.0, 1500.0, "film", "thickness of film coating in nanometers", mat, gui, level+1))
+					(str,link) = c((str,link), luxIORFloatTexture("filmindex", keyname, 1.5, 1.0, 6.0, "film IOR", "film coating index of refraction", mat, gui, level+1))
 			has_bump_options = 1
 			has_object_options = 1
 		if mattype.get() == "matte":
@@ -3274,8 +3313,8 @@ def luxMaterialBlock(name, luxname, key, mat, gui=None, level=0, str_opt=""):
 			thinfilm = luxProp(mat, keyname+".thinfilm", "false")
 			luxBool("thinfilm", thinfilm, "Thin Film Coating", "Enable Thin Film Coating", gui, 2.0)
 			if thinfilm.get() == "true":
-				(str,link) = c((str,link), luxFloatTexture("film", keyname, 100.0, 0.0, 1000000.0, "film", "thickness of film coating in nanometers", mat, gui, level+1))
-				(str,link) = c((str,link), luxIORFloatTexture("filmindex", keyname, 1.5, 0.0, 100.0, "film IOR", "film coating index of refraction", mat, gui, level+1))
+				(str,link) = c((str,link), luxFloatSliderTexture("film", keyname, 200.0, 1.0, 1500.0, "film", "thickness of film coating in nanometers", mat, gui, level+1))
+				(str,link) = c((str,link), luxIORFloatTexture("filmindex", keyname, 1.5, 1.0, 6.0, "film IOR", "film coating index of refraction", mat, gui, level+1))
 
 			has_bump_options = 1
 			has_object_options = 1
@@ -3309,9 +3348,9 @@ def luxMaterialBlock(name, luxname, key, mat, gui=None, level=0, str_opt=""):
 				(s, l) = luxExponentTexture("uroughness", keyname, 0.002, 0.0, 1.0, "exponent", "", mat, gui, level+1)
 				(str,link) = c((str,link), (s, l))
 				link += l.replace("uroughness", "vroughness", 1)
-			(str,link) = c((str,link), luxIORFloatTexture("index", keyname, 1.5, 0.0, 100.0, "IOR", "", mat, gui, level+1))
+			(str,link) = c((str,link), luxIORFloatTexture("index", keyname, 1.5, 1.0, 6.0, "IOR", "", mat, gui, level+1))
 			chromadisp = luxProp(mat, keyname+".chromadisp", "false")
-			luxBool("chromadisp", chromadisp, "Chromatic Dispersion", "Enable Chromatic Dispersion", gui, 2.0)
+			luxBool("chromadisp", chromadisp, "Dispersive Refraction", "Enable Chromatic Dispersion", gui, 2.0)
 			if chromadisp.get() == "true":
 				(str,link) = c((str,link), luxCauchyBFloatTexture("cauchyb", keyname, 0.0, 0.0, 1.0, "cauchyb", "", mat, gui, level+1))
 			has_bump_options = 1
@@ -3334,8 +3373,8 @@ def luxMaterialBlock(name, luxname, key, mat, gui=None, level=0, str_opt=""):
 			thinfilm = luxProp(mat, keyname+".thinfilm", "false")
 			luxBool("thinfilm", thinfilm, "Thin Film Coating", "Enable Thin Film Coating", gui, 2.0)
 			if thinfilm.get() == "true":
-				(str,link) = c((str,link), luxFloatTexture("film", keyname, 100.0, 0.0, 1000000.0, "film", "thickness of film coating in nanometers", mat, gui, level+1))
-				(str,link) = c((str,link), luxIORFloatTexture("filmindex", keyname, 1.5, 0.0, 100.0, "film IOR", "film coating index of refraction", mat, gui, level+1))
+				(str,link) = c((str,link), luxFloatSliderTexture("film", keyname, 200.0, 1.0, 1500.0, "film", "thickness of film coating in nanometers", mat, gui, level+1))
+				(str,link) = c((str,link), luxIORFloatTexture("filmindex", keyname, 1.5, 1.0, 6.0, "film IOR", "film coating index of refraction", mat, gui, level+1))
 
 			has_bump_options = 1
 			has_object_options = 1
@@ -3853,10 +3892,12 @@ def luxDraw():
 					Draw.Button("C", evtConvertMaterial, r[0]-gui.h, gui.y-gui.h, gui.h, gui.h, "convert blender material to lux material")
 					Draw.Menu(menustr, evtLuxGui, r[0], r[1], r[2], r[3], matindex, "", lambda e,v: setactivemat(mats[v]))
 					luxBool("", matfilter, "filter", "only show active object materials", gui, 0.3)
-					Draw.Button("Preview", evtPreviewMaterial, gui.x, gui.y-gui.h, 50, gui.h, "preview material")
-					Draw.Button("L", evtLoadMaterial, gui.x+50, gui.y-gui.h, gui.h, gui.h, "load a material preset")
-					Draw.Button("S", evtSaveMaterial, gui.x+50+gui.h, gui.y-gui.h, gui.h, gui.h, "save a material preset")
-					Draw.Button("D", evtDeleteMaterial, gui.x+50+gui.h*2, gui.y-gui.h, gui.h, gui.h, "delete a material preset")
+
+					showmatpreview = luxProp(scn, "showmatpreview", "true")
+					luxBool("", showmatpreview, "Preview", "Show material preview", gui, 0.4)
+					Draw.Button("L", evtLoadMaterial, gui.x, gui.y-gui.h, gui.h, gui.h, "load a material preset")
+					Draw.Button("S", evtSaveMaterial, gui.x+gui.h, gui.y-gui.h, gui.h, gui.h, "save a material preset")
+					Draw.Button("D", evtDeleteMaterial, gui.x+gui.h*2, gui.y-gui.h, gui.h, gui.h, "delete a material preset")
 					if len(mats) > 0:
 						setactivemat(mats[matindex])
 						luxMaterial(activemat, gui)
