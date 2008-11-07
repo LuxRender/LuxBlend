@@ -514,12 +514,21 @@ class luxExport:
 				col = obj.getData(mesh=1).col # data
 				energy = obj.getData(mesh=1).energy # data
 				if ltype == Lamp.Types["Lamp"]:
-					file.write("LightSource \"point\"")
+					pm = luxProp(obj, "light.usepm", "false")
+					if(pm.get() == "true"):
+						file.write("LightSource \"goniometric\"")
+					else:
+						file.write("LightSource \"point\"")
 					file.write(luxLamp("", "", obj, None, 0))
 				if ltype == Lamp.Types["Spot"]:
-					file.write("LightSource \"spot\" \"point from\" [0 0 0] \"point to\" [0 0 -1] \"float coneangle\" [%f] \"float conedeltaangle\" [%f]"\
-						%(obj.getData(mesh=1).spotSize*0.5, obj.getData(mesh=1).spotSize*0.5*obj.getData(mesh=1).spotBlend)) # data
-					file.write(luxLamp("", "", obj, None, 0))
+					proj = luxProp(obj, "light.usetexproj", "false")
+					if(proj.get() == "true"):
+						file.write("Rotate 180 0 1 0\n")
+						file.write("LightSource \"projection\" \"float fov\" [%f]"%(obj.getData(mesh=1).spotSize))
+					else:
+						file.write("LightSource \"spot\" \"point from\" [0 0 0] \"point to\" [0 0 -1] \"float coneangle\" [%f] \"float conedeltaangle\" [%f]"\
+							%(obj.getData(mesh=1).spotSize*0.5, obj.getData(mesh=1).spotSize*0.5*obj.getData(mesh=1).spotBlend)) # data
+					file.write(luxSpot("", "", obj, None, 0))
 				if ltype == Lamp.Types["Area"]:
 					file.write("\tAreaLightSource \"area\"")
 					file.write(luxLight("", "", obj, None, 0))
@@ -2348,7 +2357,6 @@ def luxEnvironment(scn, gui=None):
 				if rot.get() != 0:
 					str += "\tRotate %d 0 0 1\n"%(rot.get())
 			str += "\t"+lsstr
-			#str += luxInt("nsamples", luxProp(scn, "env.samples", 1), 1, 100, "samples", "number of samples", gui)
 			if envtype.get() == "infinite":
 				mapping = luxProp(scn, "env.infinite.mapping", "latlong")
 				mappings = ["latlong","angular","vcross"]
@@ -3085,6 +3093,38 @@ def luxLamp(name, kn, mat, gui, level):
 	link = luxRGB("I", luxProp(mat, kn+"light.i", "1.0 1.0 1.0"), 1.0, "L", "", gui)
 	if gui: gui.newline("")
 	link += luxFloat("gain", luxProp(mat, kn+"light.gain", 1.0), 0.0, 100.0, "gain", "gain", gui)
+
+	if gui: gui.newline("Photometric")
+	pm = luxProp(mat, kn+"light.usepm", "false")
+	luxBool("photometric", pm, "Photometric Diagram", "Enable Photometric Diagram options", gui, 2.0)
+
+	if(pm.get()=="true"):
+		pmtype = luxProp(mat, kn+"light.pmtype", "imagemap")
+		pmtypes = ["imagemap"]
+		luxOption("type", pmtype, pmtypes, "type", "Choose Photometric data type to use", gui, 0.6)
+
+		if(pmtype.get() == "imagemap"):
+			map = luxProp(mat, kn+"light.pmmapname", "")
+			link += luxFile("mapname", map, "map-file", "filename of the photometric map", gui, 1.4)		
+
+	return link
+
+def luxSpot(name, kn, mat, gui, level):
+	if gui:
+		if name != "": gui.newline(name+":", 10, level)
+		else: gui.newline("color:", 0, level+1)
+	link = luxRGB("I", luxProp(mat, kn+"light.i", "1.0 1.0 1.0"), 1.0, "L", "", gui)
+	if gui: gui.newline("")
+	link += luxFloat("gain", luxProp(mat, kn+"light.gain", 1.0), 0.0, 100.0, "gain", "gain", gui)
+
+	if gui: gui.newline("Projection")
+	proj = luxProp(mat, kn+"light.usetexproj", "false")
+	luxBool("projection", proj, "Texture Projection", "Enable imagemap texture projection", gui, 2.0)
+
+	if(proj.get() == "true"):
+		map = luxProp(mat, kn+"light.pmmapname", "")
+		link += luxFile("mapname", map, "map-file", "filename of the photometric map", gui, 2.0)		
+
 	return link
 
 def luxLight(name, kn, mat, gui, level):
@@ -3094,7 +3134,6 @@ def luxLight(name, kn, mat, gui, level):
 	link = luxRGB("L", luxProp(mat, kn+"light.l", "1.0 1.0 1.0"), 1.0, "L", "", gui)
 	if gui: gui.newline("")
 	link += luxFloat("gain", luxProp(mat, kn+"light.gain", 1.0), 0.0, 100.0, "gain", "gain", gui)
-	#link += luxInt("nsamples", luxProp(mat, kn+"light.nsamples", 1), 1, 100, "samples", "number of samples", gui)
 	if gui: gui.newline("")
 	link += luxString("lightgroup", luxProp(mat, kn+"light.lightgroup", ""), "light-group", "assign light to a named light-group", gui, 2.0)
 	has_bump_options = 0
@@ -3875,7 +3914,8 @@ def luxDraw():
 				if (obj.getType() == "Lamp"):
 					ltype = obj.getData(mesh=1).getType() # data
 					if (ltype == Lamp.Types["Area"]): luxLight("LIGHT", "", obj, gui, 0)
-					elif (ltype == Lamp.Types["Spot"]) or (ltype == Lamp.Types["Lamp"]): luxLamp("LIGHT", "", obj, gui, 0)
+					elif (ltype == Lamp.Types["Spot"]): luxSpot("LIGHT", "", obj, gui, 0)
+					elif (ltype == Lamp.Types["Lamp"]): luxLamp("LIGHT", "", obj, gui, 0)
 				else:
 					matfilter = luxProp(scn, "matlistfilter", "false")
 					mats = getMaterials(obj, True)
