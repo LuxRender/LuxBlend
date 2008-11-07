@@ -758,9 +758,9 @@ def launchLux(filename):
 
 	if ostype == "linux2" or ostype == "darwin":
 		if(autothreads=="true"):
-			cmd = "(%s -i 12 -u 192.168.1.200 %s)&"%(ic, filename)
+			cmd = "(%s %s)&"%(ic, filename)
 		else:
-			cmd = "(%s -i 12 -u 192.168.1.200 --threads=%d %s)&"%(ic, threads, filename)
+			cmd = "(%s --threads=%d %s)&"%(ic, threads, filename)
 
 	# call external shell script to start Lux	
 	print("Running Luxrender:\n"+cmd)
@@ -1169,9 +1169,9 @@ def getScenePresets():
 	'sampler.type': 'lowdiscrepancy',
 	'sampler.lowdisc.pixelsamples': 8,
 	'sampler.lowdisc.pixelsampler': 'lowdiscrepancy',
-	'pixelfilter.type': 'sinc',
-	'pixelfilter.sinc.xwidth': 2.0,
-	'pixelfilter.sinc.ywidth': 2.0,
+	'pixelfilter.type': 'mitchell',
+	'pixelfilter.mitchell.xwidth': 2.0,
+	'pixelfilter.mitchell.ywidth': 2.0,
 	},
 	'Final - Bidir Path Tracing': {
 	'sintegrator.type': 'bidirectional',
@@ -1181,9 +1181,9 @@ def getScenePresets():
 	'sampler.type': 'lowdiscrepancy',
 	'sampler.lowdisc.pixelsamples': 8,
 	'sampler.lowdisc.pixelsampler': 'lowdiscrepancy',
-	'pixelfilter.type': 'sinc',
-	'pixelfilter.sinc.xwidth': 2.0,
-	'pixelfilter.sinc.ywidth': 2.0,
+	'pixelfilter.type': 'mitchell',
+	'pixelfilter.mitchell.xwidth': 2.0,
+	'pixelfilter.mitchell.ywidth': 2.0,
 	},
 	'Final - low MLT/Path Tracing (RECOMMENDED)': {
 	'sintegrator.type': 'path',
@@ -1196,9 +1196,9 @@ def getScenePresets():
 	'sampler.metro.usevariance': 'false',
 	'sampler.metro.initsamples': 100000,
 	'sampler.metro.stratawidth': 256,
-	'pixelfilter.type': 'sinc',
-	'pixelfilter.sinc.xwidth': 2.0,
-	'pixelfilter.sinc.ywidth': 2.0,
+	'pixelfilter.type': 'mitchell',
+	'pixelfilter.mitchell.xwidth': 2.0,
+	'pixelfilter.mitchell.ywidth': 2.0,
 	},
 	'Final - high MLT/Path Tracing (complex)': {
 	'sintegrator.type': 'path',
@@ -1211,9 +1211,9 @@ def getScenePresets():
 	'sampler.metro.usevariance': 'false',
 	'sampler.metro.initsamples': 100000,
 	'sampler.metro.stratawidth': 256,
-	'pixelfilter.type': 'sinc',
-	'pixelfilter.sinc.xwidth': 2.0,
-	'pixelfilter.sinc.ywidth': 2.0,
+	'pixelfilter.type': 'mitchell',
+	'pixelfilter.mitchell.xwidth': 2.0,
+	'pixelfilter.mitchell.ywidth': 2.0,
 	},
 	'Final - low vMLT/Path Tracing': {
 	'sintegrator.type': 'path',
@@ -1226,9 +1226,9 @@ def getScenePresets():
 	'sampler.metro.usevariance': 'true',
 	'sampler.metro.initsamples': 100000,
 	'sampler.metro.stratawidth': 256,
-	'pixelfilter.type': 'sinc',
-	'pixelfilter.sinc.xwidth': 2.0,
-	'pixelfilter.sinc.ywidth': 2.0,
+	'pixelfilter.type': 'mitchell',
+	'pixelfilter.mitchell.xwidth': 2.0,
+	'pixelfilter.mitchell.ywidth': 2.0,
 	},
 	'Final - low MLT/Bidir Path Tracing (experimental)': {
 	'sintegrator.type': 'bidirectional',
@@ -1241,9 +1241,9 @@ def getScenePresets():
 	'sampler.metro.usevariance': 'false',
 	'sampler.metro.initsamples': 100000,
 	'sampler.metro.stratawidth': 256,
-	'pixelfilter.type': 'sinc',
-	'pixelfilter.sinc.xwidth': 2.0,
-	'pixelfilter.sinc.ywidth': 2.0,
+	'pixelfilter.type': 'mitchell',
+	'pixelfilter.mitchell.xwidth': 2.0,
+	'pixelfilter.mitchell.ywidth': 2.0,
 	},
 	'Final - high MLT/Bidir Path Tracing (experimental)': {
 	'sintegrator.type': 'bidirectional',
@@ -1256,9 +1256,9 @@ def getScenePresets():
 	'sampler.metro.usevariance': 'false',
 	'sampler.metro.initsamples': 100000,
 	'sampler.metro.stratawidth': 256,
-	'pixelfilter.type': 'sinc',
-	'pixelfilter.sinc.xwidth': 2.0,
-	'pixelfilter.sinc.ywidth': 2.0,
+	'pixelfilter.type': 'mitchell',
+	'pixelfilter.mitchell.xwidth': 2.0,
+	'pixelfilter.mitchell.ywidth': 2.0,
 	},
 	'Final - low vMLT/Bidir Path Tracing (experimental)': {
 	'sintegrator.type': 'bidirectional',
@@ -1271,9 +1271,9 @@ def getScenePresets():
 	'sampler.metro.usevariance': 'true',
 	'sampler.metro.initsamples': 100000,
 	'sampler.metro.stratawidth': 256,
-	'pixelfilter.type': 'sinc',
-	'pixelfilter.sinc.xwidth': 2.0,
-	'pixelfilter.sinc.ywidth': 2.0,
+	'pixelfilter.type': 'mitchell',
+	'pixelfilter.mitchell.xwidth': 2.0,
+	'pixelfilter.mitchell.ywidth': 2.0,
 	},
 
 	'Animation - Low': {
@@ -2006,7 +2006,7 @@ def luxFilm(scn, gui=None):
 			restartflm = luxProp(scn, "film.restart_resume_flm", "false")
 			str += luxBool("restart_resume_flm", restartflm, "Restart/Erase", "Restart with a black flm, even it a previous flm exists", gui)
 			if gui: gui.newline("  Reject:")
-			str += luxInt("reject_warmup", luxProp(scn, "film.reject_warmup", 64), 0, 32768, "warmup_spp", "Specify amount of samples per pixel for high intensity rejection", gui)
+			str += luxInt("reject_warmup", luxProp(scn, "film.reject_warmup", 128), 0, 32768, "warmup_spp", "Specify amount of samples per pixel for high intensity rejection", gui)
 			debugmode = luxProp(scn, "film.debug", "false")
 			str += luxBool("debug", debugmode, "debug", "Turn on debug reporting and switch off reject", gui)
 
@@ -2165,7 +2165,7 @@ def luxSampler(scn, gui=None):
 	str = ""
 	if scn:
 		samplertype = luxProp(scn, "sampler.type", "metropolis")
-		str = luxIdentifier("Sampler", samplertype, ["metropolis", "erpt", "lowdiscrepancy", "random"], "SAMPLER", "select sampler type", gui, icon_c_sampler)
+		str = luxIdentifier("Sampler", samplertype, ["metropolis", "erpt", "lowdiscrepancy", "random", "halton"], "SAMPLER", "select sampler type", gui, icon_c_sampler)
 		showadvanced = luxProp(scn, "sampler.metro.showadvanced", "false")
 		luxBool("advanced", showadvanced, "Advanced", "Show advanced options", gui, 0.6)
 		showhelp = luxProp(scn, "sampler.metro.showhelp", "false")
@@ -2193,9 +2193,9 @@ def luxSampler(scn, gui=None):
 
 
 		if samplertype.get() == "erpt":
+			str += luxInt("initsamples", luxProp(scn, "sampler.erpt.initsamples", 100000), 1, 1000000, "initsamples", "", gui)
 			if gui: gui.newline("  Mutation:")
 			str += luxInt("chainlength", luxProp(scn, "sampler.erpt.chainlength", 512), 1, 32768, "chainlength", "The number of mutations from a given seed", gui)
-			str += luxInt("initsamples", luxProp(scn, "sampler.erpt.initsamples", 100000), 1, 1000000, "initsamples", "", gui)
 			if gui: gui.newline()
 			str += luxInt("stratawidth", luxProp(scn, "sampler.erpt.stratawidth", 256), 1, 32768, "stratawidth", "The number of x/y strata for stratified sampling of seeds", gui)
 		if samplertype.get() == "lowdiscrepancy":
@@ -2205,7 +2205,13 @@ def luxSampler(scn, gui=None):
 		if samplertype.get() == "random":
 			if gui: gui.newline("  PixelSampler:")
 			str += luxOption("pixelsampler", luxProp(scn, "sampler.random.pixelsampler", "vegas"), ["linear", "tile", "random", "vegas","lowdiscrepancy","hilbert"], "pixel-sampler", "select pixel-sampler", gui)
-			str += luxInt("pixelsamples", luxProp(scn, "sampler.random.pixelsamples", 4), 1, 512, "samples", "Average number of samples taken per pixel. More samples create a higher quality image at the cost of render time", gui)
+			if gui: gui.newline()
+			str += luxInt("xsamples", luxProp(scn, "sampler.random.xsamples", 2), 1, 512, "xsamples", "Allows you to specify how many samples per pixel are taking in the x direction", gui)
+			str += luxInt("ysamples", luxProp(scn, "sampler.random.ysamples", 2), 1, 512, "ysamples", "Allows you to specify how many samples per pixel are taking in the y direction", gui)
+		if samplertype.get() == "halton":
+			if gui: gui.newline("  PixelSampler:")
+			str += luxOption("pixelsampler", luxProp(scn, "sampler.halton.pixelsampler", "lowdiscrepancy"), ["linear", "tile", "random", "vegas","lowdiscrepancy","hilbert"], "pixel-sampler", "select pixel-sampler", gui)
+			str += luxInt("pixelsamples", luxProp(scn, "sampler.halton.pixelsamples", 4), 1, 512, "samples", "Average number of samples taken per pixel. More samples create a higher quality image at the cost of render time", gui)
 	return str			
 
 def luxSurfaceIntegrator(scn, gui=None):
@@ -3166,7 +3172,9 @@ def luxMaterialBlock(name, luxname, key, mat, gui=None, level=0, str_opt=""):
 			# Light Direction/Position and Area light toggle
 			lightdir = luxProp(mat, "matprev_dir", "1 1 1")
 			Draw.Normal(evtLuxGui, r[0]+66, r[1]+28,50, 50, lightdir.getVector(), 'Light Direction', lambda e,v: lightdir.setVector(v))
-			Draw.Toggle("Area", evtLuxGui, r[0]+66, r[1]+5, 50, 18, zoom.get()=="true", "Area", lambda e,v: zoom.set(["false","true"][bool(v)]))
+
+			area = luxProp(mat, "matprev_arealight", "false")
+			Draw.Toggle("Area", evtLuxGui, r[0]+66, r[1]+5, 50, 18, area.get()=="true", "Area", lambda e,v: area.set(["false","true"][bool(v)]))
 
 			# Preview Quality
 			qs = ["low","medium","high","very high"]
@@ -4089,11 +4097,13 @@ def luxButtonEvt(evt):  # function that handles button events
 			p.stdin.write(luxMaterial(activemat))
 			p.stdin.write(luxProp(activemat,"link","").get()+'\n')
 			if(prev_sphere.get()=="true"):
-				p.stdin.write('Shape "sphere" "float radius" [1.0]\nAttributeEnd\n')
+				p.stdin.write('Shape "sphere" "float radius" [1.0]\n')
 			elif (prev_plane.get()=="true"):
-				p.stdin.write('	Shape "trianglemesh" "integer indices" [ 0 1 2 0 2 3 ] "point P" [ 1.0 1.0 0.0 -1.0 1.0 0.0 -1.0 -1.0 -0.0 1.0 -1.0 -0.0 ] "float uv" [ 0.0 0.0 1.0 0.0 1.0 1.0 0.0 1.0 ]\nAttributeEnd\n')
+				p.stdin.write('	Shape "trianglemesh" "integer indices" [ 0 1 2 0 2 3 ] "point P" [ 1.0 1.0 0.0 -1.0 1.0 0.0 -1.0 -1.0 -0.0 1.0 -1.0 -0.0 ] "float uv" [ 0.0 0.0 1.0 0.0 1.0 1.0 0.0 1.0 ]\n')
 			elif (prev_torus.get()=="true"):
-				p.stdin.write('Shape "torus" "float radius" [1.0]\nAttributeEnd\n')
+				p.stdin.write('Shape "torus" "float radius" [1.0]\n')
+
+			p.stdin.write('AttributeEnd\n')
 
 			# Checkerboard floor
 			if(prev_plane.get()=="false"):
@@ -4117,9 +4127,16 @@ def luxButtonEvt(evt):  # function that handles button events
 				p.stdin.write('AttributeBegin\nTransform [1.0 0.0 0.0 0.0  0.0 1.0 0.0 0.0  0.0 0.0 1.0 0.0  1.0 -1.0 4.0 1.0]\n')
 			else:
 				p.stdin.write('AttributeBegin\nTransform [1.0 0.0 0.0 0.0  0.0 1.0 0.0 0.0  0.0 0.0 1.0 0.0  1.0 -4.0 1.0 1.0]\n')
-			p.stdin.write('LightSource "point"')
-			#p.stdin.write('AreaLightSource "area" "color L" [1.0 1.0 1.0]\n')
-			#p.stdin.write('Shape "disk" "float radius" [1.0]\nAttributeEnd\n')
+
+			area = luxProp(activemat, "matprev_arealight", "false")
+
+			if(area.get() == "false"):
+				p.stdin.write('LightSource "point"')
+			else:
+				p.stdin.write('ReverseOrientation\n')
+				p.stdin.write('AreaLightSource "area" "color L" [1.0 1.0 1.0]\n')
+				p.stdin.write('Shape "disk" "float radius" [1.0]\nAttributeEnd\n')
+
 			p.stdin.write('WorldEnd\n')
 
 			data = p.communicate()[0]
