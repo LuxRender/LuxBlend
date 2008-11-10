@@ -2228,12 +2228,13 @@ def luxSurfaceIntegrator(scn, gui=None):
 	str = ""
 	if scn:
 		integratortype = luxProp(scn, "sintegrator.type", "path")
-		str = luxIdentifier("SurfaceIntegrator", integratortype, ["directlighting", "path", "path2", "bidirectional", "exphotonmap", "distributedpath", "particletracing", "importancepath"], "INTEGRATOR", "select surface integrator type", gui, icon_c_integrator)
+		str = luxIdentifier("SurfaceIntegrator", integratortype, ["directlighting", "path", "bidirectional", "exphotonmap", "distributedpath" ], "INTEGRATOR", "select surface integrator type", gui, icon_c_integrator)
 		if integratortype.get() == "directlighting":
 			str += luxOption("strategy", luxProp(scn, "sintegrator.dlighting.strategy", "auto"), ["one", "all", "auto"], "strategy", "select directlighting strategy", gui)
 			if gui: gui.newline("  Depth:")
 			str += luxInt("maxdepth", luxProp(scn, "sintegrator.dlighting.maxdepth", 5), 0, 2048, "max-depth", "The maximum recursion depth for ray casting", gui)
 			if gui: gui.newline()
+
 		if integratortype.get() == "path":
 			if gui: gui.newline("  Depth:")
 			str += luxInt("maxdepth", luxProp(scn, "sintegrator.path.maxdepth", 12), 0, 2048, "maxdepth", "The maximum recursion depth for ray casting", gui)
@@ -2243,15 +2244,6 @@ def luxSurfaceIntegrator(scn, gui=None):
 			str += luxOption("rrstrategy", rrstrat, ["efficiency", "probability", "none"], "RR strategy", "select Russian Roulette path termination strategy", gui)
 			if rrstrat.get() == "probability":
 				str += luxFloat("rrcontinueprob", luxProp(scn, "sintegrator.path.rrcontinueprob", 0.65), 0.0, 1.0, "rrprob", "Russian roulette continue probability", gui)
-		if integratortype.get() == "path2":
-			if gui: gui.newline("  Depth:")
-			str += luxInt("maxdepth", luxProp(scn, "sintegrator.path2.maxdepth", 12), 0, 2048, "maxdepth", "The maximum recursion depth for ray casting", gui)
-			str += luxOption("strategy", luxProp(scn, "sintegrator.path2.strategy", "auto"), ["one", "all", "auto"], "strategy", "select directlighting strategy", gui)
-			if gui: gui.newline("  RR:")
-			rrstrat = luxProp(scn, "sintegrator.path2.rrstrategy", "efficiency")
-			str += luxOption("rrstrategy", rrstrat, ["efficiency", "probability", "none"], "RR strategy", "select Russian Roulette path termination strategy", gui)
-			if rrstrat.get() == "probability":
-				str += luxFloat("rrcontinueprob", luxProp(scn, "sintegrator.path2.rrcontinueprob", 0.65), 0.0, 1.0, "rrprob", "Russian roulette continue probability", gui)
 
 		if integratortype.get() == "bidirectional":
 			if gui: gui.newline("  Depth:")
@@ -2309,25 +2301,6 @@ def luxSurfaceIntegrator(scn, gui=None):
 			str += luxBool("causticsondiffuse",luxProp(scn, "sintegrator.distributedpath.causticsondiffuse", "false"), "Caustics on Diffuse", "Enable caustics on diffuse surfaces (warning: might generate bright pixels)", gui, 1.0)
 			str += luxBool("causticsonglossy",luxProp(scn, "sintegrator.distributedpath.causticsonglossy", "true"), "Caustics on Glossy", "Enable caustics on glossy surfaces (warning: might generate bright pixels)", gui, 1.0)
 
-		if integratortype.get() == "particletracing":
-			if gui: gui.newline("  Depth:")
-			str += luxInt("maxdepth", luxProp(scn, "sintegrator.particletracing.maxdepth", 5), 0, 2048, "maxdepth", "The maximum recursion depth for light ray casting", gui)
-			if gui: gui.newline("  RR:")
-			str += luxFloat("rrcontinueprob", luxProp(scn, "sintegrator.particletracing.rrcontinueprob", 0.65), 0.0, 1.0, "rrprob", "Russian roulette continue probability", gui)
-
-		if integratortype.get() == "importancepath":
-			if gui: gui.newline("  Depth:")
-			str += luxInt("maxdepth", luxProp(scn, "sintegrator.importancepath.maxdepth", 10), 0, 2048, "maxdepth", "The maximum recursion depth for ray casting", gui)
-			str += luxInt("importancephotons", luxProp(scn, "sintegrator.importancepath.importancephotons", 200000), 0, 10000000, "impphotons", "The number of importance sampling photons to shoot before rendering", gui)
-			str += luxFloat("maxdist", luxProp(scn, "sintegrator.photonmap.maxdist", 0.5), 0.0, 10.0, "maxdist", "The maximum distance between a point being shaded and a photon that can contribute to that point", gui)
-			str += luxInt("impdepth", luxProp(scn, "sintegrator.importancepath.impdepth", 3), 0, 2048, "impdepth", "The maximum recursion depth for importance sampling", gui)
-			str += luxInt("impwidth", luxProp(scn, "sintegrator.importancepath.impwidth", 8), 0, 2048, "impwidth", "The width for importance sampling", gui)
-			str += luxOption("strategy", luxProp(scn, "sintegrator.importancepath.strategy", "auto"), ["one", "all", "auto"], "strategy", "select directlighting strategy", gui)
-			if gui: gui.newline("  RR:")
-			rrstrat = luxProp(scn, "sintegrator.importancepath.rrstrategy", "efficiency")
-			str += luxOption("rrstrategy", rrstrat, ["efficiency", "probability", "none"], "RR strategy", "select Russian Roulette path termination strategy", gui)
-			if rrstrat.get() == "probability":
-				str += luxFloat("rrcontinueprob", luxProp(scn, "sintegrator.importancepath.rrcontinueprob", 0.65), 0.0, 1.0, "rrprob", "Russian roulette continue probability", gui)
 	return str
 
 def luxVolumeIntegrator(scn, gui=None):
