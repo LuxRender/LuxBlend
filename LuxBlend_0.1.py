@@ -2174,7 +2174,7 @@ def luxSampler(scn, gui=None):
 	str = ""
 	if scn:
 		samplertype = luxProp(scn, "sampler.type", "metropolis")
-		str = luxIdentifier("Sampler", samplertype, ["metropolis", "erpt", "lowdiscrepancy", "random", "halton"], "SAMPLER", "select sampler type", gui, icon_c_sampler)
+		str = luxIdentifier("Sampler", samplertype, ["metropolis", "erpt", "lowdiscrepancy", "random"], "SAMPLER", "select sampler type", gui, icon_c_sampler)
 		showadvanced = luxProp(scn, "sampler.metro.showadvanced", "false")
 		luxBool("advanced", showadvanced, "Advanced", "Show advanced options", gui, 0.6)
 		showhelp = luxProp(scn, "sampler.metro.showhelp", "false")
@@ -2200,27 +2200,24 @@ def luxSampler(scn, gui=None):
 				r = gui.getRect(2,1); BGL.glRasterPos2i(r[0],r[1]+5) 
 				Draw.Text("A Metropolis-Hastings mutating sampler which implements MLT", 'small')	
 
-
 		if samplertype.get() == "erpt":
 			str += luxInt("initsamples", luxProp(scn, "sampler.erpt.initsamples", 100000), 1, 1000000, "initsamples", "", gui)
 			if gui: gui.newline("  Mutation:")
 			str += luxInt("chainlength", luxProp(scn, "sampler.erpt.chainlength", 512), 1, 32768, "chainlength", "The number of mutations from a given seed", gui)
 			if gui: gui.newline()
 			str += luxInt("stratawidth", luxProp(scn, "sampler.erpt.stratawidth", 256), 1, 32768, "stratawidth", "The number of x/y strata for stratified sampling of seeds", gui)
+
 		if samplertype.get() == "lowdiscrepancy":
 			if gui: gui.newline("  PixelSampler:")
 			str += luxOption("pixelsampler", luxProp(scn, "sampler.lowdisc.pixelsampler", "lowdiscrepancy"), ["linear", "tile", "random", "vegas","lowdiscrepancy","hilbert"], "pixel-sampler", "select pixel-sampler", gui)
 			str += luxInt("pixelsamples", luxProp(scn, "sampler.lowdisc.pixelsamples", 4), 1, 512, "samples", "Average number of samples taken per pixel. More samples create a higher quality image at the cost of render time", gui)
+
 		if samplertype.get() == "random":
 			if gui: gui.newline("  PixelSampler:")
 			str += luxOption("pixelsampler", luxProp(scn, "sampler.random.pixelsampler", "vegas"), ["linear", "tile", "random", "vegas","lowdiscrepancy","hilbert"], "pixel-sampler", "select pixel-sampler", gui)
 			if gui: gui.newline()
 			str += luxInt("xsamples", luxProp(scn, "sampler.random.xsamples", 2), 1, 512, "xsamples", "Allows you to specify how many samples per pixel are taking in the x direction", gui)
 			str += luxInt("ysamples", luxProp(scn, "sampler.random.ysamples", 2), 1, 512, "ysamples", "Allows you to specify how many samples per pixel are taking in the y direction", gui)
-		if samplertype.get() == "halton":
-			if gui: gui.newline("  PixelSampler:")
-			str += luxOption("pixelsampler", luxProp(scn, "sampler.halton.pixelsampler", "lowdiscrepancy"), ["linear", "tile", "random", "vegas","lowdiscrepancy","hilbert"], "pixel-sampler", "select pixel-sampler", gui)
-			str += luxInt("pixelsamples", luxProp(scn, "sampler.halton.pixelsamples", 4), 1, 512, "samples", "Average number of samples taken per pixel. More samples create a higher quality image at the cost of render time", gui)
 	return str			
 
 def luxSurfaceIntegrator(scn, gui=None):
