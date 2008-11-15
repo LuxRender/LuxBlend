@@ -3417,6 +3417,12 @@ def luxMaterialBlock(name, luxname, key, mat, gui=None, level=0, str_opt=""):
 				(s, l) = luxExponentTexture("uroughness", keyname, 0.002, 0.0, 1.0, "exponent", "", mat, gui, level+1)
 				(str,link) = c((str,link), (s, l))
 				link += l.replace("uroughness", "vroughness", 1)
+
+			absorption = luxProp(mat, keyname+".useabsorption", "false")
+			link += luxBool("absorption", absorption, "Absorption", "Enable Coating Absorption", gui, 2.0)
+			if absorption.get() == "true":
+				(str,link) = c((str,link), luxSpectrumTexture("Ka", keyname, "1.0 1.0 1.0", 1.0, "absorption", "", mat, gui, level+1))
+				(str,link) = c((str,link), luxFloatTexture("d", keyname, 0.15, 0.0, 1.0, "depth", "", mat, gui, level+1))
 			has_bump_options = 1
 			has_object_options = 1
 
