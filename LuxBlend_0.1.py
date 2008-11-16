@@ -2563,7 +2563,7 @@ def luxTexture(name, parentkey, type, default, min, max, caption, hint, mat, gui
 			r = gui.getRect(1.0, 1)
 			drawBar(bar_spectrum, r[0]+12, r[1])
 		str += luxFloat("wavelength", luxProp(mat, keyname+".wavelength", 550.0), 380.0, 720.0, "wavelength", "Mean Wavelength in visible spectrum in nm", gui, 2.0, 1)
-		str += luxFloat("width", luxProp(mat, keyname+".width", 25.0), 1.0, 300.0, "width", "Width of gaussian distribution in nm", gui, 1.1, 1)
+		str += luxFloat("width", luxProp(mat, keyname+".width", 50.0), 20.0, 300.0, "width", "Width of gaussian distribution in nm", gui, 1.1, 1)
 		str += luxFloat("energy", luxProp(mat, keyname+".energy", 1.0), 0.0, 1.0, "energy", "Amount of mean energy", gui, 0.9, 1)
 
 	if texture.get() == "imagemap":
