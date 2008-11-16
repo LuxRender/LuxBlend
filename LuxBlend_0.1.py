@@ -3158,7 +3158,7 @@ def luxMaterialBlock(name, luxname, key, mat, gui=None, level=0, str_opt=""):
 
 	if mat:
 		mattype = luxProp(mat, kn+"type", "matte")
-		materials = ["carpaint","glass","matte","mattetranslucent","metal","mirror","plastic","roughglass","shinymetal","substrate","mix","null"]
+		materials = ["carpaint","glass","matte","mattetranslucent","metal","mirror","roughglass","shinymetal","glossy","mix","null"]
 		if level == 0: materials = ["light","portal","boundvolume"]+materials
 		if gui:
 			icon = icon_mat
@@ -3343,22 +3343,6 @@ def luxMaterialBlock(name, luxname, key, mat, gui=None, level=0, str_opt=""):
 
 			has_bump_options = 1
 			has_object_options = 1
-		if mattype.get() == "plastic":
-			(str,link) = c((str,link), luxSpectrumTexture("Kd", keyname, "1.0 1.0 1.0", 1.0, "diffuse", "", mat, gui, level+1))
-			(str,link) = c((str,link), luxSpectrumTexture("Ks", keyname, "1.0 1.0 1.0", 1.0, "specular", "", mat, gui, level+1))
-			anisotropic = luxProp(mat, kn+"plastic.anisotropic", False)
-			if gui:
-				gui.newline("")
-				Draw.Toggle("A", evtLuxGui, gui.x-gui.h, gui.y-gui.h, gui.h, gui.h, anisotropic.get()=="true", "anisotropic roughness", lambda e,v:anisotropic.set(["false","true"][bool(v)]))
-			if anisotropic.get()=="true":
-				(str,link) = c((str,link), luxExponentTexture("uroughness", keyname, 0.002, 0.0, 1.0, "u-exponent", "", mat, gui, level+1))
-				(str,link) = c((str,link), luxExponentTexture("vroughness", keyname, 0.002, 0.0, 1.0, "v-exponent", "", mat, gui, level+1))
-			else:
-				(s, l) = luxExponentTexture("uroughness", keyname, 0.002, 0.0, 1.0, "exponent", "", mat, gui, level+1)
-				(str,link) = c((str,link), (s, l))
-				link += l.replace("uroughness", "vroughness", 1)
-			has_bump_options = 1
-			has_object_options = 1
 		if mattype.get() == "roughglass":
 			(str,link) = c((str,link), luxSpectrumTexture("Kr", keyname, "1.0 1.0 1.0", 1.0, "reflection", "", mat, gui, level+1))
 			(str,link) = c((str,link), luxSpectrumTexture("Kt", keyname, "1.0 1.0 1.0", 1.0, "transmission", "", mat, gui, level+1))
@@ -3403,10 +3387,10 @@ def luxMaterialBlock(name, luxname, key, mat, gui=None, level=0, str_opt=""):
 
 			has_bump_options = 1
 			has_object_options = 1
-		if mattype.get() == "substrate":
+		if mattype.get() == "glossy":
 			(str,link) = c((str,link), luxSpectrumTexture("Kd", keyname, "1.0 1.0 1.0", 1.0, "diffuse", "", mat, gui, level+1))
 			(str,link) = c((str,link), luxSpectrumTexture("Ks", keyname, "1.0 1.0 1.0", 1.0, "specular", "", mat, gui, level+1))
-			anisotropic = luxProp(mat, kn+"substrate.anisotropic", False)
+			anisotropic = luxProp(mat, kn+"glossy.anisotropic", False)
 			if gui:
 				gui.newline("")
 				Draw.Toggle("A", evtLuxGui, gui.x-gui.h, gui.y-gui.h, gui.h, gui.h, anisotropic.get()=="true", "anisotropic roughness", lambda e,v:anisotropic.set(["false","true"][bool(v)]))
@@ -3716,8 +3700,8 @@ def convertMaterial(mat):
 		luxProp(mat, name+":Kd", "").setRGB((mat.R*mat.ref, mat.G*mat.ref, mat.B*mat.ref))
 		convertDiffuseTexture(name+":Kd")
 		convertBumpTexture(name)
-	def makeSubstrate(name, roughness):
-		luxProp(mat, dot(name)+"type", "").set("substrate")
+	def makeGlossy(name, roughness):
+		luxProp(mat, dot(name)+"type", "").set("glossy")
 		luxProp(mat, name+":Kd", "").setRGB((mat.R*mat.ref, mat.G*mat.ref, mat.B*mat.ref))
 		luxProp(mat, name+":Ks", "").setRGB((mat.specR*mat.spec*0.5, mat.specG*mat.spec*0.5, mat.specB*mat.spec*0.5))
 		luxProp(mat, name+":uroughness", 0.0).set(roughness)
@@ -3773,10 +3757,10 @@ def convertMaterial(mat):
 			luxProp(mat, alpha1name+":amount", 0.0).set(1.0 - mirror)
 			mirror0name, mirror1name = ddot(alpha1name)+"mat1", ddot(alpha1name)+"mat2"
 		if mirror > 0.0:
-			if mat.glossMir < 1.0: makeSubstrate(mirror1name, 1.0-mat.glossMir**2)
+			if mat.glossMir < 1.0: makeGlossy(mirror1name, 1.0-mat.glossMir**2)
 			else: makeMirror(mirror1name)
 		if mirror < 1.0:
-			if mat.spec > 0.0: makeSubstrate(mirror0name, 1.0/mat.hard)
+			if mat.spec > 0.0: makeGlossy(mirror0name, 1.0/mat.hard)
 			else: makeMatte(mirror0name)
 	if alpha < 1.0:
 		if mat.glossTra < 1.0: makeRoughnessGlass(alpha0name, 1.0-mat.glossTra**2)
