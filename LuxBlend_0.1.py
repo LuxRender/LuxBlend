@@ -2162,7 +2162,7 @@ def luxPixelFilter(scn, gui=None):
 	global icon_c_filter
 	str = ""
 	if scn:
-		filtertype = luxProp(scn, "pixelfilter.type", "sinc")
+		filtertype = luxProp(scn, "pixelfilter.type", "mitchell")
 		str = luxIdentifier("PixelFilter", filtertype, ["box", "gaussian", "mitchell", "sinc", "triangle"], "FILTER", "select pixel filter type", gui, icon_c_filter)
 		if filtertype.get() == "box":
 			if gui: gui.newline()
