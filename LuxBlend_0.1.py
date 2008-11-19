@@ -3174,15 +3174,14 @@ def luxSpot(name, kn, mat, gui, level):
 	return link
 
 
-### Note - Radiance - This is under construction - will clean this up
+### Note - Radiance - Currently only used when exporting blender Area lamp type. (not via lux 'light' material)
 def luxLight(name, kn, mat, gui, level):
 	def c(t1, t2):
 		return (t1[0]+t2[0], t1[1]+t2[1])
 	if gui:
 		if name != "": gui.newline(name+":", 10, level)
 		else: gui.newline("color:", 0, level+1)
-	#link = luxRGB("L", luxProp(mat, kn+"light.l", "1.0 1.0 1.0"), 1.0, "L", "", gui)
-	(str,link) = c((str,link), luxSpectrumTexture("Kd", keyname, "1.0 1.0 1.0", 1.0, "diffuse", "", mat, gui, level+1))
+	link = luxRGB("L", luxProp(mat, kn+"light.l", "1.0 1.0 1.0"), 1.0, "L", "", gui)
 	if gui: gui.newline("")
 	link += luxFloat("gain", luxProp(mat, kn+"light.gain", 1.0), 0.0, 100.0, "gain", "gain", gui)
 	if gui: gui.newline("")
@@ -3288,17 +3287,18 @@ def luxMaterialBlock(name, luxname, key, mat, gui=None, level=0, str_opt=""):
 			(str,link) = c((str,link), luxMaterialBlock("mat2", "namedmaterial2", keyname, mat, gui, level+1))
 			has_bump_options = 0
 			has_object_options = 1
+
 		if mattype.get() == "light":
-			### Note - Radiance - This is under construction - will clean this up / move back to luxLight
+			### Note - Radiance - This is under construction - will clean this up / move back to luxLight (luxLight() does'nt have material link...)
 			link = "AreaLightSource \"area\""
 			(str,link) = c((str,link), luxLightSpectrumTexture("L", keyname, "1.0 1.0 1.0", 1.0, "Spectrum", "", mat, gui, level+1))
 			link += luxFloat("power", luxProp(mat, kn+"power", 100.0), 0.0, 10000.0, "Power(W)", "AreaLight Power in Watts", gui)
 			link += luxFloat("efficacy", luxProp(mat, kn+"efficacy", 17.0), 0.0, 100.0, "Efficacy(lm/W)", "Efficacy Luminous flux/watt", gui)
 			link += luxFloat("gain", luxProp(mat, kn+"gain", 1.0), 0.0, 100.0, "gain", "Gain/scale multiplier", gui)
 			has_bump_options = 0
-			has_object_options = 0
+			has_object_options = 1
 			#link += luxLight("", kn, mat, gui, level)
-			return (str, link)
+
 		if mattype.get() == "boundvolume":
 			link = ""
 			voltype = luxProp(mat, kn+"vol.type", "homogeneous")
@@ -3512,6 +3512,9 @@ def luxMaterialBlock(name, luxname, key, mat, gui=None, level=0, str_opt=""):
 				(str,ll) = c((str,link), luxDispFloatTexture("dispmap", keyname, 0.1, -10, 10.0, "dispmap", "Displacement Mapping amount", mat, gui, level+1))
 				luxFloat("sdoffset",  luxProp(mat, "sdoffset", 0.0), 0.0, 1.0, "Offset", "Offset for displacement map", gui, 2.0)
 				usesubdiv.set("true");
+
+		if mattype.get() == "light":
+			return (str, link)
 
 		str += "MakeNamedMaterial \"%s\"%s\n"%(matname, link)
 	return (str, " \"string %s\" [\"%s\"]"%(luxname, matname))
