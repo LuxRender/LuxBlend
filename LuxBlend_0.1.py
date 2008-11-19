@@ -3225,6 +3225,10 @@ def luxMaterialBlock(name, luxname, key, mat, gui=None, level=0, str_opt=""):
 
 	if mat:
 		mattype = luxProp(mat, kn+"type", "matte")
+		# Set backwards compatibility of glossy material from plastic and substrate
+		if(mattype.get() == "substrate" or mattype.get() == "plastic"):
+			mattype.set("glossy")
+
 		materials = ["carpaint","glass","matte","mattetranslucent","metal","mirror","roughglass","shinymetal","glossy","mix","null"]
 		if level == 0: materials = ["light","portal","boundvolume"]+materials
 		if gui:
