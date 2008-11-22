@@ -2217,7 +2217,6 @@ def luxSampler(scn, gui=None):
 				str += luxInt("initsamples", luxProp(scn, "sampler.metro.initsamples", 100000), 1, 1000000, "initsamples", "", gui)
 				str += luxInt("stratawidth", luxProp(scn, "sampler.metro.stratawidth", 256), 1, 32768, "stratawidth", "The number of x/y strata for stratified sampling of seeds", gui)
 				str += luxBool("usevariance",luxProp(scn, "sampler.metro.usevariance", "false"), "usevariance", "Accept based on variance", gui, 1.2)
-				str += luxBool("useqr",luxProp(scn, "sampler.metro.useqr", "false"), "QMC", "Use Quasi Monte Carlo sequences", gui, 0.8)
 
 			if showhelp.get()=="true":
 				if gui: gui.newline("  Description:", 8, 0, icon_help, [0.4,0.5,0.56])
