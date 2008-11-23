@@ -2517,10 +2517,10 @@ def luxTexture(name, parentkey, type, default, min, max, caption, hint, mat, gui
 	if(lightsource == 0):
 		if texlevel == 0: texture = luxProp(mat, keyname+".texture", "imagemap")
 		else: texture = luxProp(mat, keyname+".texture", "constant")
-		textures = ["constant","blackbody","equalenergy", "frequency", "gaussian", "regulardata", "irregulardata", "imagemap","mix","scale","bilerp","uv", "checkerboard","dots","fbm","marble","wrinkled", "windy", "blender_marble", "blender_musgrave", "blender_wood", "blender_clouds", "blender_blend", "blender_distortednoise", "blender_noise", "blender_magic", "blender_stucci", "blender_voronoi", "harlequin"]
 	else:
 		texture = luxProp(mat, keyname+".texture", "blackbody")
-		textures = ["constant","blackbody","equalenergy", "frequency", "gaussian", "regulardata", "irregulardata", "mix","scale"]
+
+	textures = ["constant","blackbody","equalenergy", "frequency", "gaussian", "regulardata", "irregulardata", "imagemap","mix","scale","bilerp","uv", "checkerboard","dots","fbm","marble","wrinkled", "windy", "blender_marble", "blender_musgrave", "blender_wood", "blender_clouds", "blender_blend", "blender_distortednoise", "blender_noise", "blender_magic", "blender_stucci", "blender_voronoi", "harlequin"]
 
 	if gui:
 		icon = icon_tex
