@@ -1939,6 +1939,16 @@ def luxCamera(cam, context, gui=None):
 					Draw.Button("S", evtLuxGui, gui.x, gui.y-gui.h, gui.h, gui.h, "focus selected object", lambda e,v:setFocus("S"))
 					Draw.Button("C", evtLuxGui, gui.x+gui.h, gui.y-gui.h, gui.h, gui.h, "focus cursor", lambda e,v:setFocus("C"))
 
+		if camtype.get() == "perspective":
+			#usedof = luxProp(cam, "camera.usedof", "true")
+			#luxBool("usedof", usedof, "Depth of Field Bokeh", "Enable Depth of field", gui, 2.0)
+
+			# TODO - radiance - clean this up and make it a bit more user friendly.
+
+			str += luxInt("blades", luxProp(cam, "camera.blades", 6), 0, 16, "aperture blades", "Number of blade edges of the aperture, values 0 to 2 defaults to a circle", gui)
+			str += luxOption("distribution", luxProp(cam, "camera.distribution", "uniform"), ["uniform", "exponential", "inverse exponential", "gaussian", "inverse gaussian"], "distribution", "Choose the lens sampling distribution. Non-uniform distributions allow for ring effects.", gui)
+			str += luxInt("power", luxProp(cam, "camera.power", 1), 0, 512, "power", "Exponent for the expression in exponential distribution. Higher value gives a more pronounced ring effect.", gui)
+
 		if gui: gui.newline("  Shutter:")
 		str += luxFloat("shutteropen", luxProp(cam, "camera.shutteropen", 0.0), 0.0, 100.0, "open", "time in seconds when shutter opens", gui)
 		str += luxFloat("shutterclose", luxProp(cam, "camera.shutterclose", 1.0), 0.0, 100.0, "close", "time in seconds when shutter closes", gui)
@@ -1951,9 +1961,12 @@ def luxCamera(cam, context, gui=None):
 			if useaspect.get() == "true":
 				str += luxFloat("frameaspectratio", aspectratio, 0.0001, 3.0, "aspectratio", "Frame aspect ratio", gui)
 		if camtype.get() in ["perspective", "orthographic"]:
-			if gui: gui.newline("  Shift:")
-			luxFloat("X", luxAttr(cam, "shiftX"), -2.0, 2.0, "X", "horizontal lens shift", gui)
-			luxFloat("Y", luxAttr(cam, "shiftY"), -2.0, 2.0, "Y", "vertical lens shift", gui)
+			useshift = luxProp(cam, "camera.useshift", "false")
+			luxBool("useshift", useshift, "Architectural (Lens Shift)", "Enable Lens Shift options", gui, 2.0)
+			if(useshift.get() == "true"):
+				if gui: gui.newline("  Shift:")
+				luxFloat("X", luxAttr(cam, "shiftX"), -2.0, 2.0, "X", "horizontal lens shift", gui)
+				luxFloat("Y", luxAttr(cam, "shiftY"), -2.0, 2.0, "Y", "vertical lens shift", gui)
 			if context:
 				if useaspect.get() == "true":
 					ratio = 1./aspectratio.get()
@@ -2207,7 +2220,7 @@ def luxSampler(scn, gui=None):
 			# Default parameters
 			#if gui: gui.newline("  Mutation:")
 			if gui: gui.newline("  Mutation:", 8, 0, None, [0.4,0.4,0.4])
-			str += luxFloat("largemutationprob", luxProp(scn, "sampler.metro.lmprob", 0.25), 0.0, 1.0, "LM.prob.", "probability of generation a large sample (mutation)", gui)
+			str += luxFloat("largemutationprob", luxProp(scn, "sampler.metro.lmprob", 0.4), 0.0, 1.0, "LM.prob.", "Probability of generating a large sample (mutation)", gui)
 			str += luxInt("maxconsecrejects", luxProp(scn, "sampler.metro.maxrejects", 256), 0, 32768, "max.rejects", "number of consecutive rejects before a new mutation is forced", gui)
 
 			# Advanced parameters
@@ -2247,7 +2260,7 @@ def luxSurfaceIntegrator(scn, gui=None):
 	global icon_c_integrator
 	str = ""
 	if scn:
-		integratortype = luxProp(scn, "sintegrator.type", "path")
+		integratortype = luxProp(scn, "sintegrator.type", "bidirectional")
 		str = luxIdentifier("SurfaceIntegrator", integratortype, ["directlighting", "path", "bidirectional", "exphotonmap", "distributedpath" ], "INTEGRATOR", "select surface integrator type", gui, icon_c_integrator)
 		if integratortype.get() == "directlighting":
 			str += luxOption("strategy", luxProp(scn, "sintegrator.dlighting.strategy", "auto"), ["one", "all", "auto"], "strategy", "select directlighting strategy", gui)
@@ -2257,7 +2270,7 @@ def luxSurfaceIntegrator(scn, gui=None):
 
 		if integratortype.get() == "path":
 			if gui: gui.newline("  Depth:")
-			str += luxInt("maxdepth", luxProp(scn, "sintegrator.path.maxdepth", 12), 0, 2048, "maxdepth", "The maximum recursion depth for ray casting", gui)
+			str += luxInt("maxdepth", luxProp(scn, "sintegrator.path.maxdepth", 16), 0, 2048, "maxdepth", "The maximum recursion depth for ray casting", gui)
 			str += luxOption("strategy", luxProp(scn, "sintegrator.path.strategy", "auto"), ["one", "all", "auto"], "strategy", "select directlighting strategy", gui)
 			if gui: gui.newline("  RR:")
 			rrstrat = luxProp(scn, "sintegrator.path.rrstrategy", "efficiency")
