@@ -4262,11 +4262,10 @@ def luxDraw():
 			obj = scn.objects.active
 			if obj:
 				if (obj.getType() == "Lamp"):
-					luxLight("LIGHT", "", obj, gui, 0)
-#					ltype = obj.getData(mesh=1).getType() # data
-#					if (ltype == Lamp.Types["Area"]): luxLight("LIGHT", "", obj, gui, 0)
-#					elif (ltype == Lamp.Types["Spot"]): luxSpot("LIGHT", "", obj, gui, 0)
-#					elif (ltype == Lamp.Types["Lamp"]): luxLamp("LIGHT", "", obj, gui, 0)
+					ltype = obj.getData(mesh=1).getType() # data
+					if (ltype == Lamp.Types["Area"]): luxLight("LIGHT", "", obj, gui, 0)
+					elif (ltype == Lamp.Types["Spot"]): luxSpot("LIGHT", "", obj, gui, 0)
+					elif (ltype == Lamp.Types["Lamp"]): luxLamp("LIGHT", "", obj, gui, 0)
 				else:
 					matfilter = luxProp(scn, "matlistfilter", "false")
 					mats = getMaterials(obj, True)
