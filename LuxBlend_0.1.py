@@ -101,6 +101,7 @@ clayMat = None
 
 matpreview_buf = BGL.Buffer(BGL.GL_BYTE, [140,140,3]) # GL buffer for material previews
 
+
 #-------------------------------------------------
 # getMaterials(obj)
 # helper function to get the material list of an object in respect of obj.colbits
@@ -442,6 +443,7 @@ class luxExport:
 				else:
 					self.exportMesh(file, mesh, mats, mesh_name)
 				file.write("ObjectEnd # %s\n\n"%mesh_name)
+		mesh.verts = None
 
 	#-------------------------------------------------
 	# exportObjects(self, file)
@@ -453,13 +455,49 @@ class luxExport:
 		mesh = Mesh.New('')
 		for [obj, matrix] in self.objects:
 			print "object: %s"%(obj.getName())
+			mesh_name = obj.getData(name_only=True)
+
+			# motion blur
+			frame = Blender.Get('curframe')
+			Blender.Set('curframe', frame+1)
+			m1 = 1.0*matrix # multiply by 1.0 to get a copy of orignal matrix (will be frame-independant) 
+			Blender.Set('curframe', frame)
+			motion = None
+			if m1 != matrix:
+				print "  motion blur"
+				try:
+					motion = m1 * matrix.invert()
+				except:
+					print "  failed on calculating motion blur transformation, sorry"
+
+			if motion: # motion-blur only works with instances, so ensure mesh is exported as instance first
+				if mesh_name in self.meshes:
+					del self.meshes[mesh_name]
+					mesh.getFromObject(obj, 0, 1)
+					mats = getMaterials(obj)
+					print "  blender-mesh: %s (%d vertices, %d faces)"%(mesh_name, len(mesh.verts), len(mesh.faces))
+					file.write("ObjectBegin \"%s\"\n"%mesh_name)
+					if (mesh_optimizing):
+						self.exportMeshOpt(file, mesh, mats, mesh_name)
+					else:
+						self.exportMesh(file, mesh, mats, mesh_name)
+					file.write("ObjectEnd # %s\n\n"%mesh_name)
+
 			file.write("AttributeBegin # %s\n"%obj.getName())
 			file.write("\tTransform [%s %s %s %s  %s %s %s %s  %s %s %s %s  %s %s %s %s]\n"\
 				%(matrix[0][0], matrix[0][1], matrix[0][2], matrix[0][3],\
 				  matrix[1][0], matrix[1][1], matrix[1][2], matrix[1][3],\
 				  matrix[2][0], matrix[2][1], matrix[2][2], matrix[2][3],\
 		  		  matrix[3][0], matrix[3][1], matrix[3][2], matrix[3][3]))
-			mesh_name = obj.getData(name_only=True)
+			if motion:
+				file.write("\tTransformBegin\n")
+				file.write("\t\tTransform [%s %s %s %s  %s %s %s %s  %s %s %s %s  %s %s %s %s]\n"\
+					%(motion[0][0], motion[0][1], motion[0][2], motion[0][3],\
+					  motion[1][0], motion[1][1], motion[1][2], motion[1][3],\
+					  motion[2][0], motion[2][1], motion[2][2], motion[2][3],\
+		  			  motion[3][0], motion[3][1], motion[3][2], motion[3][3]))
+				file.write("\t\tCoordinateSystem \"%s\"\n"%(obj.getName()+"_motion"))
+				file.write("\tTransformEnd\n")
 			if mesh_name in self.meshes:
 				mesh.getFromObject(obj, 0, 1)
 				mats = getMaterials(obj)
@@ -470,8 +508,12 @@ class luxExport:
 					self.exportMesh(file, mesh, mats, mesh_name)
 			else:
 				print "  instance %s"%(mesh_name)
-				file.write("\tObjectInstance \"%s\"\n"%mesh_name)
+				if motion:
+					file.write("\tMotionInstance \"%s\" 0.0 1.0 \"%s\"\n"%(mesh_name, obj.getName()+"_motion"))
+				else:
+					file.write("\tObjectInstance \"%s\"\n"%mesh_name)
 			file.write("AttributeEnd\n\n")
+		mesh.verts = None
 
 	#-------------------------------------------------
 	# exportPortals(self, file)
@@ -495,6 +537,7 @@ class luxExport:
 				self.exportMeshOpt(file, mesh, mats, mesh_name, True)
 			else:
 				self.exportMesh(file, mesh, mats, mesh_name, True)
+		mesh.verts = None
 
 	#-------------------------------------------------
 	# exportLights(self, file)
@@ -505,6 +548,9 @@ class luxExport:
 			ltype = obj.getData(mesh=1).getType() # data
 			if (ltype == Lamp.Types["Lamp"]) or (ltype == Lamp.Types["Spot"]) or (ltype == Lamp.Types["Area"]):
 				print "light: %s"%(obj.getName())
+				if ltype == Lamp.Types["Area"]:
+					(str, link) = luxLight("", "", obj, None, 0)
+					file.write(str)
 				if ltype == Lamp.Types["Area"]: file.write("AttributeBegin # %s\n"%obj.getName())
 				else: file.write("TransformBegin # %s\n"%obj.getName())
 				file.write("\tTransform [%s %s %s %s  %s %s %s %s  %s %s %s %s  %s %s %s %s]\n"\
@@ -520,7 +566,7 @@ class luxExport:
 						file.write("LightSource \"goniometric\"")
 					else:
 						file.write("LightSource \"point\"")
-					file.write(luxLamp("", "", obj, None, 0))
+					file.write(luxLamp("", "", obj, None, 0)+"\n")
 				if ltype == Lamp.Types["Spot"]:
 					proj = luxProp(obj, "light.usetexproj", "false")
 					if(proj.get() == "true"):
@@ -529,13 +575,12 @@ class luxExport:
 					else:
 						file.write("LightSource \"spot\" \"point from\" [0 0 0] \"point to\" [0 0 -1] \"float coneangle\" [%f] \"float conedeltaangle\" [%f]"\
 							%(obj.getData(mesh=1).spotSize*0.5, obj.getData(mesh=1).spotSize*0.5*obj.getData(mesh=1).spotBlend)) # data
-					file.write(luxSpot("", "", obj, None, 0))
+					file.write(luxSpot("", "", obj, None, 0)+"\n")
 				if ltype == Lamp.Types["Area"]:
 					file.write("\tAreaLightSource \"area\"")
-					file.write(luxLight("", "", obj, None, 0))
-				file.write("\n")
-				if ltype == Lamp.Types["Area"]:
-					file.write(luxLight("", "", obj, None, 0))
+					file.write(link)
+#					file.write(luxLight("", "", obj, None, 0))
+					file.write("\n")
 					areax = obj.getData(mesh=1).getAreaSizeX()
 					# lamps "getAreaShape()" not implemented yet - so we can't detect shape! Using square as default
 					# todo: ideasman42
@@ -679,8 +724,15 @@ def save_lux(filename, unindexedname):
 		########## BEGIN World
 		file.write("\n")
 		file.write("WorldBegin\n")
-	
 		file.write("\n")
+
+		########## World scale
+		scale = luxProp(scn, "global.scale", 1.0).get()
+		if scale != 1.0:
+			# TODO: not working yet !!!
+			# TODO: propabily scale needs to be applyed on camera coords too 
+			file.write("Transform [%s 0.0 0.0 0.0  0.0 %s 0.0 0.0  0.0 0.0 %s 0.0  0.0 0.0 0 1.0]\n"%(scale, scale, scale))
+			file.write("\n")
 		
 		##### Write World Background, Sunsky or Env map ######
 		env = luxEnvironment(scn)
@@ -894,9 +946,9 @@ def save_still(filename):
 ######################################################
 
 def base64value(char):
-	if ord(char) in range(65, 91): return ord(char)-65
-	if ord(char) in range(97, 123): return ord(char)-97+26
-	if ord(char) in range(48, 58): return ord(char)-48+52
+	if 64 < ord(char) < 91: return ord(char)-65
+	if 96 < ord(char) < 123: return ord(char)-97+26
+	if 47 < ord(char) < 58: return ord(char)-48+52
 	if char == '+': return 62
 	return 63
 
@@ -993,6 +1045,48 @@ def drawBar(icon, x, y):
 def drawMatPreview(x, y):
 	BGL.glRasterPos2f(int(x)+0.5, int(y)+0.5)
 	BGL.glDrawPixels(140, 140, BGL.GL_RGB, BGL.GL_UNSIGNED_BYTE, matpreview_buf)
+
+
+
+#-------------------------------------------------
+# luxImage()
+# helper class to handle images and icons for the GUI
+#-------------------------------------------------
+
+class luxImage:
+	def resize(self, width, height):
+		self.width = width
+		self.height = height
+		self.buf = BGL.Buffer(BGL.GL_BYTE, [width,height,4]) # GL buffer
+	def __init__(self, width=0, height=0):
+		self.resize(width, height)
+	def draw(self, x, y):
+		BGL.glEnable(BGL.GL_BLEND)
+		BGL.glBlendFunc(BGL.GL_SRC_ALPHA, BGL.GL_ONE_MINUS_SRC_ALPHA) 
+		BGL.glRasterPos2f(int(x)+0.5, int(y)+0.5)
+		BGL.glDrawPixels(self.width, self.height, BGL.GL_RGBA, BGL.GL_UNSIGNED_BYTE, self.buf)
+		BGL.glDisable(BGL.GL_BLEND)		
+	def decodeStr(self, width, height, s):
+		self.resize(width, height)
+		offset = 0
+		for y in range(self.height):
+			for x in range(self.width):
+				for c in range(4):
+					self.buf[y][x][c] = int(base64value(s[offset])*4.048)
+					offset += 1
+
+	def decodeLuxConsole(self, width, height, data):
+		self.resize(width, height)
+		offset = 0
+		for y in range(self.height-1,-1,-1):
+			for x in range(self.width):
+				for c in range(3):
+					self.buf[y][x][c] = ord(data[offset])
+					offset += 1
+				self.buf[y][x][3] = 255
+
+
+previewCache = {}  # dictionary that will hold all preview images
 
 
 ######################################################
@@ -1576,11 +1670,13 @@ class luxProp:
 		try: return int(self.get())
 		except: return int(self.default)
 	def getRGB(self):
-		l = self.get().split(" ")
+		try: l = self.get().split(" ")
+		except: l = self.default.split(" ")
 		if len(l) != 3: l = self.default.split(" ")
 		return (float(l[0]), float(l[1]), float(l[2]))
 	def getVector(self):
-		l = self.get().split(" ")
+		try: l = self.get().split(" ")
+		except: l = self.default.split(" ")
 		if len(l) != 3: l = self.default.split(" ")
 		return (float(l[0]), float(l[1]), float(l[2]))
 	def getRGC(self):
@@ -2370,15 +2466,16 @@ def luxEnvironment(scn, gui=None):
 				map = luxProp(scn, "env.infinite.mapname", "")
 				mapstr += luxFile("mapname", map, "map-file", "filename of the environment map", gui, 2.0)
 				mapstr += luxFloat("gamma", luxProp(scn, "env.infinite.gamma", 1.0), 0.0, 6.0, "gamma", "", gui, 1.0)
-				mapstr += luxFloat("gain", luxProp(scn, "env.infinite.gain", 1.0), 0.0, 10.0, "gain", "", gui, 1.0)
 				
 				if map.get() != "":
 					str += mapstr
 				else:
 					try:
 						worldcolor = Blender.World.Get('World').getHor()
-						str += "\n   \"color L\" [%g %g %g]\n" %(worldcolor[0], worldcolor[1], worldcolor[2])
+						str += "\n   \"color L\" [%g %g %g]" %(worldcolor[0], worldcolor[1], worldcolor[2])
 					except: pass
+
+				str += luxFloat("gain", luxProp(scn, "env.infinite.gain", 1.0), 0.0, 10.0, "gain", "", gui, 1.0)
 
 
 			if envtype.get() == "sunsky":
@@ -2419,7 +2516,11 @@ def luxEnvironment(scn, gui=None):
 #					luxInt("hour", luxProp(scn, "env.sunsky.suncalchour", 12), 0, 24, "H", "Hour", gui, 0.5)
 #					luxInt("minute", luxProp(scn, "env.sunsky.suncalcminute", 0), 0, 60, "M", "Minute", gui, 0.5)
 #					luxInt("second", luxProp(scn, "env.sunsky.suncalcsecond", 0), 0, 60, "S", "Second", gui, 0.5)
+
 			str += "\n"
+		if gui: gui.newline("GLOBAL:", 8, 0, None, [0.4,0.4,0.6])
+		luxFloat("scale", luxProp(scn, "global.scale", 1.0), 0.0, 10.0, "scale", "global world scale", gui)
+		
 	return str
 
 def luxAccelerator(scn, gui=None):
@@ -2547,6 +2648,10 @@ def luxTexture(name, parentkey, type, default, min, max, caption, hint, mat, gui
 		else: gui.newline("texture:", -2, level, icon, scalelist([0.5,0.5,0.5],2.0/(level+2)))
 	luxOption("texture", texture, textures, "texture", "", gui, 0.9)
 	str = "Texture \"%s\" \"%s\" \"%s\""%(texname, type, texture.get())
+
+	if gui: # currently only color-type textures supported for preview 
+		if type=="color": luxPreview(mat, parentkey, name, gui, texlevel)
+
 	if texture.get() == "constant":
 		value = luxProp(mat, keyname+".value", default)
 		if type == "float": luxFloat("value", value, min, max, "", "", gui, 1.1)
@@ -3144,6 +3249,7 @@ def luxCauchyBFloatTexture(name, key, default, min, max, caption, hint, mat, gui
 			link = " \"texture %s\" [\"%s\"]"%(name, texname+".scale")
 	return (str, link)
 
+
 def luxLamp(name, kn, mat, gui, level):
 	if gui:
 		if name != "": gui.newline(name+":", 10, level)
@@ -3185,9 +3291,9 @@ def luxSpot(name, kn, mat, gui, level):
 
 	return link
 
-
+# old LuxLight no more used
 ### Note - Radiance - Currently only used when exporting blender Area lamp type. (not via lux 'light' material)
-def luxLight(name, kn, mat, gui, level):
+def luxLightOld(name, kn, mat, gui, level):
 	def c(t1, t2):
 		return (t1[0]+t2[0], t1[1]+t2[1])
 	if gui:
@@ -3201,6 +3307,183 @@ def luxLight(name, kn, mat, gui, level):
 	has_bump_options = 0
 	has_object_options = 1
 	return link
+
+
+def luxLight(name, kn, mat, gui, level):
+	if gui:
+		if name != "": gui.newline(name+":", 10, level)
+		else: gui.newline("color:", 0, level+1)
+	(str,link) = luxLightSpectrumTexture("L", kn+"light", "1.0 1.0 1.0", 1.0, "Spectrum", "", mat, gui, level+1)
+	if gui: gui.newline("")
+	link += luxFloat("power", luxProp(mat, kn+"light.power", 100.0), 0.0, 10000.0, "Power(W)", "AreaLight Power in Watts", gui)
+	link += luxFloat("efficacy", luxProp(mat, kn+"light.efficacy", 17.0), 0.0, 100.0, "Efficacy(lm/W)", "Efficacy Luminous flux/watt", gui)
+	if gui: gui.newline("")
+	link += luxFloat("gain", luxProp(mat, kn+"light.gain", 1.0), 0.0, 100.0, "gain", "Gain/scale multiplier", gui)
+	link += luxString("lightgroup", luxProp(mat, kn+"light.lightgroup", ""), "l-group", "assign light to a named light-group", gui, 1.0)
+	has_bump_options = 0
+	has_object_options = 1
+	return (str, link)
+
+
+
+
+def luxPreview(mat, name, texName=None, gui=None, level=0):
+	def Preview_Sphereset(mat, kn, state):
+		if state=="true":
+			luxProp(mat, kn+"prev_sphere", "true").set("true")
+			luxProp(mat, kn+"prev_plane", "false").set("false")
+			luxProp(mat, kn+"prev_torus", "false").set("false")
+	def Preview_Planeset(mat, kn, state):
+		if state=="true":
+			luxProp(mat, kn+"prev_sphere", "true").set("false")
+			luxProp(mat, kn+"prev_plane", "false").set("true")
+			luxProp(mat, kn+"prev_torus", "false").set("false")
+	def Preview_Torusset(mat, kn, state):
+		if state=="true":
+			luxProp(mat, kn+"prev_sphere", "true").set("false")
+			luxProp(mat, kn+"prev_plane", "false").set("false")
+			luxProp(mat, kn+"prev_torus", "false").set("true")
+	def Preview_Update(mat, kn):
+		Blender.Window.WaitCursor(True)
+		scn = Scene.GetCurrent()
+		consolebin = luxProp(scn, "luxconsole", "").get()
+		PIPE = subprocess.PIPE
+		p = subprocess.Popen((consolebin, '-b', '-'), bufsize=58800, stdin=PIPE, stdout=PIPE, stderr=PIPE)
+
+# todo: remove this debug stuff
+#		p.stdin = open('c:\preview.txt', 'w')
+
+		prev_sphere = luxProp(mat, kn+"prev_sphere", "true")
+		prev_plane = luxProp(mat, kn+"prev_plane", "false")
+		prev_torus = luxProp(mat, kn+"prev_torus", "false")
+		# Zoom
+		if luxProp(mat, kn+"prev_zoom", "false").get() == "true":
+			p.stdin.write('LookAt 0.250000 -1.500000 0.750000 0.250000 -0.500000 0.750000 0.000000 0.000000 1.000000\nCamera "perspective" "float fov" [22.5]\n')
+		else:
+			p.stdin.write('LookAt 0.0 -3.0 0.5 0.0 -2.0 0.5 0.0 0.0 1.0\nCamera "perspective" "float fov" [22.5]\n')
+		# Fleximage
+		p.stdin.write('Film "fleximage" "integer xresolution" [140] "integer yresolution" [140] "integer displayinterval" [3] "integer ldr_writeinterval" [3600] "string tonemapper" ["reinhard"] "integer haltspp" [1] "integer reject_warmup" [32]\n')
+		p.stdin.write('PixelFilter "sinc"\n')
+		# Quality
+		quality = luxProp(mat, kn+"prev_quality", "high")
+		if quality.get()=="low":
+			p.stdin.write('Sampler "lowdiscrepancy" "string pixelsampler" ["hilbert"] "integer pixelsamples" [2]\n')
+		elif quality.get()=="medium":
+			p.stdin.write('Sampler "lowdiscrepancy" "string pixelsampler" ["hilbert"] "integer pixelsamples" [4]\n')
+		elif quality.get()=="high":
+			p.stdin.write('Sampler "lowdiscrepancy" "string pixelsampler" ["hilbert"] "integer pixelsamples" [8]\n')
+		else: 
+			p.stdin.write('Sampler "lowdiscrepancy" "string pixelsampler" ["hilbert"] "integer pixelsamples" [32]\n')
+		# SurfaceIntegrator
+		if(prev_plane.get()=="false"):
+			p.stdin.write('SurfaceIntegrator "distributedpath" "integer directsamples" [1] "integer diffusereflectdepth" [1] "integer diffusereflectsamples" [4] "integer diffuserefractdepth" [4] "integer diffuserefractsamples" [1] "integer glossyreflectdepth" [1] "integer glossyreflectsamples" [2] "integer glossyrefractdepth" [4] "integer glossyrefractsamples" [1] "integer specularreflectdepth" [2] "integer specularrefractdepth" [4]\n')
+		else:
+			p.stdin.write('SurfaceIntegrator "distributedpath" "integer directsamples" [1] "integer diffusereflectdepth" [0] "integer diffusereflectsamples" [0] "integer diffuserefractdepth" [0] "integer diffuserefractsamples" [0] "integer glossyreflectdepth" [0] "integer glossyreflectsamples" [0] "integer glossyrefractdepth" [0] "integer glossyrefractsamples" [0] "integer specularreflectdepth" [1] "integer specularrefractdepth" [1]\n')
+		# World
+		p.stdin.write('WorldBegin\n')
+		if(prev_sphere.get()=="true"):
+			p.stdin.write('AttributeBegin\nTransform [0.5 0.0 0.0 0.0  0.0 0.5 0.0 0.0  0.0 0.0 0.5 0.0  0.0 0.0 0.5 1.0]\n')
+		elif (prev_plane.get()=="true"):
+			p.stdin.write('AttributeBegin\nTransform [0.649999976158 0.0 0.0 0.0  0.0 4.90736340453e-008 0.649999976158 0.0  0.0 -0.649999976158 4.90736340453e-008 0.0  0.0 0.0 0.5 1.0]\n')
+		else:
+			p.stdin.write('AttributeBegin\nTransform [0.35 -0.35 0.0 0.0  0.25 0.25 0.35 0.0  -0.25 -0.25 0.35 0.0  0.0 0.0 0.5 1.0]\n')
+		if texName:
+			print "texture "+texName+"  "+name
+			(str, link) = luxTexture(texName, name, "color", "1.0 1.0 1.0", None, None, "", "", mat, None, 0, level)
+			link = link.replace(" "+texName+"\"", " Kd\"") # swap texture name to "Kd"
+			p.stdin.write(str+"\n")
+			p.stdin.write("Material \"matte\" "+link+"\n") 
+		else:
+			# Material
+			p.stdin.write(luxMaterial(mat))
+			p.stdin.write(luxProp(mat,"link","").get()+'\n')
+		# Shape
+		if(prev_sphere.get()=="true"):
+			p.stdin.write('Shape "sphere" "float radius" [1.0]\n')
+		elif (prev_plane.get()=="true"):
+			p.stdin.write('	Shape "trianglemesh" "integer indices" [ 0 1 2 0 2 3 ] "point P" [ 1.0 1.0 0.0 -1.0 1.0 0.0 -1.0 -1.0 -0.0 1.0 -1.0 -0.0 ] "float uv" [ 0.0 0.0 1.0 0.0 1.0 1.0 0.0 1.0 ]\n')
+		elif (prev_torus.get()=="true"):
+			p.stdin.write('Shape "torus" "float radius" [1.0]\n')
+		p.stdin.write('AttributeEnd\n')
+		# Checkerboard floor
+		if(prev_plane.get()=="false"):
+			p.stdin.write('AttributeBegin\nTransform [5.0 0.0 0.0 0.0  0.0 5.0 0.0 0.0  0.0 0.0 5.0 0.0  0.0 0.0 0.0 1.0]\n')
+			p.stdin.write('Texture "checks" "color" "checkerboard"')
+			p.stdin.write('"integer dimension" [2] "string aamode" ["supersample"] "color tex1" [0.9 0.9 0.9] "color tex2" [0.0 0.0 0.0]')
+			p.stdin.write('"string mapping" ["uv"] "float uscale" [36.8] "float vscale" [36.0]\n')
+			p.stdin.write('Material "matte" "texture Kd" ["checks"]\n')
+			p.stdin.write('Shape "loopsubdiv" "integer nlevels" [3] "bool dmnormalsmooth" ["true"] "bool dmsharpboundary" ["true"] ')
+			p.stdin.write('"integer indices" [ 0 1 2 0 2 3 1 0 4 1 4 5 5 4 6 5 6 7 ]')
+			p.stdin.write('"point P" [ 1.000000 1.000000 0.000000 -1.000000 1.000000 0.000000 -1.000000 -1.000000 0.000000 1.000000 -1.000000 0.000000 1.000000 3.000000 0.000000 -1.000000 3.000000 0.000000 1.000000 3.000000 2.000000 -1.000000 3.000000 2.000000')
+			p.stdin.write('] "normal N" [ 0.000000 0.000000 1.000000 0.000000 0.000000 1.000000 0.000000 0.000000 1.000000 0.000000 0.000000 1.000000 0.000000 -0.707083 0.707083 0.000000 -0.707083 0.707083 0.000000 -1.000000 0.000000 0.000000 -1.000000 0.000000')
+			p.stdin.write('] "float uv" [ 0.333334 0.000000 0.333334 0.333334 0.000000 0.333334 0.000000 0.000000 0.666667 0.000000 0.666667 0.333333 1.000000 0.000000 1.000000 0.333333 ]\n')
+			p.stdin.write('AttributeEnd\n')
+		# Lightsource
+		if(prev_plane.get()=="false"):
+			p.stdin.write('AttributeBegin\nTransform [1.0 0.0 0.0 0.0  0.0 1.0 0.0 0.0  0.0 0.0 1.0 0.0  1.0 -1.0 4.0 1.0]\n')
+		else:
+			p.stdin.write('AttributeBegin\nTransform [1.0 0.0 0.0 0.0  0.0 1.0 0.0 0.0  0.0 0.0 1.0 0.0  1.0 -4.0 1.0 1.0]\n')
+		area = luxProp(mat, kn+"prev_arealight", "false")
+		if(area.get() == "false"):
+			p.stdin.write('LightSource "point"')
+		else:
+			p.stdin.write('ReverseOrientation\n')
+			p.stdin.write('AreaLightSource "area" "color L" [1.0 1.0 1.0]\n')
+			p.stdin.write('Shape "disk" "float radius" [1.0]\nAttributeEnd\n')
+		p.stdin.write('WorldEnd\n')
+
+		data = p.communicate()[0]
+		p.stdin.close()
+		if(len(data) < 58800):
+			print "error on preview"
+			return
+		global previewCache
+		image = luxImage()
+		image.decodeLuxConsole(140, 140, data)
+		previewCache[(mat.name+":"+kn).__hash__()] = image
+		Draw.Redraw()
+		Blender.Window.WaitCursor(False)
+	if gui:
+		kn = name
+		if texName: kn += ":"+texName
+		if kn != "": kn += "."
+		showpreview = luxProp(mat, kn+"prev_show", "false")
+		Draw.Toggle("P", evtLuxGui, gui.xmax, gui.y-gui.h, gui.h, gui.h, showpreview.get()=="true", "Preview", lambda e,v: showpreview.set(["false","true"][bool(v)]))
+		if showpreview.get()=="true": 
+			gui.newline()
+			r = gui.getRect(1.1, 7)
+			try: previewCache[(mat.name+":"+kn).__hash__()].draw(r[0]-82, r[1]+4)
+			except: pass
+
+			# preview mode toggle buttons
+			prev_sphere = luxProp(mat, kn+"prev_sphere", "true")
+			Draw.Toggle("S", evtLuxGui, r[0]-108, r[1]+122, 22, 22, prev_sphere.get()=="true", "Draw Sphere", lambda e,v: Preview_Sphereset(mat, kn, ["false","true"][bool(v)]))
+			prev_plane = luxProp(mat, kn+"prev_plane", "false")
+			Draw.Toggle("P", evtLuxGui, r[0]-108, r[1]+96, 22, 22, prev_plane.get()=="true", "Draw 2D Plane", lambda e,v: Preview_Planeset(mat, kn, ["false","true"][bool(v)]))
+			prev_torus = luxProp(mat, kn+"prev_torus", "false")
+			Draw.Toggle("T", evtLuxGui, r[0]-108, r[1]+70, 22, 22, prev_torus.get()=="true", "Draw Torus", lambda e,v: Preview_Torusset(mat, kn, ["false","true"][bool(v)]))
+
+			# Zoom toggle
+			zoom = luxProp(mat, kn+"prev_zoom", "false")
+			Draw.Toggle("Zoom", evtLuxGui, r[0]+66, r[1]+122, 50, 18, zoom.get()=="true", "Zoom", lambda e,v: zoom.set(["false","true"][bool(v)]))
+
+			# Light Direction/Position and Area light toggle
+			lightdir = luxProp(mat, kn+"prev_dir", "1 1 1")
+			Draw.Normal(evtLuxGui, r[0]+66, r[1]+28,50, 50, lightdir.getVector(), 'Light Direction', lambda e,v: lightdir.setVector(v))
+
+			area = luxProp(mat, kn+"prev_arealight", "false")
+			Draw.Toggle("Area", evtLuxGui, r[0]+66, r[1]+5, 50, 18, area.get()=="true", "Area", lambda e,v: area.set(["false","true"][bool(v)]))
+
+			# Preview Quality
+			qs = ["low","medium","high","very high"]
+			quality = luxProp(mat, kn+"prev_quality", "high")
+			luxOptionRect("quality", quality, qs, "  Quality", "select preview quality", gui, r[0]+200, r[1]+122, 88, 18)
+
+			# Update preview
+			Draw.Button("Update Preview", evtLuxGui, r[0]+120, r[1]+5, 167, 18, "Update Material Preview", lambda e,v: Preview_Update(mat, kn))
+
+
+
 
 
 def MatPreview_Sphereset(mat, state):
@@ -3220,7 +3503,6 @@ def MatPreview_Torusset(mat, state):
 		luxProp(mat, "matprev_sphere", "true").set("false")
 		luxProp(mat, "matprev_plane", "false").set("false")
 		luxProp(mat, "matprev_torus", "false").set("true")
-
 
 
 def luxMaterialBlock(name, luxname, key, mat, gui=None, level=0, str_opt=""):
@@ -3254,6 +3536,8 @@ def luxMaterialBlock(name, luxname, key, mat, gui=None, level=0, str_opt=""):
 		luxBool("advanced", showadvanced, "Advanced", "Show advanced options", gui, 0.6)
 		showhelp = luxProp(mat, kn+"showhelp", "false")
 		luxHelp("help", showhelp, "Help", "Show Help Information", gui, 0.4)
+
+		luxPreview(mat, keyname, None, gui, level)
 
 		# Material preview
 		showmatpreview = luxProp(Scene.GetCurrent(), "showmatpreview", "true")
@@ -3301,15 +3585,15 @@ def luxMaterialBlock(name, luxname, key, mat, gui=None, level=0, str_opt=""):
 			has_object_options = 1
 
 		if mattype.get() == "light":
-			### Note - Radiance - This is under construction - will clean this up / move back to luxLight (luxLight() does'nt have material link...)
+# shoud be ok now	### Note - Radiance - This is under construction - will clean this up / move back to luxLight (luxLight() does'nt have material link...)
 			link = "AreaLightSource \"area\""
-			(str,link) = c((str,link), luxLightSpectrumTexture("L", keyname, "1.0 1.0 1.0", 1.0, "Spectrum", "", mat, gui, level+1))
-			link += luxFloat("power", luxProp(mat, kn+"power", 100.0), 0.0, 10000.0, "Power(W)", "AreaLight Power in Watts", gui)
-			link += luxFloat("efficacy", luxProp(mat, kn+"efficacy", 17.0), 0.0, 100.0, "Efficacy(lm/W)", "Efficacy Luminous flux/watt", gui)
-			link += luxFloat("gain", luxProp(mat, kn+"gain", 1.0), 0.0, 100.0, "gain", "Gain/scale multiplier", gui)
+			(str,link) = c((str,link), luxLight("", kn, mat, gui, level))
+#			(str,link) = c((str,link), luxLightSpectrumTexture("L", keyname, "1.0 1.0 1.0", 1.0, "Spectrum", "", mat, gui, level+1))
+#			link += luxFloat("power", luxProp(mat, kn+"power", 100.0), 0.0, 10000.0, "Power(W)", "AreaLight Power in Watts", gui)
+#			link += luxFloat("efficacy", luxProp(mat, kn+"efficacy", 17.0), 0.0, 100.0, "Efficacy(lm/W)", "Efficacy Luminous flux/watt", gui)
+#			link += luxFloat("gain", luxProp(mat, kn+"gain", 1.0), 0.0, 100.0, "gain", "Gain/scale multiplier", gui)
 			has_bump_options = 0
 			has_object_options = 1
-			#link += luxLight("", kn, mat, gui, level)
 
 		if mattype.get() == "boundvolume":
 			link = ""
@@ -3978,10 +4262,11 @@ def luxDraw():
 			obj = scn.objects.active
 			if obj:
 				if (obj.getType() == "Lamp"):
-					ltype = obj.getData(mesh=1).getType() # data
-					if (ltype == Lamp.Types["Area"]): luxLight("LIGHT", "", obj, gui, 0)
-					elif (ltype == Lamp.Types["Spot"]): luxSpot("LIGHT", "", obj, gui, 0)
-					elif (ltype == Lamp.Types["Lamp"]): luxLamp("LIGHT", "", obj, gui, 0)
+					luxLight("LIGHT", "", obj, gui, 0)
+#					ltype = obj.getData(mesh=1).getType() # data
+#					if (ltype == Lamp.Types["Area"]): luxLight("LIGHT", "", obj, gui, 0)
+#					elif (ltype == Lamp.Types["Spot"]): luxSpot("LIGHT", "", obj, gui, 0)
+#					elif (ltype == Lamp.Types["Lamp"]): luxLamp("LIGHT", "", obj, gui, 0)
 				else:
 					matfilter = luxProp(scn, "matlistfilter", "false")
 					mats = getMaterials(obj, True)
