@@ -465,10 +465,7 @@ class luxExport:
 			motion = None
 			if m1 != matrix:
 				print "  motion blur"
-				try:
-					motion = m1 * matrix.invert()
-				except:
-					print "  failed on calculating motion blur transformation, sorry"
+				motion = m1
 
 			if motion: # motion-blur only works with instances, so ensure mesh is exported as instance first
 				if mesh_name in self.meshes:
@@ -491,6 +488,7 @@ class luxExport:
 		  		  matrix[3][0], matrix[3][1], matrix[3][2], matrix[3][3]))
 			if motion:
 				file.write("\tTransformBegin\n")
+				file.write("\t\tIdentity\n")
 				file.write("\t\tTransform [%s %s %s %s  %s %s %s %s  %s %s %s %s  %s %s %s %s]\n"\
 					%(motion[0][0], motion[0][1], motion[0][2], motion[0][3],\
 					  motion[1][0], motion[1][1], motion[1][2], motion[1][3],\
