@@ -451,22 +451,26 @@ class luxExport:
 	#-------------------------------------------------
 	def exportObjects(self, file):
 		scn = Scene.GetCurrent()
+		cam = scn.getCurrentCamera().data
+		objectmblur = luxProp(cam, "objectmblur", "true")
+		usemblur = luxProp(cam, "usemblur", "false")
 		mesh_optimizing = luxProp(scn, "mesh_optimizing", True).get()
 		mesh = Mesh.New('')
 		for [obj, matrix] in self.objects:
 			print "object: %s"%(obj.getName())
 			mesh_name = obj.getData(name_only=True)
 
-			# motion blur
-			frame = Blender.Get('curframe')
-			Blender.Set('curframe', frame+1)
-			m1 = 1.0*matrix # multiply by 1.0 to get a copy of orignal matrix (will be frame-independant) 
-			Blender.Set('curframe', frame)
 			motion = None
-			if m1 != matrix:
-				print "  motion blur"
-				motion = m1
-
+			if(objectmblur.get() == "true" and usemblur.get() == "true"):
+				# motion blur
+				frame = Blender.Get('curframe')
+				Blender.Set('curframe', frame+1)
+				m1 = 1.0*matrix # multiply by 1.0 to get a copy of orignal matrix (will be frame-independant) 
+				Blender.Set('curframe', frame)
+				if m1 != matrix:
+					print "  motion blur"
+					motion = m1
+	
 			if motion: # motion-blur only works with instances, so ensure mesh is exported as instance first
 				if mesh_name in self.meshes:
 					del self.meshes[mesh_name]
@@ -2011,11 +2015,15 @@ def luxCamera(cam, context, gui=None):
 		if gui: gui.newline("  Clipping:")
 		str += luxFloat("hither", luxAttr(cam, "clipStart"), 0.0, 100.0, "start", "near clip distance", gui)
 		str += luxFloat("yon", luxAttr(cam, "clipEnd"), 1.0, 10000.0, "end", "far clip distance", gui)
-		if camtype.get() in ["perspective", "orthographic"]:
+
+		# Depth of Field
+		usedof = luxProp(cam, "usedof", "false")
+		luxBool("usedof", usedof, "Depth of Field (DOF)", "Enable Depth of Field & Aperture options", gui, 2.0)
+		if camtype.get() in ["perspective", "orthographic"] and usedof.get() == "true":
 			if gui: gui.newline("  DOF:")
 			focustype = luxProp(cam, "camera.focustype", "autofocus")
 			luxOption("focustype", focustype, ["autofocus", "manual", "object"], "Focus Type", "Choose the focus behaviour", gui)
-			str += luxFloat("lensradius", luxProp(cam, "camera.lensradius", 0.0), 0.0, 1.0, "lens-radius", "Defines the lens radius. Values higher than 0. enable DOF and control the amount", gui)
+			str += luxFloat("lensradius", luxProp(cam, "camera.lensradius", 0.01), 0.0, 1.0, "lens-radius", "Defines the lens radius. Values higher than 0. enable DOF and control the amount", gui)
 
 			if focustype.get() == "autofocus":
 				str += luxBool("autofocus",luxProp(cam, "camera.autofocus", "true"), "autofocus", "Enable automatic focus", gui)
@@ -2033,19 +2041,10 @@ def luxCamera(cam, context, gui=None):
 					Draw.Button("S", evtLuxGui, gui.x, gui.y-gui.h, gui.h, gui.h, "focus selected object", lambda e,v:setFocus("S"))
 					Draw.Button("C", evtLuxGui, gui.x+gui.h, gui.y-gui.h, gui.h, gui.h, "focus cursor", lambda e,v:setFocus("C"))
 
-		if camtype.get() == "perspective":
-			#usedof = luxProp(cam, "camera.usedof", "true")
-			#luxBool("usedof", usedof, "Depth of Field Bokeh", "Enable Depth of field", gui, 2.0)
-
-			# TODO - radiance - clean this up and make it a bit more user friendly.
-
+		if camtype.get() == "perspective" and usedof.get() == "true":
 			str += luxInt("blades", luxProp(cam, "camera.blades", 6), 0, 16, "aperture blades", "Number of blade edges of the aperture, values 0 to 2 defaults to a circle", gui)
 			str += luxOption("distribution", luxProp(cam, "camera.distribution", "uniform"), ["uniform", "exponential", "inverse exponential", "gaussian", "inverse gaussian"], "distribution", "Choose the lens sampling distribution. Non-uniform distributions allow for ring effects.", gui)
 			str += luxInt("power", luxProp(cam, "camera.power", 1), 0, 512, "power", "Exponent for the expression in exponential distribution. Higher value gives a more pronounced ring effect.", gui)
-
-		if gui: gui.newline("  Shutter:")
-		str += luxFloat("shutteropen", luxProp(cam, "camera.shutteropen", 0.0), 0.0, 100.0, "open", "time in seconds when shutter opens", gui)
-		str += luxFloat("shutterclose", luxProp(cam, "camera.shutterclose", 1.0), 0.0, 100.0, "close", "time in seconds when shutter closes", gui)
 
 		useaspect = luxProp(cam, "useaspectratio", "false")
 		aspectratio = luxProp(cam, "ratio", 1.3333)
@@ -2070,12 +2069,24 @@ def luxCamera(cam, context, gui=None):
 					screenwindow = [(2*cam.shiftX-1)*scale, (2*cam.shiftX+1)*scale, (2*cam.shiftY-ratio)*scale, (2*cam.shiftY+ratio)*scale]
 				else:
 					screenwindow = [(2*cam.shiftX-1/ratio)*scale, (2*cam.shiftX+1/ratio)*scale, (2*cam.shiftY-1)*scale, (2*cam.shiftY+1)*scale]
-	# render region option
+				# render region option
 				if context.borderRender:
 					(x1,y1,x2,y2) = context.border
 					screenwindow = [screenwindow[0]*(1-x1)+screenwindow[1]*x1, screenwindow[0]*(1-x2)+screenwindow[1]*x2,\
 							screenwindow[2]*(1-y1)+screenwindow[3]*y1, screenwindow[2]*(1-y2)+screenwindow[3]*y2]
 				str += "\n   \"float screenwindow\" [%f %f %f %f]"%(screenwindow[0], screenwindow[1], screenwindow[2], screenwindow[3])
+
+		# Motion Blur Options (common to all cameras)
+		usemblur = luxProp(cam, "usemblur", "false")
+		luxBool("usemblur", usemblur, "Motion Blur", "Enable Motion Blur", gui, 2.0)
+		if(usemblur.get() == "true"):	
+			if gui: gui.newline("  Shutter:")
+			str += luxFloat("shutteropen", luxProp(cam, "camera.shutteropen", 0.0), 0.0, 100.0, "open", "time in seconds when shutter opens", gui)
+			str += luxFloat("shutterclose", luxProp(cam, "camera.shutterclose", 1.0), 0.0, 100.0, "close", "time in seconds when shutter closes", gui)
+			objectmblur = luxProp(cam, "objectmblur", "true")
+			luxBool("objectmblur", objectmblur, "Objects", "Enable Motion Blur for scene object motions", gui, 1.0)
+			cammblur = luxProp(cam, "cammblur", "false")
+			luxBool("cammblur", cammblur, "Camera", "Enable Motion Blur for Camera motion", gui, 1.0)
 	return str
 
 
