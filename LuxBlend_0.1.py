@@ -2012,13 +2012,18 @@ def luxCamera(cam, context, gui=None):
 			filmdistance = dofdist.get() * focal / (dofdist.get() - focal)
 			print "calculated film distance: %f mm"%(filmdistance * 1000.0)
 			str += "\n   \"float filmdistance\" [%f]"%(filmdistance*1000.0)
-		if gui: gui.newline("  Clipping:")
-		str += luxFloat("hither", luxAttr(cam, "clipStart"), 0.0, 100.0, "start", "near clip distance", gui)
-		str += luxFloat("yon", luxAttr(cam, "clipEnd"), 1.0, 10000.0, "end", "far clip distance", gui)
+
+		# Clipping
+		useclip = luxProp(cam, "useclip", "false")
+		luxBool("useclip", useclip, "Near & Far Clipping", "Enable Camera near and far clipping options", gui, 2.0)
+		if(useclip.get() == "true"):
+			if gui: gui.newline("  Clipping:")
+			str += luxFloat("hither", luxAttr(cam, "clipStart"), 0.0, 100.0, "start", "near clip distance", gui)
+			str += luxFloat("yon", luxAttr(cam, "clipEnd"), 1.0, 10000.0, "end", "far clip distance", gui)
 
 		# Depth of Field
 		usedof = luxProp(cam, "usedof", "false")
-		luxBool("usedof", usedof, "Depth of Field (DOF)", "Enable Depth of Field & Aperture options", gui, 2.0)
+		luxBool("usedof", usedof, "Depth of Field & Bokeh", "Enable Depth of Field & Aperture options", gui, 2.0)
 		if camtype.get() in ["perspective", "orthographic"] and usedof.get() == "true":
 			if gui: gui.newline("  DOF:")
 			focustype = luxProp(cam, "camera.focustype", "autofocus")
@@ -2048,18 +2053,18 @@ def luxCamera(cam, context, gui=None):
 
 		useaspect = luxProp(cam, "useaspectratio", "false")
 		aspectratio = luxProp(cam, "ratio", 1.3333)
-		if camtype.get() in ["perspective", "orthographic", "environment"]:
-			if gui: gui.newline("  AspectRatio:")
-			luxBool("useaspectratio", useaspect, "Custom", "Define a custom frame aspect ratio", gui)
-			if useaspect.get() == "true":
-				str += luxFloat("frameaspectratio", aspectratio, 0.0001, 3.0, "aspectratio", "Frame aspect ratio", gui)
 		if camtype.get() in ["perspective", "orthographic"]:
 			useshift = luxProp(cam, "camera.useshift", "false")
-			luxBool("useshift", useshift, "Architectural (Lens Shift)", "Enable Lens Shift options", gui, 2.0)
+			luxBool("useshift", useshift, "Architectural (Lens Shift) & Aspect Ratio", "Enable Lens Shift and Aspect Ratio options", gui, 2.0)
 			if(useshift.get() == "true"):
 				if gui: gui.newline("  Shift:")
 				luxFloat("X", luxAttr(cam, "shiftX"), -2.0, 2.0, "X", "horizontal lens shift", gui)
 				luxFloat("Y", luxAttr(cam, "shiftY"), -2.0, 2.0, "Y", "vertical lens shift", gui)
+
+				if gui: gui.newline("  AspectRatio:")
+				luxBool("useaspectratio", useaspect, "Custom", "Define a custom frame aspect ratio", gui)
+				if useaspect.get() == "true":
+					str += luxFloat("frameaspectratio", aspectratio, 0.0001, 3.0, "aspectratio", "Frame aspect ratio", gui)
 			if context:
 				if useaspect.get() == "true":
 					ratio = 1./aspectratio.get()
@@ -2468,6 +2473,8 @@ def luxEnvironment(scn, gui=None):
 				if rot.get() != 0:
 					str += "\tRotate %d 0 0 1\n"%(rot.get())
 			str += "\t"+lsstr
+
+			infinitehassun = 0
 			if envtype.get() == "infinite":
 				mapping = luxProp(scn, "env.infinite.mapping", "latlong")
 				mappings = ["latlong","angular","vcross"]
@@ -2484,10 +2491,16 @@ def luxEnvironment(scn, gui=None):
 						str += "\n   \"color L\" [%g %g %g]" %(worldcolor[0], worldcolor[1], worldcolor[2])
 					except: pass
 
-				str += luxFloat("gain", luxProp(scn, "env.infinite.gain", 1.0), 0.0, 10.0, "gain", "", gui, 1.0)
+				str += luxFloat("gain", luxProp(scn, "env.infinite.gain", 1000.0), 0.0, 1000.0, "gain", "", gui, 1.0)
+
+				infinitesun = luxProp(scn, "env.infinite.hassun", "false")
+				luxBool("infinitesun", infinitesun, "Sun Component", "Add Sunlight Component", gui, 2.0)
+				if(infinitesun.get() == "true"):
+					str += "\n\tLightSource \"sun\" "
+					infinitehassun = 1
 
 
-			if envtype.get() == "sunsky":
+			if envtype.get() == "sunsky" or infinitehassun == 1:
 				sun = None
 				for obj in scn.objects:
 					if (obj.getType() == "Lamp") and ((obj.Layers & scn.Layers) > 0):
@@ -2497,34 +2510,13 @@ def luxEnvironment(scn, gui=None):
 					str += luxFloat("relsize", luxProp(scn, "env.sunsky.relisze", 1.0), 0.0, 100.0, "rel.size", "relative sun size", gui)
 					invmatrix = Mathutils.Matrix(sun.getInverseMatrix())
 					str += "\n   \"vector sundir\" [%f %f %f]\n" %(invmatrix[0][2], invmatrix[1][2], invmatrix[2][2])
-					str += luxFloat("gain", luxProp(scn, "env.sunsky.gain", 1.0), 0.0, 100.0, "gain", "Sky gain", gui)
+					str += luxFloat("gain", luxProp(scn, "env.sunsky.gain", 1.0), 0.0, 1000.0, "gain", "Sky gain", gui)
 					str += luxFloat("turbidity", luxProp(scn, "env.sunsky.turbidity", 2.2), 1.5, 5.0, "turbidity", "Sky turbidity", gui)
 				else:
 					if gui:
 						gui.newline(); r = gui.getRect(2,1); BGL.glRasterPos2i(r[0],r[1]+5) 
 						Draw.Text("create a blender Sun Lamp")
 
-#				if gui: gui.newline()
-#				suncalc = luxProp(scn, "env.sunsky.suncalc", "false")
-#				luxBool("suncalc", suncalc, "Sunlight Calculator", "Use inbuilt sunposition calculator", gui, 2.0)
-#
-#				if suncalc.get() == "true":
-#					if gui: gui.newline("  Location:")
-#					location = luxProp(scn, "env.sunsky.suncalclocation", "BELGIUM - Brussels")
-#					locations = ["BELGIUM - Brussels"]
-#					str = luxOption("location", location, locations, "Location", "", gui, 2.0)
-#				
-#					luxFloat("lat", luxProp(scn, "env.sunsky.suncalclatitude", 50.48), -90.0, 90.0, "lat", "Latitude", gui, 1.0)
-#					luxFloat("long", luxProp(scn, "env.sunsky.suncalclongitude", 4.21), -360.0, 360.0, "long", "Longitude", gui, 1.0)
-#					if gui: gui.newline("  Date:")
-#					luxInt("day", luxProp(scn, "env.sunsky.suncalcday", 1), 1, 31, "D", "Day", gui, 0.5)
-#					luxInt("month", luxProp(scn, "env.sunsky.suncalcmonth", 1), 1, 12, "M", "Month", gui, 0.5)
-#					luxInt("year", luxProp(scn, "env.sunsky.suncalcyear", 2008), -3000, 3000, "Y", "Year", gui, 0.5)
-#
-#					if gui: gui.newline("  Time:")
-#					luxInt("hour", luxProp(scn, "env.sunsky.suncalchour", 12), 0, 24, "H", "Hour", gui, 0.5)
-#					luxInt("minute", luxProp(scn, "env.sunsky.suncalcminute", 0), 0, 60, "M", "Minute", gui, 0.5)
-#					luxInt("second", luxProp(scn, "env.sunsky.suncalcsecond", 0), 0, 60, "S", "Second", gui, 0.5)
 
 			str += "\n"
 		if gui: gui.newline("GLOBAL:", 8, 0, None, [0.4,0.4,0.6])
@@ -2659,7 +2651,8 @@ def luxTexture(name, parentkey, type, default, min, max, caption, hint, mat, gui
 	str = "Texture \"%s\" \"%s\" \"%s\""%(texname, type, texture.get())
 
 	if gui: # currently only color-type textures supported for preview 
-		if type=="color": luxPreview(mat, parentkey, name, gui, texlevel)
+		luxPreview(mat, parentkey, name, gui, texlevel)
+		#if type=="color": luxPreview(mat, parentkey, name, gui, texlevel)
 
 	if texture.get() == "constant":
 		value = luxProp(mat, keyname+".value", default)
@@ -3334,8 +3327,6 @@ def luxLight(name, kn, mat, gui, level):
 	return (str, link)
 
 
-
-
 def luxPreview(mat, name, texName=None, gui=None, level=0):
 	def Preview_Sphereset(mat, kn, state):
 		if state=="true":
@@ -3357,7 +3348,7 @@ def luxPreview(mat, name, texName=None, gui=None, level=0):
 		scn = Scene.GetCurrent()
 		consolebin = luxProp(scn, "luxconsole", "").get()
 		PIPE = subprocess.PIPE
-		p = subprocess.Popen((consolebin, '-b', '-'), bufsize=58800, stdin=PIPE, stdout=PIPE, stderr=PIPE)
+		p = subprocess.Popen((consolebin, '-b', '-'), bufsize=43200, stdin=PIPE, stdout=PIPE, stderr=PIPE)
 
 # todo: remove this debug stuff
 #		p.stdin = open('c:\preview.txt', 'w')
@@ -3371,7 +3362,7 @@ def luxPreview(mat, name, texName=None, gui=None, level=0):
 		else:
 			p.stdin.write('LookAt 0.0 -3.0 0.5 0.0 -2.0 0.5 0.0 0.0 1.0\nCamera "perspective" "float fov" [22.5]\n')
 		# Fleximage
-		p.stdin.write('Film "fleximage" "integer xresolution" [140] "integer yresolution" [140] "integer displayinterval" [3] "integer ldr_writeinterval" [3600] "string tonemapper" ["reinhard"] "integer haltspp" [1] "integer reject_warmup" [32]\n')
+		p.stdin.write('Film "fleximage" "integer xresolution" [120] "integer yresolution" [120] "integer displayinterval" [3] "integer ldr_writeinterval" [3600] "string tonemapper" ["reinhard"] "integer haltspp" [1] "integer reject_warmup" [32]\n')
 		p.stdin.write('PixelFilter "sinc"\n')
 		# Quality
 		quality = luxProp(mat, kn+"prev_quality", "high")
@@ -3443,12 +3434,12 @@ def luxPreview(mat, name, texName=None, gui=None, level=0):
 
 		data = p.communicate()[0]
 		p.stdin.close()
-		if(len(data) < 58800):
+		if(len(data) < 43200): # 120x120 pixels x3 colour components
 			print "error on preview"
 			return
 		global previewCache
 		image = luxImage()
-		image.decodeLuxConsole(140, 140, data)
+		image.decodeLuxConsole(120, 120, data)
 		previewCache[(mat.name+":"+kn).__hash__()] = image
 		Draw.Redraw()
 		Blender.Window.WaitCursor(False)
@@ -3465,9 +3456,9 @@ def luxPreview(mat, name, texName=None, gui=None, level=0):
 			except: pass
 
 			# preview mode toggle buttons
-			prev_sphere = luxProp(mat, kn+"prev_sphere", "true")
+			prev_sphere = luxProp(mat, kn+"prev_sphere", "false")
 			Draw.Toggle("S", evtLuxGui, r[0]-108, r[1]+122, 22, 22, prev_sphere.get()=="true", "Draw Sphere", lambda e,v: Preview_Sphereset(mat, kn, ["false","true"][bool(v)]))
-			prev_plane = luxProp(mat, kn+"prev_plane", "false")
+			prev_plane = luxProp(mat, kn+"prev_plane", "true")
 			Draw.Toggle("P", evtLuxGui, r[0]-108, r[1]+96, 22, 22, prev_plane.get()=="true", "Draw 2D Plane", lambda e,v: Preview_Planeset(mat, kn, ["false","true"][bool(v)]))
 			prev_torus = luxProp(mat, kn+"prev_torus", "false")
 			Draw.Toggle("T", evtLuxGui, r[0]-108, r[1]+70, 22, 22, prev_torus.get()=="true", "Draw Torus", lambda e,v: Preview_Torusset(mat, kn, ["false","true"][bool(v)]))
@@ -3475,10 +3466,6 @@ def luxPreview(mat, name, texName=None, gui=None, level=0):
 			# Zoom toggle
 			zoom = luxProp(mat, kn+"prev_zoom", "false")
 			Draw.Toggle("Zoom", evtLuxGui, r[0]+66, r[1]+122, 50, 18, zoom.get()=="true", "Zoom", lambda e,v: zoom.set(["false","true"][bool(v)]))
-
-			# Light Direction/Position and Area light toggle
-			lightdir = luxProp(mat, kn+"prev_dir", "1 1 1")
-			Draw.Normal(evtLuxGui, r[0]+66, r[1]+28,50, 50, lightdir.getVector(), 'Light Direction', lambda e,v: lightdir.setVector(v))
 
 			area = luxProp(mat, kn+"prev_arealight", "false")
 			Draw.Toggle("Area", evtLuxGui, r[0]+66, r[1]+5, 50, 18, area.get()=="true", "Area", lambda e,v: area.set(["false","true"][bool(v)]))
@@ -3490,9 +3477,6 @@ def luxPreview(mat, name, texName=None, gui=None, level=0):
 
 			# Update preview
 			Draw.Button("Update Preview", evtLuxGui, r[0]+120, r[1]+5, 167, 18, "Update Material Preview", lambda e,v: Preview_Update(mat, kn))
-
-
-
 
 
 def MatPreview_Sphereset(mat, state):
@@ -3566,10 +3550,6 @@ def luxMaterialBlock(name, luxname, key, mat, gui=None, level=0, str_opt=""):
 			# Zoom toggle
 			zoom = luxProp(mat, "matprev_zoom", "false")
 			Draw.Toggle("Zoom", evtLuxGui, r[0]+66, r[1]+122, 50, 18, zoom.get()=="true", "Zoom", lambda e,v: zoom.set(["false","true"][bool(v)]))
-
-			# Light Direction/Position and Area light toggle
-			lightdir = luxProp(mat, "matprev_dir", "1 1 1")
-			Draw.Normal(evtLuxGui, r[0]+66, r[1]+28,50, 50, lightdir.getVector(), 'Light Direction', lambda e,v: lightdir.setVector(v))
 
 			area = luxProp(mat, "matprev_arealight", "false")
 			Draw.Toggle("Area", evtLuxGui, r[0]+66, r[1]+5, 50, 18, area.get()=="true", "Area", lambda e,v: area.set(["false","true"][bool(v)]))
