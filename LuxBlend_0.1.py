@@ -3564,14 +3564,16 @@ def luxMaterialBlock(name, luxname, key, mat, gui=None, level=0, str_opt=""):
 
 
 		if gui: gui.newline()
-		has_object_options = 0 # disable object options by default
-		has_bump_options   = 0 # disable bump mapping options by default
+		has_object_options   = 0 # disable object options by default
+		has_bump_options     = 0 # disable bump mapping options by default
+		has_emission_options = 0 # disable emission options by default
 		if mattype.get() == "mix":
 			(str,link) = c((str,link), luxFloatTexture("amount", keyname, 0.5, 0.0, 1.0, "amount", "The degree of mix between the two materials", mat, gui, level+1))
 			(str,link) = c((str,link), luxMaterialBlock("mat1", "namedmaterial1", keyname, mat, gui, level+1))
 			(str,link) = c((str,link), luxMaterialBlock("mat2", "namedmaterial2", keyname, mat, gui, level+1))
 			has_bump_options = 0
 			has_object_options = 1
+			has_emission_options = 1
 
 		if mattype.get() == "light":
 # shoud be ok now	### Note - Radiance - This is under construction - will clean this up / move back to luxLight (luxLight() does'nt have material link...)
@@ -3583,6 +3585,7 @@ def luxMaterialBlock(name, luxname, key, mat, gui=None, level=0, str_opt=""):
 #			link += luxFloat("gain", luxProp(mat, kn+"gain", 1.0), 0.0, 100.0, "gain", "Gain/scale multiplier", gui)
 			has_bump_options = 0
 			has_object_options = 1
+			has_emission_options = 0
 
 		if mattype.get() == "boundvolume":
 			link = ""
@@ -3614,6 +3617,7 @@ def luxMaterialBlock(name, luxname, key, mat, gui=None, level=0, str_opt=""):
 
 			has_bump_options = 0
 			has_object_options = 0
+			has_emission_options = 0
 
 			return (str, link)
 
@@ -3636,6 +3640,7 @@ def luxMaterialBlock(name, luxname, key, mat, gui=None, level=0, str_opt=""):
 			else: link += carlink
 			has_bump_options = 1
 			has_object_options = 1
+			has_emission_options = 1
 		if mattype.get() == "glass":
 			(str,link) = c((str,link), luxSpectrumTexture("Kr", keyname, "1.0 1.0 1.0", 1.0, "reflection", "", mat, gui, level+1))
 			(str,link) = c((str,link), luxSpectrumTexture("Kt", keyname, "1.0 1.0 1.0", 1.0, "transmission", "", mat, gui, level+1))
@@ -3654,6 +3659,7 @@ def luxMaterialBlock(name, luxname, key, mat, gui=None, level=0, str_opt=""):
 					(str,link) = c((str,link), luxIORFloatTexture("filmindex", keyname, 1.5, 1.0, 6.0, "film IOR", "film coating index of refraction", mat, gui, level+1))
 			has_bump_options = 1
 			has_object_options = 1
+			has_emission_options = 1
 		if mattype.get() == "matte":
 			orennayar = luxProp(mat, keyname+".orennayar", "false")
 			(str,link) = c((str,link), luxSpectrumTexture("Kd", keyname, "1.0 1.0 1.0", 1.0, "diffuse", "", mat, gui, level+1))
@@ -3662,6 +3668,7 @@ def luxMaterialBlock(name, luxname, key, mat, gui=None, level=0, str_opt=""):
 				(str,link) = c((str,link), luxFloatTexture("sigma", keyname, 0.0, 0.0, 100.0, "sigma", "sigma value for Oren-Nayar BRDF", mat, gui, level+1))
 			has_bump_options = 1
 			has_object_options = 1
+			has_emission_options = 1
 		if mattype.get() == "mattetranslucent":
 			orennayar = luxProp(mat, keyname+".orennayar", "false")
 			(str,link) = c((str,link), luxSpectrumTexture("Kr", keyname, "1.0 1.0 1.0", 1.0, "reflection", "", mat, gui, level+1))
@@ -3671,6 +3678,7 @@ def luxMaterialBlock(name, luxname, key, mat, gui=None, level=0, str_opt=""):
 				(str,link) = c((str,link), luxFloatTexture("sigma", keyname, 0.0, 0.0, 100.0, "sigma", "", mat, gui, level+1))
 			has_bump_options = 1
 			has_object_options = 1
+			has_emission_options = 1
 		if mattype.get() == "metal":
 			if gui: gui.newline("name:", 0, level+1)
 			metalname = luxProp(mat, kn+"metal.name", "")
@@ -3695,6 +3703,7 @@ def luxMaterialBlock(name, luxname, key, mat, gui=None, level=0, str_opt=""):
 				
 			has_bump_options = 1
 			has_object_options = 1
+			has_emission_options = 1
 		if mattype.get() == "mirror":
 			(str,link) = c((str,link), luxSpectrumTexture("Kr", keyname, "1.0 1.0 1.0", 1.0, "reflection", "", mat, gui, level+1))
 			thinfilm = luxProp(mat, keyname+".thinfilm", "false")
@@ -3705,6 +3714,7 @@ def luxMaterialBlock(name, luxname, key, mat, gui=None, level=0, str_opt=""):
 
 			has_bump_options = 1
 			has_object_options = 1
+			has_emission_options = 1
 		if mattype.get() == "roughglass":
 			(str,link) = c((str,link), luxSpectrumTexture("Kr", keyname, "1.0 1.0 1.0", 1.0, "reflection", "", mat, gui, level+1))
 			(str,link) = c((str,link), luxSpectrumTexture("Kt", keyname, "1.0 1.0 1.0", 1.0, "transmission", "", mat, gui, level+1))
@@ -3726,6 +3736,7 @@ def luxMaterialBlock(name, luxname, key, mat, gui=None, level=0, str_opt=""):
 				(str,link) = c((str,link), luxCauchyBFloatTexture("cauchyb", keyname, 0.0, 0.0, 1.0, "cauchyb", "", mat, gui, level+1))
 			has_bump_options = 1
 			has_object_options = 1
+			has_emission_options = 1
 		if mattype.get() == "shinymetal":
 			(str,link) = c((str,link), luxSpectrumTexture("Kr", keyname, "1.0 1.0 1.0", 1.0, "reflection", "", mat, gui, level+1))
 			(str,link) = c((str,link), luxSpectrumTexture("Ks", keyname, "1.0 1.0 1.0", 1.0, "specular", "", mat, gui, level+1))
@@ -3749,6 +3760,7 @@ def luxMaterialBlock(name, luxname, key, mat, gui=None, level=0, str_opt=""):
 
 			has_bump_options = 1
 			has_object_options = 1
+			has_emission_options = 1
 		if mattype.get() == "glossy":
 			(str,link) = c((str,link), luxSpectrumTexture("Kd", keyname, "1.0 1.0 1.0", 1.0, "diffuse", "", mat, gui, level+1))
 			(str,link) = c((str,link), luxSpectrumTexture("Ks", keyname, "1.0 1.0 1.0", 1.0, "specular", "", mat, gui, level+1))
@@ -3771,6 +3783,7 @@ def luxMaterialBlock(name, luxname, key, mat, gui=None, level=0, str_opt=""):
 				(str,link) = c((str,link), luxFloatTexture("d", keyname, 0.15, 0.0, 1.0, "depth", "", mat, gui, level+1))
 			has_bump_options = 1
 			has_object_options = 1
+			has_emission_options = 1
 
 
 		# Bump mapping options (common)
@@ -3779,6 +3792,17 @@ def luxMaterialBlock(name, luxname, key, mat, gui=None, level=0, str_opt=""):
 			luxBool("usebump", usebump, "Bump Map", "Enable Bump Mapping options", gui, 2.0)
 			if usebump.get() == "true":
 				(str,link) = c((str,link), luxFloatTexture("bumpmap", keyname, 0.0, 0.0, 1.0, "bumpmap", "", mat, gui, level+1))
+
+		# emission options (common)
+		if (level == 0):
+			if (has_emission_options == 1):
+				if gui: gui.newline("", 2, level, None, [0.6,0.6,0.4])
+				useemission = luxProp(mat, "emission", "false")
+				luxBool("useemission", useemission, "Emission", "Enable emission options", gui, 2.0)
+				if useemission.get() == "true":
+					# emission GUI is here but lux export will be done later 
+					luxLight("", "", mat, gui, level)
+			else: luxProp(mat, "emission", "false").set("false") # prevent from exporting later
 
 		# Object options (common)
 		if (level == 0) and (has_object_options == 1):
@@ -3816,8 +3840,16 @@ def luxMaterial(mat, gui=None):
 		(str, link) = luxMaterialBlock("", "", "", mat, gui, 0)
 		if luxProp(mat, "type", "matte").get() != "light":
 			link = "NamedMaterial \"%s\""%(mat.getName())
+		# export emission options (no gui)
+		useemission = luxProp(mat, "emission", "false")
+		if useemission.get() == "true":
+			(estr, elink) = luxLight("", "", mat, None, 0)
+			str += estr
+			link += "\n\tAreaLightSource \"area\" "+elink 
+			
 		luxProp(mat, "link", "").set("".join(link))
 	return str
+		
 
 def luxVolume(mat, gui=None):
 	str = ""
