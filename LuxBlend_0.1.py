@@ -822,9 +822,9 @@ def launchLux(filename):
 
 	if ostype == "linux2" or ostype == "darwin":
 		if(autothreads=="true"):
-			cmd = "(%s %s)&"%(ic, filename)
+			cmd = "(\"%s\" \"%s\")&"%(ic, filename)
 		else:
-			cmd = "(%s --threads=%d %s)&"%(ic, threads, filename)
+			cmd = "(\"%s\" --threads=%d \"%s\")&"%(ic, threads, filename)
 
 	# call external shell script to start Lux	
 	print("Running Luxrender:\n"+cmd)
@@ -847,15 +847,15 @@ def launchLuxPiped():
 		
 	if ostype == "win32":
 		if(autothreads=="true"):
-			cmd = "%s - "%(ic)		
+			cmd = "\"%s\" - "%(ic)		
 		else:
-			cmd = "%s - --threads=%d"%(ic, threads)		
+			cmd = "\"%s\" - --threads=%d"%(ic, threads)		
 
 	if ostype == "linux2" or ostype == "darwin":
 		if(autothreads=="true"):
-			cmd = "(%s %s)&"%(ic, filename)
+			cmd = "(\"%s\" \"%s\")&"%(ic, filename)
 		else:
-			cmd = "(%s --threads=%d %s)&"%(ic, threads, filename)
+			cmd = "(\"%s\" --threads=%d \"%s\")&"%(ic, threads, filename)
 
 	# call external shell script to start Lux	
 	print("Running Luxrender:\n"+cmd)
@@ -894,9 +894,9 @@ def launchLuxWait(filename):
 
 	if ostype == "linux2" or ostype == "darwin":
 		if(autothreads=="true"):
-			cmd = "%s %s"%(ic, filename)
+			cmd = "\"%s\" \"%s\""%(ic, filename)
 		else:
-			cmd = "%s --threads=%d %s"%(ic, threads, filename)
+			cmd = "\"%s\" --threads=%d \"%s\""%(ic, threads, filename)
 		subprocess.call(cmd,shell=True)
 
 #### SAVE ANIMATION ####	
