@@ -3278,13 +3278,16 @@ def luxLamp(name, kn, mat, gui, level):
 	luxBool("photometric", pm, "Photometric Diagram", "Enable Photometric Diagram options", gui, 2.0)
 
 	if(pm.get()=="true"):
-		pmtype = luxProp(mat, kn+"light.pmtype", "imagemap")
-		pmtypes = ["imagemap"]
+		pmtype = luxProp(mat, kn+"light.pmtype", "IES")
+		pmtypes = ["imagemap", "IES"]
 		luxOption("type", pmtype, pmtypes, "type", "Choose Photometric data type to use", gui, 0.6)
 
 		if(pmtype.get() == "imagemap"):
 			map = luxProp(mat, kn+"light.pmmapname", "")
 			link += luxFile("mapname", map, "map-file", "filename of the photometric map", gui, 1.4)		
+		if(pmtype.get() == "IES"):
+			map = luxProp(mat, kn+"light.pmiesname", "")
+			link += luxFile("iesname", map, "ies-file", "filename of the IES photometric data file", gui, 1.4)		
 
 	return link
 
