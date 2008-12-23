@@ -4612,12 +4612,21 @@ if pyargs != [] and pyargs[0] == "--batch":
 	context = scene.getRenderingContext()
 
 	luxpath = ""
-
 	import getopt
-	o, a = getopt.getopt(pyargs[1:], 's:e:l:o:t:none')
+	o, a = getopt.getopt(pyargs, 's:e:o:t:l:',["scale=","haltspp="])
+
 	opts = {}
 	for k,v in o:
 		opts[k] = v
+
+	if opts.has_key('--scale'):
+		print "Zoom: %s" %opts['--scale']
+		luxProp(scene, "film.scale", "100 %").set(opts['--scale'])
+
+	if opts.has_key('--haltspp'):
+		print "haltspp: %s" %opts['--haltspp']
+		luxProp(scene, "haltspp", "100 %").set(int(opts['--haltspp']))
+
 	if opts.has_key('-s'):
 		print "Start frame: %s" %opts['-s']
 		context.startFrame(int(opts['-s']))
