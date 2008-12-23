@@ -99,9 +99,6 @@ def exportMaterialGeomTag(mat):
 dummyMat = 2394723948 # random identifier for dummy material
 clayMat = None
 
-matpreview_buf = BGL.Buffer(BGL.GL_BYTE, [140,140,3]) # GL buffer for material previews
-
-
 #-------------------------------------------------
 # getMaterials(obj)
 # helper function to get the material list of an object in respect of obj.colbits
@@ -563,7 +560,6 @@ class luxExport:
 				col = obj.getData(mesh=1).col # data
 				energy = obj.getData(mesh=1).energy # data
 				if ltype == Lamp.Types["Lamp"]:
-					file.write("LightSource \"point\"")
 					file.write(luxLamp("", "", obj, None, 0)+"\n")
 				if ltype == Lamp.Types["Spot"]:
 					proj = luxProp(obj, "light.usetexproj", "false")
@@ -1040,10 +1036,6 @@ def drawBar(icon, x, y):
 	BGL.glDrawPixels(138, 17, BGL.GL_RGBA, BGL.GL_UNSIGNED_BYTE, icon)
 	BGL.glDisable(BGL.GL_BLEND)
 
-def drawMatPreview(x, y):
-	BGL.glRasterPos2f(int(x)+0.5, int(y)+0.5)
-	BGL.glDrawPixels(140, 140, BGL.GL_RGB, BGL.GL_UNSIGNED_BYTE, matpreview_buf)
-
 
 
 #-------------------------------------------------
@@ -1099,7 +1091,6 @@ evtDeletePreset = 97
 evtSaveMaterial = 96
 evtLoadMaterial = 95
 evtDeleteMaterial = 94
-evtPreviewMaterial = 93
 evtConvertMaterial = 92
 
 
@@ -1788,7 +1779,7 @@ def luxOptionRect(name, lux, options, caption, hint, gui, x, y, xx, yy):
 	return "\n   \"string %s\" [\"%s\"]"%(name, lux.get())
 
 def luxIdentifier(name, lux, options, caption, hint, gui, icon=None, width=1.0):
-	if gui: gui.newline(caption+":", 8, 0, icon, [0.4,0.4,0.6])
+	if gui: gui.newline(caption+":", 8, 0, icon, [0.75,0.5,0.25])
 	luxOption(name, lux, options, caption, hint, gui, width)
 	return "\n%s \"%s\""%(name, lux.get())
 
@@ -2119,7 +2110,7 @@ def luxFilm(scn, gui=None):
 				scale = luxProp(scn, "film.scale", "100 %")
 				luxOption("", scale, ["100 %", "75 %", "50 %", "25 %"], "scale", "scale resolution", gui, 0.666)
 				scale = int(scale.get()[:-1])
-	# render region option
+				# render region option
 				if context.borderRender:
 					(x1,y1,x2,y2) = context.border
 					if (x1==x2) and (y1==y2): print "WARNING: empty render-region, use SHIFT-B to set render region in Blender."
@@ -2138,10 +2129,10 @@ def luxFilm(scn, gui=None):
 			str += luxBool("premultiplyalpha", palpha, "premultiplyalpha", "Pre multiply film alpha channel during normalization", gui)
 
 			if gui: gui.newline("  Display:")
-			str += luxInt("displayinterval", luxProp(scn, "film.displayinterval", 12), 5, 3600, "interval", "Set display Interval (seconds)", gui)
+			str += luxInt("displayinterval", luxProp(scn, "film.displayinterval", 12), 4, 3600, "interval", "Set display Interval (seconds)", gui)
 			
 			if gui: gui.newline("  Write:")
-			str += luxInt("writeinterval", luxProp(scn, "film.writeinterval", 120), 5, 3600, "interval", "Set display Interval (seconds)", gui)
+			str += luxInt("writeinterval", luxProp(scn, "film.writeinterval", 120), 12, 3600, "interval", "Set display Interval (seconds)", gui)
 
 			# override output image dir in case of command line batch mode 
 			overrideop = luxProp(scn, "overrideoutputpath", "")
@@ -2529,7 +2520,7 @@ def luxEnvironment(scn, gui=None):
 
 
 			str += "\n"
-		if gui: gui.newline("GLOBAL:", 8, 0, None, [0.4,0.4,0.6])
+		if gui: gui.newline("GLOBAL:", 8, 0, None, [0.75,0.5,0.25])
 		luxFloat("scale", luxProp(scn, "global.scale", 1.0), 0.0, 10.0, "scale", "global world scale", gui)
 		
 	return str
@@ -2577,6 +2568,11 @@ def luxSystem(scn, gui=None):
 		if gui: gui.newline("ANIM:", 10)
 		useparamkeys = luxProp(scn, "useparamkeys", "false")
 		luxBool("useparamkeys", useparamkeys, "Enable Parameter IPO Keyframing", "Enables keyframing of luxblend parameters", gui, 2.0)
+
+		if gui: gui.newline("PREVIEW:", 10)
+		qs = ["low","medium","high","very high"]
+		defprevmat = luxProp(scn, "defprevmat", "high")
+		luxOption("defprevmat", defprevmat, qs, "Materials", "Select default preview quality in material editor for materials", gui, 1.0)
 
 		if gui: gui.newline("GAMMA:", 10)
 		luxBool("RGC", luxProp(scn, "RGC", "true"), "RGC", "use reverse gamma correction", gui)
@@ -2661,7 +2657,7 @@ def luxTexture(name, parentkey, type, default, min, max, caption, hint, mat, gui
 	str = "Texture \"%s\" \"%s\" \"%s\""%(texname, type, texture.get())
 
 	if gui: # Draw Texture level Material preview
-		luxPreview(mat, parentkey, name, gui, texlevel)
+		luxPreview(mat, parentkey, 1, False, False, name, gui, texlevel, [0.5, 0.5, 0.5])
 
 	if texture.get() == "constant":
 		value = luxProp(mat, keyname+".value", default)
@@ -3058,6 +3054,9 @@ def luxTexture(name, parentkey, type, default, min, max, caption, hint, mat, gui
 def luxSpectrumTexture(name, key, default, max, caption, hint, mat, gui, level=0):
 	global icon_col
 	if gui: gui.newline(caption, 4, level, icon_col, scalelist([0.5,0.6,0.5],2.0/(level+2)))
+
+	print "spec level = %i\n"%level
+	#if gui: gui.newline(caption, 4, level, icon_col)
 	str = ""
 	keyname = "%s:%s"%(key, name)
 	texname = "%s:%s"%(mat.getName(), keyname)
@@ -3077,7 +3076,8 @@ def luxSpectrumTexture(name, key, default, max, caption, hint, mat, gui, level=0
 
 def luxLightSpectrumTexture(name, key, default, max, caption, hint, mat, gui, level=0):
 	global icon_col
-	if gui: gui.newline(caption, 4, level, icon_col, scalelist([0.5,0.6,0.5],2.0/(level+2)))
+	if gui: gui.newline(caption, 4, level, icon_col, scalelist([0.6,0.5,0.5],2.0/(level+2)))
+	print "lightspec level = %i\n"%level
 	str = ""
 	keyname = "%s:%s"%(key, name)
 	texname = "%s:%s"%(mat.getName(), keyname)
@@ -3260,14 +3260,37 @@ def luxCauchyBFloatTexture(name, key, default, min, max, caption, hint, mat, gui
 			link = " \"texture %s\" [\"%s\"]"%(name, texname+".scale")
 	return (str, link)
 
-
-def luxLamp(name, kn, mat, gui, level):
+def luxLight(name, kn, mat, gui, level):
 	if gui:
 		if name != "": gui.newline(name+":", 10, level)
 		else: gui.newline("color:", 0, level+1)
-	link = luxRGB("I", luxProp(mat, kn+"light.i", "1.0 1.0 1.0"), 1.0, "L", "", gui)
+	(str,link) = luxLightSpectrumTexture("L", kn+"light", "1.0 1.0 1.0", 1.0, "Spectrum", "", mat, gui, level+1)
 	if gui: gui.newline("")
-	link += luxFloat("gain", luxProp(mat, kn+"light.gain", 1.0), 0.0, 100.0, "gain", "gain", gui)
+	link += luxFloat("power", luxProp(mat, kn+"light.power", 100.0), 0.0, 10000.0, "Power(W)", "AreaLight Power in Watts", gui)
+	link += luxFloat("efficacy", luxProp(mat, kn+"light.efficacy", 17.0), 0.0, 100.0, "Efficacy(lm/W)", "Efficacy Luminous flux/watt", gui)
+	if gui: gui.newline("")
+	link += luxFloat("gain", luxProp(mat, kn+"light.gain", 1.0), 0.0, 100.0, "gain", "Gain/scale multiplier", gui)
+	link += luxString("lightgroup", luxProp(mat, kn+"light.lightgroup", ""), "l-group", "assign light to a named light-group", gui, 1.0)
+	has_bump_options = 0
+	has_object_options = 1
+	return (str, link)
+
+def luxLamp(name, kn, mat, gui, level):
+	link = "LightSource \"point\""
+#	if gui:
+#		if name != "": gui.newline(name+":", 10, level)
+#		else: gui.newline("color:", 0, level+1)
+#	link += luxRGB("I", luxProp(mat, kn+"light.i", "1.0 1.0 1.0"), 1.0, "L", "", gui)
+#	if gui: gui.newline("")
+#	link += luxFloat("gain", luxProp(mat, kn+"light.gain", 1.0), 0.0, 100.0, "gain", "gain", gui)
+
+	
+	if gui: gui.newline("terry:", 0, level+1)
+	if gui: gui.newline("terry:", 0, level+1)
+	if gui: gui.newline("terry:", 0, level+1)
+	if gui: gui.newline("terry:", 0, level+1)
+
+	(str, link) = luxLight("", kn, mat, gui, level)
 
 	if gui: gui.newline("Photometric")
 	pm = luxProp(mat, kn+"light.usepm", "false")
@@ -3308,41 +3331,8 @@ def luxSpot(name, kn, mat, gui, level):
 
 	return link
 
-# old LuxLight no more used
-### Note - Radiance - Currently only used when exporting blender Area lamp type. (not via lux 'light' material)
-def luxLightOld(name, kn, mat, gui, level):
-	def c(t1, t2):
-		return (t1[0]+t2[0], t1[1]+t2[1])
-	if gui:
-		if name != "": gui.newline(name+":", 10, level)
-		else: gui.newline("color:", 0, level+1)
-	link = luxRGB("L", luxProp(mat, kn+"light.l", "1.0 1.0 1.0"), 1.0, "L", "", gui)
-	if gui: gui.newline("")
-	link += luxFloat("gain", luxProp(mat, kn+"light.gain", 1.0), 0.0, 100.0, "gain", "gain", gui)
-	if gui: gui.newline("")
-	link += luxString("lightgroup", luxProp(mat, kn+"light.lightgroup", ""), "light-group", "assign light to a named light-group", gui, 2.0)
-	has_bump_options = 0
-	has_object_options = 1
-	return link
 
-
-def luxLight(name, kn, mat, gui, level):
-	if gui:
-		if name != "": gui.newline(name+":", 10, level)
-		else: gui.newline("color:", 0, level+1)
-	(str,link) = luxLightSpectrumTexture("L", kn+"light", "1.0 1.0 1.0", 1.0, "Spectrum", "", mat, gui, level+1)
-	if gui: gui.newline("")
-	link += luxFloat("power", luxProp(mat, kn+"light.power", 100.0), 0.0, 10000.0, "Power(W)", "AreaLight Power in Watts", gui)
-	link += luxFloat("efficacy", luxProp(mat, kn+"light.efficacy", 17.0), 0.0, 100.0, "Efficacy(lm/W)", "Efficacy Luminous flux/watt", gui)
-	if gui: gui.newline("")
-	link += luxFloat("gain", luxProp(mat, kn+"light.gain", 1.0), 0.0, 100.0, "gain", "Gain/scale multiplier", gui)
-	link += luxString("lightgroup", luxProp(mat, kn+"light.lightgroup", ""), "l-group", "assign light to a named light-group", gui, 1.0)
-	has_bump_options = 0
-	has_object_options = 1
-	return (str, link)
-
-
-def luxPreview(mat, name, texName=None, gui=None, level=0):
+def luxPreview(mat, name, defType=0, defEnabled=False, defLarge=False, texName=None, gui=None, level=0, color=None):
 	def Preview_Sphereset(mat, kn, state):
 		if state=="true":
 			luxProp(mat, kn+"prev_sphere", "true").set("true")
@@ -3358,29 +3348,53 @@ def luxPreview(mat, name, texName=None, gui=None, level=0):
 			luxProp(mat, kn+"prev_sphere", "true").set("false")
 			luxProp(mat, kn+"prev_plane", "false").set("false")
 			luxProp(mat, kn+"prev_torus", "false").set("true")
-	def Preview_Update(mat, kn):
+	def Preview_Update(mat, kn, defLarge):
 		Blender.Window.WaitCursor(True)
 		scn = Scene.GetCurrent()
+
+		# Size of preview thumbnail
+		thumbres = 110 # default 110x110
+		if(defLarge):
+			large = luxProp(mat, kn+"prev_large", "true")
+		else:
+			large = luxProp(mat, kn+"prev_large", "false")
+		if(large.get() == "true"):
+			thumbres = 140 # small 140x140
+
+		thumbbuf = thumbres*thumbres*3
+
 		consolebin = luxProp(scn, "luxconsole", "").get()
 		PIPE = subprocess.PIPE
-		p = subprocess.Popen((consolebin, '-b', '-'), bufsize=43200, stdin=PIPE, stdout=PIPE, stderr=PIPE)
+		p = subprocess.Popen((consolebin, '-b', '-'), bufsize=thumbbuf, stdin=PIPE, stdout=PIPE, stderr=PIPE)
 
 # todo: remove this debug stuff
 #		p.stdin = open('c:\preview.txt', 'w')
 
-		prev_sphere = luxProp(mat, kn+"prev_sphere", "true")
-		prev_plane = luxProp(mat, kn+"prev_plane", "false")
-		prev_torus = luxProp(mat, kn+"prev_torus", "false")
+		if defType == 0:	
+			prev_sphere = luxProp(mat, kn+"prev_sphere", "true")
+			prev_plane = luxProp(mat, kn+"prev_plane", "false")
+			prev_torus = luxProp(mat, kn+"prev_torus", "false")
+		elif defType == 1:
+			prev_sphere = luxProp(mat, kn+"prev_sphere", "false")
+			prev_plane = luxProp(mat, kn+"prev_plane", "true")
+			prev_torus = luxProp(mat, kn+"prev_torus", "false")
+		else:
+			prev_sphere = luxProp(mat, kn+"prev_sphere", "false")
+			prev_plane = luxProp(mat, kn+"prev_plane", "false")
+			prev_torus = luxProp(mat, kn+"prev_torus", "true")
+
 		# Zoom
 		if luxProp(mat, kn+"prev_zoom", "false").get() == "true":
 			p.stdin.write('LookAt 0.250000 -1.500000 0.750000 0.250000 -0.500000 0.750000 0.000000 0.000000 1.000000\nCamera "perspective" "float fov" [22.5]\n')
 		else:
 			p.stdin.write('LookAt 0.0 -3.0 0.5 0.0 -2.0 0.5 0.0 0.0 1.0\nCamera "perspective" "float fov" [22.5]\n')
 		# Fleximage
-		p.stdin.write('Film "fleximage" "integer xresolution" [120] "integer yresolution" [120] "integer displayinterval" [3] "integer ldr_writeinterval" [3600] "string tonemapper" ["reinhard"] "integer haltspp" [1] "integer reject_warmup" [32]\n')
+		p.stdin.write('Film "fleximage" "integer xresolution" [%i] "integer yresolution" [%i] "integer displayinterval" [3] "integer ldr_writeinterval" [3600] "string tonemapper" ["reinhard"] "integer haltspp" [1] "integer reject_warmup" [32]\n'%(thumbres, thumbres))
 		p.stdin.write('PixelFilter "sinc"\n')
 		# Quality
-		quality = luxProp(mat, kn+"prev_quality", "high")
+		scn = Scene.GetCurrent()
+		defprevmat = luxProp(scn, "defprevmat", "high")
+		quality = luxProp(mat, kn+"prev_quality", defprevmat.get())
 		if quality.get()=="low":
 			p.stdin.write('Sampler "lowdiscrepancy" "string pixelsampler" ["hilbert"] "integer pixelsamples" [2]\n')
 		elif quality.get()=="medium":
@@ -3416,7 +3430,7 @@ def luxPreview(mat, name, texName=None, gui=None, level=0):
 		if(prev_sphere.get()=="true"):
 			p.stdin.write('Shape "sphere" "float radius" [1.0]\n')
 		elif (prev_plane.get()=="true"):
-			p.stdin.write('	Shape "trianglemesh" "integer indices" [ 0 1 2 0 2 3 ] "point P" [ 1.0 1.0 0.0 -1.0 1.0 0.0 -1.0 -1.0 -0.0 1.0 -1.0 -0.0 ] "float uv" [ 0.0 0.0 1.0 0.0 1.0 1.0 0.0 1.0 ]\n')
+			p.stdin.write('	Shape "trianglemesh" "integer indices" [ 0 1 2 0 2 3 ] "point P" [ 1.0 1.0 0.0 -1.0 1.0 0.0 -1.0 -1.0 -0.0 1.0 -1.0 -0.0 ] "float uv" [ 0.0 0.0 1.0 0.0 1.0 -1.0 0.0 -1.0 ]\n')
 		elif (prev_torus.get()=="true"):
 			p.stdin.write('Shape "torus" "float radius" [1.0]\n')
 		p.stdin.write('AttributeEnd\n')
@@ -3449,12 +3463,12 @@ def luxPreview(mat, name, texName=None, gui=None, level=0):
 
 		data = p.communicate()[0]
 		p.stdin.close()
-		if(len(data) < 43200): # 120x120 pixels x3 colour components
+		if(len(data) < thumbbuf): 
 			print "error on preview"
 			return
 		global previewCache
 		image = luxImage()
-		image.decodeLuxConsole(120, 120, data)
+		image.decodeLuxConsole(thumbres, thumbres, data)
 		previewCache[(mat.name+":"+kn).__hash__()] = image
 		Draw.Redraw()
 		Blender.Window.WaitCursor(False)
@@ -3462,56 +3476,60 @@ def luxPreview(mat, name, texName=None, gui=None, level=0):
 		kn = name
 		if texName: kn += ":"+texName
 		if kn != "": kn += "."
-		showpreview = luxProp(mat, kn+"prev_show", "false")
+		if(defEnabled == True):
+			showpreview = luxProp(mat, kn+"prev_show", "true")
+		else:
+			showpreview = luxProp(mat, kn+"prev_show", "false")
 		Draw.Toggle("P", evtLuxGui, gui.xmax, gui.y-gui.h, gui.h, gui.h, showpreview.get()=="true", "Preview", lambda e,v: showpreview.set(["false","true"][bool(v)]))
 		if showpreview.get()=="true": 
+			if(defLarge):
+				large = luxProp(mat, kn+"prev_large", "true")
+			else:
+				large = luxProp(mat, kn+"prev_large", "false")
+			voffset = -8
+			rr = 5.65 
+			if(large.get() == "true"):
+				rr = 7
+				voffset = 22
 			gui.newline()
-			r = gui.getRect(1.1, 7)
+			r = gui.getRect(1.1, rr)
+			if(color != None):
+				BGL.glColor3f(color[0],color[1],color[2]); BGL.glRectf(r[0]-110, r[1], 418, r[1]+128+voffset); BGL.glColor3f(0.9, 0.9, 0.9)
 			try: previewCache[(mat.name+":"+kn).__hash__()].draw(r[0]-82, r[1]+4)
 			except: pass
 
 			# preview mode toggle buttons
 			prev_sphere = luxProp(mat, kn+"prev_sphere", "false")
-			Draw.Toggle("S", evtLuxGui, r[0]-108, r[1]+122, 22, 22, prev_sphere.get()=="true", "Draw Sphere", lambda e,v: Preview_Sphereset(mat, kn, ["false","true"][bool(v)]))
+			Draw.Toggle("S", evtLuxGui, r[0]-108, r[1]+100+voffset, 22, 22, prev_sphere.get()=="true", "Draw Sphere", lambda e,v: Preview_Sphereset(mat, kn, ["false","true"][bool(v)]))
 			prev_plane = luxProp(mat, kn+"prev_plane", "true")
-			Draw.Toggle("P", evtLuxGui, r[0]-108, r[1]+96, 22, 22, prev_plane.get()=="true", "Draw 2D Plane", lambda e,v: Preview_Planeset(mat, kn, ["false","true"][bool(v)]))
+			Draw.Toggle("P", evtLuxGui, r[0]-108, r[1]+74+voffset, 22, 22, prev_plane.get()=="true", "Draw 2D Plane", lambda e,v: Preview_Planeset(mat, kn, ["false","true"][bool(v)]))
 			prev_torus = luxProp(mat, kn+"prev_torus", "false")
-			Draw.Toggle("T", evtLuxGui, r[0]-108, r[1]+70, 22, 22, prev_torus.get()=="true", "Draw Torus", lambda e,v: Preview_Torusset(mat, kn, ["false","true"][bool(v)]))
+			Draw.Toggle("T", evtLuxGui, r[0]-108, r[1]+48+voffset, 22, 22, prev_torus.get()=="true", "Draw Torus", lambda e,v: Preview_Torusset(mat, kn, ["false","true"][bool(v)]))
 
 			# Zoom toggle
 			zoom = luxProp(mat, kn+"prev_zoom", "false")
-			Draw.Toggle("Zoom", evtLuxGui, r[0]+66, r[1]+122, 50, 18, zoom.get()=="true", "Zoom", lambda e,v: zoom.set(["false","true"][bool(v)]))
+			Draw.Toggle("Zoom", evtLuxGui, r[0]+66, r[1]+100+voffset, 50, 18, zoom.get()=="true", "Zoom", lambda e,v: zoom.set(["false","true"][bool(v)]))
 
 			area = luxProp(mat, kn+"prev_arealight", "false")
 			Draw.Toggle("Area", evtLuxGui, r[0]+66, r[1]+5, 50, 18, area.get()=="true", "Area", lambda e,v: area.set(["false","true"][bool(v)]))
 
+			# large/small size
+			Draw.Toggle("large", evtLuxGui, r[0]+200, r[1]+78+voffset, 88, 18, large.get()=="true", "Large", lambda e,v: large.set(["false","true"][bool(v)]))
+
 			# Preview Quality
 			qs = ["low","medium","high","very high"]
-			quality = luxProp(mat, kn+"prev_quality", "high")
-			luxOptionRect("quality", quality, qs, "  Quality", "select preview quality", gui, r[0]+200, r[1]+122, 88, 18)
+			scn = Scene.GetCurrent()
+			defprevmat = luxProp(scn, "defprevmat", "high")
+			quality = luxProp(mat, kn+"prev_quality", defprevmat.get())
+			luxOptionRect("quality", quality, qs, "  Quality", "select preview quality", gui, r[0]+200, r[1]+100+voffset, 88, 18)
 
 			# Update preview
-			Draw.Button("Update Preview", evtLuxGui, r[0]+120, r[1]+5, 167, 18, "Update Material Preview", lambda e,v: Preview_Update(mat, kn))
+			Draw.Button("Update Preview", evtLuxGui, r[0]+120, r[1]+5, 167, 18, "Update Material Preview", lambda e,v: Preview_Update(mat, kn, defLarge))
 
-
-def MatPreview_Sphereset(mat, state):
-	if state=="true":
-		luxProp(mat, "matprev_sphere", "true").set("true")
-		luxProp(mat, "matprev_plane", "false").set("false")
-		luxProp(mat, "matprev_torus", "false").set("false")
-
-def MatPreview_Planeset(mat, state):
-	if state=="true":
-		luxProp(mat, "matprev_sphere", "true").set("false")
-		luxProp(mat, "matprev_plane", "false").set("true")
-		luxProp(mat, "matprev_torus", "false").set("false")
-
-def MatPreview_Torusset(mat, state):
-	if state=="true":
-		luxProp(mat, "matprev_sphere", "true").set("false")
-		luxProp(mat, "matprev_plane", "false").set("false")
-		luxProp(mat, "matprev_torus", "false").set("true")
-
+			# Reset depths after getRect()
+			gui.y -= 92+voffset
+			gui.y -= gui.h
+			gui.hmax = 18 + 4
 
 def luxMaterialBlock(name, luxname, key, mat, gui=None, level=0, str_opt=""):
 	global icon_mat, icon_matmix
@@ -3535,8 +3553,8 @@ def luxMaterialBlock(name, luxname, key, mat, gui=None, level=0, str_opt=""):
 		if gui:
 			icon = icon_mat
 			if mattype.get() == "mix": icon = icon_matmix
-			if level == 0: gui.newline("Material type:", 12, level, icon, [0.4,0.4,0.6])
-			else: gui.newline(name+":", 12, level, icon, scalelist([0.4,0.4,0.6],2.0/(level+2)))
+			if level == 0: gui.newline("Material type:", 12, level, icon, [0.75,0.5,0.25])
+			else: gui.newline(name+":", 12, level, icon, scalelist([0.75,0.6,0.25],2.0/(level+2)))
 
 
 		link = luxOption("type", mattype, materials, "  TYPE", "select material type", gui)
@@ -3545,38 +3563,11 @@ def luxMaterialBlock(name, luxname, key, mat, gui=None, level=0, str_opt=""):
 		showhelp = luxProp(mat, kn+"showhelp", "false")
 		luxHelp("help", showhelp, "Help", "Show Help Information", gui, 0.4)
 
-		luxPreview(mat, keyname, None, gui, level)
-
-		# Material preview
-		showmatpreview = luxProp(Scene.GetCurrent(), "showmatpreview", "true")
-		if gui and level == 0 and showmatpreview.get()=="true": 
-			gui.newline()
-			r = gui.getRect(1.1, 7)
-			drawMatPreview(r[0]-82, r[1]+4);
-
-			# preview mode toggle buttons
-			prev_sphere = luxProp(mat, "matprev_sphere", "true")
-			Draw.Toggle("S", evtLuxGui, r[0]-108, r[1]+122, 22, 22, prev_sphere.get()=="true", "Draw Sphere", lambda e,v: MatPreview_Sphereset(mat, ["false","true"][bool(v)]))
-			prev_plane = luxProp(mat, "matprev_plane", "false")
-			Draw.Toggle("P", evtLuxGui, r[0]-108, r[1]+96, 22, 22, prev_plane.get()=="true", "Draw 2D Plane", lambda e,v: MatPreview_Planeset(mat, ["false","true"][bool(v)]))
-			prev_torus = luxProp(mat, "matprev_torus", "false")
-			Draw.Toggle("T", evtLuxGui, r[0]-108, r[1]+70, 22, 22, prev_torus.get()=="true", "Draw Torus", lambda e,v: MatPreview_Torusset(mat, ["false","true"][bool(v)]))
-
-			# Zoom toggle
-			zoom = luxProp(mat, "matprev_zoom", "false")
-			Draw.Toggle("Zoom", evtLuxGui, r[0]+66, r[1]+122, 50, 18, zoom.get()=="true", "Zoom", lambda e,v: zoom.set(["false","true"][bool(v)]))
-
-			area = luxProp(mat, "matprev_arealight", "false")
-			Draw.Toggle("Area", evtLuxGui, r[0]+66, r[1]+5, 50, 18, area.get()=="true", "Area", lambda e,v: area.set(["false","true"][bool(v)]))
-
-			# Preview Quality
-			qs = ["low","medium","high","very high"]
-			quality = luxProp(mat, "matprev_quality", "high")
-			luxOptionRect("quality", quality, qs, "  Quality", "select preview quality", gui, r[0]+200, r[1]+122, 88, 18)
-
-			# Update preview
-			Draw.Button("Update Preview", evtPreviewMaterial, r[0]+120, r[1]+5, 167, 18, "Update Material Preview")
-
+		# Draw Material preview option
+		showmatprev = False
+		if level == 0:
+			showmatprev = True
+		if gui: luxPreview(mat, keyname, 0, showmatprev, True, None, gui, level, [0.746, 0.625, 0.5])
 
 		if gui: gui.newline()
 		has_object_options   = 0 # disable object options by default
@@ -3591,13 +3582,8 @@ def luxMaterialBlock(name, luxname, key, mat, gui=None, level=0, str_opt=""):
 			has_emission_options = 1
 
 		if mattype.get() == "light":
-# shoud be ok now	### Note - Radiance - This is under construction - will clean this up / move back to luxLight (luxLight() does'nt have material link...)
 			link = "AreaLightSource \"area\""
 			(str,link) = c((str,link), luxLight("", kn, mat, gui, level))
-#			(str,link) = c((str,link), luxLightSpectrumTexture("L", keyname, "1.0 1.0 1.0", 1.0, "Spectrum", "", mat, gui, level+1))
-#			link += luxFloat("power", luxProp(mat, kn+"power", 100.0), 0.0, 10000.0, "Power(W)", "AreaLight Power in Watts", gui)
-#			link += luxFloat("efficacy", luxProp(mat, kn+"efficacy", 17.0), 0.0, 100.0, "Efficacy(lm/W)", "Efficacy Luminous flux/watt", gui)
-#			link += luxFloat("gain", luxProp(mat, kn+"gain", 1.0), 0.0, 100.0, "gain", "Gain/scale multiplier", gui)
 			has_bump_options = 0
 			has_object_options = 1
 			has_emission_options = 0
@@ -4319,10 +4305,8 @@ def luxDraw():
 					r = gui.getRect(1.1, 1)
 					Draw.Button("C", evtConvertMaterial, r[0]-gui.h, gui.y-gui.h, gui.h, gui.h, "convert blender material to lux material")
 					Draw.Menu(menustr, evtLuxGui, r[0], r[1], r[2], r[3], matindex, "", lambda e,v: setactivemat(mats[v]))
-					luxBool("", matfilter, "filter", "only show active object materials", gui, 0.3)
+					luxBool("", matfilter, "filter", "only show active object materials", gui, 0.5)
 
-					showmatpreview = luxProp(scn, "showmatpreview", "true")
-					luxBool("", showmatpreview, "Preview", "Show material preview", gui, 0.4)
 					Draw.Button("L", evtLoadMaterial, gui.x, gui.y-gui.h, gui.h, gui.h, "load a material preset")
 					Draw.Button("S", evtSaveMaterial, gui.x+gui.h, gui.y-gui.h, gui.h, gui.h, "save a material preset")
 					Draw.Button("D", evtDeleteMaterial, gui.x+gui.h*2, gui.y-gui.h, gui.h, gui.h, "delete a material preset")
@@ -4476,112 +4460,6 @@ def luxButtonEvt(evt):  # function that handles button events
 	if evt == evtConvertMaterial:
 		if activemat: convertMaterial(activemat)
 		Draw.Redraw()
-	if evt == evtPreviewMaterial: ## or evt == evtLuxGui or evt == evtLoadMaterial:
-		if activemat:
-			Blender.Window.WaitCursor(True)
-			scn = Scene.GetCurrent()
-			consolebin = luxProp(scn, "luxconsole", "").get()
-			PIPE = subprocess.PIPE
-			p = subprocess.Popen((consolebin, '-b', '-'), bufsize=58800, stdin=PIPE, stdout=PIPE, stderr=PIPE)
-
-			prev_sphere = luxProp(activemat, "matprev_sphere", "true")
-			prev_plane = luxProp(activemat, "matprev_plane", "false")
-			prev_torus = luxProp(activemat, "matprev_torus", "false")
-
-			# Zoom
-			if luxProp(activemat, "matprev_zoom", "false").get() == "true":
-				p.stdin.write('LookAt 0.250000 -1.500000 0.750000 0.250000 -0.500000 0.750000 0.000000 0.000000 1.000000\nCamera "perspective" "float fov" [22.5]\n')
-			else:
-				p.stdin.write('LookAt 0.0 -3.0 0.5 0.0 -2.0 0.5 0.0 0.0 1.0\nCamera "perspective" "float fov" [22.5]\n')
-
-			p.stdin.write('Film "fleximage" "integer xresolution" [140] "integer yresolution" [140] "integer displayinterval" [3] "integer ldr_writeinterval" [3600] "string tonemapper" ["reinhard"] "integer haltspp" [1] "integer reject_warmup" [32]\n')
-			p.stdin.write('PixelFilter "sinc"\n')
-
-			quality = luxProp(activemat, "matprev_quality", "high")
-			if quality.get()=="low":
-				p.stdin.write('Sampler "lowdiscrepancy" "string pixelsampler" ["hilbert"] "integer pixelsamples" [2]')
-			elif quality.get()=="medium":
-				p.stdin.write('Sampler "lowdiscrepancy" "string pixelsampler" ["hilbert"] "integer pixelsamples" [4]')
-			elif quality.get()=="high":
-				p.stdin.write('Sampler "lowdiscrepancy" "string pixelsampler" ["hilbert"] "integer pixelsamples" [8]')
-			else: 
-				p.stdin.write('Sampler "lowdiscrepancy" "string pixelsampler" ["hilbert"] "integer pixelsamples" [32]')
-
-			if(prev_plane.get()=="false"):
-				p.stdin.write('SurfaceIntegrator "distributedpath" "integer directsamples" [1] "integer diffusereflectdepth" [1] "integer diffusereflectsamples" [4] "integer diffuserefractdepth" [4] "integer diffuserefractsamples" [1] "integer glossyreflectdepth" [1] "integer glossyreflectsamples" [2] "integer glossyrefractdepth" [4] "integer glossyrefractsamples" [1] "integer specularreflectdepth" [2] "integer specularrefractdepth" [4]\n')
-			else:
-				p.stdin.write('SurfaceIntegrator "distributedpath" "integer directsamples" [1] "integer diffusereflectdepth" [0] "integer diffusereflectsamples" [0] "integer diffuserefractdepth" [0] "integer diffuserefractsamples" [0] "integer glossyreflectdepth" [0] "integer glossyreflectsamples" [0] "integer glossyrefractdepth" [0] "integer glossyrefractsamples" [0] "integer specularreflectdepth" [1] "integer specularrefractdepth" [1]\n')
-			p.stdin.write('WorldBegin\n')
-
-			if(prev_sphere.get()=="true"):
-				p.stdin.write('AttributeBegin\nTransform [0.5 0.0 0.0 0.0  0.0 0.5 0.0 0.0  0.0 0.0 0.5 0.0  0.0 0.0 0.5 1.0]\n')
-			elif (prev_plane.get()=="true"):
-				p.stdin.write('AttributeBegin\nTransform [0.649999976158 0.0 0.0 0.0  0.0 4.90736340453e-008 0.649999976158 0.0  0.0 -0.649999976158 4.90736340453e-008 0.0  0.0 0.0 0.5 1.0]\n')
-			else:
-				p.stdin.write('AttributeBegin\nTransform [0.35 -0.35 0.0 0.0  0.25 0.25 0.35 0.0  -0.25 -0.25 0.35 0.0  0.0 0.0 0.5 1.0]\n')
-
-			p.stdin.write(luxMaterial(activemat))
-			p.stdin.write(luxProp(activemat,"link","").get()+'\n')
-			if(prev_sphere.get()=="true"):
-				p.stdin.write('Shape "sphere" "float radius" [1.0]\n')
-			elif (prev_plane.get()=="true"):
-				p.stdin.write('	Shape "trianglemesh" "integer indices" [ 0 1 2 0 2 3 ] "point P" [ 1.0 1.0 0.0 -1.0 1.0 0.0 -1.0 -1.0 -0.0 1.0 -1.0 -0.0 ] "float uv" [ 0.0 0.0 1.0 0.0 1.0 1.0 0.0 1.0 ]\n')
-			elif (prev_torus.get()=="true"):
-				p.stdin.write('Shape "torus" "float radius" [1.0]\n')
-
-			p.stdin.write('AttributeEnd\n')
-
-			# Checkerboard floor
-			if(prev_plane.get()=="false"):
-				p.stdin.write('AttributeBegin\nTransform [5.0 0.0 0.0 0.0  0.0 5.0 0.0 0.0  0.0 0.0 5.0 0.0  0.0 0.0 0.0 1.0]\n')
-
-				p.stdin.write('Texture "checks" "color" "checkerboard"')
-   				p.stdin.write('"integer dimension" [2] "string aamode" ["supersample"] "color tex1" [0.9 0.9 0.9] "color tex2" [0.0 0.0 0.0]')
-   				p.stdin.write('"string mapping" ["uv"] "float uscale" [36.8] "float vscale" [36.0]')
-				p.stdin.write('Material "matte" "texture Kd" ["checks"]\n')
-
-				p.stdin.write('Shape "loopsubdiv" "integer nlevels" [3] "bool dmnormalsmooth" ["true"] "bool dmsharpboundary" ["true"] ')
-				p.stdin.write('"integer indices" [ 0 1 2 0 2 3 1 0 4 1 4 5 5 4 6 5 6 7 ]')
-				p.stdin.write('"point P" [ 1.000000 1.000000 0.000000 -1.000000 1.000000 0.000000 -1.000000 -1.000000 0.000000 1.000000 -1.000000 0.000000 1.000000 3.000000 0.000000 -1.000000 3.000000 0.000000 1.000000 3.000000 2.000000 -1.000000 3.000000 2.000000')
-				p.stdin.write('] "normal N" [ 0.000000 0.000000 1.000000 0.000000 0.000000 1.000000 0.000000 0.000000 1.000000 0.000000 0.000000 1.000000 0.000000 -0.707083 0.707083 0.000000 -0.707083 0.707083 0.000000 -1.000000 0.000000 0.000000 -1.000000 0.000000')
-				p.stdin.write('] "float uv" [ 0.333334 0.000000 0.333334 0.333334 0.000000 0.333334 0.000000 0.000000 0.666667 0.000000 0.666667 0.333333 1.000000 0.000000 1.000000 0.333333 ]')
-				p.stdin.write('AttributeEnd\n')
-
-
-			# Lightsource
-			if(prev_plane.get()=="false"):
-				p.stdin.write('AttributeBegin\nTransform [1.0 0.0 0.0 0.0  0.0 1.0 0.0 0.0  0.0 0.0 1.0 0.0  1.0 -1.0 4.0 1.0]\n')
-			else:
-				p.stdin.write('AttributeBegin\nTransform [1.0 0.0 0.0 0.0  0.0 1.0 0.0 0.0  0.0 0.0 1.0 0.0  1.0 -4.0 1.0 1.0]\n')
-
-			area = luxProp(activemat, "matprev_arealight", "false")
-
-			if(area.get() == "false"):
-				p.stdin.write('LightSource "point"')
-			else:
-				p.stdin.write('ReverseOrientation\n')
-				p.stdin.write('AreaLightSource "area" "color L" [1.0 1.0 1.0]\n')
-				p.stdin.write('Shape "disk" "float radius" [1.0]\nAttributeEnd\n')
-
-			p.stdin.write('WorldEnd\n')
-
-			data = p.communicate()[0]
-			p.stdin.close()
-
-			if(len(data) < 58800):
-				return
-
-			global matpreview_buf
-
-			offset = 0
-			for y in range(139, -1, -1):
-				for x in range(140):
-					for c in range(3):
-						matpreview_buf[y][x][c] = ord(data[offset])
-						offset += 1
-
-			Draw.Redraw()
-			Blender.Window.WaitCursor(False)
 
 def setFocus(target):
 	currentscene = Scene.GetCurrent()
