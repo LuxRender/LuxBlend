@@ -563,11 +563,7 @@ class luxExport:
 				col = obj.getData(mesh=1).col # data
 				energy = obj.getData(mesh=1).energy # data
 				if ltype == Lamp.Types["Lamp"]:
-					pm = luxProp(obj, "light.usepm", "false")
-					if(pm.get() == "true"):
-						file.write("LightSource \"goniometric\"")
-					else:
-						file.write("LightSource \"point\"")
+					file.write("LightSource \"point\"")
 					file.write(luxLamp("", "", obj, None, 0)+"\n")
 				if ltype == Lamp.Types["Spot"]:
 					proj = luxProp(obj, "light.usetexproj", "false")
@@ -3278,16 +3274,19 @@ def luxLamp(name, kn, mat, gui, level):
 	luxBool("photometric", pm, "Photometric Diagram", "Enable Photometric Diagram options", gui, 2.0)
 
 	if(pm.get()=="true"):
-		pmtype = luxProp(mat, kn+"light.pmtype", "IES")
-		pmtypes = ["imagemap", "IES"]
+		pmtype = luxProp(mat, kn+"light.pmtype", "IESna")
+		pmtypes = ["IESna", "imagemap"]
 		luxOption("type", pmtype, pmtypes, "type", "Choose Photometric data type to use", gui, 0.6)
-
 		if(pmtype.get() == "imagemap"):
 			map = luxProp(mat, kn+"light.pmmapname", "")
 			link += luxFile("mapname", map, "map-file", "filename of the photometric map", gui, 1.4)		
-		if(pmtype.get() == "IES"):
+		if(pmtype.get() == "IESna"):
 			map = luxProp(mat, kn+"light.pmiesname", "")
 			link += luxFile("iesname", map, "ies-file", "filename of the IES photometric data file", gui, 1.4)		
+
+		link += luxBool("flipz", luxProp(mat, kn+"light.flipZ", "true"), "Flip Z", "Flip Z direction in mapping", gui, 1.0)
+		link += luxBool("squarefalloff", luxProp(mat, kn+"light.sqfalloff", "false"), "Square Falloff", "Use Squared intensity falloff", gui, 1.0)
+
 
 	return link
 
