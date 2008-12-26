@@ -625,6 +625,20 @@ class luxExport:
 				file.write("\n\n")
 
 
+# Note - radiance - this is a work in progress
+def luxFlashBlock(camObj):
+	str = ""
+	str += "CoordSysTransform \"camera\"\n"
+
+	str += "Texture \"camflashtex\" \"color\" \"blackbody\" \"float temperature\" [7000.0]\n" 
+	str += "AreaLightSource \"area\" \"texture L\" [\"camflashtex\"] \"float power\" [100.000000] \"float efficacy\" [17.000000] \"float gain\" [1.000000]\n"
+
+	up = 10.0
+
+	str += "Shape \"trianglemesh\" \"integer indices\" [ 0 1 2 0 2 3 ] \"point P\" [ 0.014 0.012 0.0   0.006 0.012 0.0   0.006 0.008 0.0   0.014 0.008 0.0 ]\n"
+
+	return str
+
 
 ######################################################
 # EXPORT
@@ -736,6 +750,15 @@ def save_lux(filename, unindexedname):
 			export.exportPortals(file)
 			file.write("AttributeEnd\n")
 			file.write("\n")	
+
+	# Note - radiance - this is a work in progress
+	#	flash = luxFlashBlock(camObj)
+	#	if flash != "":
+	#		file.write("# Camera flash lamp\n")
+	#		file.write("AttributeBegin\n")
+	#		#file.write("CoordSysTransform \"camera\"\n")
+	#		file.write(flash)
+	#		file.write("AttributeEnd\n\n")
 
 		#### Write material & geometry file includes in scene file
 		file.write("Include \"%s\"\n\n" %(mat_pfilename))
@@ -993,6 +1016,9 @@ icon_texmix = decodeIconStr("///A///A///A///A///A///A///A///A///A///A///A///A///
 icon_texmixcol = decodeIconStr("///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///AaOE7mcS/ndT/mcS/lbS/kbS/ndU/neV/bQH9///A///A///A///A///A///A///AiYP+92o/niY/0tg//4p//6s/pme/wun/neV////A///A///A///A///A///A///AkZP9aYT/AAA/LJF/5vd//2j/OMH/GHH/eVN////A///A///A///A///A///A///AjYP9qlZ/OKE/haO/7wb/+zf/voZ/jgY/hYP////A///A///A///A///A///A///AXae/z27/qty/ux2/9wZ/+yc//1f//5o/lbS////A///AaOE7mcS/ndT/mcS/adh/Qcu/Sfz/Sfz/Wi1/lot/ZUK/leQ//3l/kbR////A///AiYP+92o/niY/0tg/25+/Rfz/99+/++//Rfz/TXc/AAA/BAA/9zg/lbS////A///AkZP9aYT/AAA/LJF/tx2/Rfz/////////Rfz/quz/bZU/lhX//6o/lcS////A///AjYP9qlZ/OKE/haO/uy3/Tgz/Rfz/Rez/Qdw/Ybg/laQ9laQ9iYP9aOE7///A///AhXP9/1f/6sQ/8vW/9wZ/wz4/y28/26//aej////A///A///A///A///A///A///AhXQ98xd/eWH/znR/xmR/ZUK/leQ//3l/kbR////A///A///A///A///A///A///AhYR97xb/TMA/xkL/dVG/AAA/BAA/9zg/lbS////A///A///A///A///A///A///AiYR+/7q//zb//0d/1tb/bZU/lhX//6o/lcS////A///A///A///A///A///A///AZNE4iZS9iZS9iYR9jZQ9laQ9laQ9iYP9aOE7///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A")
 icon_texparam = decodeIconStr("///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A27wAOOO5GGG/BBB9AAA5AAAwAAAnAAAO27wA27wA27wA27wA27wA27wA///A875F27wAYYYZPPP/KKK/III/BBB/AAA/AAA/AAAxAAAB27wA27wA27wA27wA///AoooO875K27wAaaaTRRR/eee/lll/SSS/AAA/AAA/AAAk27wA27wA27wA27wA///AeeeX222V876J27wAbbbkSSS/iii/mmm/TTT/AAA/AAA/CCCW27wA27wA27wA///AXXXfxxxftttW887I27wAcccwSSS/OOO/PPP/III/RRR/CCC/CCC3CCCL27wA///ATTTmtttsQQQvbbbd887H27wAdddrVVV/PPP/hhh/222/lll/NNN/HFE/KFCo///APPPssss3HHH6NNNwZZZd988G27wA27wAXXXlXXX/999/333/jhg/ZPK/WOJ5///AMMMvsss/jjj1XXXxrrrf333R998F27xA27wAYYYvggg/554/meX/eUO/ZQL////AJJJyvvv/jjj/oooztttoyyyc444Q999E27xAfffAYXW7jeZ/4yt/pfX/gWP////AHHH0zzz/iii/jjj+oooytttnlllggggX+99D27xALFAFKGD9wql/2wr/peW////AFFF3333/HHH/QQQ/jjj9mmmyDDD8KKKxTTTe555D26xAIFDKMHE+0vq/1uo////ADDD6666/HHH/QQQ/jjj/kkk8DDD+BBB+JJJyrrrR+++C26xAKFDROKG/wog+///ABBB9555/777/333/000/www/rrr9bbb6fffv000Y555M///B26xAKFCYOKF0///ABBB5BBB9DDD6EEE4GGG1IIIzKKKxNNNtPPPmSSSfUUUXUUUODDDE26xA27wA///A")
 
+icon_emission = decodeIconStr("///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A27wA27wA27wAAAAgAAA/AAAg27wA27wA27wA///A///A///A///A///A///A///A27wAAAAFAAAxAAA/AAA/AAA/AAAxAAAF27wA///A///A///A///A///A///A///A27wAAAAZooo5////444/nnn/KKK2AAAZ27wA///A///A///A///A///A///A///A27wAAAALSSS/ggg/bbb/AAA/AAA/AAAL27wA///A///A///A///A///A///A///A27wAAAAYrrr/////777/nnn/KKJ+AAAZ27wA///A///A///A///A///A///A///A27wAPNBRTRI+kiX8ebQ+ebN8NLA+PNCP27wA///A///A///A///A///A///A///AQQABVRB1qlQ483g2qlR+81Z2pkO6VRB0QQAB///A///A///A///A///A///A///ATQBlieP685t361ezjcD+5ySx61c0dYG6TQBl///A///A///A///A///A///A///AVRA453x650gwhbB93vRthbB+4yXvwrX0VRA4///A///A///A///A///A///A///AVRA+++8941ow2xbs0tRp0tRp1vUr2yiyVRA+///A///A///A///A///A///A///AUQA48868/++999772yiszuYo2yhsvsdxVRA5///A///A///A///A///A///A///ATPBlqof6//////++64yy64yy7611cYK4TPBl///A///A///A///A///A///A///AKKABUQA1qnf59989//++6525ifT4UQA1KKAB///A///A///A///A///A///A///A27wAKKABSPBkUQA4VQA+UQA4SPBkKKAB27wA///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A")
+
+icon_spectex = decodeIconStr("///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///AAAATGGGzAAAiAAAA27wA27wA27wA27wA27wA27wA27wAAAADAAAjGGGxAAAT///AFFFy555/SBx/MA5+ASx9AhZ9ArC9AwA9WvA9xnA9/WA97AA/xBB/555/FFFz///AAAAUccc/ka1/MA6/ASx/AhZ/ArC/AwA/WvA/xnA//WA/9AA/1ff/SSS+AAAZ///A27wAMMM6ph2/MA6/Xi0/AhZ/ArC/AwA/WvA/xnA//WA/1bb/jjj/AAAY27wA///A27wABBBnpmv/ni6/lr1/AhZ/ArC/AwA/WvA/xnA//WA/6vv/SSS/AAAE27wA///A27wAAAAEGGG1PPP/SUY/Zsn/ArC/AwA/hyS/xnA//WA/5uu/DDDw27wA27wA///A27wA27wAAAABAAAEIII3oyw/ArC/WvW/syn/31u/3vr/nll/AAAa27wA27wA///A27wA27wA///A///AAAAnlus/BrE/v4v/TTT/kkk/444/PPP+AAAE27wA27wA///A27wA27wA27wA27wAAAAZnnn/444/555/GGG3AAAdEEExAAAM27wA27wA27wA///A27wA27wA27wA27wAAAAKaaa/555/zzz/AAAn27wA27wA27wA27wA27wA27wA///A27wA27wA27wA27wAAAAALLL8555/iii/AAAX27wA27wA27wA27wA27wA27wA///A27wA27wA27wA27wA27wAAAAPKKK6AAArAAAB27wA27wA27wA27wA27wA27wA///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A")
 
 icon_c_filter = decodeIconStr("///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///AAAASGGG1BBBsAAAW27wA27wA27wA27wA27wA27wA27wAAAAWBBBsGGGyAAAU///AHHHx555/333/ddd/AAAl27wA27wA27wA27wA27wAAAAlddd/333/555/FFFz///AAAAUMMM8eee/555/ccc/AAAT27wA27wA27wAAAATccc/555/eee/MMM8AAAV///A27wAAAAAAAAbfff/222/GGG1AAAA27wAAAAAGGG1222/fff/AAAbAAAA27wA///A27wA27wAAAAAFFFz222/hhh/AAAW27wAAAAWhhh/222/FFFzAAAA27wA27wA///A27wA27wA27wAAAAQccc/333/EEEz27wAEEEz333/ccc/AAAQ27wA27wA27wA///A27wA27wA27wA27wAGGG1444/aaa/AAAdaaa/444/GGG127wA27wA27wA27wA///A27wA27wA27wA27wAAAAakkk/000/UUU/000/kkk/AAAa27wA27wA27wA27wA///A27wA27wA27wA27wAAAACGGG1xxx/555/xxx/GGG1AAAC27wA27wA27wA27wA///A27wA27wA27wA27wA27wAAAAFAAAoJJJ1AAAoAAAF27wA27wA27wA27wA27wA///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A")
 
@@ -2068,6 +2094,12 @@ def luxCamera(cam, context, gui=None):
 							screenwindow[2]*(1-y1)+screenwindow[3]*y1, screenwindow[2]*(1-y2)+screenwindow[3]*y2]
 				str += "\n   \"float screenwindow\" [%f %f %f %f]"%(screenwindow[0], screenwindow[1], screenwindow[2], screenwindow[3])
 
+		# Note - radiance - this is a work in progress
+	#	# Flash lamp option for perspective and ortho cams
+	#	if camtype.get() in ["perspective", "orthographic"]:
+	#		useflash = luxProp(cam, "useflash", "false")
+	#		luxBool("useflash", useflash, "Flash Lamp", "Enable Camera mounted flash lamp options", gui, 2.0)
+
 		# Motion Blur Options (common to all cameras)
 		usemblur = luxProp(cam, "usemblur", "false")
 		luxBool("usemblur", usemblur, "Motion Blur", "Enable Motion Blur", gui, 2.0)
@@ -2303,8 +2335,24 @@ def luxPixelFilter(scn, gui=None):
 			str += luxFloat("xwidth", luxProp(scn, "pixelfilter.mitchell.xwidth", 2.0), 0.0, 10.0, "x-width", "Width of the filter in the x direction", gui)
 			str += luxFloat("ywidth", luxProp(scn, "pixelfilter.mitchell.ywidth", 2.0), 0.0, 10.0, "y-width", "Width of the filter in the y direction", gui)
 			if gui: gui.newline()
-			str += luxFloat("B", luxProp(scn, "pixelfilter.mitchell.B", 0.3333), 0.0, 1.0, "B", "Specify the shape of the Mitchell filter. Often best result is when B + 2C = 1", gui)
-			str += luxFloat("C", luxProp(scn, "pixelfilter.mitchell.C", 0.3333), 0.0, 1.0, "C", "Specify the shape of the Mitchell filter. Often best result is when B + 2C = 1", gui)
+
+			optmode = luxProp(scn, "pixelfilter.mitchell.optmode", "slider")
+			luxOption("optmode", optmode, ["slider", "preset", "manual"], "Mode", "Mode of configuration", gui, 0.5)
+
+			if(optmode.get() == "slider"):
+				slidval = luxProp(scn, "pixelfilter.mitchell.slidval", 0.33)
+				luxFloat("value", slidval, 0.0, 1.0, "value", "Specify amount between blurred (left) and sharp/ringed (right)", gui, 1.5, 1)
+				# rule: B + 2*c = 1.0
+				C = float(slidval.get()) * 0.5
+				B = 1.0 - float(slidval.get())
+				str += "\n   \"float B\" [%f]"%(B)
+				str += "\n   \"float C\" [%f]"%(C)
+		        elif(optmode.get() == "preset"):
+				print "not implemented"
+			else:
+				str += luxFloat("B", luxProp(scn, "pixelfilter.mitchell.B", 0.3333), 0.0, 1.0, "B", "Specify the shape of the Mitchell filter. Often best result is when B + 2C = 1", gui, 0.75)
+				str += luxFloat("C", luxProp(scn, "pixelfilter.mitchell.C", 0.3333), 0.0, 1.0, "C", "Specify the shape of the Mitchell filter. Often best result is when B + 2C = 1", gui, 0.75)
+
 		if filtertype.get() == "sinc":
 			if gui: gui.newline()
 			str += luxFloat("xwidth", luxProp(scn, "pixelfilter.sinc.xwidth", 4.0), 0.0, 10.0, "x-width", "Width of the filter in the x direction", gui)
@@ -2624,8 +2672,8 @@ def lux3DMapping(key, mat, gui, level=0):
 	
 	
 
-def luxTexture(name, parentkey, type, default, min, max, caption, hint, mat, gui, matlevel, texlevel=0, lightsource=0):
-	global icon_tex, icon_texcol, icon_texmix, icon_texmixcol, icon_texparam
+def luxTexture(name, parentkey, type, default, min, max, caption, hint, mat, gui, matlevel, texlevel=0, lightsource=0, overrideicon=""):
+	global icon_tex, icon_texcol, icon_texmix, icon_texmixcol, icon_texparam, icon_spectex
 	def c(t1, t2):
 		return (t1[0]+t2[0], t1[1]+t2[1])
 	def alternativedefault(type, default):
@@ -2644,13 +2692,18 @@ def luxTexture(name, parentkey, type, default, min, max, caption, hint, mat, gui
 	textures = ["constant","blackbody","equalenergy", "frequency", "gaussian", "regulardata", "irregulardata", "imagemap","mix","scale","bilerp","uv", "checkerboard","dots","fbm","marble","wrinkled", "windy", "blender_marble", "blender_musgrave", "blender_wood", "blender_clouds", "blender_blend", "blender_distortednoise", "blender_noise", "blender_magic", "blender_stucci", "blender_voronoi", "harlequin"]
 
 	if gui:
-		icon = icon_tex
-		if texture.get() in ["mix", "scale", "checkerboard", "dots"]:
-			if type=="color": icon = icon_texmixcol
-			else: icon = icon_texmix
+		if(overrideicon != ""):
+			icon = overrideicon
 		else:
-			if type=="color": icon = icon_texcol
-			else: icon = icon_tex
+			icon = icon_tex
+			if texture.get() in ["mix", "scale", "checkerboard", "dots"]:
+				if type=="color": icon = icon_texmixcol
+				else: icon = icon_texmix
+			elif texture.get() in ["constant", "blackbody", "equalenergy", "frequency", "gaussian", "regulardata", "irregulardata"]:
+				icon = icon_spectex
+			else:
+				if type=="color": icon = icon_texcol
+				else: icon = icon_tex
 		if (texlevel > 0): gui.newline(caption+":", -2, level, icon, scalelist([0.5,0.5,0.5],2.0/(level+2)))
 		else: gui.newline("texture:", -2, level, icon, scalelist([0.5,0.5,0.5],2.0/(level+2)))
 	luxOption("texture", texture, textures, "texture", "", gui, 0.9)
@@ -3054,9 +3107,6 @@ def luxTexture(name, parentkey, type, default, min, max, caption, hint, mat, gui
 def luxSpectrumTexture(name, key, default, max, caption, hint, mat, gui, level=0):
 	global icon_col
 	if gui: gui.newline(caption, 4, level, icon_col, scalelist([0.5,0.6,0.5],2.0/(level+2)))
-
-	print "spec level = %i\n"%level
-	#if gui: gui.newline(caption, 4, level, icon_col)
 	str = ""
 	keyname = "%s:%s"%(key, name)
 	texname = "%s:%s"%(mat.getName(), keyname)
@@ -3075,9 +3125,7 @@ def luxSpectrumTexture(name, key, default, max, caption, hint, mat, gui, level=0
 	return (str, link)
 
 def luxLightSpectrumTexture(name, key, default, max, caption, hint, mat, gui, level=0):
-	global icon_col
-	if gui: gui.newline(caption, 4, level, icon_col, scalelist([0.6,0.5,0.5],2.0/(level+2)))
-	print "lightspec level = %i\n"%level
+	#if gui: gui.newline(caption, 4, level, icon_emission, scalelist([0.6,0.5,0.5],2.0/(level+2)))
 	str = ""
 	keyname = "%s:%s"%(key, name)
 	texname = "%s:%s"%(mat.getName(), keyname)
@@ -3276,7 +3324,6 @@ def luxLight(name, kn, mat, gui, level):
 	return (str, link)
 
 def luxLamp(name, kn, mat, gui, level):
-	link = "LightSource \"point\""
 #	if gui:
 #		if name != "": gui.newline(name+":", 10, level)
 #		else: gui.newline("color:", 0, level+1)
@@ -3284,13 +3331,9 @@ def luxLamp(name, kn, mat, gui, level):
 #	if gui: gui.newline("")
 #	link += luxFloat("gain", luxProp(mat, kn+"light.gain", 1.0), 0.0, 100.0, "gain", "gain", gui)
 
-	
-	if gui: gui.newline("terry:", 0, level+1)
-	if gui: gui.newline("terry:", 0, level+1)
-	if gui: gui.newline("terry:", 0, level+1)
-	if gui: gui.newline("terry:", 0, level+1)
+	(str, llink) = luxLight(name, kn, mat, gui, level)
 
-	(str, link) = luxLight("", kn, mat, gui, level)
+	link = str + "LightSource \"point\"" + llink
 
 	if gui: gui.newline("Photometric")
 	pm = luxProp(mat, kn+"light.usepm", "false")
@@ -3367,8 +3410,8 @@ def luxPreview(mat, name, defType=0, defEnabled=False, defLarge=False, texName=N
 		PIPE = subprocess.PIPE
 		p = subprocess.Popen((consolebin, '-b', '-'), bufsize=thumbbuf, stdin=PIPE, stdout=PIPE, stderr=PIPE)
 
-# todo: remove this debug stuff
-#		p.stdin = open('c:\preview.txt', 'w')
+		# Unremark to write debugging output to file
+		#p.stdin = open('c:\preview.lxs', 'w')
 
 		if defType == 0:	
 			prev_sphere = luxProp(mat, kn+"prev_sphere", "true")
@@ -3389,7 +3432,7 @@ def luxPreview(mat, name, defType=0, defEnabled=False, defLarge=False, texName=N
 		else:
 			p.stdin.write('LookAt 0.0 -3.0 0.5 0.0 -2.0 0.5 0.0 0.0 1.0\nCamera "perspective" "float fov" [22.5]\n')
 		# Fleximage
-		p.stdin.write('Film "fleximage" "integer xresolution" [%i] "integer yresolution" [%i] "integer displayinterval" [3] "integer ldr_writeinterval" [3600] "string tonemapper" ["reinhard"] "integer haltspp" [1] "integer reject_warmup" [32]\n'%(thumbres, thumbres))
+		p.stdin.write('Film "fleximage" "integer xresolution" [%i] "integer yresolution" [%i] "integer displayinterval" [3] "integer ldr_writeinterval" [3600] "string tonemapper" ["reinhard"] "integer haltspp" [1] "integer reject_warmup" [64] "bool write_tonemapped_tga" ["false"] "bool write_untonemapped_exr" ["false"] "bool write_tonemapped_exr" ["false"] "bool write_untonemapped_igi" ["false"] "bool write_tonemapped_igi" ["false"] \n'%(thumbres, thumbres))
 		p.stdin.write('PixelFilter "sinc"\n')
 		# Quality
 		scn = Scene.GetCurrent()
@@ -3498,12 +3541,21 @@ def luxPreview(mat, name, defType=0, defEnabled=False, defLarge=False, texName=N
 			try: previewCache[(mat.name+":"+kn).__hash__()].draw(r[0]-82, r[1]+4)
 			except: pass
 
-			# preview mode toggle buttons
-			prev_sphere = luxProp(mat, kn+"prev_sphere", "false")
-			Draw.Toggle("S", evtLuxGui, r[0]-108, r[1]+100+voffset, 22, 22, prev_sphere.get()=="true", "Draw Sphere", lambda e,v: Preview_Sphereset(mat, kn, ["false","true"][bool(v)]))
-			prev_plane = luxProp(mat, kn+"prev_plane", "true")
-			Draw.Toggle("P", evtLuxGui, r[0]-108, r[1]+74+voffset, 22, 22, prev_plane.get()=="true", "Draw 2D Plane", lambda e,v: Preview_Planeset(mat, kn, ["false","true"][bool(v)]))
+			prev_sphere = luxProp(mat, kn+"prev_sphere", "true")
+			prev_plane = luxProp(mat, kn+"prev_plane", "false")
 			prev_torus = luxProp(mat, kn+"prev_torus", "false")
+			if defType == 1:
+				prev_sphere = luxProp(mat, kn+"prev_sphere", "false")
+				prev_plane = luxProp(mat, kn+"prev_plane", "true")
+				prev_torus = luxProp(mat, kn+"prev_torus", "false")
+			elif defType == 2:
+				prev_sphere = luxProp(mat, kn+"prev_sphere", "false")
+				prev_plane = luxProp(mat, kn+"prev_plane", "false")
+				prev_torus = luxProp(mat, kn+"prev_torus", "true")
+
+			# preview mode toggle buttons
+			Draw.Toggle("S", evtLuxGui, r[0]-108, r[1]+100+voffset, 22, 22, prev_sphere.get()=="true", "Draw Sphere", lambda e,v: Preview_Sphereset(mat, kn, ["false","true"][bool(v)]))
+			Draw.Toggle("P", evtLuxGui, r[0]-108, r[1]+74+voffset, 22, 22, prev_plane.get()=="true", "Draw 2D Plane", lambda e,v: Preview_Planeset(mat, kn, ["false","true"][bool(v)]))
 			Draw.Toggle("T", evtLuxGui, r[0]-108, r[1]+48+voffset, 22, 22, prev_torus.get()=="true", "Draw Torus", lambda e,v: Preview_Torusset(mat, kn, ["false","true"][bool(v)]))
 
 			# Zoom toggle
@@ -4285,9 +4337,9 @@ def luxDraw():
 			if obj:
 				if (obj.getType() == "Lamp"):
 					ltype = obj.getData(mesh=1).getType() # data
-					if (ltype == Lamp.Types["Area"]): luxLight("LIGHT", "", obj, gui, 0)
-					elif (ltype == Lamp.Types["Spot"]): luxSpot("LIGHT", "", obj, gui, 0)
-					elif (ltype == Lamp.Types["Lamp"]): luxLamp("LIGHT", "", obj, gui, 0)
+					if (ltype == Lamp.Types["Area"]): luxLight("Area LIGHT", "", obj, gui, 0)
+					elif (ltype == Lamp.Types["Spot"]): luxSpot("Spot LIGHT", "", obj, gui, 0)
+					elif (ltype == Lamp.Types["Lamp"]): luxLamp("Point LIGHT", "", obj, gui, 0)
 				else:
 					matfilter = luxProp(scn, "matlistfilter", "false")
 					mats = getMaterials(obj, True)
@@ -4375,6 +4427,8 @@ def luxDraw():
 	scrollbar.height = scrollbar.getTop() - y
 	scrollbar.draw()
 
+mouse_xr=1 
+mouse_yr=1 
 
 activeObject = None			
 def luxEvent(evt, val):  # function that handles keyboard and mouse events
@@ -4395,6 +4449,22 @@ def luxEvent(evt, val):  # function that handles keyboard and mouse events
 	if evt == Draw.WHEELDOWNMOUSE: scrollbar.scroll(16)
 	if evt == Draw.PAGEUPKEY: scrollbar.scroll(-50)
 	if evt == Draw.PAGEDOWNKEY: scrollbar.scroll(50)
+
+	# Handle icon button events - note - radiance - this is a work in progress! :)
+#	if evt == Draw.LEFTMOUSE and not val: 
+#   		size=BGL.Buffer(BGL.GL_FLOAT, 4) 
+#   		BGL.glGetFloatv(BGL.GL_SCISSOR_BOX, size) 
+#    		size= [int(s) for s in size] 
+#		mx, my = Window.GetMouseCoords()
+#		mousex = mx - size[0]
+#		print "mousex = %i"%mousex
+#		#if((mousex > 2) and (mousex < 25)):
+#			# Mouse clicked in left button bar
+#		if((mousex > 399) and (mousex < 418)):
+#			# Mouse clicked in right button bar
+#			mousey = my - size[1] - scrollbar.position
+#			print "mousey = %i"%mousey
+			
 	
 def luxButtonEvt(evt):  # function that handles button events
 	global usedproperties
@@ -4460,6 +4530,7 @@ def luxButtonEvt(evt):  # function that handles button events
 	if evt == evtConvertMaterial:
 		if activemat: convertMaterial(activemat)
 		Draw.Redraw()
+	
 
 def setFocus(target):
 	currentscene = Scene.GetCurrent()
