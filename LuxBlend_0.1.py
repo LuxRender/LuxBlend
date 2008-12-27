@@ -630,7 +630,7 @@ def luxFlashBlock(camObj):
 	str = ""
 	str += "CoordSysTransform \"camera\"\n"
 
-	str += "Texture \"camflashtex\" \"color\" \"blackbody\" \"float temperature\" [7000.0]\n" 
+	str += "Texture \"camflashtex\" \"color\" \"blackbody\" \"float temperature\" [5500.0]"
 	str += "AreaLightSource \"area\" \"texture L\" [\"camflashtex\"] \"float power\" [100.000000] \"float efficacy\" [17.000000] \"float gain\" [1.000000]\n"
 
 	up = 10.0
@@ -752,13 +752,13 @@ def save_lux(filename, unindexedname):
 			file.write("\n")	
 
 	# Note - radiance - this is a work in progress
-	#	flash = luxFlashBlock(camObj)
-	#	if flash != "":
-	#		file.write("# Camera flash lamp\n")
-	#		file.write("AttributeBegin\n")
-	#		#file.write("CoordSysTransform \"camera\"\n")
-	#		file.write(flash)
-	#		file.write("AttributeEnd\n\n")
+#		flash = luxFlashBlock(camObj)
+#		if flash != "":
+#			file.write("# Camera flash lamp\n")
+#			file.write("AttributeBegin\n")
+#			#file.write("CoordSysTransform \"camera\"\n")
+#			file.write(flash)
+#			file.write("AttributeEnd\n\n")
 
 		#### Write material & geometry file includes in scene file
 		file.write("Include \"%s\"\n\n" %(mat_pfilename))
@@ -2095,10 +2095,10 @@ def luxCamera(cam, context, gui=None):
 				str += "\n   \"float screenwindow\" [%f %f %f %f]"%(screenwindow[0], screenwindow[1], screenwindow[2], screenwindow[3])
 
 		# Note - radiance - this is a work in progress
-	#	# Flash lamp option for perspective and ortho cams
-	#	if camtype.get() in ["perspective", "orthographic"]:
-	#		useflash = luxProp(cam, "useflash", "false")
-	#		luxBool("useflash", useflash, "Flash Lamp", "Enable Camera mounted flash lamp options", gui, 2.0)
+		# Flash lamp option for perspective and ortho cams
+		if camtype.get() in ["perspective", "orthographic"]:
+			useflash = luxProp(cam, "useflash", "false")
+			luxBool("useflash", useflash, "Flash Lamp", "Enable Camera mounted flash lamp options", gui, 2.0)
 
 		# Motion Blur Options (common to all cameras)
 		usemblur = luxProp(cam, "usemblur", "false")
@@ -2320,49 +2320,79 @@ def luxPixelFilter(scn, gui=None):
 	if scn:
 		filtertype = luxProp(scn, "pixelfilter.type", "mitchell")
 		str = luxIdentifier("PixelFilter", filtertype, ["box", "gaussian", "mitchell", "sinc", "triangle"], "FILTER", "select pixel filter type", gui, icon_c_filter)
+
+		# Advanced toggle
+		parammodeadvanced = luxProp(scn, "parammodeadvanced", "false")
+		showadvanced = luxProp(scn, "pixelfilter.showadvanced", parammodeadvanced)
+		luxBool("advanced", showadvanced, "Advanced", "Show advanced options", gui, 0.6)
+		# Help toggle
+		showhelp = luxProp(scn, "pixelfilter.showhelp", "false")
+		luxHelp("help", showhelp, "Help", "Show Help Information", gui, 0.4)
+
 		if filtertype.get() == "box":
-			if gui: gui.newline()
-			str += luxFloat("xwidth", luxProp(scn, "pixelfilter.box.xwidth", 0.5), 0.0, 10.0, "x-width", "Width of the filter in the x direction", gui)
-			str += luxFloat("ywidth", luxProp(scn, "pixelfilter.box.ywidth", 0.5), 0.0, 10.0, "y-width", "Width of the filter in the y direction", gui)
+			if showadvanced.get()=="true":
+				# Advanced parameters
+				if gui: gui.newline()
+				str += luxFloat("xwidth", luxProp(scn, "pixelfilter.box.xwidth", 0.5), 0.0, 10.0, "x-width", "Width of the filter in the x direction", gui)
+				str += luxFloat("ywidth", luxProp(scn, "pixelfilter.box.ywidth", 0.5), 0.0, 10.0, "y-width", "Width of the filter in the y direction", gui)
 		if filtertype.get() == "gaussian":
-			if gui: gui.newline()
-			str += luxFloat("xwidth", luxProp(scn, "pixelfilter.gaussian.xwidth", 2.0), 0.0, 10.0, "x-width", "Width of the filter in the x direction", gui)
-			str += luxFloat("ywidth", luxProp(scn, "pixelfilter.gaussian.ywidth", 2.0), 0.0, 10.0, "y-width", "Width of the filter in the y direction", gui)
-			if gui: gui.newline()
-			str += luxFloat("alpha", luxProp(scn, "pixelfilter.gaussian.alpha", 2.0), 0.0, 10.0, "alpha", "Gaussian rate of falloff. Lower values give blurrier images", gui)
+			if showadvanced.get()=="true":
+				# Advanced parameters
+				if gui: gui.newline()
+				str += luxFloat("xwidth", luxProp(scn, "pixelfilter.gaussian.xwidth", 2.0), 0.0, 10.0, "x-width", "Width of the filter in the x direction", gui)
+				str += luxFloat("ywidth", luxProp(scn, "pixelfilter.gaussian.ywidth", 2.0), 0.0, 10.0, "y-width", "Width of the filter in the y direction", gui)
+				if gui: gui.newline()
+				str += luxFloat("alpha", luxProp(scn, "pixelfilter.gaussian.alpha", 2.0), 0.0, 10.0, "alpha", "Gaussian rate of falloff. Lower values give blurrier images", gui)
 		if filtertype.get() == "mitchell":
-			if gui: gui.newline()
-			str += luxFloat("xwidth", luxProp(scn, "pixelfilter.mitchell.xwidth", 2.0), 0.0, 10.0, "x-width", "Width of the filter in the x direction", gui)
-			str += luxFloat("ywidth", luxProp(scn, "pixelfilter.mitchell.ywidth", 2.0), 0.0, 10.0, "y-width", "Width of the filter in the y direction", gui)
-			if gui: gui.newline()
-
-			optmode = luxProp(scn, "pixelfilter.mitchell.optmode", "slider")
-			luxOption("optmode", optmode, ["slider", "preset", "manual"], "Mode", "Mode of configuration", gui, 0.5)
-
-			if(optmode.get() == "slider"):
-				slidval = luxProp(scn, "pixelfilter.mitchell.slidval", 0.33)
-				luxFloat("value", slidval, 0.0, 1.0, "value", "Specify amount between blurred (left) and sharp/ringed (right)", gui, 1.5, 1)
+			if showadvanced.get()=="false":
+				# Default parameters
+				if gui: gui.newline("", 8, 0, None, [0.4,0.4,0.4])
+				slidval = luxProp(scn, "pixelfilter.mitchell.sharp", 0.33)
+				luxFloat("sharpness", slidval, 0.0, 1.0, "sharpness", "Specify amount between blurred (left) and sharp/ringed (right)", gui, 2.0, 1)
 				# rule: B + 2*c = 1.0
 				C = float(slidval.get()) * 0.5
 				B = 1.0 - float(slidval.get())
 				str += "\n   \"float B\" [%f]"%(B)
 				str += "\n   \"float C\" [%f]"%(C)
-		        elif(optmode.get() == "preset"):
-				print "not implemented"
-			else:
-				str += luxFloat("B", luxProp(scn, "pixelfilter.mitchell.B", 0.3333), 0.0, 1.0, "B", "Specify the shape of the Mitchell filter. Often best result is when B + 2C = 1", gui, 0.75)
-				str += luxFloat("C", luxProp(scn, "pixelfilter.mitchell.C", 0.3333), 0.0, 1.0, "C", "Specify the shape of the Mitchell filter. Often best result is when B + 2C = 1", gui, 0.75)
+
+			if showadvanced.get()=="true":
+				# Advanced parameters
+				if gui: gui.newline()
+				str += luxFloat("xwidth", luxProp(scn, "pixelfilter.mitchell.xwidth", 2.0), 0.0, 10.0, "x-width", "Width of the filter in the x direction", gui)
+				str += luxFloat("ywidth", luxProp(scn, "pixelfilter.mitchell.ywidth", 2.0), 0.0, 10.0, "y-width", "Width of the filter in the y direction", gui)
+				if gui: gui.newline()
+	
+				optmode = luxProp(scn, "pixelfilter.mitchell.optmode", "slider")
+				luxOption("optmode", optmode, ["slider", "preset", "manual"], "Mode", "Mode of configuration", gui, 0.5)
+	
+				if(optmode.get() == "slider"):
+					slidval = luxProp(scn, "pixelfilter.mitchell.sharp", 0.33)
+					luxFloat("sharpness", slidval, 0.0, 1.0, "sharpness", "Specify amount between blurred (left) and sharp/ringed (right)", gui, 1.5, 1)
+					# rule: B + 2*c = 1.0
+					C = float(slidval.get()) * 0.5
+					B = 1.0 - float(slidval.get())
+					str += "\n   \"float B\" [%f]"%(B)
+					str += "\n   \"float C\" [%f]"%(C)
+			        elif(optmode.get() == "preset"):
+					print "not implemented"
+				else:
+					str += luxFloat("B", luxProp(scn, "pixelfilter.mitchell.B", 0.3333), 0.0, 1.0, "B", "Specify the shape of the Mitchell filter. Often best result is when B + 2C = 1", gui, 0.75)
+					str += luxFloat("C", luxProp(scn, "pixelfilter.mitchell.C", 0.3333), 0.0, 1.0, "C", "Specify the shape of the Mitchell filter. Often best result is when B + 2C = 1", gui, 0.75)
 
 		if filtertype.get() == "sinc":
-			if gui: gui.newline()
-			str += luxFloat("xwidth", luxProp(scn, "pixelfilter.sinc.xwidth", 4.0), 0.0, 10.0, "x-width", "Width of the filter in the x direction", gui)
-			str += luxFloat("ywidth", luxProp(scn, "pixelfilter.sinc.ywidth", 4.0), 0.0, 10.0, "y-width", "Width of the filter in the y direction", gui)
-			if gui: gui.newline()
-			str += luxFloat("tau", luxProp(scn, "pixelfilter.sinc.tau", 3.0), 0.0, 10.0, "tau", "Permitted number of cycles of the sinc function before it is clamped to zero", gui)
+			if showadvanced.get()=="true":
+				# Advanced parameters
+				if gui: gui.newline()
+				str += luxFloat("xwidth", luxProp(scn, "pixelfilter.sinc.xwidth", 4.0), 0.0, 10.0, "x-width", "Width of the filter in the x direction", gui)
+				str += luxFloat("ywidth", luxProp(scn, "pixelfilter.sinc.ywidth", 4.0), 0.0, 10.0, "y-width", "Width of the filter in the y direction", gui)
+				if gui: gui.newline()
+				str += luxFloat("tau", luxProp(scn, "pixelfilter.sinc.tau", 3.0), 0.0, 10.0, "tau", "Permitted number of cycles of the sinc function before it is clamped to zero", gui)
 		if filtertype.get() == "triangle":
-			if gui: gui.newline()
-			str += luxFloat("xwidth", luxProp(scn, "pixelfilter.triangle.xwidth", 2.0), 0.0, 10.0, "x-width", "Width of the filter in the x direction", gui)
-			str += luxFloat("ywidth", luxProp(scn, "pixelfilter.triangle.ywidth", 2.0), 0.0, 10.0, "y-width", "Width of the filter in the y direction", gui)
+			if showadvanced.get()=="true":
+				# Advanced parameters
+				if gui: gui.newline()
+				str += luxFloat("xwidth", luxProp(scn, "pixelfilter.triangle.xwidth", 2.0), 0.0, 10.0, "x-width", "Width of the filter in the x direction", gui)
+				str += luxFloat("ywidth", luxProp(scn, "pixelfilter.triangle.ywidth", 2.0), 0.0, 10.0, "y-width", "Width of the filter in the y direction", gui)
 	return str			
 
 def luxSampler(scn, gui=None):
@@ -2371,24 +2401,30 @@ def luxSampler(scn, gui=None):
 	if scn:
 		samplertype = luxProp(scn, "sampler.type", "metropolis")
 		str = luxIdentifier("Sampler", samplertype, ["metropolis", "erpt", "lowdiscrepancy", "random"], "SAMPLER", "select sampler type", gui, icon_c_sampler)
-		showadvanced = luxProp(scn, "sampler.metro.showadvanced", "false")
-		luxBool("advanced", showadvanced, "Advanced", "Show advanced options", gui, 0.6)
-		showhelp = luxProp(scn, "sampler.metro.showhelp", "false")
-		luxHelp("help", showhelp, "Help", "Show Help Information", gui, 0.4)
-		if samplertype.get() == "metropolis":
-			# Default parameters
-			#if gui: gui.newline("  Mutation:")
-			if gui: gui.newline("  Mutation:", 8, 0, None, [0.4,0.4,0.4])
-			str += luxFloat("largemutationprob", luxProp(scn, "sampler.metro.lmprob", 0.4), 0.0, 1.0, "LM.prob.", "Probability of generating a large sample (mutation)", gui)
-			str += luxInt("maxconsecrejects", luxProp(scn, "sampler.metro.maxrejects", 256), 0, 32768, "max.rejects", "number of consecutive rejects before a new mutation is forced", gui)
 
-			# Advanced parameters
+		# Advanced toggle
+		parammodeadvanced = luxProp(scn, "parammodeadvanced", "false")
+		showadvanced = luxProp(scn, "sampler.showadvanced", parammodeadvanced)
+		luxBool("advanced", showadvanced, "Advanced", "Show advanced options", gui, 0.6)
+		# Help toggle
+		showhelp = luxProp(scn, "sampler.showhelp", "false")
+		luxHelp("help", showhelp, "Help", "Show Help Information", gui, 0.4)
+
+		if samplertype.get() == "metropolis":
+			if showadvanced.get()=="false":
+				# Default parameters
+				if gui: gui.newline("  Mutation:", 8, 0, None, [0.4,0.4,0.4])
+				luxFloat("strength", luxProp(scn, "sampler.metro.strength", 0.6), 0.0, 1.0, "strength", "Mutation Strength (lmprob = 1.0-strength)", gui, 2.0, 1)
+
 			if showadvanced.get()=="true":
-				#if gui: gui.newline("  Screen:", 8, 0, None, [0.3,0.3,0.3])
+				# Advanced parameters
+				if gui: gui.newline("  Mutation:")
+				str += luxFloat("largemutationprob", luxProp(scn, "sampler.metro.lmprob", 0.4), 0.0, 1.0, "LM.prob.", "Probability of generating a large sample (mutation)", gui)
+				str += luxInt("maxconsecrejects", luxProp(scn, "sampler.metro.maxrejects", 512), 0, 32768, "max.rejects", "number of consecutive rejects before a new mutation is forced", gui)
 				if gui: gui.newline("  Screen:")
-				str += luxInt("initsamples", luxProp(scn, "sampler.metro.initsamples", 100000), 1, 1000000, "initsamples", "", gui)
+				str += luxInt("initsamples", luxProp(scn, "sampler.metro.initsamples", 262144), 1, 1000000, "initsamples", "", gui)
 				str += luxInt("stratawidth", luxProp(scn, "sampler.metro.stratawidth", 256), 1, 32768, "stratawidth", "The number of x/y strata for stratified sampling of seeds", gui)
-				str += luxBool("usevariance",luxProp(scn, "sampler.metro.usevariance", "false"), "usevariance", "Accept based on variance", gui, 1.2)
+				str += luxBool("usevariance",luxProp(scn, "sampler.metro.usevariance", "false"), "usevariance", "Accept based on variance", gui, 1.0)
 
 			if showhelp.get()=="true":
 				if gui: gui.newline("  Description:", 8, 0, icon_help, [0.4,0.5,0.56])
@@ -2421,27 +2457,57 @@ def luxSurfaceIntegrator(scn, gui=None):
 	if scn:
 		integratortype = luxProp(scn, "sintegrator.type", "bidirectional")
 		str = luxIdentifier("SurfaceIntegrator", integratortype, ["directlighting", "path", "bidirectional", "exphotonmap", "distributedpath" ], "INTEGRATOR", "select surface integrator type", gui, icon_c_integrator)
+
+		# Advanced toggle
+		parammodeadvanced = luxProp(scn, "parammodeadvanced", "false")
+		showadvanced = luxProp(scn, "sintegrator.showadvanced", parammodeadvanced)
+		luxBool("advanced", showadvanced, "Advanced", "Show advanced options", gui, 0.6)
+		# Help toggle
+		showhelp = luxProp(scn, "sintegrator.showhelp", "false")
+		luxHelp("help", showhelp, "Help", "Show Help Information", gui, 0.4)
+
 		if integratortype.get() == "directlighting":
-			str += luxOption("strategy", luxProp(scn, "sintegrator.dlighting.strategy", "auto"), ["one", "all", "auto"], "strategy", "select directlighting strategy", gui)
-			if gui: gui.newline("  Depth:")
-			str += luxInt("maxdepth", luxProp(scn, "sintegrator.dlighting.maxdepth", 5), 0, 2048, "max-depth", "The maximum recursion depth for ray casting", gui)
-			if gui: gui.newline()
+			if showadvanced.get()=="false":
+				# Default parameters
+				if gui: gui.newline("  Depth:", 8, 0, None, [0.4,0.4,0.4])
+				str += luxInt("maxdepth", luxProp(scn, "sintegrator.dlighting.maxdepth", 5), 0, 2048, "bounces", "The maximum recursion depth for ray casting", gui, 2.0)
+
+			if showadvanced.get()=="true":
+				# Advanced parameters
+				str += luxOption("strategy", luxProp(scn, "sintegrator.dlighting.strategy", "auto"), ["one", "all", "auto"], "strategy", "select directlighting strategy", gui)
+				if gui: gui.newline("  Depth:")
+				str += luxInt("maxdepth", luxProp(scn, "sintegrator.dlighting.maxdepth", 5), 0, 2048, "max-depth", "The maximum recursion depth for ray casting", gui)
+				if gui: gui.newline()
 
 		if integratortype.get() == "path":
-			if gui: gui.newline("  Depth:")
-			str += luxInt("maxdepth", luxProp(scn, "sintegrator.path.maxdepth", 16), 0, 2048, "maxdepth", "The maximum recursion depth for ray casting", gui)
-			str += luxOption("strategy", luxProp(scn, "sintegrator.path.strategy", "auto"), ["one", "all", "auto"], "strategy", "select directlighting strategy", gui)
-			if gui: gui.newline("  RR:")
-			rrstrat = luxProp(scn, "sintegrator.path.rrstrategy", "efficiency")
-			str += luxOption("rrstrategy", rrstrat, ["efficiency", "probability", "none"], "RR strategy", "select Russian Roulette path termination strategy", gui)
-			if rrstrat.get() == "probability":
-				str += luxFloat("rrcontinueprob", luxProp(scn, "sintegrator.path.rrcontinueprob", 0.65), 0.0, 1.0, "rrprob", "Russian roulette continue probability", gui)
+			if showadvanced.get()=="false":
+				# Default parameters
+				if gui: gui.newline("  Depth:", 8, 0, None, [0.4,0.4,0.4])
+				str += luxInt("maxdepth", luxProp(scn, "sintegrator.path.maxdepth", 16), 0, 2048, "bounces", "The maximum recursion depth for ray casting", gui, 2.0)
+
+			if showadvanced.get()=="true":
+				# Advanced parameters
+				if gui: gui.newline("  Depth:")
+				str += luxInt("maxdepth", luxProp(scn, "sintegrator.path.maxdepth", 16), 0, 2048, "maxdepth", "The maximum recursion depth for ray casting", gui)
+				str += luxOption("strategy", luxProp(scn, "sintegrator.path.strategy", "auto"), ["one", "all", "auto"], "strategy", "select directlighting strategy", gui)
+				if gui: gui.newline("  RR:")
+				rrstrat = luxProp(scn, "sintegrator.path.rrstrategy", "efficiency")
+				str += luxOption("rrstrategy", rrstrat, ["efficiency", "probability", "none"], "RR strategy", "select Russian Roulette path termination strategy", gui)
+				if rrstrat.get() == "probability":
+					str += luxFloat("rrcontinueprob", luxProp(scn, "sintegrator.path.rrcontinueprob", 0.65), 0.0, 1.0, "rrprob", "Russian roulette continue probability", gui)
 
 		if integratortype.get() == "bidirectional":
-			if gui: gui.newline("  Depth:")
-			str += luxInt("eyedepth", luxProp(scn, "sintegrator.bidir.eyedepth", 8), 0, 2048, "eyedepth", "The maximum recursion depth for ray casting", gui)
-			str += luxInt("lightdepth", luxProp(scn, "sintegrator.bidir.lightdepth", 8), 0, 2048, "lightdepth", "The maximum recursion depth for light ray casting", gui)
-			str += luxOption("strategy", luxProp(scn, "sintegrator.bidir.strategy", "auto"), ["one", "all", "auto"], "strategy", "select directlighting strategy", gui)
+			if showadvanced.get()=="false":
+				# Default parameters
+				if gui: gui.newline("  Depth:", 8, 0, None, [0.4,0.4,0.4])
+				luxInt("bounces", luxProp(scn, "sintegrator.bidir.bounces", 8), 5, 32, "bounces", "The maximum recursion depth for ray casting", gui, 2.0)
+
+			if showadvanced.get()=="true":
+				# Advanced parameters
+				if gui: gui.newline("  Depth:")
+				str += luxInt("eyedepth", luxProp(scn, "sintegrator.bidir.eyedepth", 8), 0, 2048, "eyedepth", "The maximum recursion depth for ray casting", gui)
+				str += luxInt("lightdepth", luxProp(scn, "sintegrator.bidir.lightdepth", 8), 0, 2048, "lightdepth", "The maximum recursion depth for light ray casting", gui)
+				str += luxOption("strategy", luxProp(scn, "sintegrator.bidir.strategy", "auto"), ["one", "all", "auto"], "strategy", "select directlighting strategy", gui)
 
 		if integratortype.get() == "exphotonmap":
 			if gui: gui.newline("  Photons:")
@@ -2617,6 +2683,10 @@ def luxSystem(scn, gui=None):
 		useparamkeys = luxProp(scn, "useparamkeys", "false")
 		luxBool("useparamkeys", useparamkeys, "Enable Parameter IPO Keyframing", "Enables keyframing of luxblend parameters", gui, 2.0)
 
+		if gui: gui.newline("PARAMS:", 10)
+		parammodeadvanced = luxProp(scn, "parammodeadvanced", "false")
+		luxBool("parammodeadvanced", parammodeadvanced, "Default Advanced Parameters", "Always use advanced parameters by default", gui, 2.0)
+
 		if gui: gui.newline("PREVIEW:", 10)
 		qs = ["low","medium","high","very high"]
 		defprevmat = luxProp(scn, "defprevmat", "high")
@@ -2711,6 +2781,9 @@ def luxTexture(name, parentkey, type, default, min, max, caption, hint, mat, gui
 
 	if gui: # Draw Texture level Material preview
 		luxPreview(mat, parentkey, 1, False, False, name, gui, texlevel, [0.5, 0.5, 0.5])
+		# Add an offset for next controls
+		#r = gui.getRect(1.0, 1)
+		#gui.x += 140
 
 	if texture.get() == "constant":
 		value = luxProp(mat, keyname+".value", default)
