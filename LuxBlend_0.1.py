@@ -3507,7 +3507,8 @@ def luxPreview(mat, name, defType=0, defEnabled=False, defLarge=False, texName=N
 			p.stdin.write('AttributeBegin\nTransform [1.0 0.0 0.0 0.0  0.0 1.0 0.0 0.0  0.0 0.0 1.0 0.0  1.0 -4.0 1.0 1.0]\n')
 		area = luxProp(mat, kn+"prev_arealight", "false")
 		if(area.get() == "false"):
-			p.stdin.write('LightSource "point"')
+			p.stdin.write('Texture "pL" "color" "blackbody" "float temperature" [6500.0]\n')
+			p.stdin.write('LightSource "point" "texture L" ["pL"]')
 		else:
 			p.stdin.write('ReverseOrientation\n')
 			p.stdin.write('AreaLightSource "area" "color L" [1.0 1.0 1.0]\n')
