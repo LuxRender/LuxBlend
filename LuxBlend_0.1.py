@@ -67,7 +67,7 @@ def rg(col):
 	else:
 		gamma = 1.0
 	ncol = col**gamma
-	if luxProp(scn, "colorclamp", "true").get()=="true":
+	if luxProp(scn, "colorclamp", "false").get()=="true":
 		ncol = ncol * 0.9
 		if ncol > 0.9:
 			ncol = 0.9
