@@ -1,9 +1,9 @@
 #!BPY
 """Registration info for Blender menus:
 Name: 'LuxBlend CVS Exporter'
-Blender: 240
-Group: 'Export'
-Tooltip: 'Export to LuxRender CVS scene format (.lxs)'
+Blender: 248
+Group: 'Render'
+Tooltip: 'Export/Render to LuxRender CVS scene format (.lxs)'
 """
 #
 # ***** BEGIN GPL LICENSE BLOCK *****
@@ -672,7 +672,7 @@ def save_lux(filename, unindexedname):
 
 		##### Write Header ######
 		file.write("# Lux Render CVS Scene File\n")
-		file.write("# Exported by LuxBlend_0.1_alpha-MatEditor\n")
+		file.write("# Exported by LuxBlend Blender Exporter\n")
 		file.write("\n")
 	
 		##### Write camera ######
@@ -2381,7 +2381,7 @@ def luxSampler(scn, gui=None):
 		if samplertype.get() == "lowdiscrepancy":
 			if gui: gui.newline("  PixelSampler:")
 			str += luxOption("pixelsampler", luxProp(scn, "sampler.lowdisc.pixelsampler", "lowdiscrepancy"), ["linear", "tile", "random", "vegas","lowdiscrepancy","hilbert"], "pixel-sampler", "select pixel-sampler", gui)
-			str += luxInt("pixelsamples", luxProp(scn, "sampler.lowdisc.pixelsamples", 4), 1, 512, "samples", "Average number of samples taken per pixel. More samples create a higher quality image at the cost of render time", gui)
+			str += luxInt("pixelsamples", luxProp(scn, "sampler.lowdisc.pixelsamples", 4), 1, 2048, "samples", "Average number of samples taken per pixel. More samples create a higher quality image at the cost of render time", gui)
 
 		if samplertype.get() == "random":
 			if gui: gui.newline("  PixelSampler:")
