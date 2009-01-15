@@ -806,6 +806,7 @@ def launchLux(filename):
 	
 	scn = Scene.GetCurrent()
 	ic = luxProp(scn, "lux", "").get()
+	ic = Blender.sys.dirname(ic) + os.sep + "luxrender.exe"
 	checkluxpath = luxProp(scn, "checkluxpath", True).get()
 	if checkluxpath:
 		if sys.exists(ic) != 1:
@@ -837,6 +838,7 @@ def launchLuxPiped():
 	
 	scn = Scene.GetCurrent()
 	ic = luxProp(scn, "lux", "").get()
+	ic = Blender.sys.dirname(ic) + os.sep + "luxrender.exe"
 	checkluxpath = luxProp(scn, "checkluxpath", True).get()
 	if checkluxpath:
 		if sys.exists(ic) != 1:
@@ -874,6 +876,7 @@ def launchLuxWait(filename):
 	
 	scn = Scene.GetCurrent()
 	ic = luxProp(scn, "lux", "").get()
+	ic = Blender.sys.dirname(ic) + os.sep + "luxrender.exe"
 	checkluxpath = luxProp(scn, "checkluxpath", True).get()
 	if checkluxpath:
 		if sys.exists(ic) != 1:
@@ -1861,6 +1864,13 @@ def luxFile(name, lux, caption, hint, gui, width=1.0):
 		Draw.Button("...", 0, r[0]+r[2]-r[3], r[1], r[3], r[3], "click to open file selector", lambda e,v:Window.FileSelector(lambda s:lux.set(s), "Select %s"%(caption), lux.get()))
 	return "\n   \"string %s\" [\"%s\"]"%(name, luxstr(lux.get()))
 
+def luxPath(name, lux, caption, hint, gui, width=1.0):
+	if gui:
+		r = gui.getRect(width, 1)
+		Draw.String(caption+": ", evtLuxGui, r[0], r[1], r[2]-r[3]-2, r[3], lux.get(), 250, hint, lambda e,v: lux.set(Blender.sys.dirname(v)+os.sep))
+		Draw.Button("...", 0, r[0]+r[2]-r[3], r[1], r[3], r[3], "click to open file selector", lambda e,v:Window.FileSelector(lambda s:lux.set(s), "Select %s"%(caption), lux.get()))
+	return "\n   \"string %s\" [\"%s\"]"%(name, luxstr(lux.get()))
+
 def luxRGB(name, lux, max, caption, hint, gui, width=2.0):
 	if gui:
 		r = gui.getRect(width, 1)
@@ -2263,7 +2273,7 @@ def luxPixelFilter(scn, gui=None):
 
 		# Advanced toggle
 		parammodeadvanced = luxProp(scn, "parammodeadvanced", "false")
-		showadvanced = luxProp(scn, "pixelfilter.showadvanced", parammodeadvanced)
+		showadvanced = luxProp(scn, "pixelfilter.showadvanced", parammodeadvanced.get())
 		luxBool("advanced", showadvanced, "Advanced", "Show advanced options", gui, 0.6)
 		# Help toggle
 		showhelp = luxProp(scn, "pixelfilter.showhelp", "false")
@@ -2344,7 +2354,7 @@ def luxSampler(scn, gui=None):
 
 		# Advanced toggle
 		parammodeadvanced = luxProp(scn, "parammodeadvanced", "false")
-		showadvanced = luxProp(scn, "sampler.showadvanced", parammodeadvanced)
+		showadvanced = luxProp(scn, "sampler.showadvanced", parammodeadvanced.get())
 		luxBool("advanced", showadvanced, "Advanced", "Show advanced options", gui, 0.6)
 		# Help toggle
 		showhelp = luxProp(scn, "sampler.showhelp", "false")
@@ -2400,7 +2410,7 @@ def luxSurfaceIntegrator(scn, gui=None):
 
 		# Advanced toggle
 		parammodeadvanced = luxProp(scn, "parammodeadvanced", "false")
-		showadvanced = luxProp(scn, "sintegrator.showadvanced", parammodeadvanced)
+		showadvanced = luxProp(scn, "sintegrator.showadvanced", parammodeadvanced.get())
 		luxBool("advanced", showadvanced, "Advanced", "Show advanced options", gui, 0.6)
 		# Help toggle
 		showhelp = luxProp(scn, "sintegrator.showhelp", "false")
@@ -2609,8 +2619,12 @@ def luxAccelerator(scn, gui=None):
 def luxSystem(scn, gui=None):
 	if scn:
 		if gui: gui.newline("PATHS:", 10)
-		luxFile("GUI filename", luxProp(scn, "lux", ""), "lux-file", "filename and path of the lux GUI executable", gui, 2.0)
-		luxFile("Console filename", luxProp(scn, "luxconsole", ""), "lux-file-console", "filename and path of the lux console executable", gui, 2.0)
+		lp = luxProp(scn, "lux", "")
+		lp.set(Blender.sys.dirname(lp.get())+os.sep)
+		luxPath("LUX path", lp, "lux-path", "Lux installation path", gui, 2.0)
+
+#		luxFile("GUI filename", luxProp(scn, "lux", ""), "lux-file", "filename and path of the lux GUI executable", gui, 2.0)
+#		luxFile("Console filename", luxProp(scn, "luxconsole", ""), "lux-file-console", "filename and path of the lux console executable", gui, 2.0)
 		if gui: gui.newline()
 		luxFile("datadir", luxProp(scn, "datadir", ""), "default out dir", "default.lxs save path", gui, 2.0)
 		if gui: gui.newline("THREADS:", 10)
@@ -2738,14 +2752,18 @@ def luxTexture(name, parentkey, type, default, min, max, caption, hint, mat, gui
 
 	if texture.get() == "blackbody":
 		if gui:
+			if gui.xmax-gui.x < gui.w: gui.newline()
 			r = gui.getRect(1.0, 1)
-			drawBar(bar_blackbody, r[0]+12, r[1])
+			gui.newline()
+			drawBar(bar_blackbody, gui.xmax-gui.w-7, r[1])
 		str += luxFloat("temperature", luxProp(mat, keyname+".bbtemp", 6500.0), 1000.0, 10000.0, "temperature", "Black Body temperature in degrees Kelvin", gui, 2.0, 1)
 
 	if texture.get() == "equalenergy":
 		if gui:
+			if gui.xmax-gui.x < gui.w: gui.newline()
 			r = gui.getRect(1.0, 1)
-			drawBar(bar_equalenergy, r[0]+12, r[1])
+			gui.newline()
+			drawBar(bar_equalenergy, gui.xmax-gui.w-7, r[1])
 		str += luxFloat("energy", luxProp(mat, keyname+".energy", 1.0), 0.0, 1.0, "energy", "Energy of each spectral band", gui, 2.0, 1)
 
 	if texture.get() == "frequency":
@@ -2755,8 +2773,10 @@ def luxTexture(name, parentkey, type, default, min, max, caption, hint, mat, gui
 
 	if texture.get() == "gaussian":
 		if gui:
+			if gui.xmax-gui.x < gui.w: gui.newline()
 			r = gui.getRect(1.0, 1)
-			drawBar(bar_spectrum, r[0]+12, r[1])
+			gui.newline()
+			drawBar(bar_spectrum, gui.xmax-gui.w-7, r[1])
 		str += luxFloat("wavelength", luxProp(mat, keyname+".wavelength", 550.0), 380.0, 720.0, "wavelength", "Mean Wavelength in visible spectrum in nm", gui, 2.0, 1)
 		str += luxFloat("width", luxProp(mat, keyname+".width", 50.0), 20.0, 300.0, "width", "Width of gaussian distribution in nm", gui, 1.1, 1)
 		str += luxFloat("energy", luxProp(mat, keyname+".energy", 1.0), 0.0, 1.0, "energy", "Amount of mean energy", gui, 0.9, 1)
@@ -3353,10 +3373,10 @@ def luxLight(name, kn, mat, gui, level):
 	return (str, link)
 
 def luxLamp(name, kn, mat, gui, level):
-	if gui:
-		if name != "": gui.newline(name+":", 10, level)
-		else: gui.newline("color:", 0, level+1)
-
+#	if gui:
+#		if name != "": gui.newline(name+":", 10, level)
+#		else: gui.newline("color:", 0, level+1)
+	if gui: gui.newline("", 10, level)
 	(str,link) = luxLightSpectrumTexture("L", kn+"light", "1.0 1.0 1.0", 1.0, "Spectrum", "", mat, gui, level+1)
 	if gui: gui.newline("")
 	link += luxFloat("gain", luxProp(mat, kn+"light.gain", 1.0), 0.0, 100.0, "gain", "Gain/scale multiplier", gui)
@@ -3382,10 +3402,10 @@ def luxLamp(name, kn, mat, gui, level):
 	return (str, link)
 
 def luxSpot(name, kn, mat, gui, level):
-	if gui:
-		if name != "": gui.newline(name+":", 10, level)
-		else: gui.newline("color:", 0, level+1)
-
+#	if gui:
+#		if name != "": gui.newline(name+":", 10, level)
+#		else: gui.newline("color:", 0, level+1)
+	if gui: gui.newline("", 10, level)
 	(str,link) = luxLightSpectrumTexture("L", kn+"light", "1.0 1.0 1.0", 1.0, "Spectrum", "", mat, gui, level+1)
 	if gui: gui.newline("")
 	link += luxFloat("gain", luxProp(mat, kn+"light.gain", 1.0), 0.0, 100.0, "gain", "Gain/scale multiplier", gui)
@@ -3432,7 +3452,9 @@ def luxPreview(mat, name, defType=0, defEnabled=False, defLarge=False, texName=N
 
 		thumbbuf = thumbres*thumbres*3
 
-		consolebin = luxProp(scn, "luxconsole", "").get()
+#		consolebin = luxProp(scn, "luxconsole", "").get()
+		consolebin = Blender.sys.dirname(luxProp(scn, "lux", "").get()) + os.sep + "luxconsole.exe"
+
 		PIPE = subprocess.PIPE
 		p = subprocess.Popen((consolebin, '-b', '-'), bufsize=thumbbuf, stdin=PIPE, stdout=PIPE, stderr=PIPE)
 
@@ -4654,7 +4676,7 @@ else:
 				if scn:
 					r = Draw.PupMenu("Installation: Set path to the lux render software?%t|Yes%x1|No%x0|Never%x2")
 					if r == 1:
-						Window.FileSelector(lambda s:luxProp(scn, "lux", "").set(s), "Select Lux executable")
+						Window.FileSelector(lambda s:luxProp(scn, "lux", "").set(Blender.sys.dirname(s)+os.sep), "Select file in Lux path")
 						saveluxdefaults()
 					if r == 2:
 						newluxdefaults["checkluxpath"] = False
