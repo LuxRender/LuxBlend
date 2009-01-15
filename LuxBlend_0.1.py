@@ -3348,8 +3348,6 @@ def luxLight(name, kn, mat, gui, level):
 			map = luxProp(mat, kn+"light.pmiesname", "")
 			link += luxFile("iesname", map, "ies-file", "filename of the IES photometric data file", gui, 1.4)		
 
-		link += luxBool("flipz", luxProp(mat, kn+"light.flipZ", "true"), "Flip Z", "Flip Z direction in mapping", gui, 2.0)
-
 	has_bump_options = 0
 	has_object_options = 1
 	return (str, link)
