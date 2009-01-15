@@ -3332,6 +3332,24 @@ def luxLight(name, kn, mat, gui, level):
 	if gui: gui.newline("")
 	link += luxFloat("gain", luxProp(mat, kn+"light.gain", 1.0), 0.0, 100.0, "gain", "Gain/scale multiplier", gui)
 	link += luxString("lightgroup", luxProp(mat, kn+"light.lightgroup", ""), "l-group", "assign light to a named light-group", gui, 1.0)
+
+	if gui: gui.newline("Photometric")
+	pm = luxProp(mat, kn+"light.usepm", "false")
+	luxBool("photometric", pm, "Photometric Diagram", "Enable Photometric Diagram options", gui, 2.0)
+
+	if(pm.get()=="true"):
+		pmtype = luxProp(mat, kn+"light.pmtype", "IESna")
+		pmtypes = ["IESna", "imagemap"]
+		luxOption("type", pmtype, pmtypes, "type", "Choose Photometric data type to use", gui, 0.6)
+		if(pmtype.get() == "imagemap"):
+			map = luxProp(mat, kn+"light.pmmapname", "")
+			link += luxFile("mapname", map, "map-file", "filename of the photometric map", gui, 1.4)		
+		if(pmtype.get() == "IESna"):
+			map = luxProp(mat, kn+"light.pmiesname", "")
+			link += luxFile("iesname", map, "ies-file", "filename of the IES photometric data file", gui, 1.4)		
+
+		link += luxBool("flipz", luxProp(mat, kn+"light.flipZ", "true"), "Flip Z", "Flip Z direction in mapping", gui, 2.0)
+
 	has_bump_options = 0
 	has_object_options = 1
 	return (str, link)
