@@ -806,7 +806,8 @@ def launchLux(filename):
 	
 	scn = Scene.GetCurrent()
 	ic = luxProp(scn, "lux", "").get()
-	ic = Blender.sys.dirname(ic) + os.sep + "luxrender.exe"
+	ic = Blender.sys.dirname(ic) + os.sep + "luxrender"
+	if ostype == "win32": ic = ic + ".exe"
 	checkluxpath = luxProp(scn, "checkluxpath", True).get()
 	if checkluxpath:
 		if sys.exists(ic) != 1:
@@ -838,7 +839,8 @@ def launchLuxPiped():
 	
 	scn = Scene.GetCurrent()
 	ic = luxProp(scn, "lux", "").get()
-	ic = Blender.sys.dirname(ic) + os.sep + "luxrender.exe"
+	ic = Blender.sys.dirname(ic) + os.sep + "luxrender"
+	if ostype == "win32": ic = ic + ".exe"
 	checkluxpath = luxProp(scn, "checkluxpath", True).get()
 	if checkluxpath:
 		if sys.exists(ic) != 1:
@@ -876,7 +878,9 @@ def launchLuxWait(filename):
 	
 	scn = Scene.GetCurrent()
 	ic = luxProp(scn, "lux", "").get()
-	ic = Blender.sys.dirname(ic) + os.sep + "luxrender.exe"
+	ic = Blender.sys.dirname(ic) + os.sep + "luxrender"
+	if ostype == "win32": ic = ic + ".exe"
+
 	checkluxpath = luxProp(scn, "checkluxpath", True).get()
 	if checkluxpath:
 		if sys.exists(ic) != 1:
@@ -2621,7 +2625,7 @@ def luxSystem(scn, gui=None):
 		if gui: gui.newline("PATHS:", 10)
 		lp = luxProp(scn, "lux", "")
 		lp.set(Blender.sys.dirname(lp.get())+os.sep)
-		luxPath("LUX path", lp, "lux-path", "Lux installation path", gui, 2.0)
+		luxPath("LUX dir", lp, "lux binary dir", "Lux installation path", gui, 2.0)
 
 #		luxFile("GUI filename", luxProp(scn, "lux", ""), "lux-file", "filename and path of the lux GUI executable", gui, 2.0)
 #		luxFile("Console filename", luxProp(scn, "luxconsole", ""), "lux-file-console", "filename and path of the lux console executable", gui, 2.0)
@@ -3453,7 +3457,8 @@ def luxPreview(mat, name, defType=0, defEnabled=False, defLarge=False, texName=N
 		thumbbuf = thumbres*thumbres*3
 
 #		consolebin = luxProp(scn, "luxconsole", "").get()
-		consolebin = Blender.sys.dirname(luxProp(scn, "lux", "").get()) + os.sep + "luxconsole.exe"
+		consolebin = Blender.sys.dirname(luxProp(scn, "lux", "").get()) + os.sep + "luxconsole"
+		if osys.platform == "win32": consolebin = consolebin + ".exe"
 
 		PIPE = subprocess.PIPE
 		p = subprocess.Popen((consolebin, '-b', '-'), bufsize=thumbbuf, stdin=PIPE, stdout=PIPE, stderr=PIPE)
@@ -3788,9 +3793,9 @@ def luxMaterialBlock(name, luxname, key, mat, gui=None, level=0, str_opt=""):
 
 			if not(metalname.get() in metals):
 				metals.append(metalname.get())
-			metallink = luxOption("name", metalname, metals, "name", "aluminium", gui, 1.88)
+			metallink = luxOption("name", metalname, metals, "name", "", gui, 1.88)
 			if gui: Draw.Button("...", evtLuxGui, gui.x, gui.y-gui.h, gui.h, gui.h, "click to select a nk file",lambda e,v:Window.FileSelector(lambda s:metalname.set(s), "Select nk file"))
-			link += metallink
+			link += luxstr(metallink)
 			anisotropic = luxProp(mat, kn+"metal.anisotropic", False)
 			if gui:
 				gui.newline("")
