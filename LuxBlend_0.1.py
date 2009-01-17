@@ -808,6 +808,7 @@ def launchLux(filename):
 	ic = luxProp(scn, "lux", "").get()
 	ic = Blender.sys.dirname(ic) + os.sep + "luxrender"
 	if ostype == "win32": ic = ic + ".exe"
+	if ostype == "darwin": ic = ic + ".app/contents/macos/luxrender"
 	checkluxpath = luxProp(scn, "checkluxpath", True).get()
 	if checkluxpath:
 		if sys.exists(ic) != 1:
@@ -841,6 +842,7 @@ def launchLuxPiped():
 	ic = luxProp(scn, "lux", "").get()
 	ic = Blender.sys.dirname(ic) + os.sep + "luxrender"
 	if ostype == "win32": ic = ic + ".exe"
+	if ostype == "darwin": ic = ic + ".app/contents/macos/luxrender"
 	checkluxpath = luxProp(scn, "checkluxpath", True).get()
 	if checkluxpath:
 		if sys.exists(ic) != 1:
@@ -880,7 +882,7 @@ def launchLuxWait(filename):
 	ic = luxProp(scn, "lux", "").get()
 	ic = Blender.sys.dirname(ic) + os.sep + "luxrender"
 	if ostype == "win32": ic = ic + ".exe"
-
+	if ostype == "darwin": ic = ic + ".app/contents/macos/luxrender"
 	checkluxpath = luxProp(scn, "checkluxpath", True).get()
 	if checkluxpath:
 		if sys.exists(ic) != 1:
