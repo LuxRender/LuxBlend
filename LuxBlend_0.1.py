@@ -808,7 +808,7 @@ def launchLux(filename):
 	ic = luxProp(scn, "lux", "").get()
 	ic = Blender.sys.dirname(ic) + os.sep + "luxrender"
 	if ostype == "win32": ic = ic + ".exe"
-	if ostype == "darwin": ic = ic + ".app/contents/macos/luxrender"
+	if ostype == "darwin": ic = ic + ".app/Contents/MacOS/luxrender"
 	checkluxpath = luxProp(scn, "checkluxpath", True).get()
 	if checkluxpath:
 		if sys.exists(ic) != 1:
@@ -842,7 +842,7 @@ def launchLuxPiped():
 	ic = luxProp(scn, "lux", "").get()
 	ic = Blender.sys.dirname(ic) + os.sep + "luxrender"
 	if ostype == "win32": ic = ic + ".exe"
-	if ostype == "darwin": ic = ic + ".app/contents/macos/luxrender"
+	if ostype == "darwin": ic = ic + ".app/Contents/MacOS/luxrender"
 	checkluxpath = luxProp(scn, "checkluxpath", True).get()
 	if checkluxpath:
 		if sys.exists(ic) != 1:
@@ -882,7 +882,7 @@ def launchLuxWait(filename):
 	ic = luxProp(scn, "lux", "").get()
 	ic = Blender.sys.dirname(ic) + os.sep + "luxrender"
 	if ostype == "win32": ic = ic + ".exe"
-	if ostype == "darwin": ic = ic + ".app/contents/macos/luxrender"
+	if ostype == "darwin": ic = ic + ".app/Contents/MacOS/luxrender"
 	checkluxpath = luxProp(scn, "checkluxpath", True).get()
 	if checkluxpath:
 		if sys.exists(ic) != 1:
@@ -3386,6 +3386,8 @@ def luxLamp(name, kn, mat, gui, level):
 	(str,link) = luxLightSpectrumTexture("L", kn+"light", "1.0 1.0 1.0", 1.0, "Spectrum", "", mat, gui, level+1)
 	if gui: gui.newline("")
 	link += luxFloat("gain", luxProp(mat, kn+"light.gain", 1.0), 0.0, 100.0, "gain", "Gain/scale multiplier", gui)
+
+	# LightGroup
 	link += luxString("lightgroup", luxProp(mat, kn+"light.lightgroup", ""), "l-group", "assign light to a named light-group", gui, 1.0)
 
 	if gui: gui.newline("Photometric")
