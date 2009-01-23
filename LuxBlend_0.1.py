@@ -185,7 +185,7 @@ class luxExport:
 					for mat in mats:
 						if (mat!=None) and (mat not in self.materials):
 							self.materials.append(mat)
-						if (mat!=None) and (luxProp(mat, "type", "").get()=="light"):
+						if (mat!=None) and ((luxProp(mat, "type", "").get()=="light") or (luxProp(mat, "emission", "false").get()=="true")):
 							light = True
 					mesh_name = obj.getData(name_only=True)
 					try:
@@ -1112,6 +1112,8 @@ evtSaveMaterial = 96
 evtLoadMaterial = 95
 evtDeleteMaterial = 94
 evtConvertMaterial = 92
+evtSaveMaterial2 = 91
+evtLoadMaterial2 = 90
 
 
 # default settings
@@ -1521,7 +1523,7 @@ def luxstr(str):
 
 
 usedproperties = {} # global variable to collect used properties for storing presets
-
+usedpropertiesfilterobj = None # assign a object to only collect the properties that are assigned to this object
 
 # class to access properties (for lux settings)
 class luxProp:
@@ -1539,27 +1541,32 @@ class luxProp:
 	def createassignment(self, name, value):
 		return "%s = %s"%(name, value)
 	def get(self):
-		global usedproperties, luxdefaults
+		global usedproperties, usedpropertiesfilterobj, luxdefaults
 		if self.obj:
 			try:
 				value = self.obj.properties['luxblend'][self.name]
-				usedproperties[self.name] = value
+				if not(usedpropertiesfilterobj) or (usedpropertiesfilterobj == self.obj):
+					usedproperties[self.name] = value
 				return value
 			except KeyError:
 				try:
 					value = self.parseassignment(self.obj.properties['luxblend'][self.hashname], self.name)
-					usedproperties[self.name] = value
+					if not(usedpropertiesfilterobj) or (usedpropertiesfilterobj == self.obj):
+						usedproperties[self.name] = value
 					return value
 				except KeyError:
 					if self.obj.__class__.__name__ == "Scene": # luxdefaults only for global setting
 						try:
 							value = luxdefaults[self.name]
-							usedproperties[self.name] = value
+							if not(usedpropertiesfilterobj) or (usedpropertiesfilterobj == self.obj):
+								usedproperties[self.name] = value
 							return value
 						except KeyError:
-							usedproperties[self.name] = self.default
+							if not(usedpropertiesfilterobj) or (usedpropertiesfilterobj == self.obj):
+								usedproperties[self.name] = self.default
 							return self.default
-					usedproperties[self.name] = self.default
+					if not(usedpropertiesfilterobj) or (usedpropertiesfilterobj == self.obj):
+						usedproperties[self.name] = self.default
 					return self.default
 		return None
 	def getobj(self):
@@ -2739,6 +2746,7 @@ def luxTexture(name, parentkey, type, default, min, max, caption, hint, mat, gui
 	luxOption("texture", texture, textures, "texture", "", gui, 0.9)
 	str = "Texture \"%s\" \"%s\" \"%s\""%(texname, type, texture.get())
 
+	if gui: Draw.PushButton(">", evtLuxGui, gui.xmax+gui.h, gui.y-gui.h, gui.h, gui.h, "Menu", lambda e,v: showMatTexMenu(mat,keyname,True))
 	if gui: # Draw Texture level Material preview
 		luxPreview(mat, parentkey, 1, False, False, name, gui, texlevel, [0.5, 0.5, 0.5])
 		# Add an offset for next controls
@@ -3331,7 +3339,6 @@ def luxCauchyBFloatTexture(name, key, default, min, max, caption, hint, mat, gui
 		cauchybpreset = luxProp(mat, keyname+".cauchybpreset", "01 - Fused silica glass")
 		luxOption("cauchybpreset", cauchybpreset, cauchybnames, "  PRESET", "select CauchyB preset", gui, 1.6)
 		idx = cauchybnames.index(cauchybpreset.get())
-		print idx
 		value.set(cauchybvals[idx])
 		link = luxFloat(name, value, min, max, "cauchyb", hint, None, 1.6)
 	else:
@@ -3468,7 +3475,7 @@ def luxPreview(mat, name, defType=0, defEnabled=False, defLarge=False, texName=N
 		p = subprocess.Popen((consolebin, '-b', '-'), bufsize=thumbbuf, stdin=PIPE, stdout=PIPE, stderr=PIPE)
 
 		# Unremark to write debugging output to file
-		#p.stdin = open('c:\preview.lxs', 'w')
+		# p.stdin = open('c:\preview.lxs', 'w')
 
 		if defType == 0:	
 			prev_sphere = luxProp(mat, kn+"prev_sphere", "true")
@@ -3525,7 +3532,9 @@ def luxPreview(mat, name, defType=0, defEnabled=False, defLarge=False, texName=N
 		else:
 			# Material
 			p.stdin.write(luxMaterial(mat))
-			p.stdin.write(luxProp(mat,"link","").get()+'\n')
+			link = luxProp(mat,"link","").get()
+			if kn!="": link = link.rstrip("\"")+":"+kn.strip(".:")+"\""
+			p.stdin.write(link+'\n')
 		# Shape
 		if(prev_sphere.get()=="true"):
 			p.stdin.write('Shape "sphere" "float radius" [1.0]\n')
@@ -3673,11 +3682,15 @@ def luxMaterialBlock(name, luxname, key, mat, gui=None, level=0, str_opt=""):
 		showhelp = luxProp(mat, kn+"showhelp", "false")
 		luxHelp("help", showhelp, "Help", "Show Help Information", gui, 0.4)
 
+		# show copy/paste menu button
+		if gui: Draw.PushButton(">", evtLuxGui, gui.xmax+gui.h, gui.y-gui.h, gui.h, gui.h, "Menu", lambda e,v: showMatTexMenu(mat,keyname,False))
+
 		# Draw Material preview option
 		showmatprev = False
 		if level == 0:
 			showmatprev = True
 		if gui: luxPreview(mat, keyname, 0, showmatprev, True, None, gui, level, [0.746, 0.625, 0.5])
+
 
 		if gui: gui.newline()
 		has_object_options   = 0 # disable object options by default
@@ -4280,6 +4293,92 @@ def convertAllMaterials():
 
 
 
+### MatTex functions ###
+### MatTex : is a dictionary of material or texture properties
+
+def getMatTex(mat, basekey=''):
+	global usedproperties, usedpropertiesfilterobj
+	usedproperties = {}
+	usedpropertiesfilterobj = mat
+	luxMaterial(mat)
+	dict = {}
+	for k,v in usedproperties.items():
+		if k[:len(basekey)]==basekey:
+			if k[-9:] != '.textured':
+				dict[k[len(basekey):].lstrip('.')] = v
+	return dict
+
+def putMatTex(mat, dict, basekey=''):
+	# remove all current properties in mat that starts with basekey
+	try:
+	        d = mat.properties['luxblend']
+		for k,v in d.convert_to_pyobject().items():
+			kn = k
+			if k[:1]=="__hash:":	# decode if entry is hashed (cause of 32chars limit)
+				l = v.split(" = ")
+				kn = l[0]
+			if kn[:len(basekey)]==basekey:
+				del mat.properties['luxblend'][k]
+	except: pass
+	# assign load properties
+	for k,v in dict.items():
+		try:
+			if (basekey!="") and (k[0]!=":"):
+				if (k.find(".")<0) and (k.find(":")<0): k = "."+k
+				else: k = ":"+k
+			luxProp(mat, basekey+k, None).set(v)
+			if k[-8:] == '.texture':
+				luxProp(mat, basekey+k[:-8]+'.textured', 'false').set('true')
+		except: pass
+
+
+def MatTex2str(d):
+	return str(d).replace(", \'", ",\n\'")
+
+def str2MatTex(s):	# todo: this is not absolutely save from attacks!!!
+	s = s.strip()
+	if (s[0]=='{') and (s[-1]=='}'):
+		d = eval(s, dict(__builtins__=None,True=True,False=False))
+		if type(d)==types.DictType:
+			return d
+	return {}
+
+
+luxclipboard = None # global variable for copy/paste content
+def showMatTexMenu(mat, basekey='', tex=False):
+	global luxclipboard
+	if tex: menu="Texture menu:%t"
+	else: menu="Material menu:%t"
+	menu += "|copy%x1"
+	try:
+		if luxclipboard and (not(tex) ^ (luxclipboard["__type__"]=="texture")): menu +="|paste%x2"
+	except: pass
+	r = Draw.PupMenu(menu)
+	if r==1:
+		luxclipboard = getMatTex(mat, basekey)
+		luxclipboard["__type__"] = ["material","texture"][bool(tex)]
+	elif r==2: putMatTex(mat, luxclipboard, basekey)
+	Draw.Redraw()
+
+
+def saveMaterial(mat, fn):
+	d = getMatTex(mat)
+	file = open(fn, 'w')
+	file.write(MatTex2str(d))
+	file.close()
+	Draw.Redraw()
+
+
+def loadMaterial(mat, fn):
+	file = open(fn, 'r')
+	data = file.read()
+	file.close()
+	data = str2MatTex(data)
+	putMatTex(mat, data) 
+	Draw.Redraw()
+
+
+
 
 activemat = None
 def setactivemat(mat):
@@ -4417,9 +4516,9 @@ def luxDraw():
 					Draw.Menu(menustr, evtLuxGui, r[0], r[1], r[2], r[3], matindex, "", lambda e,v: setactivemat(mats[v]))
 					luxBool("", matfilter, "filter", "only show active object materials", gui, 0.5)
 
-					Draw.Button("L", evtLoadMaterial, gui.x, gui.y-gui.h, gui.h, gui.h, "load a material preset")
-					Draw.Button("S", evtSaveMaterial, gui.x+gui.h, gui.y-gui.h, gui.h, gui.h, "save a material preset")
-					Draw.Button("D", evtDeleteMaterial, gui.x+gui.h*2, gui.y-gui.h, gui.h, gui.h, "delete a material preset")
+					Draw.Button("L", evtLoadMaterial2, gui.x, gui.y-gui.h, gui.h, gui.h, "load a material preset")
+					Draw.Button("S", evtSaveMaterial2, gui.x+gui.h, gui.y-gui.h, gui.h, gui.h, "save a material preset")
+					# Draw.Button("D", evtDeleteMaterial, gui.x+gui.h*2, gui.y-gui.h, gui.h, gui.h, "delete a material preset")
 					if len(mats) > 0:
 						setactivemat(mats[matindex])
 						luxMaterial(activemat, gui)
@@ -4525,7 +4624,7 @@ def luxEvent(evt, val):  # function that handles keyboard and mouse events
 			
 	
 def luxButtonEvt(evt):  # function that handles button events
-	global usedproperties
+	global usedproperties, usedpropertiesfilterobj
 	if evt == evtLuxGui:
 		Draw.Redraw()
 	if evt == evtSavePreset:
@@ -4534,6 +4633,7 @@ def luxButtonEvt(evt):  # function that handles button events
 			name = Draw.PupStrInput("preset name: ", "")
 			if name != "":
 				usedproperties = {}
+				usedpropertiesfilterobj = None
 				luxSurfaceIntegrator(scn)
 				luxSampler(scn)
 				luxPixelFilter(scn)
@@ -4573,6 +4673,7 @@ def luxButtonEvt(evt):  # function that handles button events
 			name = Draw.PupStrInput("preset name: ", "")
 			if name != "":
 				usedproperties = {}
+				usedpropertiesfilterobj = activemat
 				luxMaterial(activemat)
 				saveMaterialPreset(name, usedproperties.copy())
 				Draw.Redraw()
@@ -4588,6 +4689,14 @@ def luxButtonEvt(evt):  # function that handles button events
 	if evt == evtConvertMaterial:
 		if activemat: convertMaterial(activemat)
 		Draw.Redraw()
+	if evt == evtLoadMaterial2:
+		if activemat:
+			scn = Scene.GetCurrent()
+			Window.FileSelector(lambda fn:loadMaterial(activemat, fn), "load material", luxProp(scn, "lux", "").get()+os.sep+".lbm")
+	if evt == evtSaveMaterial2:
+		if activemat:
+			scn = Scene.GetCurrent()
+			Window.FileSelector(lambda fn:saveMaterial(activemat, fn), "save material", luxProp(scn, "lux", "").get()+os.sep+".lbm")
 	
 
 def setFocus(target):
