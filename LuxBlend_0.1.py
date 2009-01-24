@@ -816,18 +816,24 @@ def launchLux(filename):
 			return		
 	autothreads = luxProp(scn, "autothreads", "true").get()
 	threads = luxProp(scn, "threads", 1).get()
-		
+	luxnice = luxProp(scn, "luxnice", 10).get()
 	if ostype == "win32":
+		prio = ""
+		if luxnice > 15: prio = "/low"
+		elif luxnice > 5: prio = "/belownormal"
+		elif luxnice > -5: prio = "/normal"
+		elif luxnice > -15: prio = "/abovenormal"
+		else: prio = "/high"
 		if(autothreads=="true"):
-			cmd = "start /b /belownormal \"\" \"%s\" \"%s\" "%(ic, filename)		
+			cmd = "start /b %s \"\" \"%s\" \"%s\" "%(prio, ic, filename)		
 		else:
-			cmd = "start /b /belownormal \"\" \"%s\" \"%s\" --threads=%d"%(ic, filename, threads)		
+			cmd = "start /b %s \"\" \"%s\" \"%s\" --threads=%d"%(prio, ic, filename, threads)		
 
 	if ostype == "linux2" or ostype == "darwin":
 		if(autothreads=="true"):
-			cmd = "(\"%s\" \"%s\")&"%(ic, filename)
+			cmd = "(nice -n %d \"%s\" \"%s\")&"%(luxnice, ic, filename)
 		else:
-			cmd = "(\"%s\" --threads=%d \"%s\")&"%(ic, threads, filename)
+			cmd = "(nice -n %d \"%s\" --threads=%d \"%s\")&"%(luxnice, ic, threads, filename)
 
 	# call external shell script to start Lux	
 	print("Running Luxrender:\n"+cmd)
@@ -850,7 +856,7 @@ def launchLuxPiped():
 			return		
 	autothreads = luxProp(scn, "autothreads", "true").get()
 	threads = luxProp(scn, "threads", 1).get()
-		
+
 	if ostype == "win32":
 		if(autothreads=="true"):
 			cmd = "\"%s\" - "%(ic)		
@@ -890,12 +896,12 @@ def launchLuxWait(filename):
 			return		
 	autothreads = luxProp(scn, "autothreads", "true").get()
 	threads = luxProp(scn, "threads", 1).get()
-		
+
 	if ostype == "win32":
 		if(autothreads=="true"):
-			cmd = "start /b /WAIT /belownormal \"\" \"%s\" \"%s\" "%(ic, filename)		
+			cmd = "start /b /WAIT \"\" \"%s\" \"%s\" "%(ic, filename)		
 		else:
-			cmd = "start /b /WAIT /belownormal \"\" \"%s\" \"%s\" --threads=%d"%(ic, filename, threads)		
+			cmd = "start /b /WAIT \"\" \"%s\" \"%s\" --threads=%d"%(ic, filename, threads)		
 		# call external shell script to start Lux	
 		#print("Running Luxrender:\n"+cmd)
 		#os.spawnv(os.P_WAIT, cmd, 0)
@@ -2642,6 +2648,14 @@ def luxSystem(scn, gui=None):
 #		luxFile("Console filename", luxProp(scn, "luxconsole", ""), "lux-file-console", "filename and path of the lux console executable", gui, 2.0)
 		if gui: gui.newline()
 		luxFile("datadir", luxProp(scn, "datadir", ""), "default out dir", "default.lxs save path", gui, 2.0)
+
+		if gui: gui.newline("PRIORITY:", 10)
+		luxnice = luxProp(scn, "luxnice", 10)
+		if osys.platform=="win32":
+			r = gui.getRect(2, 1)
+			Draw.Menu("priority%t|abovenormal%x-10|normal%x0|belownormal%x10|low%x19", evtLuxGui, r[0], r[1], r[2], r[3], luxnice.get(), "", lambda e,v: luxnice.set(v))
+		else: luxInt("nice", luxnice, -20, 19, "nice", "nice value. Range goes from -20 (highest priority) to 19 (lowest)", gui)  
+
 		if gui: gui.newline("THREADS:", 10)
 		autothreads = luxProp(scn, "autothreads", "true")
 		luxBool("autothreads", autothreads, "Auto Detect", "Automatically use all available processors", gui, 1.0)
