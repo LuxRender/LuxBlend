@@ -1686,7 +1686,9 @@ class luxGui:
 		if color!=None:	BGL.glColor3f(color[0],color[1],color[2]); BGL.glRectf(0,self.y-self.hmax,self.xmax,self.y+distance); BGL.glColor3f(0.9, 0.9, 0.9)
 		if icon!=None: drawIcon(icon, 2+level*10, self.y-16)
 		self.resethmax = True
-		BGL.glColor3f(0.9,0.9,0.9); BGL.glRasterPos2i(20+level*10,self.y-self.h+5); Draw.Text(title)
+		if title!="":
+			self.getRect(0, 1)
+			BGL.glColor3f(0.9,0.9,0.9); BGL.glRasterPos2i(20+level*10,self.y-self.h+5); Draw.Text(title)
 	
 def luxHelp(name, lux, caption, hint, gui, width=1.0):
 	if gui:
@@ -3386,10 +3388,10 @@ def luxLight(name, kn, mat, gui, level):
 	return (str, link)
 
 def luxLamp(name, kn, mat, gui, level):
-#	if gui:
-#		if name != "": gui.newline(name+":", 10, level)
-#		else: gui.newline("color:", 0, level+1)
-	if gui: gui.newline("", 10, level)
+	if gui:
+		if name != "": gui.newline(name+":", 10, level)
+		else: gui.newline("color:", 0, level+1)
+#	if gui: gui.newline("", 10, level)
 	(str,link) = luxLightSpectrumTexture("L", kn+"light", "1.0 1.0 1.0", 1.0, "Spectrum", "", mat, gui, level+1)
 	if gui: gui.newline("")
 	link += luxFloat("gain", luxProp(mat, kn+"light.gain", 1.0), 0.0, 100.0, "gain", "Gain/scale multiplier", gui)
@@ -3417,10 +3419,10 @@ def luxLamp(name, kn, mat, gui, level):
 	return (str, link)
 
 def luxSpot(name, kn, mat, gui, level):
-#	if gui:
-#		if name != "": gui.newline(name+":", 10, level)
-#		else: gui.newline("color:", 0, level+1)
-	if gui: gui.newline("", 10, level)
+	if gui:
+		if name != "": gui.newline(name+":", 10, level)
+		else: gui.newline("color:", 0, level+1)
+#	if gui: gui.newline("", 10, level)
 	(str,link) = luxLightSpectrumTexture("L", kn+"light", "1.0 1.0 1.0", 1.0, "Spectrum", "", mat, gui, level+1)
 	if gui: gui.newline("")
 	link += luxFloat("gain", luxProp(mat, kn+"light.gain", 1.0), 0.0, 100.0, "gain", "Gain/scale multiplier", gui)
@@ -4353,28 +4355,35 @@ def showMatTexMenu(mat, basekey='', tex=False):
 	try:
 		if luxclipboard and (not(tex) ^ (luxclipboard["__type__"]=="texture")): menu +="|paste%x2"
 	except: pass
+	if not(tex): menu += "|load%x3|save%x4"
 	r = Draw.PupMenu(menu)
 	if r==1:
 		luxclipboard = getMatTex(mat, basekey)
 		luxclipboard["__type__"] = ["material","texture"][bool(tex)]
 	elif r==2: putMatTex(mat, luxclipboard, basekey)
+	elif r==3: 
+		scn = Scene.GetCurrent()
+		Window.FileSelector(lambda fn:loadMaterial(mat, fn, basekey), "load material", luxProp(scn, "lux", "").get()+os.sep+".lbm")
+	elif r==4:
+		scn = Scene.GetCurrent()
+		Window.FileSelector(lambda fn:saveMaterial(mat, fn, basekey), "save material", luxProp(scn, "lux", "").get()+os.sep+".lbm")
 	Draw.Redraw()
 
 
-def saveMaterial(mat, fn):
-	d = getMatTex(mat)
+def saveMaterial(mat, fn, basekey=''):
+	d = getMatTex(mat, basekey)
 	file = open(fn, 'w')
 	file.write(MatTex2str(d))
 	file.close()
 	Draw.Redraw()
 
 
-def loadMaterial(mat, fn):
+def loadMaterial(mat, fn, basekey=''):
 	file = open(fn, 'r')
 	data = file.read()
 	file.close()
 	data = str2MatTex(data)
-	putMatTex(mat, data) 
+	putMatTex(mat, data, basekey) 
 	Draw.Redraw()
 
 
@@ -4516,9 +4525,9 @@ def luxDraw():
 					Draw.Menu(menustr, evtLuxGui, r[0], r[1], r[2], r[3], matindex, "", lambda e,v: setactivemat(mats[v]))
 					luxBool("", matfilter, "filter", "only show active object materials", gui, 0.5)
 
-					Draw.Button("L", evtLoadMaterial2, gui.x, gui.y-gui.h, gui.h, gui.h, "load a material preset")
-					Draw.Button("S", evtSaveMaterial2, gui.x+gui.h, gui.y-gui.h, gui.h, gui.h, "save a material preset")
-					# Draw.Button("D", evtDeleteMaterial, gui.x+gui.h*2, gui.y-gui.h, gui.h, gui.h, "delete a material preset")
+					Draw.Button("L", evtLoadMaterial, gui.x, gui.y-gui.h, gui.h, gui.h, "load a material preset")
+					Draw.Button("S", evtSaveMaterial, gui.x+gui.h, gui.y-gui.h, gui.h, gui.h, "save a material preset")
+					Draw.Button("D", evtDeleteMaterial, gui.x+gui.h*2, gui.y-gui.h, gui.h, gui.h, "delete a material preset")
 					if len(mats) > 0:
 						setactivemat(mats[matindex])
 						luxMaterial(activemat, gui)
