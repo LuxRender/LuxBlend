@@ -3103,7 +3103,7 @@ def luxTexture(name, parentkey, type, default, min, max, caption, hint, mat, gui
 		str += luxOption("noisetype", noisetype, noisetypes, "noisetypes", "", gui, 0.75)
 		
 		str += luxFloat("noisesize", luxProp(mat, keyname+".noisesize", 0.25), 0.0, 10.0, "noisesize", "", gui, 1.0)
-		str += luxFloat("turbulance", luxProp(mat, keyname+".turbulance", 5.0), 0.0, 2.0, "turbulance", "", gui, 1.0)
+		str += luxFloat("turbulance", luxProp(mat, keyname+".turbulance", 5.0), 0.0, 200.0, "turbulance", "", gui, 1.0)
 
 		noisebasis = luxProp(mat, keyname+".noisebasis", "blender_original")
 		noisebasises = ["blender_original","original_perlin", "improved_perlin", "voronoi_f1", "voronoi_f2", "voronoi_f3", "voronoi_f4", "voronoi_f2f1", "voronoi_crackle", "cell_noise"]
