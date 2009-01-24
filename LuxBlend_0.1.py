@@ -4009,15 +4009,20 @@ def CBluxExport(default, run):
 		Window.FileSelector(save_still, "Export", sys.makename(Blender.Get("filename"), ".lxs"))
 
 
-def CBluxAnimExport(default, run):
+def CBluxAnimExport(default, run, fileselect=True):
 	if default:
 		datadir = luxProp(Scene.GetCurrent(), "datadir", "").get()
 		if datadir=="": datadir = Blender.Get("datadir")
 		filename = datadir + os.sep + "default.lxs"
 		save_anim(filename)
 	else:
-		Window.FileSelector(save_anim, "Export", sys.makename(Blender.Get("filename"), ".lxs"))
-
+		if fileselect:
+			Window.FileSelector(save_anim, "Export", sys.makename(Blender.Get("filename"), ".lxs"))
+		else:
+			datadir = luxProp(Scene.GetCurrent(), "datadir", "").get()
+			if datadir=="": datadir = Blender.Get("datadir")
+			filename = sys.makename(Blender.Get("filename") , ".lxs")
+			save_anim(filename)
 
 
 # convert a Blender material to lux material
@@ -4740,10 +4745,13 @@ def setFocus(target):
 
 
 # Parse command line arguments for batch mode rendering if supplied
-try: pyargs = osys.argv[osys.argv.index('--')+1:]
+
+try:
+	batchindex = osys.argv.index('--batch')
+	pyargs = osys.argv[osys.argv.index('--batch')+1:]
 except: pyargs = []
 
-if pyargs != [] and pyargs[0] == "--batch":
+if (pyargs != []) and (batchindex != 0):
 	print "\n\nLuxBlend CVS - BATCH mode\n"
 
 	scene = Scene.GetCurrent()
@@ -4751,11 +4759,17 @@ if pyargs != [] and pyargs[0] == "--batch":
 
 	luxpath = ""
 	import getopt
-	o, a = getopt.getopt(pyargs, 's:e:o:t:l:',["scale=","haltspp="])
+	o, a = getopt.getopt(pyargs, 's:e:o:t:l:',["scale=","haltspp=","run=", "lbm="])
 
 	opts = {}
 	for k,v in o:
 		opts[k] = v
+
+	if (opts.has_key('--run')) and (opts['--run'] == 'false'):
+		print "Run: false"
+		luxProp(scene, "run", "true").set("false")
+	else:
+		luxProp(scene, "run", "true").set("true")
 
 	if opts.has_key('--scale'):
 		print "Zoom: %s" %opts['--scale']
@@ -4763,7 +4777,7 @@ if pyargs != [] and pyargs[0] == "--batch":
 
 	if opts.has_key('--haltspp'):
 		print "haltspp: %s" %opts['--haltspp']
-		luxProp(scene, "haltspp", "100 %").set(int(opts['--haltspp']))
+		luxProp(scene, "haltspp", 0).set(int(opts['--haltspp']))
 
 	if opts.has_key('-s'):
 		print "Start frame: %s" %opts['-s']
@@ -4791,9 +4805,15 @@ if pyargs != [] and pyargs[0] == "--batch":
 		luxProp(scene, "datadir", "").set(opts['-t'])
 	else:
 		print "Error: Temporary export path not supplied (-t)"; osys.exit(1)			
+	if opts.has_key('--lbm'):
+		print "Load material: %s" %opts['--lbm']
+		mat = Material.Get("Material")
+		if mat: loadMaterial(mat, opts['--lbm'])
+		else:
+			print "Error: No material with name \"Material\" found (--lbm)"; osys.exit(1)
 
-	luxProp(scene, "run", True).set("true")
-	CBluxAnimExport(True, True)
+#	CBluxAnimExport(True, True)
+	CBluxAnimExport(False, False, False) # as by zukazuka (http://www.luxrender.net/forum/viewtopic.php?f=11&t=1288)
 	osys.exit(0)
 
 else:
