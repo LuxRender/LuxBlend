@@ -691,9 +691,10 @@ def save_lux(filename, unindexedname):
 				# motion blur
 				frame = Blender.Get('curframe')
 				Blender.Set('curframe', frame+1)
-				m1 = 1.0*matrix # multiply by 1.0 to get a copy of orignal matrix (will be frame-independant) 
+				m1 = 1.0*matrix # multiply by 1.0 to get a copy of original matrix (will be frame-independant) 
 				Blender.Set('curframe', frame)
 				if m1 != matrix:
+					# Motion detected, write endtransform
 					print "  motion blur"
 					motion = m1
 					pos = m1[3]
@@ -2410,8 +2411,10 @@ def luxSampler(scn, gui=None):
 			if showadvanced.get()=="false":
 				# Default parameters
 				if gui: gui.newline("  Mutation:", 8, 0, None, [0.4,0.4,0.4])
-				luxFloat("strength", luxProp(scn, "sampler.metro.strength", 0.6), 0.0, 1.0, "strength", "Mutation Strength (lmprob = 1.0-strength)", gui, 2.0, 1)
-
+				strength = luxProp(scn, "sampler.metro.strength", 0.6)
+				luxFloat("strength", strength, 0.0, 1.0, "strength", "Mutation Strength (lmprob = 1.0-strength)", gui, 2.0, 1)
+				v = 1.0 - strength.get()
+				str += "\n   \"float largemutationprob\" [%f]"%v
 			if showadvanced.get()=="true":
 				# Advanced parameters
 				if gui: gui.newline("  Mutation:")
@@ -2496,7 +2499,10 @@ def luxSurfaceIntegrator(scn, gui=None):
 			if showadvanced.get()=="false":
 				# Default parameters
 				if gui: gui.newline("  Depth:", 8, 0, None, [0.4,0.4,0.4])
-				luxInt("bounces", luxProp(scn, "sintegrator.bidir.bounces", 10), 5, 32, "bounces", "The maximum recursion depth for ray casting (in both directions)", gui, 2.0)
+				bounces = luxProp(scn, "sintegrator.bidir.bounces", 10)
+				luxInt("bounces", bounces, 5, 32, "bounces", "The maximum recursion depth for ray casting (in both directions)", gui, 2.0)
+				str += "\n   \"integer eyedepth\" [%i]\n"%bounces.get()
+				str += "   \"integer lightdepth\" [%i]"%bounces.get()
 
 			if showadvanced.get()=="true":
 				# Advanced parameters
