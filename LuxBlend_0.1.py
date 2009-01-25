@@ -3869,7 +3869,7 @@ def luxMaterialBlock(name, luxname, key, mat, gui=None, level=0, str_opt=""):
 			metallink = luxOption("name", metalname, metals, "name", "", gui, 1.88)
 			if gui: Draw.Button("...", evtLuxGui, gui.x, gui.y-gui.h, gui.h, gui.h, "click to select a nk file",lambda e,v:Window.FileSelector(lambda s:metalname.set(s), "Select nk file"))
 			link += luxstr(metallink)
-			anisotropic = luxProp(mat, kn+"metal.anisotropic", False)
+			anisotropic = luxProp(mat, kn+"metal.anisotropic", "false")
 			if gui:
 				gui.newline("")
 				Draw.Toggle("A", evtLuxGui, gui.x-gui.h, gui.y-gui.h, gui.h, gui.h, anisotropic.get()=="true", "anisotropic roughness", lambda e,v:anisotropic.set(["false","true"][bool(v)]))
@@ -3898,7 +3898,7 @@ def luxMaterialBlock(name, luxname, key, mat, gui=None, level=0, str_opt=""):
 		if mattype.get() == "roughglass":
 			(str,link) = c((str,link), luxSpectrumTexture("Kr", keyname, "1.0 1.0 1.0", 1.0, "reflection", "", mat, gui, level+1))
 			(str,link) = c((str,link), luxSpectrumTexture("Kt", keyname, "1.0 1.0 1.0", 1.0, "transmission", "", mat, gui, level+1))
-			anisotropic = luxProp(mat, kn+"roughglass.anisotropic", False)
+			anisotropic = luxProp(mat, kn+"roughglass.anisotropic", "false")
 			if gui:
 				gui.newline("")
 				Draw.Toggle("A", evtLuxGui, gui.x-gui.h, gui.y-gui.h, gui.h, gui.h, anisotropic.get()=="true", "anisotropic roughness", lambda e,v:anisotropic.set(["false","true"][bool(v)]))
@@ -3920,7 +3920,7 @@ def luxMaterialBlock(name, luxname, key, mat, gui=None, level=0, str_opt=""):
 		if mattype.get() == "shinymetal":
 			(str,link) = c((str,link), luxSpectrumTexture("Kr", keyname, "1.0 1.0 1.0", 1.0, "reflection", "", mat, gui, level+1))
 			(str,link) = c((str,link), luxSpectrumTexture("Ks", keyname, "1.0 1.0 1.0", 1.0, "specular", "", mat, gui, level+1))
-			anisotropic = luxProp(mat, kn+"shinymetal.anisotropic", False)
+			anisotropic = luxProp(mat, kn+"shinymetal.anisotropic", "false")
 			if gui:
 				gui.newline("")
 				Draw.Toggle("A", evtLuxGui, gui.x-gui.h, gui.y-gui.h, gui.h, gui.h, anisotropic.get()=="true", "anisotropic roughness", lambda e,v:anisotropic.set(["false","true"][bool(v)]))
@@ -3953,7 +3953,7 @@ def luxMaterialBlock(name, luxname, key, mat, gui=None, level=0, str_opt=""):
 			else:
 				(str,link) = c((str,link), luxSpectrumTexture("Ks", keyname, "1.0 1.0 1.0", 1.0, "specular", "", mat, gui, level+1))
 				link += " \"float index\" [0.0]"	
-			anisotropic = luxProp(mat, kn+"glossy.anisotropic", False)
+			anisotropic = luxProp(mat, kn+"glossy.anisotropic", "false")
 			if gui:
 				gui.newline("")
 				Draw.Toggle("A", evtLuxGui, gui.x-gui.h, gui.y-gui.h, gui.h, gui.h, anisotropic.get()=="true", "anisotropic roughness", lambda e,v:anisotropic.set(["false","true"][bool(v)]))
@@ -4375,7 +4375,9 @@ def getMatTex(mat, basekey=''):
 	for k,v in usedproperties.items():
 		if k[:len(basekey)]==basekey:
 			if k[-9:] != '.textured':
-				dict[k[len(basekey):].lstrip('.')] = v
+				name = k[len(basekey):]
+				if name == ".type": name = "type"
+				dict[name] = v
 	return dict
 
 def putMatTex(mat, dict, basekey=''):
@@ -4390,12 +4392,10 @@ def putMatTex(mat, dict, basekey=''):
 			if kn[:len(basekey)]==basekey:
 				del mat.properties['luxblend'][k]
 	except: pass
-	# assign load properties
+	# assign loaded properties
 	for k,v in dict.items():
 		try:
-			if (basekey!="") and (k[0]!=":"):
-				if (k.find(".")<0) and (k.find(":")<0): k = "."+k
-				else: k = ":"+k
+			if (basekey!="") and (k=="type"): k = ".type"
 			luxProp(mat, basekey+k, None).set(v)
 			if k[-8:] == '.texture':
 				luxProp(mat, basekey+k[:-8]+'.textured', 'false').set('true')
@@ -4424,6 +4424,7 @@ def showMatTexMenu(mat, basekey='', tex=False):
 		if luxclipboard and (not(tex) ^ (luxclipboard["__type__"]=="texture")): menu +="|Paste%x2"
 	except: pass
 	if not(tex): menu += "|Load LBM%x3|Save LBM%x4"
+#	menu += "|%l|dump material%x99|dump clipboard%x98"
 	r = Draw.PupMenu(menu)
 	if r==1:
 		luxclipboard = getMatTex(mat, basekey)
@@ -4435,6 +4436,11 @@ def showMatTexMenu(mat, basekey='', tex=False):
 	elif r==4:
 		scn = Scene.GetCurrent()
 		Window.FileSelector(lambda fn:saveMaterial(mat, fn, basekey), "save material", luxProp(scn, "lux", "").get()+os.sep+".lbm")
+#	elif r==99:
+#		for k,v in mat.properties['luxblend'].convert_to_pyobject().items(): print k+"="+repr(v)
+#	elif r==98:
+#		for k,v in luxclipboard.items(): print k+"="+repr(v)
+#	print ""
 	Draw.Redraw()
 
 
