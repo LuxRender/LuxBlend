@@ -680,13 +680,40 @@ def save_lux(filename, unindexedname):
 
 		if camObj:
 			print "processing Camera..."
+			cam = camObj.data
+			cammblur = luxProp(cam, "cammblur", "true")
+			usemblur = luxProp(cam, "usemblur", "false")
+
 			matrix = camObj.getMatrix()
+
+			motion = None
+			if(cammblur.get() == "true" and usemblur.get() == "true"):
+				# motion blur
+				frame = Blender.Get('curframe')
+				Blender.Set('curframe', frame+1)
+				m1 = 1.0*matrix # multiply by 1.0 to get a copy of orignal matrix (will be frame-independant) 
+				Blender.Set('curframe', frame)
+				if m1 != matrix:
+					print "  motion blur"
+					motion = m1
+					pos = m1[3]
+					forwards = -m1[2]
+					target = pos + forwards
+					up = m1[1]
+					file.write("TransformBegin\n")
+					file.write("   LookAt %f %f %f \n       %f %f %f \n       %f %f %f\n" % ( pos[0], pos[1], pos[2], target[0], target[1], target[2], up[0], up[1], up[2] ))
+					file.write("   CoordinateSystem \"CameraEndTransform\"\n")
+					file.write("TransformEnd\n\n")
+
+			# Write original lookat transform
 			pos = matrix[3]
 			forwards = -matrix[2]
 			target = pos + forwards
 			up = matrix[1]
 			file.write("LookAt %f %f %f \n       %f %f %f \n       %f %f %f\n\n" % ( pos[0], pos[1], pos[2], target[0], target[1], target[2], up[0], up[1], up[2] ))
 			file.write(luxCamera(camObj.data, scn.getRenderingContext()))
+			if motion:
+				file.write("\t\"string endtransform\" [\"CameraEndTransform\"]\n\n")
 			file.write("\n")
 		file.write("\n")
 	
@@ -2092,8 +2119,6 @@ def luxCamera(cam, context, gui=None):
 			str += luxOption("shutterdistribution", luxProp(cam, "camera.shutterdistribution", "uniform"), ["uniform", "gaussian"], "distribution", "Choose the shutter sampling distribution.", gui, 2.0)
 			objectmblur = luxProp(cam, "objectmblur", "true")
 			luxBool("objectmblur", objectmblur, "Object", "Enable Motion Blur for scene object motions", gui, 1.0)
-			#meshmblur = luxProp(cam, "meshmblur", "false")
-			#luxBool("meshmblur", meshmblur, "Mesh", "Enable Motion Blur for mesh vertex motions", gui, 0.666)
 			cammblur = luxProp(cam, "cammblur", "false")
 			luxBool("cammblur", cammblur, "Camera", "Enable Motion Blur for Camera motion", gui, 1.0)
 	return str
@@ -3380,7 +3405,7 @@ def luxLight(name, kn, mat, gui, level):
 	link += luxFloat("efficacy", luxProp(mat, kn+"light.efficacy", 17.0), 0.0, 100.0, "Efficacy(lm/W)", "Efficacy Luminous flux/watt", gui)
 	if gui: gui.newline("")
 	link += luxFloat("gain", luxProp(mat, kn+"light.gain", 1.0), 0.0, 100.0, "gain", "Gain/scale multiplier", gui)
-	link += luxString("lightgroup", luxProp(mat, kn+"light.lightgroup", ""), "l-group", "assign light to a named light-group", gui, 1.0)
+	#link += luxString("lightgroup", luxProp(mat, kn+"light.lightgroup", ""), "l-group", "assign light to a named light-group", gui, 1.0)
 
 	if gui: gui.newline("Photometric")
 	pm = luxProp(mat, kn+"light.usepm", "false")
@@ -3411,7 +3436,7 @@ def luxLamp(name, kn, mat, gui, level):
 	link += luxFloat("gain", luxProp(mat, kn+"light.gain", 1.0), 0.0, 100.0, "gain", "Gain/scale multiplier", gui)
 
 	# LightGroup
-	link += luxString("lightgroup", luxProp(mat, kn+"light.lightgroup", ""), "l-group", "assign light to a named light-group", gui, 1.0)
+	#link += luxString("lightgroup", luxProp(mat, kn+"light.lightgroup", ""), "l-group", "assign light to a named light-group", gui, 1.0)
 
 	if gui: gui.newline("Photometric")
 	pm = luxProp(mat, kn+"light.usepm", "false")
@@ -3440,7 +3465,7 @@ def luxSpot(name, kn, mat, gui, level):
 	(str,link) = luxLightSpectrumTexture("L", kn+"light", "1.0 1.0 1.0", 1.0, "Spectrum", "", mat, gui, level+1)
 	if gui: gui.newline("")
 	link += luxFloat("gain", luxProp(mat, kn+"light.gain", 1.0), 0.0, 100.0, "gain", "Gain/scale multiplier", gui)
-	link += luxString("lightgroup", luxProp(mat, kn+"light.lightgroup", ""), "l-group", "assign light to a named light-group", gui, 1.0)
+	#link += luxString("lightgroup", luxProp(mat, kn+"light.lightgroup", ""), "l-group", "assign light to a named light-group", gui, 1.0)
 
 	if gui: gui.newline("Projection")
 	proj = luxProp(mat, kn+"light.usetexproj", "false")
@@ -3903,7 +3928,16 @@ def luxMaterialBlock(name, luxname, key, mat, gui=None, level=0, str_opt=""):
 			has_emission_options = 1
 		if mattype.get() == "glossy":
 			(str,link) = c((str,link), luxSpectrumTexture("Kd", keyname, "1.0 1.0 1.0", 1.0, "diffuse", "", mat, gui, level+1))
-			(str,link) = c((str,link), luxSpectrumTexture("Ks", keyname, "1.0 1.0 1.0", 1.0, "specular", "", mat, gui, level+1))
+			useior = luxProp(mat, keyname+".useior", "false")
+			if gui:
+				gui.newline("")
+				Draw.Toggle("I", evtLuxGui, gui.x-gui.h, gui.y-gui.h, gui.h, gui.h, useior.get()=="true", "Use IOR/Reflective index input", lambda e,v:useior.set(["false","true"][bool(v)]))
+			if useior.get() == "true":
+				(str,link) = c((str,link), luxIORFloatTexture("index", keyname, 1.5, 1.0, 50.0, "IOR", "", mat, gui, level+1))
+				link += " \"color Ks\" [1.0 1.0 1.0]"	
+			else:
+				(str,link) = c((str,link), luxSpectrumTexture("Ks", keyname, "1.0 1.0 1.0", 1.0, "specular", "", mat, gui, level+1))
+				link += " \"float index\" [0.0]"	
 			anisotropic = luxProp(mat, kn+"glossy.anisotropic", False)
 			if gui:
 				gui.newline("")
@@ -4370,11 +4404,11 @@ def showMatTexMenu(mat, basekey='', tex=False):
 	global luxclipboard
 	if tex: menu="Texture menu:%t"
 	else: menu="Material menu:%t"
-	menu += "|copy%x1"
+	menu += "|Copy%x1"
 	try:
-		if luxclipboard and (not(tex) ^ (luxclipboard["__type__"]=="texture")): menu +="|paste%x2"
+		if luxclipboard and (not(tex) ^ (luxclipboard["__type__"]=="texture")): menu +="|Paste%x2"
 	except: pass
-	if not(tex): menu += "|load%x3|save%x4"
+	if not(tex): menu += "|Load LBM%x3|Save LBM%x4"
 	r = Draw.PupMenu(menu)
 	if r==1:
 		luxclipboard = getMatTex(mat, basekey)
