@@ -713,7 +713,7 @@ def save_lux(filename, unindexedname):
 			file.write("LookAt %f %f %f \n       %f %f %f \n       %f %f %f\n\n" % ( pos[0], pos[1], pos[2], target[0], target[1], target[2], up[0], up[1], up[2] ))
 			file.write(luxCamera(camObj.data, scn.getRenderingContext()))
 			if motion:
-				file.write("\t\"string endtransform\" [\"CameraEndTransform\"]\n\n")
+				file.write("\n   \"string endtransform\" [\"CameraEndTransform\"]")
 			file.write("\n")
 		file.write("\n")
 	
