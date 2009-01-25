@@ -544,12 +544,16 @@ class luxExport:
 				col = obj.getData(mesh=1).col # data
 				energy = obj.getData(mesh=1).energy # data
 				if ltype == Lamp.Types["Lamp"]:
+					lightgroup = luxProp(obj, "light.lightgroup", "default")
+					file.write("LightGroup \"%s\"\n"%lightgroup.get())
 					(str, link) = luxLamp("", "", obj, None, 0)
 					file.write(str+"LightSource \"point\""+link+"\n")
 				if ltype == Lamp.Types["Spot"]:
 					(str, link) = luxSpot("", "", obj, None, 0)
 					file.write(str)
 					proj = luxProp(obj, "light.usetexproj", "false")
+					lightgroup = luxProp(obj, "light.lightgroup", "default")
+					file.write("LightGroup \"%s\"\n"%lightgroup.get())
 					if(proj.get() == "true"):
 						file.write("Rotate 180 0 1 0\n")
 						file.write("LightSource \"projection\" \"float fov\" [%f]"%(obj.getData(mesh=1).spotSize))
@@ -558,6 +562,8 @@ class luxExport:
 							%(obj.getData(mesh=1).spotSize*0.5, obj.getData(mesh=1).spotSize*0.5*obj.getData(mesh=1).spotBlend)) # data
 					file.write(link+"\n")
 				if ltype == Lamp.Types["Area"]:
+					lightgroup = luxProp(obj, "light.lightgroup", "default")
+					file.write("LightGroup \"%s\"\n"%lightgroup.get())
 					file.write("\tAreaLightSource \"area\"")
 					file.write(link)
 #					file.write(luxLight("", "", obj, None, 0))
@@ -3411,7 +3417,8 @@ def luxLight(name, kn, mat, gui, level):
 	link += luxFloat("efficacy", luxProp(mat, kn+"light.efficacy", 17.0), 0.0, 100.0, "Efficacy(lm/W)", "Efficacy Luminous flux/watt", gui)
 	if gui: gui.newline("")
 	link += luxFloat("gain", luxProp(mat, kn+"light.gain", 1.0), 0.0, 100.0, "gain", "Gain/scale multiplier", gui)
-	#link += luxString("lightgroup", luxProp(mat, kn+"light.lightgroup", ""), "l-group", "assign light to a named light-group", gui, 1.0)
+	lightgroup = luxProp(mat, kn+"light.lightgroup", "default")
+	luxString("lightgroup", lightgroup, "group", "assign light to a named light-group", gui, 1.0)
 
 	if gui: gui.newline("Photometric")
 	pm = luxProp(mat, kn+"light.usepm", "false")
@@ -3440,9 +3447,8 @@ def luxLamp(name, kn, mat, gui, level):
 	(str,link) = luxLightSpectrumTexture("L", kn+"light", "1.0 1.0 1.0", 1.0, "Spectrum", "", mat, gui, level+1)
 	if gui: gui.newline("")
 	link += luxFloat("gain", luxProp(mat, kn+"light.gain", 1.0), 0.0, 100.0, "gain", "Gain/scale multiplier", gui)
-
-	# LightGroup
-	#link += luxString("lightgroup", luxProp(mat, kn+"light.lightgroup", ""), "l-group", "assign light to a named light-group", gui, 1.0)
+	lightgroup = luxProp(mat, kn+"light.lightgroup", "default")
+	luxString("lightgroup", lightgroup, "group", "assign light to a named light-group", gui, 1.0)
 
 	if gui: gui.newline("Photometric")
 	pm = luxProp(mat, kn+"light.usepm", "false")
@@ -3471,7 +3477,8 @@ def luxSpot(name, kn, mat, gui, level):
 	(str,link) = luxLightSpectrumTexture("L", kn+"light", "1.0 1.0 1.0", 1.0, "Spectrum", "", mat, gui, level+1)
 	if gui: gui.newline("")
 	link += luxFloat("gain", luxProp(mat, kn+"light.gain", 1.0), 0.0, 100.0, "gain", "Gain/scale multiplier", gui)
-	#link += luxString("lightgroup", luxProp(mat, kn+"light.lightgroup", ""), "l-group", "assign light to a named light-group", gui, 1.0)
+	lightgroup = luxProp(mat, kn+"light.lightgroup", "default")
+	luxString("lightgroup", lightgroup, "group", "assign light to a named light-group", gui, 1.0)
 
 	if gui: gui.newline("Projection")
 	proj = luxProp(mat, kn+"light.usetexproj", "false")
@@ -3752,7 +3759,9 @@ def luxMaterialBlock(name, luxname, key, mat, gui=None, level=0, str_opt=""):
 			has_emission_options = 1
 
 		if mattype.get() == "light":
-			link = "AreaLightSource \"area\""
+			lightgroup = luxProp(mat, kn+"light.lightgroup", "default")
+			link = "LightGroup \"%s\"\n"%lightgroup.get()
+			link += "AreaLightSource \"area\""
 			(str,link) = c((str,link), luxLight("", kn, mat, gui, level))
 			has_bump_options = 0
 			has_object_options = 1
