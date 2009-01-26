@@ -2126,7 +2126,7 @@ def luxCamera(cam, context, gui=None):
 			str += luxOption("shutterdistribution", luxProp(cam, "camera.shutterdistribution", "uniform"), ["uniform", "gaussian"], "distribution", "Choose the shutter sampling distribution.", gui, 2.0)
 			objectmblur = luxProp(cam, "objectmblur", "true")
 			luxBool("objectmblur", objectmblur, "Object", "Enable Motion Blur for scene object motions", gui, 1.0)
-			cammblur = luxProp(cam, "cammblur", "false")
+			cammblur = luxProp(cam, "cammblur", "true")
 			luxBool("cammblur", cammblur, "Camera", "Enable Motion Blur for Camera motion", gui, 1.0)
 	return str
 
