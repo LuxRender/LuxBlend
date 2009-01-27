@@ -3286,7 +3286,7 @@ def luxExponentTexture(name, key, default, min, max, caption, hint, mat, gui, le
 #	link = luxFloat(name, value, min, max, "", hint, gui, 2.0)
 	if gui:
 		r = gui.getRect(2.0, 1)
-		Draw.Number("", evtLuxGui, r[0], r[1], r[2], r[3], float(1.0/value.get()), 1.0, 1000000.0, hint, lambda e,v: value.set(1.0/v))
+		Draw.Number("", evtLuxGui, r[0], r[1], r[2], r[3], float(1.0/float(value.get())), 1.0, 1000000.0, hint, lambda e,v: value.set(1.0/v))
 	link = " \"float %s\" [%f]"%(name, float(value.get()))
 
 	tex = luxProp(mat, keyname+".textured", False)
@@ -4362,6 +4362,34 @@ def convertAllMaterials():
 
 
 
+### simple lrmDB
+simplelrmdb = False
+try:
+	import socket
+	simplelrmdb = True
+	def downloadLmrDB(mat, id):
+		if id.isalnum():
+			try:
+				HOST = 'www.luxrender.net'
+				GET = '/lrmdb/material/download/'+id
+				PORT = 80
+				sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+				sock.connect((HOST, PORT))
+				sock.send("GET %s HTTP/1.0\r\nHost: %s\r\n\r\n" % (GET, HOST))
+				data = sock.recv(1024)
+				str = ""
+				while len(data):
+					str += data
+					data = sock.recv(1024)
+				sock.close()
+				str = str.split("\r\n\r\n")[1]
+				return str2MatTex(str)
+			except: pass
+		else: print "ERROR: material id is not valid"
+		return None
+except: pass
+
+
 
 ### MatTex functions ###
 ### MatTex : is a dictionary of material or texture properties
@@ -4416,7 +4444,7 @@ def str2MatTex(s):	# todo: this is not absolutely save from attacks!!!
 
 luxclipboard = None # global variable for copy/paste content
 def showMatTexMenu(mat, basekey='', tex=False):
-	global luxclipboard
+	global luxclipboard, simplelrmdb
 	if tex: menu="Texture menu:%t"
 	else: menu="Material menu:%t"
 	menu += "|Copy%x1"
@@ -4424,6 +4452,8 @@ def showMatTexMenu(mat, basekey='', tex=False):
 		if luxclipboard and (not(tex) ^ (luxclipboard["__type__"]=="texture")): menu +="|Paste%x2"
 	except: pass
 	if not(tex): menu += "|Load LBM%x3|Save LBM%x4"
+	if not(tex) and simplelrmdb: menu += "|Download from DB%x5"
+
 #	menu += "|%l|dump material%x99|dump clipboard%x98"
 	r = Draw.PupMenu(menu)
 	if r==1:
@@ -4436,6 +4466,9 @@ def showMatTexMenu(mat, basekey='', tex=False):
 	elif r==4:
 		scn = Scene.GetCurrent()
 		Window.FileSelector(lambda fn:saveMaterial(mat, fn, basekey), "save material", luxProp(scn, "lux", "").get()+os.sep+".lbm")
+	elif r==5:
+		id = Draw.PupStrInput("Material ID:", "", 32)
+		if id: putMatTex(mat, downloadLmrDB(mat, id), basekey)
 #	elif r==99:
 #		for k,v in mat.properties['luxblend'].convert_to_pyobject().items(): print k+"="+repr(v)
 #	elif r==98:
