@@ -1,6 +1,6 @@
 #!BPY
 """Registration info for Blender menus:
-Name: 'LuxBlend CVS Exporter'
+Name: 'LuxBlend CVS Exporter (HTTP Enabled)'
 Blender: 248
 Group: 'Render'
 Tooltip: 'Export/Render to LuxRender CVS scene format (.lxs)'
