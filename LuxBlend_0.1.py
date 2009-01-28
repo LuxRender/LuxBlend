@@ -1842,8 +1842,8 @@ def luxFloat(name, lux, min, max, caption, hint, gui, width=1.0, useslider=0):
 							tmax = luxProp(obj, keyname+".IPOCurvetmax", max)
 							luxFloatNoIPO("ipotmax", tmax, min, max, "tmax", "Map maximum value to", gui, 0.5)
 	
-							sval = (icu_value - float(fmin.get())) / (float(fmax.get()) - float(fmin.get()))
-							lux.set(float(tmin.get()) + (sval * (float(tmax.get()) - float(tmin.get()))))
+							sval = (icu_value - fmin.getFloat()) / (fmax.getFloat() - fmin.getFloat())
+							lux.set(tmin.getFloat() + (sval * (tmax.getFloat() - tmin.getFloat())))
 
 							# invert
 							#v = gui.getRect(0.5, 1)
@@ -1877,8 +1877,8 @@ def luxFloat(name, lux, min, max, caption, hint, gui, width=1.0, useslider=0):
 					fmax = luxProp(obj, keyname+".IPOCurvefmax", 1.0)
 					tmin = luxProp(obj, keyname+".IPOCurvetmin", min)
 					tmax = luxProp(obj, keyname+".IPOCurvetmax", max)
-					sval = (icu_value - float(fmin.get())) / (float(fmax.get()) - float(fmin.get()))
-					lux.set(float(tmin.get()) + (sval * (float(tmax.get()) - float(tmin.get()))))
+					sval = (icu_value - fmin.getFloat()) / (fmax.getFloat() - fmin.getFloat())
+					lux.set(tmin.getFloat() + (sval * (tmax.getFloat() - tmin.getFloat())))
 
 	return "\n   \"float %s\" [%f]"%(name, lux.getFloat())
 
@@ -2353,8 +2353,8 @@ def luxPixelFilter(scn, gui=None):
 				slidval = luxProp(scn, "pixelfilter.mitchell.sharp", 0.33)
 				luxFloat("sharpness", slidval, 0.0, 1.0, "sharpness", "Specify amount between blurred (left) and sharp/ringed (right)", gui, 2.0, 1)
 				# rule: B + 2*c = 1.0
-				C = float(slidval.get()) * 0.5
-				B = 1.0 - float(slidval.get())
+				C = slidval.getFloat() * 0.5
+				B = 1.0 - slidval.getFloat()
 				str += "\n   \"float B\" [%f]"%(B)
 				str += "\n   \"float C\" [%f]"%(C)
 
@@ -2372,8 +2372,8 @@ def luxPixelFilter(scn, gui=None):
 					slidval = luxProp(scn, "pixelfilter.mitchell.sharp", 0.33)
 					luxFloat("sharpness", slidval, 0.0, 1.0, "sharpness", "Specify amount between blurred (left) and sharp/ringed (right)", gui, 1.5, 1)
 					# rule: B + 2*c = 1.0
-					C = float(slidval.get()) * 0.5
-					B = 1.0 - float(slidval.get())
+					C = slidval.getFloat() * 0.5
+					B = 1.0 - slidval.getFloat()
 					str += "\n   \"float B\" [%f]"%(B)
 					str += "\n   \"float C\" [%f]"%(C)
 			        elif(optmode.get() == "preset"):
@@ -3286,8 +3286,8 @@ def luxExponentTexture(name, key, default, min, max, caption, hint, mat, gui, le
 #	link = luxFloat(name, value, min, max, "", hint, gui, 2.0)
 	if gui:
 		r = gui.getRect(2.0, 1)
-		Draw.Number("", evtLuxGui, r[0], r[1], r[2], r[3], float(1.0/float(value.get())), 1.0, 1000000.0, hint, lambda e,v: value.set(1.0/v))
-	link = " \"float %s\" [%f]"%(name, float(value.get()))
+		Draw.Number("", evtLuxGui, r[0], r[1], r[2], r[3], float(1.0/value.getFloat()), 1.0, 1000000.0, hint, lambda e,v: value.set(1.0/v))
+	link = " \"float %s\" [%f]"%(name, value.getFloat())
 
 	tex = luxProp(mat, keyname+".textured", False)
 	if gui: Draw.Toggle("T", evtLuxGui, gui.x, gui.y-gui.h, gui.h, gui.h, tex.get()=="true", "use texture", lambda e,v:tex.set(["false","true"][bool(v)]))
@@ -4362,10 +4362,11 @@ def convertAllMaterials():
 
 
 
-### simple lrmDB
+
+### simple lrmDB ###
 simplelrmdb = False
 try:
-	import socket
+	import socket  # try import of socket library
 	simplelrmdb = True
 	def downloadLmrDB(mat, id):
 		if id.isalnum():
@@ -4382,12 +4383,16 @@ try:
 					str += data
 					data = sock.recv(1024)
 				sock.close()
-				str = str.split("\r\n\r\n")[1]
-				return str2MatTex(str)
-			except: pass
+				if str.split("\n", 1)[0].find("200") < 0:
+					print "ERROR: server error: %s"%(str.split("\n",1)[0])
+					return None
+				str = (str.split("\r\n\r\n")[1]).strip()
+				if (str[0]=="{") and (str[-1]=="}"): return str2MatTex(str)
+				print "ERROR: downloaded data is not a material or texture"
+			except: print "ERROR: download failed"
 		else: print "ERROR: material id is not valid"
 		return None
-except: pass
+except: print "WARNING: LmrDB support not available"
 
 
 
@@ -4410,25 +4415,25 @@ def getMatTex(mat, basekey=''):
 
 def putMatTex(mat, dict, basekey=''):
 	# remove all current properties in mat that starts with basekey
-	try:
-	        d = mat.properties['luxblend']
-		for k,v in d.convert_to_pyobject().items():
-			kn = k
-			if k[:1]=="__hash:":	# decode if entry is hashed (cause of 32chars limit)
-				l = v.split(" = ")
-				kn = l[0]
-			if kn[:len(basekey)]==basekey:
-				del mat.properties['luxblend'][k]
-	except: pass
-	# assign loaded properties
-	for k,v in dict.items():
+	if dict:
 		try:
-			if (basekey!="") and (k=="type"): k = ".type"
-			luxProp(mat, basekey+k, None).set(v)
-			if k[-8:] == '.texture':
-				luxProp(mat, basekey+k[:-8]+'.textured', 'false').set('true')
+		        d = mat.properties['luxblend']
+			for k,v in d.convert_to_pyobject().items():
+				kn = k
+				if k[:1]=="__hash:":	# decode if entry is hashed (cause of 32chars limit)
+					l = v.split(" = ")
+					kn = l[0]
+				if kn[:len(basekey)]==basekey:
+					del mat.properties['luxblend'][k]
 		except: pass
-
+		# assign loaded properties
+		for k,v in dict.items():
+			try:
+				if (basekey!="") and (k=="type"): k = ".type"
+				luxProp(mat, basekey+k, None).set(v)
+				if k[-8:] == '.texture':
+					luxProp(mat, basekey+k[:-8]+'.textured', 'false').set('true')
+			except: pass
 
 def MatTex2str(d):
 	return str(d).replace(", \'", ",\n\'")
@@ -4439,7 +4444,8 @@ def str2MatTex(s):	# todo: this is not absolutely save from attacks!!!
 		d = eval(s, dict(__builtins__=None,True=True,False=False))
 		if type(d)==types.DictType:
 			return d
-	return {}
+	print "ERROR: string to material/texture conversion failed"
+	return None
 
 
 luxclipboard = None # global variable for copy/paste content
