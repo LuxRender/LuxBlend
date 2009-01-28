@@ -4459,17 +4459,38 @@ try:
 	
 	class lrmdb_receiver_thread( threading.Thread ):
 		class ThreadedHTTPServer( ThreadingMixIn, HTTPServer):
-			pass
+			stopped = False
+			def serve_forever(self):
+				while not self.stopped:
+					self.handle_request()
+					
+				print 'LRMDB HTTP Server Stopped'
+				
 		
-		# port 12009 should be ok to use according to
-		#  http://en.wikipedia.org/wiki/List_of_TCP_and_UDP_port_numbers
-		httpd = ThreadedHTTPServer(('127.0.0.1', 12009), lrmdb_request)
+		httpd = None
+		stopped = False
+		daemon = True
 	
-		def run(self):
-			self.httpd.serve_forever()
+		def start(self):
+			# port 12009 should be ok to use according to
+			#  http://en.wikipedia.org/wiki/List_of_TCP_and_UDP_port_numbers
+			self.httpd = HTTPServer(('127.0.0.1', 12009), lrmdb_request) #Threaded
+			print 'LRMDB HTTP Server started'
 			
-	
-	
+		def run(self):
+			
+			while not self.stopped:
+			 self.httpd.handle_request()
+			 
+			print 'LRMDB HTTP Server Stopped'
+			
+		def stop(self):
+			print 'LRMDB HTTP Server Stopping'
+			self.httpd.server_close()
+			self.stopped = True
+			self.httpd = None
+			
+			
 except: pass
 
 
@@ -4792,6 +4813,7 @@ def luxEvent(evt, val):  # function that handles keyboard and mouse events
 	if evt == Draw.ESCKEY or evt == Draw.QKEY:
 		stop = Draw.PupMenu("OK?%t|Cancel export %x1")
 		if stop == 1:
+			if simplelrmdb and lrmdb_receiver.isAlive(): lrmdb_receiver.stop()
 			Draw.Exit()
 			return
 	scn = Scene.GetCurrent()
@@ -4805,6 +4827,7 @@ def luxEvent(evt, val):  # function that handles keyboard and mouse events
 	if evt == Draw.WHEELDOWNMOUSE: scrollbar.scroll(16)
 	if evt == Draw.PAGEUPKEY: scrollbar.scroll(-50)
 	if evt == Draw.PAGEDOWNKEY: scrollbar.scroll(50)
+	
 
 	# Handle icon button events - note - radiance - this is a work in progress! :)
 #	if evt == Draw.LEFTMOUSE and not val: 
@@ -5016,17 +5039,13 @@ else:
 	else	:
 		print "Lux path check disabled\n"
 
-
-
-
-if simplelrmdb:
-
-	try:
-		#===============================================================================
-		# START ONE SERVER IN A SEPARATE THREAD
-		#===============================================================================
-		lrmdb_receiver = lrmdb_receiver_thread()
-		lrmdb_receiver.start()
-		print 'LRMDB HTTP Server started'
-	except:
-		print 'Failed to start LRMDB HTTP Server'
+	if simplelrmdb:
+	
+		try:
+			#===============================================================================
+			# START ONE SERVER IN A SEPARATE THREAD
+			#===============================================================================
+			lrmdb_receiver = lrmdb_receiver_thread()
+			lrmdb_receiver.start()
+		except:
+			print 'Failed to start LRMDB HTTP Server'
