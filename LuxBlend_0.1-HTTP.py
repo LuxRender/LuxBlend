@@ -4370,7 +4370,6 @@ try:
 	import threading
 	from urlparse import urlparse
 	from BaseHTTPServer import HTTPServer, BaseHTTPRequestHandler
-	from SocketServer import ThreadingMixIn
 	
 	def downloadLrmdb(mat, id):
 		if id.isalnum():
@@ -4378,6 +4377,7 @@ try:
 				HOST = 'www.luxrender.net'
 				GET = '/lrmdb/material/download/'+id
 				PORT = 80
+				print 'Getting Material #'+id
 				sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 				sock.connect((HOST, PORT))
 				sock.send("GET %s HTTP/1.0\r\nHost: %s\r\n\r\n" % (GET, HOST))
@@ -4391,7 +4391,9 @@ try:
 					print "ERROR: server error: %s"%(str.split("\n",1)[0])
 					return None
 				str = (str.split("\r\n\r\n")[1]).strip()
-				if (str[0]=="{") and (str[-1]=="}"): return str2MatTex(str)
+				if (str[0]=="{") and (str[-1]=="}"):
+					print 'Got it!'
+					return str2MatTex(str)
 				print "ERROR: downloaded data is not a material or texture"
 			except: print "ERROR: download failed"
 		else: print "ERROR: material id is not valid"
@@ -4416,9 +4418,9 @@ try:
 				self.message += "%s\n" % str
 		
 		def do_QUIT(self):
+			self.server.stopped = True
 			self.send_response(200)
 			self.end_headers()
-			self.server.stopped = True
 		
 		def do_GET(self):
 	
@@ -4463,7 +4465,7 @@ try:
 			return
 	
 	class lrmdb_receiver_thread( threading.Thread ):
-		class ThreadedHTTPServer( ThreadingMixIn, HTTPServer):
+		class StoppableHTTPServer(  HTTPServer ):
 			def serve_forever(self):
 				self.stopped = False
 				while not self.stopped:
@@ -4472,22 +4474,24 @@ try:
 		httpd = None
 			
 		def run(self):
-			self.httpd = self.ThreadedHTTPServer(('127.0.0.1', 12009), lrmdb_request)
-			print 'LRMDB HTTP Server started'
-			#while not self.stopped:
-			#	self.httpd.handle_request()
-			self.httpd.serve_forever()
+			try:
+				self.httpd = self.StoppableHTTPServer(('127.0.0.1', 12009), lrmdb_request)
+				print 'LRMDB HTTP Server started'
+				#while not self.stopped:
+				#	self.httpd.handle_request()
+				self.httpd.serve_forever()
+			except:
+				print 'Error starting server'
 			print 'LRMDB HTTP Server Stopped'
 			
 		def stop(self):
 			import httplib
 			print 'LRMDB HTTP Server Stopping'
+			self.httpd.stopped = True
 			connx = httplib.HTTPConnection('localhost:12009')
 			connx.request('QUIT','/')
 			connx.getresponse()
-			connx = httplib.HTTPConnection('localhost:12009')
-			connx.request('QUIT','/')
-			connx.getresponse()
+			
 	
 	ConnectLrmdb = True		
 			
@@ -4828,6 +4832,9 @@ def luxEvent(evt, val):  # function that handles keyboard and mouse events
 	if evt == Draw.WHEELDOWNMOUSE: scrollbar.scroll(16)
 	if evt == Draw.PAGEUPKEY: scrollbar.scroll(-50)
 	if evt == Draw.PAGEDOWNKEY: scrollbar.scroll(50)
+
+	if evt == Draw.WINQUIT or evt == Draw.WINCLOSE:
+		if ConnectLrmdb and lrmdb_receiver.isAlive(): lrmdb_receiver.stop()
 
 	# Handle icon button events - note - radiance - this is a work in progress! :)
 #	if evt == Draw.LEFTMOUSE and not val: 
