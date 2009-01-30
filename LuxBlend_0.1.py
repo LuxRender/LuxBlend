@@ -4372,12 +4372,12 @@ def convertAllMaterials():
 
 
 
-### simple lrmDB ###
-simplelrmdb = False
+### Connect LRMDB ###
+ConnectLrmdb = False
 try:
 	import socket  # try import of socket library
-	simplelrmdb = True
-	def downloadLmrDB(mat, id):
+	ConnectLrmdb = True
+	def downloadLRMDB(mat, id):
 		if id.isalnum():
 			try:
 				HOST = 'www.luxrender.net'
@@ -4404,7 +4404,7 @@ try:
 			except: print "ERROR: download failed"
 		else: print "ERROR: material id is not valid"
 		return None
-except: print "WARNING: LmrDB support not available"
+except: print "WARNING: LRMDB support not available"
 
 
 
@@ -4462,7 +4462,7 @@ def str2MatTex(s):	# todo: this is not absolutely save from attacks!!!
 
 luxclipboard = None # global variable for copy/paste content
 def showMatTexMenu(mat, basekey='', tex=False):
-	global luxclipboard, simplelrmdb
+	global luxclipboard, ConnectLrmdb
 	if tex: menu="Texture menu:%t"
 	else: menu="Material menu:%t"
 	menu += "|Copy%x1"
@@ -4470,7 +4470,7 @@ def showMatTexMenu(mat, basekey='', tex=False):
 		if luxclipboard and (not(tex) ^ (luxclipboard["__type__"]=="texture")): menu +="|Paste%x2"
 	except: pass
 	if not(tex): menu += "|Load LBM%x3|Save LBM%x4"
-	if not(tex) and simplelrmdb: menu += "|Download from DB%x5"
+	if not(tex) and ConnectLrmdb: menu += "|Download from DB%x5"
 
 #	menu += "|%l|dump material%x99|dump clipboard%x98"
 	r = Draw.PupMenu(menu)
@@ -4486,7 +4486,7 @@ def showMatTexMenu(mat, basekey='', tex=False):
 		Window.FileSelector(lambda fn:saveMaterial(mat, fn, basekey), "save material", luxProp(scn, "lux", "").get()+os.sep+".lbm")
 	elif r==5:
 		id = Draw.PupStrInput("Material ID:", "", 32)
-		if id: putMatTex(mat, downloadLmrDB(mat, id), basekey)
+		if id: putMatTex(mat, downloadLRMDB(mat, id), basekey)
 #	elif r==99:
 #		for k,v in mat.properties['luxblend'].convert_to_pyobject().items(): print k+"="+repr(v)
 #	elif r==98:
