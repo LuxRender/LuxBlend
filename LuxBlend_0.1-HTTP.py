@@ -4388,7 +4388,7 @@ def convertAllMaterials():
 
 
 
-### simple lrmDB ###
+### Connect LRMDB ###
 ConnectLrmdb = False
 try:
 	import socket  # try import of socket library
@@ -4396,7 +4396,7 @@ try:
 	from urlparse import urlparse
 	from BaseHTTPServer import HTTPServer, BaseHTTPRequestHandler
 	
-	def downloadLrmdb(mat, id):
+	def downloadLRMDB(mat, id):
 		if id.isalnum():
 			try:
 				HOST = 'www.luxrender.net'
@@ -4471,7 +4471,7 @@ try:
 					
 					try:
 						global activemat
-						putMatTex(activemat, downloadLrmdb(activemat, object_id))
+						putMatTex(activemat, downloadLRMDB(activemat, object_id))
 						self.append_msg('%s({ "result": 1, "message": "Loaded OK" })' % cbval)
 					except:
 						self.append_msg('%s({ "result": 0, "message": "Failed to load material" })' % cbval)
@@ -4605,7 +4605,7 @@ def showMatTexMenu(mat, basekey='', tex=False):
 		Window.FileSelector(lambda fn:saveMaterial(mat, fn, basekey), "save material", luxProp(scn, "lux", "").get()+os.sep+".lbm")
 	elif r==5:
 		id = Draw.PupStrInput("Material ID:", "", 32)
-		if id: putMatTex(mat, downloadLrmdb(mat, id), basekey)
+		if id: putMatTex(mat, downloadLRMDB(mat, id), basekey)
 #	elif r==99:
 #		for k,v in mat.properties['luxblend'].convert_to_pyobject().items(): print k+"="+repr(v)
 #	elif r==98:
