@@ -4383,6 +4383,7 @@ try:
 				HOST = 'www.luxrender.net'
 				GET = '/lrmdb/material/download/'+id
 				PORT = 80
+				print 'Getting Material #'+id
 				sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 				sock.connect((HOST, PORT))
 				sock.send("GET %s HTTP/1.0\r\nHost: %s\r\n\r\n" % (GET, HOST))
@@ -4396,7 +4397,9 @@ try:
 					print "ERROR: server error: %s"%(str.split("\n",1)[0])
 					return None
 				str = (str.split("\r\n\r\n")[1]).strip()
-				if (str[0]=="{") and (str[-1]=="}"): return str2MatTex(str)
+				if (str[0]=="{") and (str[-1]=="}"):
+					print 'Got it!'
+					return str2MatTex(str)
 				print "ERROR: downloaded data is not a material or texture"
 			except: print "ERROR: download failed"
 		else: print "ERROR: material id is not valid"
