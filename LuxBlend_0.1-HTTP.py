@@ -46,6 +46,7 @@ import types
 import subprocess
 import Blender
 from Blender import Mesh, Scene, Object, Material, Texture, Window, sys, Draw, BGL, Mathutils, Lamp, Image
+from Blender.Window import DrawProgressBar
 
 
 
@@ -636,7 +637,10 @@ def luxFlashBlock(camObj):
 ######################################################
 
 def save_lux(filename, unindexedname):
-	global meshlist, matnames, geom_filename, geom_pfilename, mat_filename, mat_pfilename, vol_filename, vol_pfilename
+	
+	export_total_steps = 12.0
+	
+	global meshlist, matnames, geom_filename, geom_pfilename, mat_filename, mat_pfilename, vol_filename, vol_pfilename, LuxIsGUI
 
 	print("Lux Render Export started...\n")
 	time1 = Blender.sys.time()
@@ -670,7 +674,7 @@ def save_lux(filename, unindexedname):
 		Draw.PupMenu("ERROR: No light source found%t|OK%x1")
 		return False
 
-
+	if LuxIsGUI: DrawProgressBar(0.0/export_total_steps,'Setting up Scene file')
 	if luxProp(scn, "lxs", "true").get()=="true":
 		##### Determine/open files
 		print("Exporting scene to '" + filename + "'...\n")
@@ -684,6 +688,7 @@ def save_lux(filename, unindexedname):
 		##### Write camera ######
 		camObj = scn.getCurrentCamera()
 
+		if LuxIsGUI: DrawProgressBar(1.0/export_total_steps,'Exporting Camera')
 		if camObj:
 			print "processing Camera..."
 			cam = camObj.data
@@ -724,26 +729,32 @@ def save_lux(filename, unindexedname):
 			file.write("\n")
 		file.write("\n")
 	
+		if LuxIsGUI: DrawProgressBar(2.0/export_total_steps,'Exporting Film Settings')
 		##### Write film ######
 		file.write(luxFilm(scn))
 		file.write("\n")
 
+		if LuxIsGUI: DrawProgressBar(3.0/export_total_steps,'Exporting Pixel Filter')
 		##### Write Pixel Filter ######
 		file.write(luxPixelFilter(scn))
 		file.write("\n")
 	
+		if LuxIsGUI: DrawProgressBar(4.0/export_total_steps,'Exporting Sampler')
 		##### Write Sampler ######
 		file.write(luxSampler(scn))
 		file.write("\n")
 	
+		if LuxIsGUI: DrawProgressBar(5.0/export_total_steps,'Exporting Surface Integrator')
 		##### Write Surface Integrator ######
 		file.write(luxSurfaceIntegrator(scn))
 		file.write("\n")
 		
+		if LuxIsGUI: DrawProgressBar(6.0/export_total_steps,'Exporting Volume Integrator')
 		##### Write Volume Integrator ######
 		file.write(luxVolumeIntegrator(scn))
 		file.write("\n")
 		
+		if LuxIsGUI: DrawProgressBar(7.0/export_total_steps,'Exporting Accelerator')
 		##### Write Acceleration ######
 		file.write(luxAccelerator(scn))
 		file.write("\n")	
@@ -761,6 +772,7 @@ def save_lux(filename, unindexedname):
 			file.write("Transform [%s 0.0 0.0 0.0  0.0 %s 0.0 0.0  0.0 0.0 %s 0.0  0.0 0.0 0 1.0]\n"%(scale, scale, scale))
 			file.write("\n")
 		
+		if LuxIsGUI: DrawProgressBar(8.0/export_total_steps,'Exporting Environment')
 		##### Write World Background, Sunsky or Env map ######
 		env = luxEnvironment(scn)
 		if env != "":
@@ -789,6 +801,7 @@ def save_lux(filename, unindexedname):
 		file.close()
 		
 	if luxProp(scn, "lxm", "true").get()=="true":
+		if LuxIsGUI: DrawProgressBar(9.0/export_total_steps,'Exporting Materials')
 		##### Write Material file #####
 		print("Exporting materials to '" + mat_filename + "'...\n")
 		mat_file = open(mat_filename, 'w')
@@ -798,6 +811,7 @@ def save_lux(filename, unindexedname):
 		mat_file.close()
 	
 	if luxProp(scn, "lxo", "true").get()=="true":
+		if LuxIsGUI: DrawProgressBar(10.0/export_total_steps,'Exporting Geometry')
 		##### Write Geometry file #####
 		print("Exporting geometry to '" + geom_filename + "'...\n")
 		geom_file = open(geom_filename, 'w')
@@ -810,6 +824,7 @@ def save_lux(filename, unindexedname):
 		geom_file.close()
 
 	if luxProp(scn, "lxv", "true").get()=="true":
+		if LuxIsGUI: DrawProgressBar(11.0/export_total_steps,'Exporting Volumes')
 		##### Write Volume file #####
 		print("Exporting volumes to '" + vol_filename + "'...\n")
 		vol_file = open(vol_filename, 'w')
@@ -820,6 +835,7 @@ def save_lux(filename, unindexedname):
 		vol_file.close()
 
 
+	if LuxIsGUI: DrawProgressBar(12.0/export_total_steps,'Export Finished')
 	print("Finished.\n")
 	del export
 
@@ -4386,7 +4402,7 @@ try:
 				HOST = 'www.luxrender.net'
 				GET = '/lrmdb/material/download/'+id
 				PORT = 80
-				print 'Getting Material #'+id
+				DrawProgressBar(0.0,'Getting Material #'+id)
 				sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 				sock.connect((HOST, PORT))
 				sock.send("GET %s HTTP/1.0\r\nHost: %s\r\n\r\n" % (GET, HOST))
@@ -4401,11 +4417,14 @@ try:
 					return None
 				str = (str.split("\r\n\r\n")[1]).strip()
 				if (str[0]=="{") and (str[-1]=="}"):
-					print 'Got it!'
 					return str2MatTex(str)
 				print "ERROR: downloaded data is not a material or texture"
-			except: print "ERROR: download failed"
-		else: print "ERROR: material id is not valid"
+			except:
+				print "ERROR: download failed"
+			finally:
+				DrawProgressBar(1.0,'')
+		else:
+			print "ERROR: material id is not valid"
 		return None
 
 	class HTTPException(Exception):
@@ -4963,6 +4982,7 @@ except: pyargs = []
 
 if (pyargs != []) and (batchindex != 0):
 	print "\n\nLuxBlend CVS - BATCH mode\n"
+	LuxIsGUI = False
 
 	scene = Scene.GetCurrent()
 	context = scene.getRenderingContext()
@@ -5028,6 +5048,8 @@ if (pyargs != []) and (batchindex != 0):
 
 else:
 	print "\n\nLuxBlend CVS - UI mode\n"
+	LuxIsGUI = True
+	
 	Draw.Register(luxDraw, luxEvent, luxButtonEvt) # init GUI
 
 	luxpathprop = luxProp(Scene.GetCurrent(), "lux", "")
