@@ -3577,6 +3577,10 @@ def luxPreview(mat, name, defType=0, defEnabled=False, defLarge=False, texName=N
 			p.stdin.write('AttributeBegin\nTransform [0.649999976158 0.0 0.0 0.0  0.0 4.90736340453e-008 0.649999976158 0.0  0.0 -0.649999976158 4.90736340453e-008 0.0  0.0 0.0 0.5 1.0]\n')
 		else:
 			p.stdin.write('AttributeBegin\nTransform [0.35 -0.35 0.0 0.0  0.25 0.25 0.35 0.0  -0.25 -0.25 0.35 0.0  0.0 0.0 0.5 1.0]\n')
+		obwidth = luxProp(mat, kn+"prev_obwidth", 1.0)
+		obw = obwidth.get()
+		p.stdin.write('TransformBegin\n')
+		p.stdin.write('Scale %f %f %f\n'%(obw,obw,obw))
 		if texName:
 			print "texture "+texName+"  "+name
 			(str, link) = luxTexture(texName, name, "color", "1.0 1.0 1.0", None, None, "", "", mat, None, 0, level)
@@ -3589,6 +3593,7 @@ def luxPreview(mat, name, defType=0, defEnabled=False, defLarge=False, texName=N
 			link = luxProp(mat,"link","").get()
 			if kn!="": link = link.rstrip("\"")+":"+kn.strip(".:")+"\""
 			p.stdin.write(link+'\n')
+		p.stdin.write('TransformEnd\n')
 		# Shape
 		if(prev_sphere.get()=="true"):
 			p.stdin.write('Shape "sphere" "float radius" [1.0]\n')
@@ -3685,6 +3690,10 @@ def luxPreview(mat, name, defType=0, defEnabled=False, defLarge=False, texName=N
 
 			area = luxProp(mat, kn+"prev_arealight", "false")
 			Draw.Toggle("Area", evtLuxGui, r[0]+66, r[1]+5, 50, 18, area.get()=="true", "Area", lambda e,v: area.set(["false","true"][bool(v)]))
+
+			# Object width
+			obwidth = luxProp(mat, kn+"prev_obwidth", 1.0)
+			Draw.Number("Width:", evtLuxGui, r[0]+66, r[1]+78+voffset, 129, 18, obwidth.get(), 0.001, 10, "The width of the preview object in blender/lux 1m units", lambda e,v: obwidth.set(v))
 
 			# large/small size
 			Draw.Toggle("large", evtLuxGui, r[0]+200, r[1]+78+voffset, 88, 18, large.get()=="true", "Large", lambda e,v: large.set(["false","true"][bool(v)]))
