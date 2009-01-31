@@ -15,6 +15,9 @@ Tooltip: 'Export/Render to LuxRender CVS scene format (.lxs)'
 # Authors:
 # radiance, zuegs, ideasman42, luxblender
 #
+# Additions/tweaks:
+# dougal2
+#
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
 # as published by the Free Software Foundation; either version 2
@@ -46,7 +49,6 @@ import types
 import subprocess
 import Blender
 from Blender import Mesh, Scene, Object, Material, Texture, Window, sys, Draw, BGL, Mathutils, Lamp, Image
-from Blender.Window import DrawProgressBar
 
 
 
@@ -5048,6 +5050,7 @@ if (pyargs != []) and (batchindex != 0):
 
 else:
 	print "\n\nLuxBlend CVS - UI mode\n"
+	from Blender.Window import DrawProgressBar
 	LuxIsGUI = True
 	
 	Draw.Register(luxDraw, luxEvent, luxButtonEvt) # init GUI
