@@ -4744,8 +4744,9 @@ mouse_yr=1
 
 activeObject = None
 activeEvent = None
+lastEventTime = 0
 def luxEvent(evt, val):  # function that handles keyboard and mouse events
-	global activeObject, activemat, activeEvent
+	global activeObject, activemat, activeEvent, lastEventTime
 	if evt == Draw.ESCKEY or evt == Draw.QKEY:
 		stop = Draw.PupMenu("OK?%t|Cancel export %x1")
 		if stop == 1:
@@ -4765,10 +4766,11 @@ def luxEvent(evt, val):  # function that handles keyboard and mouse events
 
 	# R key shortcut to launch render
 #	if evt == Draw.RKEY:
-#		  if activeEvent == None:
-#		  	activeEvent = 'RKEY'
-#		  	CBluxExport(luxProp(scn, "default", "true").get() == "true", luxProp(scn, "run", "true").get() == "true")
-#		  	activeEvent = None
+#		if activeEvent == None and (sys.time() - lastEventTime) > 3:
+#			activeEvent = 'RKEY'
+#			lastEventTime = sys.time()
+#			CBluxExport(luxProp(scn, "default", "true").get() == "true", luxProp(scn, "run", "true").get() == "true")
+#			activeEvent = None
 #		
 #	# Switch GUI tabs with number keys
 #	if evt in [Draw.ONEKEY, Draw.TWOKEY, Draw.THREEKEY, Draw.FOURKEY, Draw.FIVEKEY]:
