@@ -4742,9 +4742,10 @@ def luxDraw():
 mouse_xr=1 
 mouse_yr=1 
 
-activeObject = None			
+activeObject = None
+activeEvent = None
 def luxEvent(evt, val):  # function that handles keyboard and mouse events
-	global activeObject, activemat
+	global activeObject, activemat, activeEvent
 	if evt == Draw.ESCKEY or evt == Draw.QKEY:
 		stop = Draw.PupMenu("OK?%t|Cancel export %x1")
 		if stop == 1:
@@ -4761,6 +4762,30 @@ def luxEvent(evt, val):  # function that handles keyboard and mouse events
 	if evt == Draw.WHEELDOWNMOUSE: scrollbar.scroll(16)
 	if evt == Draw.PAGEUPKEY: scrollbar.scroll(-50)
 	if evt == Draw.PAGEDOWNKEY: scrollbar.scroll(50)
+
+	# R key shortcut to launch render
+#	if evt == Draw.RKEY:
+#		  if activeEvent == None:
+#		  	activeEvent = 'RKEY'
+#		  	CBluxExport(luxProp(scn, "default", "true").get() == "true", luxProp(scn, "run", "true").get() == "true")
+#		  	activeEvent = None
+#		
+#	# Switch GUI tabs with number keys
+#	if evt in [Draw.ONEKEY, Draw.TWOKEY, Draw.THREEKEY, Draw.FOURKEY, Draw.FIVEKEY]:
+#		if evt == Draw.ONEKEY:
+#			luxProp(scn, "page", 0).set(0)
+#		elif evt == Draw.TWOKEY:
+#			luxProp(scn, "page", 0).set(1)
+#		elif evt == Draw.THREEKEY:
+#			luxProp(scn, "page", 0).set(2)
+#		elif evt == Draw.FOURKEY:
+#			luxProp(scn, "page", 0).set(3)
+#		elif evt == Draw.FIVEKEY:
+#			luxProp(scn, "page", 0).set(4)
+#			
+#		luxDraw()
+#		Window.QRedrawAll()
+		  
 
 	# Handle icon button events - note - radiance - this is a work in progress! :)
 #	if evt == Draw.LEFTMOUSE and not val: 
