@@ -4765,11 +4765,15 @@ def luxEvent(evt, val):  # function that handles keyboard and mouse events
 	if evt == Draw.PAGEDOWNKEY: scrollbar.scroll(50)
 
 	# R key shortcut to launch render
-#	if evt == Draw.RKEY:
+#	if evt in [Draw.RKEY]: #, Draw.PKEY]:
 #		if activeEvent == None and (sys.time() - lastEventTime) > 3:
-#			activeEvent = 'RKEY'
 #			lastEventTime = sys.time()
-#			CBluxExport(luxProp(scn, "default", "true").get() == "true", luxProp(scn, "run", "true").get() == "true")
+#			if evt == Draw.RKEY:
+#				activeEvent = 'RKEY'
+#				CBluxExport(luxProp(scn, "default", "true").get() == "true", luxProp(scn, "run", "true").get() == "true")
+#			if evt == Draw.PKEY:
+#				activeEvent = 'PKEY'
+#				Preview_Update(activemat, activemat, True)
 #			activeEvent = None
 #		
 #	# Switch GUI tabs with number keys
@@ -4784,7 +4788,7 @@ def luxEvent(evt, val):  # function that handles keyboard and mouse events
 #			luxProp(scn, "page", 0).set(3)
 #		elif evt == Draw.FIVEKEY:
 #			luxProp(scn, "page", 0).set(4)
-#			
+			
 #		luxDraw()
 #		Window.QRedrawAll()
 		  
