@@ -4456,7 +4456,7 @@ except: print "WARNING: LRMDB support not available"
 ### MatTex functions ###
 ### MatTex : is a dictionary of material or texture properties
 
-def getMatTex(mat, basekey=''):
+def getMatTex(mat, basekey='', tex=False):
 	global usedproperties, usedpropertiesfilterobj
 	usedproperties = {}
 	usedpropertiesfilterobj = mat
@@ -4468,11 +4468,15 @@ def getMatTex(mat, basekey=''):
 				name = k[len(basekey):]
 				if name == ".type": name = "type"
 				dict[name] = v
+	dict["__type__"] = ["material","texture"][bool(tex)]
 	return dict
 
-def putMatTex(mat, dict, basekey=''):
-	# remove all current properties in mat that starts with basekey
+def putMatTex(mat, dict, basekey='', tex=None):
+	if dict and (tex!=None) and (tex ^ (dict.has_key("__type__") and (dict["__type__"]=="texture"))):
+		print "ERROR: Can't apply %s as %s"%(["texture","material"][bool(tex)],["material","texture"][bool(tex)])
+		return
 	if dict:
+		# remove all current properties in mat that starts with basekey
 		try:
 		        d = mat.properties['luxblend']
 			for k,v in d.convert_to_pyobject().items():
@@ -4514,21 +4518,20 @@ def showMatTexMenu(mat, basekey='', tex=False):
 	try:
 		if luxclipboard and (not(tex) ^ (luxclipboard["__type__"]=="texture")): menu +="|Paste%x2"
 	except: pass
-	if not(tex): menu += "|Load LBM%x3|Save LBM%x4"
+	menu += "|Load LBM%x3|Save LBM%x4"
 	if not(tex) and ConnectLrmdb: menu += "|Download from DB%x5"
 
 #	menu += "|%l|dump material%x99|dump clipboard%x98"
 	r = Draw.PupMenu(menu)
 	if r==1:
-		luxclipboard = getMatTex(mat, basekey)
-		luxclipboard["__type__"] = ["material","texture"][bool(tex)]
-	elif r==2: putMatTex(mat, luxclipboard, basekey)
+		luxclipboard = getMatTex(mat, basekey, tex)
+	elif r==2: putMatTex(mat, luxclipboard, basekey, tex)
 	elif r==3: 
 		scn = Scene.GetCurrent()
-		Window.FileSelector(lambda fn:loadMaterial(mat, fn, basekey), "load material", luxProp(scn, "lux", "").get()+os.sep+".lbm")
+		Window.FileSelector(lambda fn:loadMatTex(mat, fn, basekey, tex), "load material", luxProp(scn, "lux", "").get()+os.sep+".lbm")
 	elif r==4:
 		scn = Scene.GetCurrent()
-		Window.FileSelector(lambda fn:saveMaterial(mat, fn, basekey), "save material", luxProp(scn, "lux", "").get()+os.sep+".lbm")
+		Window.FileSelector(lambda fn:saveMatTex(mat, fn, basekey, tex), "save material", luxProp(scn, "lux", "").get()+os.sep+".lbm")
 	elif r==5:
 		id = Draw.PupStrInput("Material ID:", "", 32)
 		if id: putMatTex(mat, downloadLRMDB(mat, id), basekey)
@@ -4540,20 +4543,20 @@ def showMatTexMenu(mat, basekey='', tex=False):
 	Draw.Redraw()
 
 
-def saveMaterial(mat, fn, basekey=''):
-	d = getMatTex(mat, basekey)
+def saveMatTex(mat, fn, basekey='', tex=False):
+	d = getMatTex(mat, basekey, tex)
 	file = open(fn, 'w')
 	file.write(MatTex2str(d))
 	file.close()
 	Draw.Redraw()
 
 
-def loadMaterial(mat, fn, basekey=''):
+def loadMatTex(mat, fn, basekey='', tex=None):
 	file = open(fn, 'r')
 	data = file.read()
 	file.close()
 	data = str2MatTex(data)
-	putMatTex(mat, data, basekey) 
+	putMatTex(mat, data, basekey, tex) 
 	Draw.Redraw()
 
 
