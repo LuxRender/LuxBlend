@@ -4423,7 +4423,7 @@ try:
 		if id.isalnum():
 			try:
 				HOST = 'www.luxrender.net'
-				GET = '/lrmdb/material/download/'+id
+				GET = '/lrmdb/en/material/download/'+id
 				PORT = 80
 				DrawProgressBar(0.0,'Getting Material #'+id)
 				sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
