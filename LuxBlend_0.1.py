@@ -2173,13 +2173,27 @@ def luxFilm(scn, gui=None):
 
 			if gui: gui.newline("  Halt:")
 			str += luxInt("haltspp", luxProp(scn, "haltspp", 0), 0, 32768, "haltspp", "Stop rendering after specified amount of samples per pixel / 0 = never halt", gui)
-	
-			if gui: gui.newline("  Tonemap:")
-			str += luxFloat("reinhard_prescale", luxProp(scn, "film.reinhard.prescale", 1.0), 0.0, 10.0, "pre-scale", "Pre Scale: See Lux Manual ;)", gui)
-			str += luxFloat("reinhard_postscale", luxProp(scn, "film.reinhard.postscale", 1.2), 0.0, 10.0, "post-scale", "Post Scale: See Lux Manual ;)", gui)
-			str += luxFloat("reinhard_burn", luxProp(scn, "film.reinhard.burn", 6.0), 0.1, 12.0, "burn", "12.0: no burn out, 0.1 lot of burn out", gui)
 			palpha = luxProp(scn, "film.premultiplyalpha", "true")
 			str += luxBool("premultiplyalpha", palpha, "premultiplyalpha", "Pre multiply film alpha channel during normalization", gui)
+	
+			if gui: gui.newline("  Tonemap:")
+			tonemapkernel =	luxProp(scn, "film.tonemapkernel", "reinhard")
+			str += luxOption("tonemapkernel", tonemapkernel, ["reinhard", "linear", "contrast", "maxwhite"], "Tonemapping Kernel", "Select the tonemapping kernel to use", gui, 2.0)
+			if tonemapkernel.get() == "reinhard":
+				autoywa = luxProp(scn, "film.reinhard.autoywa", "true")
+				str += luxBool("reinhard_autoywa", autoywa, "auto Ywa", "Automatically determine World Adaption Luminance", gui)
+				if autoywa.get() == "false":
+					str += luxFloat("reinhard_ywa", luxProp(scn, "film.reinhard.ywa", 100.0), 0.0, 1000.0, "Ywa", "Display/World Adaption Luminance", gui)
+				str += luxFloat("reinhard_prescale", luxProp(scn, "film.reinhard.prescale", 1.0), 0.0, 10.0, "preScale", "Image scale before tonemap operator", gui)
+				str += luxFloat("reinhard_postscale", luxProp(scn, "film.reinhard.postscale", 1.2), 0.0, 10.0, "postScale", "Image scale after tonemap operator", gui)
+				str += luxFloat("reinhard_burn", luxProp(scn, "film.reinhard.burn", 6.0), 0.1, 12.0, "burn", "12.0: no burn out, 0.1 lot of burn out", gui)
+			elif tonemapkernel.get() == "linear":
+				str += luxFloat("linear_sensitivity", luxProp(scn, "film.linear.sensitivity", 100.0), 0.0, 1000.0, "sensitivity", "Adaption/Sensitivity", gui)
+				str += luxFloat("linear_exposure", luxProp(scn, "film.linear.exposure", 0.001), 0.001, 1.0, "exposure", "Exposure duration in seconds", gui)
+				str += luxFloat("linear_fstop", luxProp(scn, "film.linear.fstop", 2.8), 0.1, 64.0, "Fstop", "F-Stop", gui)
+				str += luxFloat("linear_gamma", luxProp(scn, "film.linear.gamma", 1.0), 0.0, 8.0, "gamma", "Tonemap operator gamma correction", gui)
+			elif tonemapkernel.get() == "contrast":
+				str += luxFloat("contrast_ywa", luxProp(scn, "film.contrast.ywa", 100.0), 0.0, 1000.0, "Ywa", "Display/World Adaption Luminance", gui)
 
 			if gui: gui.newline("  Display:")
 			str += luxInt("displayinterval", luxProp(scn, "film.displayinterval", 12), 4, 3600, "interval", "Set display Interval (seconds)", gui)
