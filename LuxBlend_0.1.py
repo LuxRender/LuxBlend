@@ -1006,7 +1006,7 @@ def save_still(filename):
 	MatSaved = 0
 	unindexedname = filename
 	if save_lux(filename, unindexedname):
-		if luxProp(scn, "run", "true").get() == "true":
+		if runRenderAfterExport: #(run == None and luxProp(scn, "run", "true").get() == "true") or run:
 			launchLux(filename)
 
 
@@ -3522,7 +3522,9 @@ def luxSpot(name, kn, mat, gui, level):
 
 	return (str, link)
 
-def luxPreview(mat, name, defType=0, defEnabled=False, defLarge=False, texName=None, gui=None, level=0, color=None):
+
+def Preview_Update(mat, kn, defLarge, defType, texName, name, level):
+	
 	def Preview_Sphereset(mat, kn, state):
 		if state=="true":
 			luxProp(mat, kn+"prev_sphere", "true").set("true")
@@ -3538,141 +3540,147 @@ def luxPreview(mat, name, defType=0, defEnabled=False, defLarge=False, texName=N
 			luxProp(mat, kn+"prev_sphere", "true").set("false")
 			luxProp(mat, kn+"prev_plane", "false").set("false")
 			luxProp(mat, kn+"prev_torus", "false").set("true")
-	def Preview_Update(mat, kn, defLarge):
-		Blender.Window.WaitCursor(True)
-		scn = Scene.GetCurrent()
+	
+	#print "%s %s %s %s %s %s %s" % (mat, kn, defLarge, defType, texName, name, level)
+	
+	Blender.Window.WaitCursor(True)
+	scn = Scene.GetCurrent()
 
-		# Size of preview thumbnail
-		thumbres = 110 # default 110x110
-		if(defLarge):
-			large = luxProp(mat, kn+"prev_large", "true")
-		else:
-			large = luxProp(mat, kn+"prev_large", "false")
-		if(large.get() == "true"):
-			thumbres = 140 # small 140x140
+	# Size of preview thumbnail
+	thumbres = 110 # default 110x110
+	if(defLarge):
+		large = luxProp(mat, kn+"prev_large", "true")
+	else:
+		large = luxProp(mat, kn+"prev_large", "false")
+	if(large.get() == "true"):
+		thumbres = 140 # small 140x140
 
-		thumbbuf = thumbres*thumbres*3
+	thumbbuf = thumbres*thumbres*3
 
 #		consolebin = luxProp(scn, "luxconsole", "").get()
-		consolebin = Blender.sys.dirname(luxProp(scn, "lux", "").get()) + os.sep + "luxconsole"
-		if osys.platform == "win32": consolebin = consolebin + ".exe"
+	consolebin = Blender.sys.dirname(luxProp(scn, "lux", "").get()) + os.sep + "luxconsole"
+	if osys.platform == "win32": consolebin = consolebin + ".exe"
 
-		PIPE = subprocess.PIPE
-		p = subprocess.Popen((consolebin, '-b', '-'), bufsize=thumbbuf, stdin=PIPE, stdout=PIPE, stderr=PIPE)
+	PIPE = subprocess.PIPE
+	p = subprocess.Popen((consolebin, '-b', '-'), bufsize=thumbbuf, stdin=PIPE, stdout=PIPE, stderr=PIPE)
 
-		# Unremark to write debugging output to file
-		# p.stdin = open('c:\preview.lxs', 'w')
+	# Unremark to write debugging output to file
+	# p.stdin = open('c:\preview.lxs', 'w')
 
-		if defType == 0:	
-			prev_sphere = luxProp(mat, kn+"prev_sphere", "true")
-			prev_plane = luxProp(mat, kn+"prev_plane", "false")
-			prev_torus = luxProp(mat, kn+"prev_torus", "false")
-		elif defType == 1:
-			prev_sphere = luxProp(mat, kn+"prev_sphere", "false")
-			prev_plane = luxProp(mat, kn+"prev_plane", "true")
-			prev_torus = luxProp(mat, kn+"prev_torus", "false")
-		else:
-			prev_sphere = luxProp(mat, kn+"prev_sphere", "false")
-			prev_plane = luxProp(mat, kn+"prev_plane", "false")
-			prev_torus = luxProp(mat, kn+"prev_torus", "true")
+	if defType == 0:	
+		prev_sphere = luxProp(mat, kn+"prev_sphere", "true")
+		prev_plane = luxProp(mat, kn+"prev_plane", "false")
+		prev_torus = luxProp(mat, kn+"prev_torus", "false")
+	elif defType == 1:
+		prev_sphere = luxProp(mat, kn+"prev_sphere", "false")
+		prev_plane = luxProp(mat, kn+"prev_plane", "true")
+		prev_torus = luxProp(mat, kn+"prev_torus", "false")
+	else:
+		prev_sphere = luxProp(mat, kn+"prev_sphere", "false")
+		prev_plane = luxProp(mat, kn+"prev_plane", "false")
+		prev_torus = luxProp(mat, kn+"prev_torus", "true")
 
-		# Zoom
-		if luxProp(mat, kn+"prev_zoom", "false").get() == "true":
-			p.stdin.write('LookAt 0.250000 -1.500000 0.750000 0.250000 -0.500000 0.750000 0.000000 0.000000 1.000000\nCamera "perspective" "float fov" [22.5]\n')
-		else:
-			p.stdin.write('LookAt 0.0 -3.0 0.5 0.0 -2.0 0.5 0.0 0.0 1.0\nCamera "perspective" "float fov" [22.5]\n')
-		# Fleximage
-		p.stdin.write('Film "fleximage" "integer xresolution" [%i] "integer yresolution" [%i] "integer displayinterval" [3] "integer ldr_writeinterval" [3600] "string tonemapper" ["reinhard"] "integer haltspp" [1] "integer reject_warmup" [64] "bool write_tonemapped_tga" ["false"] "bool write_untonemapped_exr" ["false"] "bool write_tonemapped_exr" ["false"] "bool write_untonemapped_igi" ["false"] "bool write_tonemapped_igi" ["false"] \n'%(thumbres, thumbres))
-		p.stdin.write('PixelFilter "sinc"\n')
-		# Quality
-		scn = Scene.GetCurrent()
-		defprevmat = luxProp(scn, "defprevmat", "high")
-		quality = luxProp(mat, kn+"prev_quality", defprevmat.get())
-		if quality.get()=="low":
-			p.stdin.write('Sampler "lowdiscrepancy" "string pixelsampler" ["hilbert"] "integer pixelsamples" [2]\n')
-		elif quality.get()=="medium":
-			p.stdin.write('Sampler "lowdiscrepancy" "string pixelsampler" ["hilbert"] "integer pixelsamples" [4]\n')
-		elif quality.get()=="high":
-			p.stdin.write('Sampler "lowdiscrepancy" "string pixelsampler" ["hilbert"] "integer pixelsamples" [8]\n')
-		else: 
-			p.stdin.write('Sampler "lowdiscrepancy" "string pixelsampler" ["hilbert"] "integer pixelsamples" [32]\n')
-		# SurfaceIntegrator
-		if(prev_plane.get()=="false"):
-			p.stdin.write('SurfaceIntegrator "distributedpath" "integer directsamples" [1] "integer diffusereflectdepth" [1] "integer diffusereflectsamples" [4] "integer diffuserefractdepth" [4] "integer diffuserefractsamples" [1] "integer glossyreflectdepth" [1] "integer glossyreflectsamples" [2] "integer glossyrefractdepth" [4] "integer glossyrefractsamples" [1] "integer specularreflectdepth" [2] "integer specularrefractdepth" [4]\n')
-		else:
-			p.stdin.write('SurfaceIntegrator "distributedpath" "integer directsamples" [1] "integer diffusereflectdepth" [0] "integer diffusereflectsamples" [0] "integer diffuserefractdepth" [0] "integer diffuserefractsamples" [0] "integer glossyreflectdepth" [0] "integer glossyreflectsamples" [0] "integer glossyrefractdepth" [0] "integer glossyrefractsamples" [0] "integer specularreflectdepth" [1] "integer specularrefractdepth" [1]\n')
-		# World
-		p.stdin.write('WorldBegin\n')
-		if(prev_sphere.get()=="true"):
-			p.stdin.write('AttributeBegin\nTransform [0.5 0.0 0.0 0.0  0.0 0.5 0.0 0.0  0.0 0.0 0.5 0.0  0.0 0.0 0.5 1.0]\n')
-		elif (prev_plane.get()=="true"):
-			p.stdin.write('AttributeBegin\nTransform [0.649999976158 0.0 0.0 0.0  0.0 4.90736340453e-008 0.649999976158 0.0  0.0 -0.649999976158 4.90736340453e-008 0.0  0.0 0.0 0.5 1.0]\n')
-		else:
-			p.stdin.write('AttributeBegin\nTransform [0.35 -0.35 0.0 0.0  0.25 0.25 0.35 0.0  -0.25 -0.25 0.35 0.0  0.0 0.0 0.5 1.0]\n')
-		obwidth = luxProp(mat, kn+"prev_obwidth", 1.0)
-		obw = obwidth.get()
-		p.stdin.write('TransformBegin\n')
-		p.stdin.write('Scale %f %f %f\n'%(obw,obw,obw))
-		if texName:
-			print "texture "+texName+"  "+name
-			(str, link) = luxTexture(texName, name, "color", "1.0 1.0 1.0", None, None, "", "", mat, None, 0, level)
-			link = link.replace(" "+texName+"\"", " Kd\"") # swap texture name to "Kd"
-			p.stdin.write(str+"\n")
-			p.stdin.write("Material \"matte\" "+link+"\n") 
-		else:
-			# Material
-			p.stdin.write(luxMaterial(mat))
-			link = luxProp(mat,"link","").get()
-			if kn!="": link = link.rstrip("\"")+":"+kn.strip(".:")+"\""
-			p.stdin.write(link+'\n')
-		p.stdin.write('TransformEnd\n')
-		# Shape
-		if(prev_sphere.get()=="true"):
-			p.stdin.write('Shape "sphere" "float radius" [1.0]\n')
-		elif (prev_plane.get()=="true"):
-			p.stdin.write('	Shape "trianglemesh" "integer indices" [ 0 1 2 0 2 3 ] "point P" [ 1.0 1.0 0.0 -1.0 1.0 0.0 -1.0 -1.0 -0.0 1.0 -1.0 -0.0 ] "float uv" [ 0.0 0.0 1.0 0.0 1.0 -1.0 0.0 -1.0 ]\n')
-		elif (prev_torus.get()=="true"):
-			p.stdin.write('Shape "torus" "float radius" [1.0]\n')
+	# Zoom
+	if luxProp(mat, kn+"prev_zoom", "false").get() == "true":
+		p.stdin.write('LookAt 0.250000 -1.500000 0.750000 0.250000 -0.500000 0.750000 0.000000 0.000000 1.000000\nCamera "perspective" "float fov" [22.5]\n')
+	else:
+		p.stdin.write('LookAt 0.0 -3.0 0.5 0.0 -2.0 0.5 0.0 0.0 1.0\nCamera "perspective" "float fov" [22.5]\n')
+	# Fleximage
+	p.stdin.write('Film "fleximage" "integer xresolution" [%i] "integer yresolution" [%i] "integer displayinterval" [3] "integer ldr_writeinterval" [3600] "string tonemapper" ["reinhard"] "integer haltspp" [1] "integer reject_warmup" [64] "bool write_tonemapped_tga" ["false"] "bool write_untonemapped_exr" ["false"] "bool write_tonemapped_exr" ["false"] "bool write_untonemapped_igi" ["false"] "bool write_tonemapped_igi" ["false"] \n'%(thumbres, thumbres))
+	p.stdin.write('PixelFilter "sinc"\n')
+	# Quality
+	scn = Scene.GetCurrent()
+	defprevmat = luxProp(scn, "defprevmat", "high")
+	quality = luxProp(mat, kn+"prev_quality", defprevmat.get())
+	if quality.get()=="low":
+		p.stdin.write('Sampler "lowdiscrepancy" "string pixelsampler" ["hilbert"] "integer pixelsamples" [2]\n')
+	elif quality.get()=="medium":
+		p.stdin.write('Sampler "lowdiscrepancy" "string pixelsampler" ["hilbert"] "integer pixelsamples" [4]\n')
+	elif quality.get()=="high":
+		p.stdin.write('Sampler "lowdiscrepancy" "string pixelsampler" ["hilbert"] "integer pixelsamples" [8]\n')
+	else: 
+		p.stdin.write('Sampler "lowdiscrepancy" "string pixelsampler" ["hilbert"] "integer pixelsamples" [32]\n')
+	# SurfaceIntegrator
+	if(prev_plane.get()=="false"):
+		p.stdin.write('SurfaceIntegrator "distributedpath" "integer directsamples" [1] "integer diffusereflectdepth" [1] "integer diffusereflectsamples" [4] "integer diffuserefractdepth" [4] "integer diffuserefractsamples" [1] "integer glossyreflectdepth" [1] "integer glossyreflectsamples" [2] "integer glossyrefractdepth" [4] "integer glossyrefractsamples" [1] "integer specularreflectdepth" [2] "integer specularrefractdepth" [4]\n')
+	else:
+		p.stdin.write('SurfaceIntegrator "distributedpath" "integer directsamples" [1] "integer diffusereflectdepth" [0] "integer diffusereflectsamples" [0] "integer diffuserefractdepth" [0] "integer diffuserefractsamples" [0] "integer glossyreflectdepth" [0] "integer glossyreflectsamples" [0] "integer glossyrefractdepth" [0] "integer glossyrefractsamples" [0] "integer specularreflectdepth" [1] "integer specularrefractdepth" [1]\n')
+	# World
+	p.stdin.write('WorldBegin\n')
+	if(prev_sphere.get()=="true"):
+		p.stdin.write('AttributeBegin\nTransform [0.5 0.0 0.0 0.0  0.0 0.5 0.0 0.0  0.0 0.0 0.5 0.0  0.0 0.0 0.5 1.0]\n')
+	elif (prev_plane.get()=="true"):
+		p.stdin.write('AttributeBegin\nTransform [0.649999976158 0.0 0.0 0.0  0.0 4.90736340453e-008 0.649999976158 0.0  0.0 -0.649999976158 4.90736340453e-008 0.0  0.0 0.0 0.5 1.0]\n')
+	else:
+		p.stdin.write('AttributeBegin\nTransform [0.35 -0.35 0.0 0.0  0.25 0.25 0.35 0.0  -0.25 -0.25 0.35 0.0  0.0 0.0 0.5 1.0]\n')
+	obwidth = luxProp(mat, kn+"prev_obwidth", 1.0)
+	obw = obwidth.get()
+	p.stdin.write('TransformBegin\n')
+	p.stdin.write('Scale %f %f %f\n'%(obw,obw,obw))
+	if texName:
+		print "texture "+texName+"  "+name
+		(str, link) = luxTexture(texName, name, "color", "1.0 1.0 1.0", None, None, "", "", mat, None, 0, level)
+		link = link.replace(" "+texName+"\"", " Kd\"") # swap texture name to "Kd"
+		p.stdin.write(str+"\n")
+		p.stdin.write("Material \"matte\" "+link+"\n") 
+	else:
+		# Material
+		p.stdin.write(luxMaterial(mat))
+		link = luxProp(mat,"link","").get()
+		if kn!="": link = link.rstrip("\"")+":"+kn.strip(".:")+"\""
+		p.stdin.write(link+'\n')
+	p.stdin.write('TransformEnd\n')
+	# Shape
+	if(prev_sphere.get()=="true"):
+		p.stdin.write('Shape "sphere" "float radius" [1.0]\n')
+	elif (prev_plane.get()=="true"):
+		p.stdin.write('	Shape "trianglemesh" "integer indices" [ 0 1 2 0 2 3 ] "point P" [ 1.0 1.0 0.0 -1.0 1.0 0.0 -1.0 -1.0 -0.0 1.0 -1.0 -0.0 ] "float uv" [ 0.0 0.0 1.0 0.0 1.0 -1.0 0.0 -1.0 ]\n')
+	elif (prev_torus.get()=="true"):
+		p.stdin.write('Shape "torus" "float radius" [1.0]\n')
+	p.stdin.write('AttributeEnd\n')
+	# Checkerboard floor
+	if(prev_plane.get()=="false"):
+		p.stdin.write('AttributeBegin\nTransform [5.0 0.0 0.0 0.0  0.0 5.0 0.0 0.0  0.0 0.0 5.0 0.0  0.0 0.0 0.0 1.0]\n')
+		p.stdin.write('Texture "checks" "color" "checkerboard"')
+		p.stdin.write('"integer dimension" [2] "string aamode" ["supersample"] "color tex1" [0.9 0.9 0.9] "color tex2" [0.0 0.0 0.0]')
+		p.stdin.write('"string mapping" ["uv"] "float uscale" [36.8] "float vscale" [36.0]\n')
+		p.stdin.write('Material "matte" "texture Kd" ["checks"]\n')
+		p.stdin.write('Shape "loopsubdiv" "integer nlevels" [3] "bool dmnormalsmooth" ["true"] "bool dmsharpboundary" ["true"] ')
+		p.stdin.write('"integer indices" [ 0 1 2 0 2 3 1 0 4 1 4 5 5 4 6 5 6 7 ]')
+		p.stdin.write('"point P" [ 1.000000 1.000000 0.000000 -1.000000 1.000000 0.000000 -1.000000 -1.000000 0.000000 1.000000 -1.000000 0.000000 1.000000 3.000000 0.000000 -1.000000 3.000000 0.000000 1.000000 3.000000 2.000000 -1.000000 3.000000 2.000000')
+		p.stdin.write('] "normal N" [ 0.000000 0.000000 1.000000 0.000000 0.000000 1.000000 0.000000 0.000000 1.000000 0.000000 0.000000 1.000000 0.000000 -0.707083 0.707083 0.000000 -0.707083 0.707083 0.000000 -1.000000 0.000000 0.000000 -1.000000 0.000000')
+		p.stdin.write('] "float uv" [ 0.333334 0.000000 0.333334 0.333334 0.000000 0.333334 0.000000 0.000000 0.666667 0.000000 0.666667 0.333333 1.000000 0.000000 1.000000 0.333333 ]\n')
 		p.stdin.write('AttributeEnd\n')
-		# Checkerboard floor
-		if(prev_plane.get()=="false"):
-			p.stdin.write('AttributeBegin\nTransform [5.0 0.0 0.0 0.0  0.0 5.0 0.0 0.0  0.0 0.0 5.0 0.0  0.0 0.0 0.0 1.0]\n')
-			p.stdin.write('Texture "checks" "color" "checkerboard"')
-			p.stdin.write('"integer dimension" [2] "string aamode" ["supersample"] "color tex1" [0.9 0.9 0.9] "color tex2" [0.0 0.0 0.0]')
-			p.stdin.write('"string mapping" ["uv"] "float uscale" [36.8] "float vscale" [36.0]\n')
-			p.stdin.write('Material "matte" "texture Kd" ["checks"]\n')
-			p.stdin.write('Shape "loopsubdiv" "integer nlevels" [3] "bool dmnormalsmooth" ["true"] "bool dmsharpboundary" ["true"] ')
-			p.stdin.write('"integer indices" [ 0 1 2 0 2 3 1 0 4 1 4 5 5 4 6 5 6 7 ]')
-			p.stdin.write('"point P" [ 1.000000 1.000000 0.000000 -1.000000 1.000000 0.000000 -1.000000 -1.000000 0.000000 1.000000 -1.000000 0.000000 1.000000 3.000000 0.000000 -1.000000 3.000000 0.000000 1.000000 3.000000 2.000000 -1.000000 3.000000 2.000000')
-			p.stdin.write('] "normal N" [ 0.000000 0.000000 1.000000 0.000000 0.000000 1.000000 0.000000 0.000000 1.000000 0.000000 0.000000 1.000000 0.000000 -0.707083 0.707083 0.000000 -0.707083 0.707083 0.000000 -1.000000 0.000000 0.000000 -1.000000 0.000000')
-			p.stdin.write('] "float uv" [ 0.333334 0.000000 0.333334 0.333334 0.000000 0.333334 0.000000 0.000000 0.666667 0.000000 0.666667 0.333333 1.000000 0.000000 1.000000 0.333333 ]\n')
-			p.stdin.write('AttributeEnd\n')
-		# Lightsource
-		if(prev_plane.get()=="false"):
-			p.stdin.write('AttributeBegin\nTransform [1.0 0.0 0.0 0.0  0.0 1.0 0.0 0.0  0.0 0.0 1.0 0.0  1.0 -1.0 4.0 1.0]\n')
-		else:
-			p.stdin.write('AttributeBegin\nTransform [1.0 0.0 0.0 0.0  0.0 1.0 0.0 0.0  0.0 0.0 1.0 0.0  1.0 -4.0 1.0 1.0]\n')
-		area = luxProp(mat, kn+"prev_arealight", "false")
-		if(area.get() == "false"):
-			p.stdin.write('Texture "pL" "color" "blackbody" "float temperature" [6500.0]\n')
-			p.stdin.write('LightSource "point" "texture L" ["pL"]')
-		else:
-			p.stdin.write('ReverseOrientation\n')
-			p.stdin.write('AreaLightSource "area" "color L" [1.0 1.0 1.0]\n')
-			p.stdin.write('Shape "disk" "float radius" [1.0]\nAttributeEnd\n')
-		p.stdin.write('WorldEnd\n')
+	# Lightsource
+	if(prev_plane.get()=="false"):
+		p.stdin.write('AttributeBegin\nTransform [1.0 0.0 0.0 0.0  0.0 1.0 0.0 0.0  0.0 0.0 1.0 0.0  1.0 -1.0 4.0 1.0]\n')
+	else:
+		p.stdin.write('AttributeBegin\nTransform [1.0 0.0 0.0 0.0  0.0 1.0 0.0 0.0  0.0 0.0 1.0 0.0  1.0 -4.0 1.0 1.0]\n')
+	area = luxProp(mat, kn+"prev_arealight", "false")
+	if(area.get() == "false"):
+		p.stdin.write('Texture "pL" "color" "blackbody" "float temperature" [6500.0]\n')
+		p.stdin.write('LightSource "point" "texture L" ["pL"]')
+	else:
+		p.stdin.write('ReverseOrientation\n')
+		p.stdin.write('AreaLightSource "area" "color L" [1.0 1.0 1.0]\n')
+		p.stdin.write('Shape "disk" "float radius" [1.0]\nAttributeEnd\n')
+	p.stdin.write('WorldEnd\n')
 
-		data = p.communicate()[0]
-		p.stdin.close()
-		if(len(data) < thumbbuf): 
-			print "error on preview"
-			return
-		global previewCache
-		image = luxImage()
-		image.decodeLuxConsole(thumbres, thumbres, data)
-		previewCache[(mat.name+":"+kn).__hash__()] = image
-		Draw.Redraw()
-		Blender.Window.WaitCursor(False)
+	data = p.communicate()[0]
+	p.stdin.close()
+	if(len(data) < thumbbuf): 
+		print "error on preview"
+		return
+	global previewCache
+	image = luxImage()
+	image.decodeLuxConsole(thumbres, thumbres, data)
+	previewCache[(mat.name+":"+kn).__hash__()] = image
+	Draw.Redraw()
+	Blender.Window.WaitCursor(False)
+
+def luxPreview(mat, name, defType=0, defEnabled=False, defLarge=False, texName=None, gui=None, level=0, color=None):
+	
+
 	if gui:
 		kn = name
 		if texName: kn += ":"+texName
@@ -3738,7 +3746,7 @@ def luxPreview(mat, name, defType=0, defEnabled=False, defLarge=False, texName=N
 			luxOptionRect("quality", quality, qs, "  Quality", "select preview quality", gui, r[0]+200, r[1]+100+voffset, 88, 18)
 
 			# Update preview
-			Draw.Button("Update Preview", evtLuxGui, r[0]+120, r[1]+5, 167, 18, "Update Material Preview", lambda e,v: Preview_Update(mat, kn, defLarge))
+			Draw.Button("Update Preview", evtLuxGui, r[0]+120, r[1]+5, 167, 18, "Update Material Preview", lambda e,v: Preview_Update(mat, kn, defLarge, defType, texName, name, level))
 
 			# Reset depths after getRect()
 			gui.y -= 92+voffset
@@ -4088,8 +4096,10 @@ def luxVolume(mat, gui=None):
 		luxProp(mat, "link", "").set("".join(link))
 	return str
 
-
+runRenderAfterExport = None
 def CBluxExport(default, run):
+	global runRenderAfterExport
+	runRenderAfterExport = run
 	if default:
 		datadir = luxProp(Scene.GetCurrent(), "datadir", "").get()
 		if datadir=="": datadir = Blender.Get("datadir")
@@ -4759,8 +4769,15 @@ mouse_yr=1
 activeObject = None
 activeEvent = None
 lastEventTime = 0
+key_tabs = {
+	Draw.ONEKEY:     0,
+	Draw.TWOKEY:     1,
+	Draw.THREEKEY:   2,
+	Draw.FOURKEY:    3,
+	Draw.FIVEKEY:    4,
+}
 def luxEvent(evt, val):  # function that handles keyboard and mouse events
-	global activeObject, activemat, activeEvent, lastEventTime
+	global activeObject, activemat, activeEvent, lastEventTime, key_tabs
 	if evt == Draw.ESCKEY or evt == Draw.QKEY:
 		stop = Draw.PupMenu("OK?%t|Cancel export %x1")
 		if stop == 1:
@@ -4778,33 +4795,38 @@ def luxEvent(evt, val):  # function that handles keyboard and mouse events
 	if evt == Draw.PAGEUPKEY: scrollbar.scroll(-50)
 	if evt == Draw.PAGEDOWNKEY: scrollbar.scroll(50)
 
+	# scroll to [T]op and [B]ottom
+	if evt == Draw.TKEY:
+		scrollbar.scroll(-scrollbar.position)
+	if evt == Draw.BKEY:
+		scrollbar.scroll(100000)   # Some large number should be enough ?!
+
 	# R key shortcut to launch render
-#	if evt in [Draw.RKEY]: #, Draw.PKEY]:
-#		if activeEvent == None and (sys.time() - lastEventTime) > 3:
-#			lastEventTime = sys.time()
-#			if evt == Draw.RKEY:
-#				activeEvent = 'RKEY'
-#				CBluxExport(luxProp(scn, "default", "true").get() == "true", luxProp(scn, "run", "true").get() == "true")
-#			if evt == Draw.PKEY:
-#				activeEvent = 'PKEY'
-#				Preview_Update(activemat, activemat, True)
-#			activeEvent = None
-#		
-#	# Switch GUI tabs with number keys
-#	if evt in [Draw.ONEKEY, Draw.TWOKEY, Draw.THREEKEY, Draw.FOURKEY, Draw.FIVEKEY]:
-#		if evt == Draw.ONEKEY:
-#			luxProp(scn, "page", 0).set(0)
-#		elif evt == Draw.TWOKEY:
-#			luxProp(scn, "page", 0).set(1)
-#		elif evt == Draw.THREEKEY:
-#			luxProp(scn, "page", 0).set(2)
-#		elif evt == Draw.FOURKEY:
-#			luxProp(scn, "page", 0).set(3)
-#		elif evt == Draw.FIVEKEY:
-#			luxProp(scn, "page", 0).set(4)
-			
-#		luxDraw()
-#		Window.QRedrawAll()
+	# E key shortcut to export current scene (not render)
+	# P key shortcut to preview current material
+	# These keys need time and process-complete locks
+	if evt in [Draw.RKEY, Draw.EKEY, Draw.PKEY]:
+		if activeEvent == None and (sys.time() - lastEventTime) > 5:
+			lastEventTime = sys.time()
+			if evt == Draw.RKEY:
+				activeEvent = 'RKEY'
+				CBluxExport(luxProp(scn, "default", "true").get() == "true", True)
+				activeEvent = None
+			if evt == Draw.EKEY:
+				activeEvent = 'EKEY'
+				CBluxExport(luxProp(scn, "default", "true").get() == "true", False)
+				activeEvent = None
+			if evt == Draw.PKEY:
+				activeEvent = 'PKEY'
+				if activemat != None:
+					Preview_Update(activemat, '', True, 0, None, None, None)
+				activeEvent = None
+		
+	# Switch GUI tabs with number keys
+	if evt in key_tabs.keys():
+		luxProp(scn, "page", 0).set(key_tabs[evt])		
+		luxDraw()
+		Window.QRedrawAll()
 		  
 
 	# Handle icon button events - note - radiance - this is a work in progress! :)
