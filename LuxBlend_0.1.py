@@ -3784,7 +3784,7 @@ def luxPreview(mat, name, defType=0, defEnabled=False, defLarge=False, texName=N
 			gui.hmax = 18 + 4
 
 def luxMaterialBlock(name, luxname, key, mat, gui=None, level=0, str_opt=""):
-	global icon_mat, icon_matmix
+	global icon_mat, icon_matmix, icon_map3dparam
 	def c(t1, t2):
 		return (t1[0]+t2[0], t1[1]+t2[1])
 	str = ""
@@ -4071,6 +4071,24 @@ def luxMaterialBlock(name, luxname, key, mat, gui=None, level=0, str_opt=""):
 					# emission GUI is here but lux export will be done later 
 					luxLight("", "", mat, gui, level)
 			else: luxProp(mat, "emission", "false").set("false") # prevent from exporting later
+
+		# transformation options (common)
+		if (level == 0):
+			if gui: gui.newline("", 2, level, None, [0.6,0.6,0.4])
+			usetransformation = luxProp(mat, "transformation", "false")
+			luxBool("usetransformation", usetransformation, "Transformation", "Enable transformation option", gui, 2.0)
+			if usetransformation.get() == "true":
+				scale = luxProp(mat, "3dscale", 1.0)
+				rotate = luxProp(mat, "3drotate", "0 0 0")
+				translate = luxProp(mat, "3dtranslate", "0 0 0")
+				if gui:
+					gui.newline("scale:", -2, level, icon_map3dparam)
+					luxVectorUniform("scale", scale, 0.001, 1000.0, "scale", "scale-vector", gui, 2.0)
+					gui.newline("rot:", -2, level, icon_map3dparam)
+					luxVector("rotate", rotate, -360.0, 360.0, "rotate", "rotate-vector", gui, 2.0)
+					gui.newline("move:", -2, level, icon_map3dparam)
+					luxVector("translate", translate, -1000.0, 1000.0, "move", "translate-vector", gui, 2.0)
+				str = ("TransformBegin\n\tScale %f %f %f\n"%scale.getVector())+("\tRotate %f 1 0 0\n\tRotate %f 0 1 0\n\tRotate %f 0 0 1\n"%rotate.getVector())+("\tTranslate %f %f %f\n"%translate.getVector()) + str + "TransformEnd\n"
 
 		# Object options (common)
 		if (level == 0) and (has_object_options == 1):
