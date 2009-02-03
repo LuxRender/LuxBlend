@@ -1663,21 +1663,35 @@ class luxProp:
 			try: del self.obj.properties['luxblend'][self.hashname]
 			except:	pass
 	def getFloat(self):
-		try: return float(self.get())
-		except: return float(self.default)
+		v = self.get()
+		if type(v) == types.FloatType: return float(v)
+		try:
+			if type(v) == types.StringType: return float(v.split(" ")[0])
+		except: pass
+		v = self.default
+		if type(v) == types.FloatType: return float(v)
+		try:
+			if type(v) == types.StringType: return float(v.split(" ")[0])
+		except: pass
+		return 0.0
 	def getInt(self):
 		try: return int(self.get())
 		except: return int(self.default)
 	def getRGB(self):
-		try: l = self.get().split(" ")
-		except: l = self.default.split(" ")
-		if len(l) != 3: l = self.default.split(" ")
-		return (float(l[0]), float(l[1]), float(l[2]))
+		return self.getVector()
 	def getVector(self):
-		try: l = self.get().split(" ")
-		except: l = self.default.split(" ")
-		if len(l) != 3: l = self.default.split(" ")
+		v = self.get()
+		if type(v) == types.FloatType: return (float(v), float(v), float(v))
+		l = None
+		try:
+			if type(v) == types.StringType: l = self.get().split(" ")
+		except: pass
+		if (l==None) or (len(l) != 3): l = self.default.split(" ")
 		return (float(l[0]), float(l[1]), float(l[2]))
+	def getVectorStr(self):
+		return "%f %f %f"%self.getVector()
+	def isFloat(self):
+		return type(self.get()) == types.FloatType
 	def getRGC(self):
 		col = self.getRGB()
 		return "%f %f %f"%(rg(col[0]), rg(col[1]),rg(col[2]))
@@ -1978,6 +1992,23 @@ def luxVector(name, lux, min, max, caption, hint, gui, width=2.0):
 		drawZ = Draw.Number("z:", evtLuxGui, r[0]+2*w, r[1], w, r[3], drawZ.val, min, max, "", lambda e,v: lux.setVector((drawX.val,drawY.val,v)))
 	return "\n   \"vector %s\" [%s]"%(name, lux.get())
 
+def luxVectorUniform(name, lux, min, max, caption, hint, gui, width=2.0):
+	def setUniform(lux, value):
+		if value: lux.set(lux.getFloat())
+		else: lux.setVector(lux.getVector())
+	if gui:
+		r = gui.getRect(width, 1)
+		vec = lux.getVector()
+		Draw.Toggle("U", evtLuxGui, r[0], r[1], gui.h, gui.h, lux.isFloat(), "uniform", lambda e,v: setUniform(lux, v))
+		if lux.isFloat():
+			Draw.Number("v:", evtLuxGui, r[0]+gui.h, r[1], r[2]-gui.h, r[3], lux.getFloat(), min, max, "", lambda e,v: lux.set(v))
+		else:
+			w = int((r[2]-gui.h)/3)
+			drawX, drawY, drawZ = Draw.Create(vec[0]), Draw.Create(vec[1]), Draw.Create(vec[2])
+			drawX = Draw.Number("x:", evtLuxGui, r[0]+gui.h, r[1], w, r[3], drawX.val, min, max, "", lambda e,v: lux.setVector((v,drawY.val,drawZ.val)))
+			drawY = Draw.Number("y:", evtLuxGui, r[0]+w+gui.h, r[1], w, r[3], drawY.val, min, max, "", lambda e,v: lux.setVector((drawX.val,v,drawZ.val)))
+			drawZ = Draw.Number("z:", evtLuxGui, r[0]+2*w+gui.h, r[1], w, r[3], drawZ.val, min, max, "", lambda e,v: lux.setVector((drawX.val,drawY.val,v)))
+	return "\n   \"vector %s\" [%s]"%(name, lux.getVectorStr())
 
 
 # lux individual identifiers
@@ -2785,7 +2816,7 @@ def lux3DMapping(key, mat, gui, level=0):
 	global icon_map3dparam
 	str = ""
 	if gui: gui.newline("scale:", -2, level, icon_map3dparam)
-	str += luxVector("scale", luxProp(mat, key+".3dscale", "1 1 1"), 0.001, 1000.0, "scale", "scale-vector", gui, 2.0)
+	str += luxVectorUniform("scale", luxProp(mat, key+".3dscale", 1.0), 0.001, 1000.0, "scale", "scale-vector", gui, 2.0)
 	if gui: gui.newline("rot:", -2, level, icon_map3dparam)
 	str += luxVector("rotate", luxProp(mat, key+".3drotate", "0 0 0"), -360.0, 360.0, "rotate", "rotate-vector", gui, 2.0)
 	if gui: gui.newline("move:", -2, level, icon_map3dparam)
