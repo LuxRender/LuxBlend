@@ -3523,24 +3523,23 @@ def luxSpot(name, kn, mat, gui, level):
 	return (str, link)
 
 
+def Preview_Sphereset(mat, kn, state):
+	if state=="true":
+		luxProp(mat, kn+"prev_sphere", "true").set("true")
+		luxProp(mat, kn+"prev_plane", "false").set("false")
+		luxProp(mat, kn+"prev_torus", "false").set("false")
+def Preview_Planeset(mat, kn, state):
+	if state=="true":
+		luxProp(mat, kn+"prev_sphere", "true").set("false")
+		luxProp(mat, kn+"prev_plane", "false").set("true")
+		luxProp(mat, kn+"prev_torus", "false").set("false")
+def Preview_Torusset(mat, kn, state):
+	if state=="true":
+		luxProp(mat, kn+"prev_sphere", "true").set("false")
+		luxProp(mat, kn+"prev_plane", "false").set("false")
+		luxProp(mat, kn+"prev_torus", "false").set("true")
+
 def Preview_Update(mat, kn, defLarge, defType, texName, name, level):
-	
-	def Preview_Sphereset(mat, kn, state):
-		if state=="true":
-			luxProp(mat, kn+"prev_sphere", "true").set("true")
-			luxProp(mat, kn+"prev_plane", "false").set("false")
-			luxProp(mat, kn+"prev_torus", "false").set("false")
-	def Preview_Planeset(mat, kn, state):
-		if state=="true":
-			luxProp(mat, kn+"prev_sphere", "true").set("false")
-			luxProp(mat, kn+"prev_plane", "false").set("true")
-			luxProp(mat, kn+"prev_torus", "false").set("false")
-	def Preview_Torusset(mat, kn, state):
-		if state=="true":
-			luxProp(mat, kn+"prev_sphere", "true").set("false")
-			luxProp(mat, kn+"prev_plane", "false").set("false")
-			luxProp(mat, kn+"prev_torus", "false").set("true")
-	
 	#print "%s %s %s %s %s %s %s" % (mat, kn, defLarge, defType, texName, name, level)
 	
 	Blender.Window.WaitCursor(True)
@@ -4544,29 +4543,28 @@ def showMatTexMenu(mat, basekey='', tex=False):
 
 
 def saveMatTex(mat, fn, basekey='', tex=False):
+	global LuxIsGUI
 	d = getMatTex(mat, basekey, tex)
 	file = open(fn, 'w')
 	file.write(MatTex2str(d))
 	file.close()
-	Draw.Redraw()
+	if LuxIsGUI: Draw.Redraw()
 
 
 def loadMatTex(mat, fn, basekey='', tex=None):
+	global LuxIsGUI
 	file = open(fn, 'r')
 	data = file.read()
 	file.close()
 	data = str2MatTex(data)
 	putMatTex(mat, data, basekey, tex) 
-	Draw.Redraw()
-
-
+	if LuxIsGUI: Draw.Redraw()
 
 
 activemat = None
 def setactivemat(mat):
 	global activemat
 	activemat = mat
-
 
 
 # scrollbar
@@ -4917,7 +4915,7 @@ def luxButtonEvt(evt):  # function that handles button events
 	if evt == evtLoadMaterial2:
 		if activemat:
 			scn = Scene.GetCurrent()
-			Window.FileSelector(lambda fn:loadMaterial(activemat, fn), "load material", luxProp(scn, "lux", "").get()+os.sep+".lbm")
+			Window.FileSelector(lambda fn:loadMatTex(activemat, fn), "load material", luxProp(scn, "lux", "").get()+os.sep+".lbm")
 	if evt == evtSaveMaterial2:
 		if activemat:
 			scn = Scene.GetCurrent()
@@ -5006,7 +5004,7 @@ if (pyargs != []) and (batchindex != 0):
 	if opts.has_key('--lbm'):
 		print "Load material: %s" %opts['--lbm']
 		mat = Material.Get("Material")
-		if mat: loadMaterial(mat, opts['--lbm'])
+		if mat: loadMatTex(mat, opts['--lbm'])
 		else:
 			print "Error: No material with name \"Material\" found (--lbm)"; osys.exit(1)
 
