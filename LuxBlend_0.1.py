@@ -4088,7 +4088,7 @@ def luxMaterialBlock(name, luxname, key, mat, gui=None, level=0, str_opt=""):
 					luxVector("rotate", rotate, -360.0, 360.0, "rotate", "rotate-vector", gui, 2.0)
 					gui.newline("move:", -2, level, icon_map3dparam)
 					luxVector("translate", translate, -1000.0, 1000.0, "move", "translate-vector", gui, 2.0)
-				str = ("TransformBegin\n\tScale %f %f %f\n"%scale.getVector())+("\tRotate %f 1 0 0\n\tRotate %f 0 1 0\n\tRotate %f 0 0 1\n"%rotate.getVector())+("\tTranslate %f %f %f\n"%translate.getVector()) + str + "TransformEnd\n"
+				str = ("TransformBegin\n\tScale %f %f %f\n"%( 1.0/scale.getVector()[0],1.0/scale.getVector()[1],1.0/scale.getVector()[2] ))+("\tRotate %f 1 0 0\n\tRotate %f 0 1 0\n\tRotate %f 0 0 1\n"%rotate.getVector())+("\tTranslate %f %f %f\n"%translate.getVector()) + str + "TransformEnd\n"
 
 		# Object options (common)
 		if (level == 0) and (has_object_options == 1):
