@@ -2652,7 +2652,7 @@ def luxEnvironment(scn, gui=None):
 					invmatrix = Mathutils.Matrix(sun.getInverseMatrix())
 					str += "\n   \"vector sundir\" [%f %f %f]\n" %(invmatrix[0][2], invmatrix[1][2], invmatrix[2][2])
 					str += luxFloat("gain", luxProp(scn, "env.sunsky.gain", 1.0), 0.0, 1000.0, "gain", "Sky gain", gui)
-					str += luxFloat("turbidity", luxProp(scn, "env.sunsky.turbidity", 2.2), 1.5, 5.0, "turbidity", "Sky turbidity", gui)
+					str += luxFloat("turbidity", luxProp(scn, "env.sunsky.turbidity", 2.2), 2.0, 50.0, "turbidity", "Sky turbidity", gui)
 				else:
 					if gui:
 						gui.newline(); r = gui.getRect(2,1); BGL.glRasterPos2i(r[0],r[1]+5) 
