@@ -4076,7 +4076,7 @@ def luxMaterialBlock(name, luxname, key, mat, gui=None, level=0, str_opt=""):
 		if (level == 0):
 			if gui: gui.newline("", 2, level, None, [0.6,0.6,0.4])
 			usetransformation = luxProp(mat, "transformation", "false")
-			luxBool("usetransformation", usetransformation, "Transformation", "Enable transformation option", gui, 2.0)
+			luxBool("usetransformation", usetransformation, "Texture Transformation", "Enable transformation option", gui, 2.0)
 			if usetransformation.get() == "true":
 				scale = luxProp(mat, "3dscale", 1.0)
 				rotate = luxProp(mat, "3drotate", "0 0 0")
@@ -4566,7 +4566,10 @@ def showMatTexMenu(mat, basekey='', tex=False):
 	try:
 		if luxclipboard and (not(tex) ^ (luxclipboard["__type__"]=="texture")): menu +="|Paste%x2"
 	except: pass
-	menu += "|Load LBM%x3|Save LBM%x4"
+	if (tex):
+		menu += "|Load LBT%x3|Save LBT%x4"
+	else:
+		menu += "|Load LBM%x3|Save LBM%x4"
 	if not(tex) and ConnectLrmdb: menu += "|Download from DB%x5"
 
 #	menu += "|%l|dump material%x99|dump clipboard%x98"
@@ -4576,10 +4579,16 @@ def showMatTexMenu(mat, basekey='', tex=False):
 	elif r==2: putMatTex(mat, luxclipboard, basekey, tex)
 	elif r==3: 
 		scn = Scene.GetCurrent()
-		Window.FileSelector(lambda fn:loadMatTex(mat, fn, basekey, tex), "load material", luxProp(scn, "lux", "").get()+os.sep+".lbm")
+		if (tex):
+			Window.FileSelector(lambda fn:loadMatTex(mat, fn, basekey, tex), "load texture", luxProp(scn, "lux", "").get()+os.sep+".lbt")
+		else:
+			Window.FileSelector(lambda fn:loadMatTex(mat, fn, basekey, tex), "load material", luxProp(scn, "lux", "").get()+os.sep+".lbm")
 	elif r==4:
 		scn = Scene.GetCurrent()
-		Window.FileSelector(lambda fn:saveMatTex(mat, fn, basekey, tex), "save material", luxProp(scn, "lux", "").get()+os.sep+".lbm")
+		if (tex):
+			Window.FileSelector(lambda fn:saveMatTex(mat, fn, basekey, tex), "save texture", luxProp(scn, "lux", "").get()+os.sep+".lbt")
+		else:
+			Window.FileSelector(lambda fn:saveMatTex(mat, fn, basekey, tex), "save material", luxProp(scn, "lux", "").get()+os.sep+".lbm")
 	elif r==5:
 		id = Draw.PupStrInput("Material ID:", "", 32)
 		if id: putMatTex(mat, downloadLRMDB(mat, id), basekey)
