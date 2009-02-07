@@ -4561,7 +4561,7 @@ def str2MatTex(s, tex = None):	# todo: this is not absolutely save from attacks!
 			if tex is not None and tex == True:
 				test_str = 'TEXTURE'
 			else:
-				text_str = 'MATERIAL'
+				test_str = 'MATERIAL'
 			if   ('LUX_DATA' in d.keys() and d['LUX_DATA'] == test_str) \
 			and  ('LUX_VERSION' in d.keys() and d['LUX_VERSION'] == '0.6'):
 				return d
