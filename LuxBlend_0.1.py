@@ -4544,15 +4544,27 @@ def putMatTex(mat, dict, basekey='', tex=None):
 					luxProp(mat, basekey+k[:-8]+'.textured', 'false').set('true')
 			except: pass
 
-def MatTex2str(d):
+def MatTex2str(d, tex = None):
+	if tex is not None and tex == True:
+		d['LUX_DATA'] = 'TEXTURE'
+	else:
+		d['LUX_DATA'] = 'MATERIAL'
+	
+	d['LUX_VERSION'] = '0.6'
 	return str(d).replace(", \'", ",\n\'")
 
-def str2MatTex(s):	# todo: this is not absolutely save from attacks!!!
+def str2MatTex(s, tex = None):	# todo: this is not absolutely save from attacks!!!
 	s = s.strip()
 	if (s[0]=='{') and (s[-1]=='}'):
 		d = eval(s, dict(__builtins__=None,True=True,False=False))
 		if type(d)==types.DictType:
-			return d
+			if tex is not None and tex == True:
+				test_str = 'TEXTURE'
+			else:
+				text_str = 'MATERIAL'
+			if   ('LUX_DATA' in d.keys() and d['LUX_DATA'] == test_str) \
+			and  ('LUX_VERSION' in d.keys() and d['LUX_VERSION'] == '0.6'):
+				return d
 	print "ERROR: string to material/texture conversion failed"
 	return None
 
@@ -4604,7 +4616,7 @@ def saveMatTex(mat, fn, basekey='', tex=False):
 	global LuxIsGUI
 	d = getMatTex(mat, basekey, tex)
 	file = open(fn, 'w')
-	file.write(MatTex2str(d))
+	file.write(MatTex2str(d, tex))
 	file.close()
 	if LuxIsGUI: Draw.Redraw()
 
@@ -4614,7 +4626,7 @@ def loadMatTex(mat, fn, basekey='', tex=None):
 	file = open(fn, 'r')
 	data = file.read()
 	file.close()
-	data = str2MatTex(data)
+	data = str2MatTex(data, tex)
 	putMatTex(mat, data, basekey, tex) 
 	if LuxIsGUI: Draw.Redraw()
 
