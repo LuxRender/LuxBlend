@@ -1681,7 +1681,7 @@ class luxProp:
 		return self.getVector()
 	def getVector(self):
 		v = self.get()
-		if type(v) == types.FloatType: return (float(v), float(v), float(v))
+		if type(v) in [types.FloatType, types.IntType]: return (float(v), float(v), float(v))
 		l = None
 		try:
 			if type(v) == types.StringType: l = self.get().split(" ")
@@ -4562,10 +4562,19 @@ def str2MatTex(s, tex = None):	# todo: this is not absolutely save from attacks!
 				test_str = 'TEXTURE'
 			else:
 				test_str = 'MATERIAL'
+				
 			if   ('LUX_DATA' in d.keys() and d['LUX_DATA'] == test_str) \
-			and  ('LUX_VERSION' in d.keys() and d['LUX_VERSION'] == '0.6'):
+			and  ('LUX_VERSION' in d.keys() and (d['LUX_VERSION'] == '0.6' or d['LUX_VERSION'] == 0.6)):
 				return d
-	print "ERROR: string to material/texture conversion failed"
+			else:
+				reason = 'Missing/incorrect metadata'
+		else:
+			reason = 'Not a parsed dict'
+	else:
+		reason = 'Not a stored dict'
+			
+			
+	print "ERROR: string to material/texture conversion failed: %s" % reason
 	return None
 
 
