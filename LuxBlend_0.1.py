@@ -715,7 +715,7 @@ def save_lux(filename, unindexedname):
 					target = pos + forwards
 					up = m1[1]
 					file.write("TransformBegin\n")
-					file.write("   LookAt %f %f %f \n       %f %f %f \n       %f %f %f\n" % ( pos[0], pos[1], pos[2], target[0], target[1], target[2], up[0], up[1], up[2] ))
+					file.write("   LookAt %f %f %f \n	   %f %f %f \n	   %f %f %f\n" % ( pos[0], pos[1], pos[2], target[0], target[1], target[2], up[0], up[1], up[2] ))
 					file.write("   CoordinateSystem \"CameraEndTransform\"\n")
 					file.write("TransformEnd\n\n")
 
@@ -724,7 +724,7 @@ def save_lux(filename, unindexedname):
 			forwards = -matrix[2]
 			target = pos + forwards
 			up = matrix[1]
-			file.write("LookAt %f %f %f \n       %f %f %f \n       %f %f %f\n\n" % ( pos[0], pos[1], pos[2], target[0], target[1], target[2], up[0], up[1], up[2] ))
+			file.write("LookAt %f %f %f \n	   %f %f %f \n	   %f %f %f\n\n" % ( pos[0], pos[1], pos[2], target[0], target[1], target[2], up[0], up[1], up[2] ))
 			file.write(luxCamera(camObj.data, scn.getRenderingContext()))
 			if motion:
 				file.write("\n   \"string endtransform\" [\"CameraEndTransform\"]")
@@ -2106,7 +2106,7 @@ def luxCamera(cam, context, gui=None):
 				if useaspect.get() == "true":
 					ratio = 1./aspectratio.get()
 				else:
-		    			ratio = float(context.sizeY)/float(context.sizeX)
+						ratio = float(context.sizeY)/float(context.sizeX)
 				if ratio < 1.0:
 					screenwindow = [(2*cam.shiftX-1)*scale, (2*cam.shiftX+1)*scale, (2*cam.shiftY-ratio)*scale, (2*cam.shiftY+ratio)*scale]
 				else:
@@ -2439,7 +2439,7 @@ def luxPixelFilter(scn, gui=None):
 					B = 1.0 - slidval.getFloat()
 					str += "\n   \"float B\" [%f]"%(B)
 					str += "\n   \"float C\" [%f]"%(C)
-			        elif(optmode.get() == "preset"):
+				elif(optmode.get() == "preset"):
 					print "not implemented"
 				else:
 					str += luxFloat("B", luxProp(scn, "pixelfilter.mitchell.B", 0.3333), 0.0, 1.0, "B", "Specify the shape of the Mitchell filter. Often best result is when B + 2C = 1", gui, 0.75)
@@ -2945,13 +2945,13 @@ def luxTexture(name, parentkey, type, default, min, max, caption, hint, mat, gui
 			str += luxFloat("v10", luxProp(mat, keyname+".v10", 0.0), min, max, "v10", "", gui, 1.0)
 			str += luxFloat("v11", luxProp(mat, keyname+".v11", 1.0), min, max, "v11", "", gui, 1.0)
 		elif type == "color":
-			if gui: gui.newline("          v00:", -2)
+			if gui: gui.newline("		  v00:", -2)
 			str += luxRGB("v00", luxProp(mat, keyname+".v00", "0.0 0.0 0.0"), max, "v00", "", gui, 2.0)
-			if gui: gui.newline("          v01:", -2)
+			if gui: gui.newline("		  v01:", -2)
 			str += luxRGB("v01", luxProp(mat, keyname+".v01", "1.0 1.0 1.0"), max, "v01", "", gui, 2.0)
-			if gui: gui.newline("          v10:", -2)
+			if gui: gui.newline("		  v10:", -2)
 			str += luxRGB("v10", luxProp(mat, keyname+".v10", "0.0 0.0 0.0"), max, "v10", "", gui, 2.0)
-			if gui: gui.newline("          v11:", -2)
+			if gui: gui.newline("		  v11:", -2)
 			str += luxRGB("v11", luxProp(mat, keyname+".v11", "1.0 1.0 1.0"), max, "v11", "", gui, 2.0)
 		str += luxMapping(keyname, mat, gui, level+1)
 
@@ -3316,24 +3316,24 @@ def luxFloatTexture(name, key, default, min, max, caption, hint, mat, gui, level
 	return (str, link)
 
 def luxFloatSliderTexture(name, key, default, min, max, caption, hint, mat, gui, level=0):
-        global icon_float
-        if gui: gui.newline(caption, 4, level, icon_float, scalelist([0.5,0.5,0.6],2.0/(level+2)))
-        str = ""
-        keyname = "%s:%s"%(key, name)
-        texname = "%s:%s"%(mat.getName(), keyname)
-        value = luxProp(mat, keyname, default)
-        link = luxFloat(name, value, min, max, caption, hint, gui, 2.0, 1)
-        tex = luxProp(mat, keyname+".textured", False)
-        if gui: Draw.Toggle("T", evtLuxGui, gui.x, gui.y-gui.h, gui.h, gui.h, tex.get()=="true", "use texture", lambda e,v:tex.set(["false","true"][bool(v)]))
-        if tex.get()=="true":
-                if gui: gui.newline("", -2)
-                (str, link) = luxTexture(name, key, "float", default, min, max, caption, hint, mat, gui, level+1)
-                if value.get() != 1.0:
-                        if str == "": # handle special case if texture is a just a constant
-                                str += "Texture \"%s\" \"float\" \"scale\" \"float tex1\" [%s] \"float tex2\" [%s]\n"%(texname+".scale", (link.rpartition("[")[2])[0:-1], value.get())
-                        else: str += "Texture \"%s\" \"float\" \"scale\" \"texture tex1\" [\"%s\"] \"float tex2\" [%s]\n"%(texname+".scale", texname, value.get())
-                        link = " \"texture %s\" [\"%s\"]"%(name, texname+".scale")
-        return (str, link)
+		global icon_float
+		if gui: gui.newline(caption, 4, level, icon_float, scalelist([0.5,0.5,0.6],2.0/(level+2)))
+		str = ""
+		keyname = "%s:%s"%(key, name)
+		texname = "%s:%s"%(mat.getName(), keyname)
+		value = luxProp(mat, keyname, default)
+		link = luxFloat(name, value, min, max, caption, hint, gui, 2.0, 1)
+		tex = luxProp(mat, keyname+".textured", False)
+		if gui: Draw.Toggle("T", evtLuxGui, gui.x, gui.y-gui.h, gui.h, gui.h, tex.get()=="true", "use texture", lambda e,v:tex.set(["false","true"][bool(v)]))
+		if tex.get()=="true":
+				if gui: gui.newline("", -2)
+				(str, link) = luxTexture(name, key, "float", default, min, max, caption, hint, mat, gui, level+1)
+				if value.get() != 1.0:
+						if str == "": # handle special case if texture is a just a constant
+								str += "Texture \"%s\" \"float\" \"scale\" \"float tex1\" [%s] \"float tex2\" [%s]\n"%(texname+".scale", (link.rpartition("[")[2])[0:-1], value.get())
+						else: str += "Texture \"%s\" \"float\" \"scale\" \"texture tex1\" [\"%s\"] \"float tex2\" [%s]\n"%(texname+".scale", texname, value.get())
+						link = " \"texture %s\" [\"%s\"]"%(name, texname+".scale")
+		return (str, link)
 
 
 def luxExponentTexture(name, key, default, min, max, caption, hint, mat, gui, level=0):
@@ -3827,7 +3827,7 @@ def luxMaterialBlock(name, luxname, key, mat, gui=None, level=0, str_opt=""):
 
 		if gui: gui.newline()
 		has_object_options   = 0 # disable object options by default
-		has_bump_options     = 0 # disable bump mapping options by default
+		has_bump_options	 = 0 # disable bump mapping options by default
 		has_emission_options = 0 # disable emission options by default
 		if mattype.get() == "mix":
 			(str,link) = c((str,link), luxFloatTexture("amount", keyname, 0.5, 0.0, 1.0, "amount", "The degree of mix between the two materials", mat, gui, level+1))
@@ -4209,7 +4209,7 @@ def convertMaterial(mat):
 
 	def convertColorband(colorband):
 		# colorbands are not supported in lux - so lets extract a average low-side and high-side color
-                cb = [colorband[0]] + colorband[:] + [colorband[-1]]
+		cb = [colorband[0]] + colorband[:] + [colorband[-1]]
 		cb[0][4], cb[-1][4] = 0.0, 1.0
 		low, high = [0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0]
 		for i in range(1, len(cb)):
@@ -4526,7 +4526,7 @@ def putMatTex(mat, dict, basekey='', tex=None):
 	if dict:
 		# remove all current properties in mat that starts with basekey
 		try:
-		        d = mat.properties['luxblend']
+			d = mat.properties['luxblend']
 			for k,v in d.convert_to_pyobject().items():
 				kn = k
 				if k[:1]=="__hash:":	# decode if entry is hashed (cause of 32chars limit)
@@ -4760,7 +4760,7 @@ class scrollbar:
 		self.calcRects()
 		coord, buttons = Window.GetMouseCoords(), Window.GetMouseButtons()
 		over = (coord[0]>=self.winrect[0]+self.rect[0]) and (coord[0]<=self.winrect[0]+self.rect[2]) and \
-		       (coord[1]>=self.winrect[1]+self.rect[1]) and (coord[1]<=self.winrect[1]+self.rect[3])
+			   (coord[1]>=self.winrect[1]+self.rect[1]) and (coord[1]<=self.winrect[1]+self.rect[3])
 		if Window.MButs.L and buttons > 0:
 			if self.scrolling:
 				if self.factor > 0: self.scroll((self.lastcoord[1]-coord[1])/self.factor)
@@ -4925,11 +4925,11 @@ activeObject = None
 activeEvent = None
 lastEventTime = 0
 key_tabs = {
-	Draw.ONEKEY:     0,
-	Draw.TWOKEY:     1,
+	Draw.ONEKEY:	 0,
+	Draw.TWOKEY:	 1,
 	Draw.THREEKEY:   2,
-	Draw.FOURKEY:    3,
-	Draw.FIVEKEY:    4,
+	Draw.FOURKEY:	3,
+	Draw.FIVEKEY:	4,
 }
 def luxEvent(evt, val):  # function that handles keyboard and mouse events
 	global activeObject, activemat, activeEvent, lastEventTime, key_tabs
@@ -4988,7 +4988,7 @@ def luxEvent(evt, val):  # function that handles keyboard and mouse events
 #	if evt == Draw.LEFTMOUSE and not val: 
 #   		size=BGL.Buffer(BGL.GL_FLOAT, 4) 
 #   		BGL.glGetFloatv(BGL.GL_SCISSOR_BOX, size) 
-#    		size= [int(s) for s in size] 
+#			size= [int(s) for s in size] 
 #		mx, my = Window.GetMouseCoords()
 #		mousex = mx - size[0]
 #		print "mousex = %i"%mousex
@@ -5109,7 +5109,7 @@ if (pyargs != []) and (batchindex != 0):
 
 	luxpath = ""
 	import getopt
-	o, a = getopt.getopt(pyargs, 's:e:o:t:l:',["scale=","haltspp=","run=", "lbm="])
+	o, a = getopt.getopt(pyargs, 's:e:o:t:l:',["scale=","haltspp=","run=", "lbm=", "lbt="])
 
 	opts = {}
 	for k,v in o:
@@ -5155,12 +5155,20 @@ if (pyargs != []) and (batchindex != 0):
 		luxProp(scene, "datadir", "").set(opts['-t'])
 	else:
 		print "Error: Temporary export path not supplied (-t)"; osys.exit(1)			
+	
 	if opts.has_key('--lbm'):
 		print "Load material: %s" %opts['--lbm']
 		mat = Material.Get("Material")
 		if mat: loadMatTex(mat, opts['--lbm'])
 		else:
 			print "Error: No material with name \"Material\" found (--lbm)"; osys.exit(1)
+			
+	if opts.has_key('--lbt'):
+		print "Load material: %s" %opts['--lbt']
+		mat = Material.Get("Material")
+		if mat: loadMatTex(mat, opts['--lbt'], ':Kd')
+		else:
+			print "Error: No material with name \"Material\" found (--lbt)"; osys.exit(1)
 
 #	CBluxAnimExport(True, True)
 	CBluxAnimExport(False, False, False) # as by zukazuka (http://www.luxrender.net/forum/viewtopic.php?f=11&t=1288)
