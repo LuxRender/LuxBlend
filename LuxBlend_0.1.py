@@ -4544,30 +4544,105 @@ def putMatTex(mat, dict, basekey='', tex=None):
 					luxProp(mat, basekey+k[:-8]+'.textured', 'false').set('true')
 			except: pass
 
+
+LBX_VERSION = '0.7'
+
 def MatTex2str(d, tex = None):
-	if tex is not None and tex == True:
-		d['LUX_DATA'] = 'TEXTURE'
-	else:
-		d['LUX_DATA'] = 'MATERIAL'
+	global LBX_VERSION
 	
-	d['LUX_VERSION'] = '0.6'
-	return str(d).replace(", \'", ",\n\'")
+	if LBX_VERSION == '0.6':
+	
+		if tex is not None and tex == True:
+			d['LUX_DATA'] = 'TEXTURE'
+		else:
+			d['LUX_DATA'] = 'MATERIAL'
+		
+		d['LUX_VERSION'] = '0.6'
+		return str(d).replace(", \'", ",\n\'")
+	
+	elif LBX_VERSION == '0.7':
+		definition = []
+		for k in d.keys():
+			if type(d[k]) == types.IntType:
+				t = 'integer'
+			if type(d[k]) == types.FloatType:
+				t = 'float'
+			if type(d[k]) == types.BooleanType:
+				t = 'bool'
+			if type(d[k]) == types.StringType:
+				l=None
+				try:
+					l = d[k].split(" ")
+				except: pass
+				if l==None or len(l)!=3:
+					t = 'string'
+				else:
+					t = 'vector'
+				
+			definition.append([ t, k, d[k] ])
+		
+		
+		lbx = {
+			'type': d['__type__'],
+			'version': '0.7',
+			'definition': definition,
+			'metadata': [
+				['string', 'generator', 'luxblend'],
+			]
+		}
+		return str(lbx).replace("], \'", "],\n\'").replace("[","\n\t[")
 
 def str2MatTex(s, tex = None):	# todo: this is not absolutely save from attacks!!!
+	global LBX_VERSION
+	
 	s = s.strip()
 	if (s[0]=='{') and (s[-1]=='}'):
 		d = eval(s, dict(__builtins__=None,True=True,False=False))
 		if type(d)==types.DictType:
-			if tex is not None and tex == True:
-				test_str = 'TEXTURE'
-			else:
-				test_str = 'MATERIAL'
+			
+			
+			if LBX_VERSION == '0.6':
+			
+				if tex is not None and tex == True:
+					test_str = 'TEXTURE'
+				else:
+					test_str = 'MATERIAL'
+					
+				if   ('LUX_DATA' in d.keys() and d['LUX_DATA'] == test_str) \
+				and  ('LUX_VERSION' in d.keys() and (d['LUX_VERSION'] == '0.6' or d['LUX_VERSION'] == 0.6)):
+					return d
+				else:
+					reason = 'Missing/incorrect metadata'
+					
+			elif LBX_VERSION == '0.7':
 				
-			if   ('LUX_DATA' in d.keys() and d['LUX_DATA'] == test_str) \
-			and  ('LUX_VERSION' in d.keys() and (d['LUX_VERSION'] == '0.6' or d['LUX_VERSION'] == 0.6)):
-				return d
+				def lb_list_to_dict(list):
+					d = {}
+					for t, k, v in list:
+						if t == 'float':
+							v = float(v)
+							
+						d[k] = v
+					return d
+				
+				if   ('version' in d.keys() and d['version'] in ['0.6', '0.7']) \
+				and  ('type' in d.keys() and d['type'] in ['material', 'texture']) \
+				and  ('definition' in d.keys()):
+					
+					
+					try:
+						definition = lb_list_to_dict(d['definition'])
+						
+						if 'metadata' in d.keys():
+							definition.update( lb_list_to_dict(d['metadata']) )
+						
+						return definition
+					except:
+						reason = 'Incorrect LBX definition data'
+				else: 
+					reason = 'Missing/incorrect metadata'
 			else:
-				reason = 'Missing/incorrect metadata'
+				reason = 'Unknown LBX version'
 		else:
 			reason = 'Not a parsed dict'
 	else:
