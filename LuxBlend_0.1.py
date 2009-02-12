@@ -4666,7 +4666,7 @@ def showMatTexMenu(mat, basekey='', tex=False):
 		menu += "|Load LBT%x3|Save LBT%x4"
 	else:
 		menu += "|Load LBM%x3|Save LBM%x4"
-	if not(tex) and ConnectLrmdb: menu += "|Download from DB%x5"
+	if  ConnectLrmdb: menu += "|Download from DB%x5" #not(tex) and
 
 #	menu += "|%l|dump material%x99|dump clipboard%x98"
 	r = Draw.PupMenu(menu)
@@ -4686,8 +4686,11 @@ def showMatTexMenu(mat, basekey='', tex=False):
 		else:
 			Window.FileSelector(lambda fn:saveMatTex(mat, fn, basekey, tex), "save material", luxProp(scn, "lux", "").get()+os.sep+".lbm")
 	elif r==5:
-		id = Draw.PupStrInput("Material ID:", "", 32)
-		if id: putMatTex(mat, downloadLRMDB(mat, id), basekey)
+		if not tex:
+			id = Draw.PupStrInput("Material ID:", "", 32)
+		else:
+			id = Draw.PupStrInput("Texture ID:", "", 32)
+		if id: putMatTex(mat, downloadLRMDB(mat, id), basekey, tex)
 #	elif r==99:
 #		for k,v in mat.properties['luxblend'].convert_to_pyobject().items(): print k+"="+repr(v)
 #	elif r==98:
