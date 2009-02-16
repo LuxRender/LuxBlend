@@ -868,7 +868,7 @@ def launchLux(filename):
 			return		
 	autothreads = luxProp(scn, "autothreads", "true").get()
 	threads = luxProp(scn, "threads", 1).get()
-	luxnice = luxProp(scn, "luxnice", 10).get()
+	luxnice = luxProp(scn, "luxnice", 0).get()
 	if ostype == "win32":
 		prio = ""
 		if luxnice > 15: prio = "/low"
@@ -2750,7 +2750,7 @@ def luxSystem(scn, gui=None):
 		luxFile("datadir", luxProp(scn, "datadir", ""), "default out dir", "default.lxs save path", gui, 2.0)
 
 		if gui: gui.newline("PRIORITY:", 10)
-		luxnice = luxProp(scn, "luxnice", 10)
+		luxnice = luxProp(scn, "luxnice", 0)
 		if osys.platform=="win32":
 			r = gui.getRect(2, 1)
 			Draw.Menu("priority%t|abovenormal%x-10|normal%x0|belownormal%x10|low%x19", evtLuxGui, r[0], r[1], r[2], r[3], luxnice.get(), "", lambda e,v: luxnice.set(v))
