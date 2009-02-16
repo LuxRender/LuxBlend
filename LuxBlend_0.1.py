@@ -4497,6 +4497,196 @@ try:
 		else:
 			print "ERROR: material id is not valid"
 		return None
+	
+		
+	#===========================================================================
+	# COOKIETRANSPORT
+	#===========================================================================
+	
+	#--------------------------------------------------------------------------- 
+	# IMPORTS
+	import cookielib, urllib2, xmlrpclib
+	
+	#---------------------------------------------------------------------------
+	# pilfered from
+	# https://fedorahosted.org/python-bugzilla/browser/bugzilla.py?rev=e6f699f06e92b1e49b1b8d2c8fbe89d9425a4a9a
+	class CookieTransport(xmlrpclib.Transport):
+	    '''
+	    A subclass of xmlrpclib.Transport that supports cookies.
+	    '''
+	    
+	    cookiejar = None
+	    scheme = 'http'
+	    verbose = None
+	
+	    # Cribbed from xmlrpclib.Transport.send_user_agent 
+	    def send_cookies(self, connection, cookie_request):
+	        '''
+	        Send all the cookie data that we have received
+	        '''
+	        
+	        if self.cookiejar is None:
+	            self.cookiejar = cookielib.CookieJar()
+	        elif self.cookiejar:
+	            # Let the cookiejar figure out what cookies are appropriate
+	            self.cookiejar.add_cookie_header(cookie_request)
+	            # Pull the cookie headers out of the request object...
+	            cookielist = list()
+	            for header, value in cookie_request.header_items():
+	                if header.startswith('Cookie'):
+	                    cookielist.append([header, value])
+	            # ...and put them over the connection
+	            for header, value in cookielist:
+	                connection.putheader(header, value)
+	
+	    # This is the same request() method from xmlrpclib.Transport,
+	    # with a couple additions noted below
+	    def request(self, host, handler, request_body, verbose=0):
+	        '''
+	        Handle the request
+	        '''
+	        
+	        host_connection = self.make_connection(host)
+	        if verbose:
+	            host_connection.set_debuglevel(1)
+	
+	        # ADDED: construct the URL and Request object for proper cookie handling
+	        request_url = "%s://%s/" % (self.scheme, host)
+	        cookie_request  = urllib2.Request(request_url) 
+	
+	        self.send_request(host_connection, handler, request_body)
+	        self.send_host(host_connection, host) 
+	        
+	        # ADDED. creates cookiejar if None.
+	        self.send_cookies(host_connection, cookie_request)
+	        self.send_user_agent(host_connection)
+	        self.send_content(host_connection, request_body)
+	
+	        errcode, errmsg, headers = host_connection.getreply()
+	
+	        # ADDED: parse headers and get cookies here
+	        class CookieResponse:
+	            '''
+	            fake a response object that we can fill with the headers above
+	            '''
+	            
+	            def __init__(self, headers):
+	                self.headers = headers
+	                
+	            def info(self):
+	                return self.headers
+	            
+	        cookie_response = CookieResponse(headers)
+	        
+	        # Okay, extract the cookies from the headers
+	        self.cookiejar.extract_cookies(cookie_response, cookie_request)
+	        
+	        # And write back any changes
+	        # DH THIS DOESN'T WORK
+	        # self.cookiejar.save(self.cookiejar.filename)
+	
+	        if errcode != 200:
+	            raise xmlrpclib.ProtocolError(
+	                host + handler,
+	                errcode, errmsg,
+	                headers
+	            )
+	
+	        self.verbose = verbose
+	
+	        try:
+	            sock = host_connection._conn.sock
+	        except AttributeError:
+	            sock = None
+	
+	        return self._parse_response(host_connection.getfile(), sock)
+	
+
+	#===========================================================================
+	# LRMDB Integration
+	#===========================================================================
+	class lrmdb:
+		host              = 'http://www.luxrender.net/lrmdb/ixr'
+		
+		username	      = ""
+		password	      = ""
+		logged_in         = False
+		
+		SERVER            = None
+		
+		last_error_str    = None
+		
+		def last_error(self):
+			return self.last_error_str #'LRMDB Connector: %s' %
+		
+		def login(self):
+			try:
+				result = self.SERVER.user.login(
+					self.username,
+					self.password
+				)
+				if not result:
+					raise
+				else:
+					self.logged_in = True
+					return True
+			except:
+				self.last_error_str = 'Login Failed'
+				self.logged_in = False
+				return False
+			
+		def submit_object(self, mat, basekey, tex):
+			if not self.check_creds(): return False
+			
+			try:
+				result = 'Unknown Error'
+				
+				if tex:
+					name = Draw.PupStrInput('Name: ', '', 32)
+				else:
+					name = mat.name
+				
+				result = self.SERVER.object.submit(
+					name,
+					MatTex2dict( getMatTex(mat, basekey, tex), tex )
+				)
+				if result is not True:
+					raise
+				else:
+					return True
+			except:
+				self.last_error_str = 'Submit failed: %s' % result
+				return False
+		
+		def check_creds(self):
+			if self.SERVER is None:
+				try:
+					self.SERVER = xmlrpclib.ServerProxy(self.host, transport=CookieTransport())
+				except:
+					self.last_error_str = 'ServerProxy init failed'
+					return False
+			
+			
+			if not self.logged_in:
+				#if self.username is "":
+				self.request_username()
+				
+				#if self.password is "":
+				self.request_password()
+					
+				return self.login()
+			else:
+				return True
+				
+		def request_username(self):
+			self.username = Draw.PupStrInput("Username:", self.username, 32)
+			
+		def request_password(self):
+			self.password = Draw.PupStrInput("Password:", self.password, 32)
+
+	lrmdb_connector = lrmdb()
+		
+	
 except: print "WARNING: LRMDB support not available"
 
 
@@ -4547,7 +4737,7 @@ def putMatTex(mat, dict, basekey='', tex=None):
 
 LBX_VERSION = '0.7'
 
-def MatTex2str(d, tex = None):
+def MatTex2dict(d, tex = None):
 	global LBX_VERSION
 	
 	if LBX_VERSION == '0.6':
@@ -4558,7 +4748,8 @@ def MatTex2str(d, tex = None):
 			d['LUX_DATA'] = 'MATERIAL'
 		
 		d['LUX_VERSION'] = '0.6'
-		return str(d).replace(", \'", ",\n\'")
+		
+		return d
 	
 	elif LBX_VERSION == '0.7':
 		definition = []
@@ -4590,7 +4781,17 @@ def MatTex2str(d, tex = None):
 				['string', 'generator', 'luxblend'],
 			]
 		}
-		return str(lbx).replace("], \'", "],\n\'").replace("[","\n\t[")
+		
+		return lbx
+	
+def MatTex2str(d, tex = None):
+	global LBX_VERSION
+	
+	if LBX_VERSION == '0.6':
+		return str( MatTex2dict(d, tex) ).replace(", \'", ",\n\'")
+	
+	elif LBX_VERSION == '0.7':
+		return str( MatTex2dict(d, tex) ).replace("], \'", "],\n\'").replace("[","\n\t[")
 
 def str2MatTex(s, tex = None):	# todo: this is not absolutely save from attacks!!!
 	global LBX_VERSION
@@ -4666,7 +4867,9 @@ def showMatTexMenu(mat, basekey='', tex=False):
 		menu += "|Load LBT%x3|Save LBT%x4"
 	else:
 		menu += "|Load LBM%x3|Save LBM%x4"
-	if  ConnectLrmdb: menu += "|Download from DB%x5" #not(tex) and
+	if  ConnectLrmdb:
+		menu += "|Download from DB%x5" #not(tex) and
+		menu += "|Upload to DB%x6"
 
 #	menu += "|%l|dump material%x99|dump clipboard%x98"
 	r = Draw.PupMenu(menu)
@@ -4691,6 +4894,14 @@ def showMatTexMenu(mat, basekey='', tex=False):
 		else:
 			id = Draw.PupStrInput("Texture ID:", "", 32)
 		if id: putMatTex(mat, downloadLRMDB(mat, id), basekey, tex)
+	elif r==6:
+		global lrmdb_connector
+		if not lrmdb_connector.submit_object(mat, basekey, tex):
+			msg = lrmdb_connector.last_error()
+		else:
+			msg = 'OK'
+			
+		Draw.PupBlock('Upload', [msg])
 #	elif r==99:
 #		for k,v in mat.properties['luxblend'].convert_to_pyobject().items(): print k+"="+repr(v)
 #	elif r==98:
