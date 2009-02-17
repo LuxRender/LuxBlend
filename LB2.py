@@ -101,7 +101,7 @@ class Lux:
     def exportMaterial(mat):
         '''Export Material Section'''
         str = "# Material '%s'\n" % mat.name
-        return str + Lux.Material(mat) + "\n"
+        return str + Lux.Materials.Material(mat) + "\n"
     
     @staticmethod
     def exportMaterialGeomTag(mat):
@@ -110,6 +110,9 @@ class Lux:
     @staticmethod
     def save_lux(filename, unindexedname):
         '''EXPORT'''
+        
+        Lux.scene = Blender.Scene.GetCurrent()
+        if Lux.LB_gui: Lux.GUI.Active  = False
         
         export_total_steps = 12.0
         
@@ -157,7 +160,7 @@ class Lux:
             file.write("\n")
         
             ##### Write camera ######
-            camObj = Lux.scene.getCurrentCamera()
+            camObj = Lux.scene.objects.camera
     
             if Lux.LB_gui: Blender.Window.DrawProgressBar(1.0/export_total_steps,'Exporting Camera')
             if camObj:
@@ -194,7 +197,7 @@ class Lux:
                 target = pos + forwards
                 up = matrix[1]
                 file.write("LookAt %f %f %f \n       %f %f %f \n       %f %f %f\n\n" % ( pos[0], pos[1], pos[2], target[0], target[1], target[2], up[0], up[1], up[2] ))
-                file.write(Lux.Camera(camObj.data, Lux.scene.getRenderingContext()))
+                file.write(Lux.SceneElements.Camera(camObj.data, Lux.scene.getRenderingContext()))
                 if motion:
                     file.write("\n   \"string endtransform\" [\"CameraEndTransform\"]")
                 file.write("\n")
@@ -207,27 +210,27 @@ class Lux:
     
             if Lux.LB_gui: Blender.Window.DrawProgressBar(3.0/export_total_steps,'Exporting Pixel Filter')
             ##### Write Pixel Filter ######
-            file.write(Lux.SceneElements.PixelFilter(Lux.scene))
+            file.write(Lux.SceneElements.PixelFilter())
             file.write("\n")
         
             if Lux.LB_gui: Blender.Window.DrawProgressBar(4.0/export_total_steps,'Exporting Sampler')
             ##### Write Sampler ######
-            file.write(Lux.SceneElements.Sampler(Lux.scene))
+            file.write(Lux.SceneElements.Sampler())
             file.write("\n")
         
             if Lux.LB_gui: Blender.Window.DrawProgressBar(5.0/export_total_steps,'Exporting Surface Integrator')
             ##### Write Surface Integrator ######
-            file.write(Lux.SceneElements.SurfaceIntegrator(Lux.scene))
+            file.write(Lux.SceneElements.SurfaceIntegrator())
             file.write("\n")
             
             if Lux.LB_gui: Blender.Window.DrawProgressBar(6.0/export_total_steps,'Exporting Volume Integrator')
             ##### Write Volume Integrator ######
-            file.write(Lux.SceneElements.VolumeIntegrator(Lux.scene))
+            file.write(Lux.SceneElements.VolumeIntegrator())
             file.write("\n")
             
             if Lux.LB_gui: Blender.Window.DrawProgressBar(7.0/export_total_steps,'Exporting Accelerator')
             ##### Write Acceleration ######
-            file.write(Lux.SceneElements.Accelerator(Lux.scene))
+            file.write(Lux.SceneElements.Accelerator())
             file.write("\n")    
         
             ########## BEGIN World
@@ -245,7 +248,7 @@ class Lux:
             
             if Lux.LB_gui: Blender.Window.DrawProgressBar(8.0/export_total_steps,'Exporting Environment')
             ##### Write World Background, Sunsky or Env map ######
-            env = Lux.SceneElements.Environment(Lux.scene)
+            env = Lux.SceneElements.Environment()
             if env != "":
                 file.write("AttributeBegin\n")
                 file.write(env)
@@ -311,9 +314,11 @@ class Lux:
     
         time2 = Blender.sys.time()
         print("Processing time: %f\n" %(time2-time1))
+        
+        if Lux.LB_gui:
+            Lux.GUI.Active = True
+            Blender.Draw.Redraw()
         return True
-    
-    
     
     @staticmethod
     def save_anim(filename):
@@ -329,9 +334,9 @@ class Lux:
             print("Rendering frame %i"%(i))
             Blender.Redraw()
             frameindex = ("-%05d" % (i)) + ".lxs"
-            indexedname = sys.makename(filename, frameindex)
+            indexedname = Blender.sys.makename(filename, frameindex)
             unindexedname = filename
-            Lux.Property(Lux.scene, "filename", Blender.Get("filename")).set(sys.makename(filename, "-%05d" %  (Blender.Get('curframe'))))
+            Lux.Property(Lux.scene, "filename", Blender.Get("filename")).set(Blender.sys.makename(filename, "-%05d" %  (Blender.Get('curframe'))))
     
             success = Lux.save_lux(filename, unindexedname) 
             if Run == "true" and success:
@@ -344,7 +349,7 @@ class Lux:
     @staticmethod
     def save_still(filename):
         Lux.scene = Blender.Scene.GetCurrent()
-        Lux.Property(Lux.scene, "filename", Blender.Get("filename")).set(sys.makename(filename, ""))
+        Lux.Property(Lux.scene, "filename", Blender.Get("filename")).set(Blender.sys.makename(filename, ""))
         Lux.MatSaved = False
         unindexedname = filename
         if Lux.save_lux(filename, unindexedname) and Lux.runRenderAfterExport:
@@ -803,8 +808,7 @@ class Lux:
         
         @staticmethod
         def setFocus(target):
-            currentscene = Blender.Scene.GetCurrent()
-            camObj = currentscene.objects.camera # currentscene.getCurrentCamera()
+            camObj = Lux.scene.objects.camera
             if target == "S":
                 try:
                     refLoc = (Blender.Object.GetSelected()[0]).getLocation()
@@ -824,7 +828,7 @@ class Lux:
         @staticmethod
         def rg(col):
             '''Reverse Gamma Correction'''
-            Lux.scene = Blender.Scene.GetCurrent()
+            #Lux.scene = Blender.Scene.GetCurrent()
             if Lux.Property(Lux.scene, "RGC", "true").get()=="true":
                 gamma = Lux.Property(Lux.scene, "film.gamma", 2.2).get()
             else:
@@ -841,7 +845,7 @@ class Lux:
         @staticmethod
         def texturegamma():
             '''Apply Gamma Value'''
-            Lux.scene = Blender.Scene.GetCurrent()
+            #Lux.scene = Blender.Scene.GetCurrent()
             if Lux.Property(Lux.scene, "RGC", "true").get()=="true":
                 return Lux.Property(Lux.scene, "film.gamma", 2.2).get()
             else:
@@ -883,7 +887,7 @@ class Lux:
                 print "Warning: object %s has no material assigned" % obj.getName()
                 mats = []
             # clay option
-            if Lux.Property(Blender.Scene.GetCurrent(), "clay", "false").get()=="true":
+            if Lux.Property(Lux.scene, "clay", "false").get()=="true":
                 if Lux.clayMat==None: Lux.clayMat = Blender.Material.New("lux_clayMat")
                 for i in range(len(mats)):
                     if mats[i]:
@@ -934,7 +938,7 @@ class Lux:
                         self.objects.append([obj, matrix])
                 elif (obj_type == "Lamp"):
                     ltype = obj.getData(mesh=1).getType() # data
-                    if (ltype == Lamp.Types["Lamp"]) or (ltype == Lamp.Types["Spot"]) or (ltype == Lamp.Types["Area"]):
+                    if (ltype == Blender.Lamp.Types["Lamp"]) or (ltype == Blender.Lamp.Types["Spot"]) or (ltype == Blender.Lamp.Types["Area"]):
                         self.lights.append([obj, matrix])
                         light = True
             return light
@@ -950,7 +954,7 @@ class Lux:
     
         def MaterialLink(self, file, mat):
             '''exports material link. LuxRender "Material"'''
-            if mat == dummyMat:
+            if mat == Lux.dummyMat:
                 file.write("\tMaterial \"matte\" # dummy material\n")
             else:
                 file.write("\t%s" % Lux.exportMaterialGeomTag(mat)) # use original methode
@@ -964,12 +968,12 @@ class Lux:
             
             for mat in self.materials:
                 print "material %s"%(mat.getName())
-                self.exportMaterial(file, mat)
+                self.Material(file, mat)
     
         def getMeshType(self, vertcount, mat):
             '''returns type of mesh as string to use depending on thresholds'''
             #Lux.scene = Blender.Scene.GetCurrent()
-            if mat != dummyMat:
+            if mat != Lux.dummyMat:
                 usesubdiv = Lux.Property(mat, "subdiv", "false")
                 usedisp = Lux.Property(mat, "dispmap", "false")
                 sharpbound = Lux.Property(mat, "sharpbound", "false")
@@ -991,7 +995,7 @@ class Lux:
             '''exports mesh to the file without any optimization'''
             
             if mats == []:
-                mats = [dummyMat]
+                mats = [Lux.dummyMat]
             for matIndex in range(len(mats)):
                 if (mats[matIndex] != None):
                     mesh_str = getMeshType(len(mesh.verts), mats[matIndex])
@@ -1039,7 +1043,7 @@ class Lux:
                 if optNormals: # one pass for flat faces without normals and another pass for smoothed faces with normals, all with UVs
                     shapeList, smoothFltr, normalFltr, uvFltr, shapeText = [0,1], [[0],[1]], [0,1], [1,1], ["flat w/o normals", "smoothed with normals"]
             if mats == []:
-                mats = [dummyMat]
+                mats = [Lux.dummyMat]
             for matIndex in range(len(mats)):
                 if (mats[matIndex] != None):
                     if not(portal):
@@ -1108,8 +1112,8 @@ class Lux:
             '''exports meshes that uses instancing (meshes that are used by at least "instancing_threshold" objects)'''
             #Lux.scene = Blender.Scene.GetCurrent()
             instancing_threshold = Lux.Property(self.scene, "instancing_threshold", 2).get()
-            mesh_optimizing = Lux.Property(seld.scene, "mesh_optimizing", True).get()
-            mesh = Mesh.New('')
+            mesh_optimizing = Lux.Property(self.scene, "mesh_optimizing", True).get()
+            mesh = Blender.Mesh.New('')
             for (mesh_name, objs) in self.meshes.items():
                 allow_instancing = True
                 mats = self.getMaterials(objs[0]) # mats = obj.getData().getMaterials()
@@ -1117,7 +1121,7 @@ class Lux:
                     if (mat!=None) and (Lux.Property(mat, "type", "").get()=="light"):
                         allow_instancing = False
                 for obj in objs: # don't instance if the objects with same mesh uses different materials
-                    ms = getMaterials(obj)
+                    ms = self.getMaterials(obj)
                     if ms <> mats:
                         allow_instancing = False
                 if allow_instancing and (len(objs) >= instancing_threshold):
@@ -1135,11 +1139,11 @@ class Lux:
         def Objects(self, file):
             '''exports objects to the file'''
             #Lux.scene = Blender.Scene.GetCurrent()
-            cam = self.scene.getCurrentCamera().data
+            cam = self.scene.objects.camera.data
             objectmblur = Lux.Property(cam, "objectmblur", "true")
             usemblur = Lux.Property(cam, "usemblur", "false")
-            mesh_optimizing = Lux.Property(scene, "mesh_optimizing", True).get()
-            mesh = Mesh.New('')
+            mesh_optimizing = Lux.Property(self.scene, "mesh_optimizing", True).get()
+            mesh = Blender.Mesh.New('')
             for [obj, matrix] in self.objects:
                 print "object: %s"%(obj.getName())
                 mesh_name = obj.getData(name_only=True)
@@ -1205,7 +1209,7 @@ class Lux:
             '''exports portals objects to the file'''
             #Lux.scene = Blender.Scene.GetCurrent()
             mesh_optimizing = Lux.Property(self.scene, "mesh_optimizing", True).get()
-            mesh = Mesh.New('')
+            mesh = Blender.Mesh.New('')
             for [obj, matrix] in self.portals:
                 print "portal: %s"%(obj.getName())
                 file.write("\tTransform [%s %s %s %s  %s %s %s %s  %s %s %s %s  %s %s %s %s]\n"\
@@ -1226,10 +1230,11 @@ class Lux:
             '''exports lights to the file'''
             for [obj, matrix] in self.lights:
                 ltype = obj.getData(mesh=1).getType() # data
-                if (ltype == Lamp.Types["Lamp"]) or (ltype == Lamp.Types["Spot"]) or (ltype == Lamp.Types["Area"]):
+                if (ltype == Blender.Lamp.Types["Lamp"]) or (ltype == Blender.Lamp.Types["Spot"]) or (ltype == Blender.Lamp.Types["Area"]):
                     print "light: %s"%(obj.getName())
                     if ltype == Blender.Lamp.Types["Area"]:
-                        (str, link) = Lux.Light.Area("", "", obj, None, 0)
+                        # DH - this had gui = None
+                        (str, link) = Lux.Light.Area("", "", obj, 0)
                         file.write(str)
                     if ltype == Blender.Lamp.Types["Area"]: file.write("AttributeBegin # %s\n"%obj.getName())
                     else: file.write("TransformBegin # %s\n"%obj.getName())
@@ -1243,10 +1248,12 @@ class Lux:
                     if ltype == Blender.Lamp.Types["Lamp"]:
                         lightgroup = Lux.Property(obj, "light.lightgroup", "default")
                         file.write("LightGroup \"%s\"\n"%lightgroup.get())
-                        (str, link) = Lux.Light.Lamp("", "", obj, None, 0)
+                        # DH - this had gui = None
+                        (str, link) = Lux.Light.Point("", "", obj, 0)
                         file.write(str+"LightSource \"point\""+link+"\n")
                     if ltype == Blender.Lamp.Types["Spot"]:
-                        (str, link) = Lux.Light.Spot("", "", obj, None, 0)
+                        # DH - this had gui = None
+                        (str, link) = Lux.Light.Spot("", "", obj, 0)
                         file.write(str)
                         proj = Lux.Property(obj, "light.usetexproj", "false")
                         lightgroup = Lux.Property(obj, "light.lightgroup", "default")
@@ -1314,46 +1321,49 @@ class Lux:
         LAUNCH LuxRender AND RENDER CURRENT SCENE
         '''
         
+        @staticmethod
         def ExportStill(default, run):
             Lux.runRenderAfterExport = run
             if default:
-                datadir = Lux.Property(Blender.Scene.GetCurrent(), "datadir", "").get()
+                datadir = Lux.Property(Lux.scene, "datadir", "").get()
                 if datadir=="": datadir = Blender.Get("datadir")
                 filename = datadir + os.sep + "default.lxs"
-                save_still(filename)
+                Lux.save_still(filename)
             else:
-                Blender.Window.FileSelector(save_still, "Export", sys.makename(Blender.Get("filename"), ".lxs"))
+                Blender.Window.FileSelector(Lux.save_still, "Export", Blender.sys.makename(Blender.Get("filename"), ".lxs"))
         
-        
+        @staticmethod
         def ExportAnim(default, run, fileselect=True):
             if default:
-                datadir = Lux.Property(Blender.Scene.GetCurrent(), "datadir", "").get()
+                datadir = Lux.Property(Lux.scene, "datadir", "").get()
                 if datadir=="": datadir = Blender.Get("datadir")
                 filename = datadir + os.sep + "default.lxs"
-                save_anim(filename)
+                Lux.save_anim(filename)
             else:
                 if fileselect:
-                    Blender.Window.FileSelector(save_anim, "Export", sys.makename(Blender.Get("filename"), ".lxs"))
+                    Blender.Window.FileSelector(Lux.save_anim, "Export", Blender.sys.makename(Blender.Get("filename"), ".lxs"))
                 else:
-                    datadir = Lux.Property(Blender.Scene.GetCurrent(), "datadir", "").get()
+                    datadir = Lux.Property(Lux.scene, "datadir", "").get()
                     if datadir=="": datadir = Blender.Get("datadir")
-                    filename = sys.makename(Blender.Get("filename") , ".lxs")
-                    save_anim(filename)
+                    filename = Blender.sys.makename(Blender.Get("filename") , ".lxs")
+                    Lux.save_anim(filename)
         
         @staticmethod
         def Normal(filename):
+            
             ostype = osys.platform
             #get blenders 'bpydata' directory
             datadir = Blender.Get("datadir")
             
             Lux.scene = Blender.Scene.GetCurrent()
+            
             ic = Lux.Property(Lux.scene, "lux", "").get()
             ic = Blender.sys.dirname(ic) + os.sep + "luxrender"
             if ostype == "win32": ic = ic + ".exe"
             if ostype == "darwin": ic = ic + ".app/Contents/MacOS/luxrender"
             checkluxpath = Lux.Property(Lux.scene, "checkluxpath", True).get()
             if checkluxpath:
-                if sys.exists(ic) != 1:
+                if Blender.sys.exists(ic) != 1:
                     Blender.Draw.PupMenu("Error: Lux renderer not found. Please set path on System page.%t|OK")
                     return        
             autothreads = Lux.Property(Lux.scene, "autothreads", "true").get()
@@ -1388,6 +1398,7 @@ class Lux:
             datadir = Blender.Get("datadir")
             
             Lux.scene = Blender.Scene.GetCurrent()
+            
             ic = Lux.Property(Lux.scene, "lux", "").get()
             ic = Blender.sys.dirname(ic) + os.sep + "luxrender"
             if ostype == "win32": ic = ic + ".exe"
@@ -1427,6 +1438,7 @@ class Lux:
             datadir=Blender.Get("datadir")
             
             Lux.scene = Blender.Scene.GetCurrent()
+            
             ic = Lux.Property(Lux.scene, "lux", "").get()
             ic = Blender.sys.dirname(ic) + os.sep + "luxrender"
             if ostype == "win32": ic = ic + ".exe"
@@ -1458,17 +1470,25 @@ class Lux:
     
     class Icon:
         
+        cache = {}
+        
         @staticmethod
         def get_logo(name):
-            return Lux.Icon.decodeLogoStr(Lux.Icon.Data.logos[name])
+            if name not in Lux.Icon.cache.keys():
+                Lux.Icon.cache[name] = Lux.Icon.decodeLogoStr(Lux.Icon.Data.logos[name]) 
+            return Lux.Icon.cache[name]
         
         @staticmethod
         def get_icon(name):
-            return Lux.Icon.decodeIconStr(Lux.Icon.Data.icons[name])
+            if name not in Lux.Icon.cache.keys():
+                Lux.Icon.cache[name] =  Lux.Icon.decodeIconStr(Lux.Icon.Data.icons[name])
+            return Lux.Icon.cache[name]
         
         @staticmethod
         def get_bar(name):
-            return Lux.Icon.decodeBarStr(Lux.Icon.Data.bars[name])
+            if name not in Lux.Icon.cache.keys():
+                Lux.Icon.cache[name] =  Lux.Icon.decodeBarStr(Lux.Icon.Data.bars[name])
+            return Lux.Icon.cache[name]
         
         class Data:
             logos = {
@@ -1790,6 +1810,9 @@ class Lux:
         class for dynamic gui
         '''
         
+        # Enable export routines to disable drawing of GUI
+        Active          = None
+        
         LB_scrollbar    = None
         
         def __init__(self, y=200):
@@ -1879,21 +1902,23 @@ class Lux:
         # gui main draw
         @staticmethod
         def luxDraw():
-            icon_luxblend = Lux.Icon.get_logo('logo_luxblend')
-        
-            Blender.BGL.glClear(Blender.BGL.GL_COLOR_BUFFER_BIT)
-        
             y = int(Lux.GUI.LB_scrollbar.getTop()) # 420
-            Blender.BGL.glColor3f(0.1,0.1,0.1); Blender.BGL.glRectf(0,0,440,y)
-            Blender.BGL.glColor3f(1.0,0.5,0.0); Blender.BGL.glRasterPos2i(130,y-21); Blender.Draw.Text("CVS")
-            Blender.BGL.glColor3f(0.9,0.9,0.9);
-        
-            Lux.Icon.drawLogo(icon_luxblend, 6, y-25);
-        
+            
             Lux.scene = Blender.Scene.GetCurrent()
             if Lux.scene:
                 luxpage = Lux.Property(Lux.scene, "page", 0)
-                Lux.LB_gui = Lux.GUI(y-70)
+                
+                if Lux.LB_gui and (Lux.GUI.Active != False):
+                    Lux.LB_gui.y = y-70
+                else:
+                    if (Lux.GUI.Active == None): Lux.GUI.Active = True
+                    Lux.LB_gui = Lux.GUI(y-70)
+                
+                Blender.BGL.glClear(Blender.BGL.GL_COLOR_BUFFER_BIT)
+                Blender.BGL.glColor3f(0.1,0.1,0.1); Blender.BGL.glRectf(0,0,440,y)
+                Blender.BGL.glColor3f(1.0,0.5,0.0); Blender.BGL.glRasterPos2i(130,y-21); Blender.Draw.Text("CVS")
+                Blender.BGL.glColor3f(0.9,0.9,0.9);
+                Lux.Icon.drawLogo(Lux.Icon.get_logo('logo_luxblend'), 6, y-25);
         
                 # render presets
                 Blender.BGL.glRasterPos2i(10,y-45); Blender.Draw.Text("Render presets:")
@@ -1928,9 +1953,9 @@ class Lux:
                     if obj:
                         if (obj.getType() == "Lamp"):
                             ltype = obj.getData(mesh=1).getType() # data
-                            if (ltype == Lamp.Types["Area"]): Lux.Light.Area("Area LIGHT", "", obj, 0)
-                            elif (ltype == Lamp.Types["Spot"]): Lux.Light.Spot("Spot LIGHT", "", obj, 0)
-                            elif (ltype == Lamp.Types["Lamp"]): Lux.Light.Point("Point LIGHT", "", obj, 0)
+                            if   (ltype == Blender.Lamp.Types["Area"]): Lux.Light.Area("Area LIGHT", "", obj, 0)
+                            elif (ltype == Blender.Lamp.Types["Spot"]): Lux.Light.Spot("Spot LIGHT", "", obj, 0)
+                            elif (ltype == Blender.Lamp.Types["Lamp"]): Lux.Light.Point("Point LIGHT", "", obj, 0)
                         else:
                             matfilter = Lux.Property(Lux.scene, "matlistfilter", "false")
                             mats = Lux.Export.getMaterials(obj, True)
@@ -1958,7 +1983,7 @@ class Lux:
                                 Lux.Materials.Material(Lux.Materials.activemat)
                 if luxpage.get() == 1:
                     Blender.BGL.glColor3f(1.0,0.5,0.0);Blender.BGL.glRectf(90,y-74,170,y-70);Blender.BGL.glColor3f(0.9,0.9,0.9)
-                    cam = Lux.scene.getCurrentCamera()
+                    cam = Lux.scene.objects.camera
                     if cam:
                         r = Lux.LB_gui.getRect(1.1, 1)
                         Lux.SceneElements.Camera(cam.data, Lux.scene.getRenderingContext())
@@ -2102,10 +2127,11 @@ class Lux:
                     
         @staticmethod
         def luxButtonEvt(evt):  # function that handles button events
+            Lux.scene = Blender.Scene.GetCurrent()
+            
             if evt == Lux.Events.LuxGui:
                 Blender.Draw.Redraw()
             if evt == Lux.Events.SavePreset:
-                Lux.scene = Blender.Scene.GetCurrent()
                 if Lux.scene:
                     name = Blender.Draw.PupStrInput("preset name: ", "")
                     if name != "":
@@ -2168,19 +2194,69 @@ class Lux:
                 Blender.Draw.Redraw()
             if evt == Lux.Events.LoadMaterial2:
                 if Lux.Materials.activemat:
-                    Lux.scene = Blender.Scene.GetCurrent()
                     Blender.Window.FileSelector(lambda fn:loadMatTex(Lux.Materials.activemat, fn), "load material", Lux.Property(Lux.scene, "lux", "").get()+os.sep+".lbm")
             if evt == Lux.Events.SaveMaterial2:
                 if Lux.Materials.activemat:
-                    Lux.scene = Blender.Scene.GetCurrent()
                     Blender.Window.FileSelector(lambda fn:saveMaterial(Lux.Materials.activemat, fn), "save material", Lux.Property(Lux.scene, "lux", "").get()+os.sep+".lbm")
             
+        @staticmethod
+        def showMatTexMenu(mat, basekey='', tex=False):
+            if tex: menu="Texture menu:%t"
+            else: menu="Material menu:%t"
+            menu += "|Copy%x1"
+            try:
+                if Lux.clipboard and (not(tex) ^ (Lux.clipboard["__type__"]=="texture")): menu +="|Paste%x2"
+            except: pass
+            if (tex):
+                menu += "|Load LBT%x3|Save LBT%x4"
+            else:
+                menu += "|Load LBM%x3|Save LBM%x4"
+            if  Lux.Web.WEB_Connect:
+                menu += "|Download from DB%x5" #not(tex) and
+                menu += "|Upload to DB%x6"
+        
+        #    menu += "|%l|dump material%x99|dump clipboard%x98"
+            r = Blender.Draw.PupMenu(menu)
+            if r==1:
+                Lux.clipboard = getMatTex(mat, basekey, tex)
+            elif r==2: Lux.Converter.putMatTex(mat, Lux.clipboard, basekey, tex)
+            elif r==3: 
+                #Lux.scene = Blender.Scene.GetCurrent()
+                if (tex):
+                    Blender.Window.FileSelector(lambda fn:loadMatTex(mat, fn, basekey, tex), "load texture", Lux.Property(Lux.scene, "lux", "").get()+os.sep+".lbt")
+                else:
+                    Blender.Window.FileSelector(lambda fn:loadMatTex(mat, fn, basekey, tex), "load material", Lux.Property(Lux.scene, "lux", "").get()+os.sep+".lbm")
+            elif r==4:
+                #Lux.scene = Blender.Scene.GetCurrent()
+                if (tex):
+                    Blender.Window.FileSelector(lambda fn:saveMatTex(mat, fn, basekey, tex), "save texture", Lux.Property(Lux.scene, "lux", "").get()+os.sep+".lbt")
+                else:
+                    Blender.Window.FileSelector(lambda fn:saveMatTex(mat, fn, basekey, tex), "save material", Lux.Property(Lux.scene, "lux", "").get()+os.sep+".lbm")
+            elif r==5:
+                if not tex:
+                    id = Blender.Draw.PupStrInput("Material ID:", "", 32)
+                else:
+                    id = Blender.Draw.PupStrInput("Texture ID:", "", 32)
+                if id: Lux.Converter.putMatTex(mat, Lux.Web.download(mat, id), basekey, tex)
+            elif r==6:
+                if not Lux.LB_web.submit_object(mat, basekey, tex):
+                    msg = Lux.LB_web.last_error()
+                else:
+                    msg = 'OK'
+                    
+                Blender.Draw.PupMenu("Upload: "+msg+".%t|OK")
+        #    elif r==99:
+        #        for k,v in mat.properties['luxblend'].convert_to_pyobject().items(): print k+"="+repr(v)
+        #    elif r==98:
+        #        for k,v in Lux.clipboard.items(): print k+"="+repr(v)
+        #    print ""
+            Blender.Draw.Redraw()
                 
     class TypedControls:
         @staticmethod
         def Help(name, lux, caption, hint, width=1.0):
             icon_help = Lux.Icon.get_icon('icon_help')
-            if Lux.LB_gui:
+            if Lux.GUI.Active:
                 r = Lux.LB_gui.getRect(width, 1)
                 Blender.Draw.Toggle(caption, Lux.Events.LuxGui, r[0], r[1], r[2], r[3], lux.get()=="true", hint, lambda e,v: lux.set(["false","true"][bool(v)]))
                 Lux.Icon.drawIcon(icon_help, r[0], r[1])
@@ -2189,7 +2265,7 @@ class Lux:
         
         @staticmethod
         def Option(name, lux, options, caption, hint, width=1.0):
-            if Lux.LB_gui:
+            if Lux.GUI.Active:
                 menustr = caption+": %t"
                 for i, v in enumerate(options): menustr = "%s %%x%d|%s"%(v, i, menustr)
                 try:
@@ -2207,7 +2283,7 @@ class Lux:
         
         @staticmethod
         def OptionRect(name, lux, options, caption, hint, x, y, xx, yy):
-            if Lux.LB_gui:
+            if Lux.GUI.Active:
                 menustr = caption+": %t"
                 for i, v in enumerate(options): menustr = "%s %%x%d|%s"%(v, i, menustr)
                 try:
@@ -2224,7 +2300,7 @@ class Lux:
         
         @staticmethod
         def Identifier(name, lux, options, caption, hint, icon=None, width=1.0):
-            if Lux.LB_gui:
+            if Lux.GUI.Active:
                 Lux.LB_gui.newline(caption+":", 8, 0, icon, [0.75,0.5,0.25])
             Lux.TypedControls.Option(name, lux, options, caption, hint, width)
             return "\n%s \"%s\""%(name, lux.get())
@@ -2232,8 +2308,8 @@ class Lux:
         # DH - some Float()s had gui = None - presumably deliberately hidden fields ?
         @staticmethod
         def Float(name, lux, min, max, caption, hint, width=1.0, useslider=0):
-            if Lux.LB_gui:
-                if (Lux.Property(Blender.Scene.GetCurrent(), "useparamkeys", "false").get()=="true"):
+            if Lux.GUI.Active:
+                if (Lux.Property(Lux.scene, "useparamkeys", "false").get()=="true"):
                     r = Lux.LB_gui.getRect(width-0.12, 1)
                 else:
                     r = Lux.LB_gui.getRect(width, 1)
@@ -2243,7 +2319,7 @@ class Lux:
                     Blender.Draw.Slider(caption+": ", Lux.Events.LuxGui, r[0], r[1], r[2], r[3], lux.getFloat(), min, max, 0, hint, lambda e,v: lux.set(v))
                 else:
                     Blender.Draw.Number(caption+": ", Lux.Events.LuxGui, r[0], r[1], r[2], r[3], lux.getFloat(), min, max, hint, lambda e,v: lux.set(v))
-                if (Lux.Property(Blender.Scene.GetCurrent(), "useparamkeys", "false").get()=="true"):
+                if (Lux.Property(Lux.scene, "useparamkeys", "false").get()=="true"):
                     # IPO Curve
                     obj = lux.getobj()
                     keyname = lux.getname()
@@ -2253,7 +2329,7 @@ class Lux:
                     Blender.Draw.Toggle("I", Lux.Events.LuxGui, i[0], i[1], i[2], i[3], useipo.get()=="true", "Use IPO Curve", lambda e,v: useipo.set(["false","true"][bool(v)]))
                     
                     if useipo.get() == "true":
-                        if Lux.LB_gui: Lux.LB_gui.newline(caption+"IPO:", 8, 0, None, [0.5,0.45,0.35])
+                        if Lux.GUI.Active: Lux.LB_gui.newline(caption+"IPO:", 8, 0, None, [0.5,0.45,0.35])
                         curve = Lux.Property(obj, keyname+".IPOCurveName", "") 
                         if curve.get() == "":
                             c = Lux.LB_gui.getRect(2.0, 1)
@@ -2286,7 +2362,7 @@ class Lux:
                                 m = Lux.LB_gui.getRect(0.3, 1)
                                 Blender.Draw.Toggle("Map", Lux.Events.LuxGui, m[0], m[1], m[2], m[3], usemapping.get()=="true", "Edit Curve mapping", lambda e,v: usemapping.set(["false","true"][bool(v)]))
                                 if usemapping.get() == "true":
-                                    if Lux.LB_gui: Lux.LB_gui.newline(caption+"IPO:", 8, 0, None, [0.5,0.45,0.35])
+                                    if Lux.GUI.Active: Lux.LB_gui.newline(caption+"IPO:", 8, 0, None, [0.5,0.45,0.35])
                                     fmin = Lux.Property(obj, keyname+".IPOCurvefmin", 0.0)
                                     Lux.TypedControls.FloatNoIPO("ipofmin", fmin, -100, 100, "fmin", "Map minimum value from Curve", 0.5)
                                     fmax = Lux.Property(obj, keyname+".IPOCurvefmax", 1.0)
@@ -2303,7 +2379,7 @@ class Lux:
                                     #v = Lux.LB_gui.getRect(0.5, 1)
                                     #Blender.Draw.Toggle("Invert", Lux.Events.LuxGui, v[0], v[1], v[2], v[3], useipo.get()=="true", "Invert Curve values", lambda e,v: useipo.set(["false","true"][bool(v)]))
             else:
-                if (Lux.Property(Blender.Scene.GetCurrent(), "useparamkeys", "false").get()=="true"):
+                if (Lux.Property(Lux.scene, "useparamkeys", "false").get()=="true"):
                     obj = lux.getobj()
                     keyname = lux.getname()
                     useipo = Lux.Property(obj, keyname+".IPOuse", "false")
@@ -2326,7 +2402,7 @@ class Lux:
                                 lux.set(icu_value)    
             
                         if usemapping.get() == "true":
-                            if Lux.LB_gui: Lux.LB_gui.newline(caption+"IPO:", 8, 0, None, [0.5,0.45,0.35])
+                            #if Lux.GUI.Active: Lux.LB_gui.newline(caption+"IPO:", 8, 0, None, [0.5,0.45,0.35])
                             fmin = Lux.Property(obj, keyname+".IPOCurvefmin", 0.0)
                             fmax = Lux.Property(obj, keyname+".IPOCurvefmax", 1.0)
                             tmin = Lux.Property(obj, keyname+".IPOCurvetmin", min)
@@ -2338,7 +2414,7 @@ class Lux:
         
         @staticmethod
         def FloatNoIPO(name, lux, min, max, caption, hint, width=1.0, useslider=0):
-            if Lux.LB_gui:
+            if Lux.GUI.Active:
                 r = Lux.LB_gui.getRect(width, 1)
                 if(useslider==1):
                     Blender.Draw.Slider(caption+": ", Lux.Events.LuxGui, r[0], r[1], r[2], r[3], lux.getFloat(), min, max, 0, hint, lambda e,v: lux.set(v))
@@ -2348,21 +2424,21 @@ class Lux:
                
         @staticmethod
         def Int(name, lux, min, max, caption, hint, width=1.0):
-            if Lux.LB_gui:
+            if Lux.GUI.Active:
                 r = Lux.LB_gui.getRect(width, 1)
                 Blender.Draw.Number(caption+": ", Lux.Events.LuxGui, r[0], r[1], r[2], r[3], lux.getInt(), min, max, hint, lambda e,v: lux.set(v))
             return "\n   \"integer %s\" [%d]"%(name, lux.getInt())
         
         @staticmethod
         def Bool(name, lux, caption, hint, width=1.0):
-            if Lux.LB_gui:
+            if Lux.GUI.Active:
                 r = Lux.LB_gui.getRect(width, 1)
                 Blender.Draw.Toggle(caption, Lux.Events.LuxGui, r[0], r[1], r[2], r[3], lux.get()=="true", hint, lambda e,v: lux.set(["false","true"][bool(v)]))
             return "\n   \"bool %s\" [\"%s\"]"%(name, lux.get())
         
         @staticmethod
         def String(name, lux, caption, hint, width=1.0):
-            if Lux.LB_gui:
+            if Lux.GUI.Active:
                 r = Lux.LB_gui.getRect(width, 1)
                 Blender.Draw.String(caption+": ", Lux.Events.LuxGui, r[0], r[1], r[2], r[3], lux.get(), 250, hint, lambda e,v: lux.set(v))
             if lux.get()==lux.default: return ""
@@ -2370,7 +2446,7 @@ class Lux:
         
         @staticmethod
         def File(name, lux, caption, hint, width=1.0):
-            if Lux.LB_gui:
+            if Lux.GUI.Active:
                 r = Lux.LB_gui.getRect(width, 1)
                 Blender.Draw.String(caption+": ", Lux.Events.LuxGui, r[0], r[1], r[2]-r[3]-2, r[3], lux.get(), 250, hint, lambda e,v: lux.set(v))
                 Blender.Draw.Button("...", 0, r[0]+r[2]-r[3], r[1], r[3], r[3], "click to open file selector", lambda e,v:Blender.Window.FileSelector(lambda s:lux.set(s), "Select %s"%(caption), lux.get()))
@@ -2378,7 +2454,7 @@ class Lux:
         
         @staticmethod
         def Path(name, lux, caption, hint, width=1.0):
-            if Lux.LB_gui:
+            if Lux.GUI.Active:
                 r = Lux.LB_gui.getRect(width, 1)
                 Blender.Draw.String(caption+": ", Lux.Events.LuxGui, r[0], r[1], r[2]-r[3]-2, r[3], lux.get(), 250, hint, lambda e,v: lux.set(Blender.sys.dirname(v)+os.sep))
                 Blender.Draw.Button("...", 0, r[0]+r[2]-r[3], r[1], r[3], r[3], "click to open file selector", lambda e,v:Blender.Window.FileSelector(lambda s:lux.set(s), "Select %s"%(caption), lux.get()))
@@ -2386,7 +2462,7 @@ class Lux:
         
         @staticmethod
         def RGB(name, lux, max, caption, hint, width=2.0):
-            if Lux.LB_gui:
+            if Lux.GUI.Active:
                 r = Lux.LB_gui.getRect(width, 1)
                 scale = 1.0
                 rgb = lux.getRGB()
@@ -2410,7 +2486,7 @@ class Lux:
         
         @staticmethod
         def Vector(name, lux, min, max, caption, hint, width=2.0):
-            if Lux.LB_gui:
+            if Lux.GUI.Active:
                 r = Lux.LB_gui.getRect(width, 1)
                 vec = lux.getVector()
                 w = int(r[2]/3)
@@ -2425,7 +2501,7 @@ class Lux:
             def setUniform(lux, value):
                 if value: lux.set(lux.getFloat())
                 else: lux.setVector(lux.getVector())
-            if Lux.LB_gui:
+            if Lux.GUI.Active:
                 r = Lux.LB_gui.getRect(width, 1)
                 vec = lux.getVector()
                 Blender.Draw.Toggle("U", Lux.Events.LuxGui, r[0], r[1], Lux.LB_gui.h, Lux.LB_gui.h, lux.isFloat(), "uniform", lambda e,v: setUniform(lux, v))
@@ -2456,18 +2532,18 @@ class Lux:
                 if camtype.get() == "realistic":
                     fov = Lux.Attribute(cam, "angle")
                     Lux.TypedControls.Float("fov", fov, 8.0, 170.0, "fov", "camera field-of-view angle")
-                    if Lux.LB_gui: Lux.LB_gui.newline()
+                    if Lux.GUI.Active: Lux.LB_gui.newline()
                     str += Lux.TypedControls.File("specfile", Lux.Property(cam, "camera.realistic.specfile", ""), "spec-file", "", 1.0)
-        #            if Lux.LB_gui: Lux.LB_gui.newline()
+        #            if Lux.GUI.Active: Lux.LB_gui.newline()
         # auto calc        str += Lux.Types.Float("filmdistance", Lux.Property(cam, "camera.realistic.filmdistance", 70.0), 0.1, 1000.0, "film-dist", "film-distance [mm]")
                     filmdiag = Lux.Property(cam, "camera.realistic.filmdiag", 35.0)
                     str += Lux.TypedControls.Float("filmdiag", filmdiag, 0.1, 1000.0, "film-diag", "[mm]")
-                    if Lux.LB_gui: Lux.LB_gui.newline()
+                    if Lux.GUI.Active: Lux.LB_gui.newline()
                     fstop = Lux.Property(cam, "camera.realistic.fstop", 1.0)
                     Lux.TypedControls.Float("aperture_diameter", fstop, 0.1, 100.0, "f-stop", "")
                     dofdist = Lux.Attribute(cam, "dofDist")
                     Lux.TypedControls.Float("focaldistance", dofdist, 0.0, 10000.0, "distance", "Distance from the camera at which objects will be in focus. Has no effect if Lens Radius is 0")
-                    if Lux.LB_gui:
+                    if Lux.GUI.Active:
                         Blender.Draw.Button("S", Lux.Events.LuxGui, Lux.LB_gui.x, Lux.LB_gui.y-Lux.LB_gui.h, Lux.LB_gui.h, Lux.LB_gui.h, "focus selected object", lambda e,v:Lux.Util.setFocus("S"))
                         Blender.Draw.Button("C", Lux.Events.LuxGui, Lux.LB_gui.x+Lux.LB_gui.h, Lux.LB_gui.y-Lux.LB_gui.h, Lux.LB_gui.h, Lux.LB_gui.h, "focus cursor", lambda e,v:Lux.Util.setFocus("C"))
                     focal = filmdiag.get()*0.001 / math.tan(fov.get() * math.pi / 360.0) / 2.0
@@ -2483,7 +2559,7 @@ class Lux:
                 useclip = Lux.Property(cam, "useclip", "false")
                 Lux.TypedControls.Bool("useclip", useclip, "Near & Far Clipping", "Enable Camera near and far clipping options", 2.0)
                 if(useclip.get() == "true"):
-                    if Lux.LB_gui: Lux.LB_gui.newline("  Clipping:")
+                    if Lux.GUI.Active: Lux.LB_gui.newline("  Clipping:")
                     str += Lux.TypedControls.Float("hither", Lux.Attribute(cam, "clipStart"), 0.0, 100.0, "start", "near clip distance")
                     str += Lux.TypedControls.Float("yon", Lux.Attribute(cam, "clipEnd"), 1.0, 10000.0, "end", "far clip distance")
         
@@ -2491,7 +2567,7 @@ class Lux:
                 usedof = Lux.Property(cam, "usedof", "false")
                 Lux.TypedControls.Bool("usedof", usedof, "Depth of Field & Bokeh", "Enable Depth of Field & Aperture options", 2.0)
                 if camtype.get() in ["perspective", "orthographic"] and usedof.get() == "true":
-                    if Lux.LB_gui: Lux.LB_gui.newline("  DOF:")
+                    if Lux.GUI.Active: Lux.LB_gui.newline("  DOF:")
                     focustype = Lux.Property(cam, "camera.focustype", "autofocus")
                     Lux.TypedControls.Option("focustype", focustype, ["autofocus", "manual", "object"], "Focus Type", "Choose the focus behaviour")
                     str += Lux.TypedControls.Float("lensradius", Lux.Property(cam, "camera.lensradius", 0.01), 0.0, 1.0, "lens-radius", "Defines the lens radius. Values higher than 0. enable DOF and control the amount")
@@ -2508,7 +2584,7 @@ class Lux:
                     if focustype.get() == "manual":
                         dofdist = Lux.Attribute(cam, "dofDist")
                         str += Lux.TypedControls.Float("focaldistance", dofdist, 0.0, 100.0, "distance", "Distance from the camera at which objects will be in focus. Has no effect if Lens Radius is 0")
-                        if Lux.LB_gui:
+                        if Lux.GUI.Active:
                             Blender.Draw.Button("S", Lux.Events.LuxGui, Lux.LB_gui.x, Lux.LB_gui.y-Lux.LB_gui.h, Lux.LB_gui.h, Lux.LB_gui.h, "focus selected object", lambda e,v:Lux.Util.setFocus("S"))
                             Blender.Draw.Button("C", Lux.Events.LuxGui, Lux.LB_gui.x+Lux.LB_gui.h, Lux.LB_gui.y-Lux.LB_gui.h, Lux.LB_gui.h, Lux.LB_gui.h, "focus cursor", lambda e,v:Lux.Util.setFocus("C"))
         
@@ -2523,11 +2599,11 @@ class Lux:
                     useshift = Lux.Property(cam, "camera.useshift", "false")
                     Lux.TypedControls.Bool("useshift", useshift, "Architectural (Lens Shift) & Aspect Ratio", "Enable Lens Shift and Aspect Ratio options", 2.0)
                     if(useshift.get() == "true"):
-                        if Lux.LB_gui: Lux.LB_gui.newline("  Shift:")
+                        if Lux.GUI.Active: Lux.LB_gui.newline("  Shift:")
                         Lux.TypedControls.Float("X", Lux.Attribute(cam, "shiftX"), -2.0, 2.0, "X", "horizontal lens shift")
                         Lux.TypedControls.Float("Y", Lux.Attribute(cam, "shiftY"), -2.0, 2.0, "Y", "vertical lens shift")
         
-                        if Lux.LB_gui: Lux.LB_gui.newline("  AspectRatio:")
+                        if Lux.GUI.Active: Lux.LB_gui.newline("  AspectRatio:")
                         Lux.TypedControls.Bool("useaspectratio", useaspect, "Custom", "Define a custom frame aspect ratio")
                         if useaspect.get() == "true":
                             str += Lux.TypedControls.Float("frameaspectratio", aspectratio, 0.0001, 3.0, "aspectratio", "Frame aspect ratio")
@@ -2557,7 +2633,7 @@ class Lux:
                 usemblur = Lux.Property(cam, "usemblur", "false")
                 Lux.TypedControls.Bool("usemblur", usemblur, "Motion Blur", "Enable Motion Blur", 2.0)
                 if(usemblur.get() == "true"):    
-                    if Lux.LB_gui: Lux.LB_gui.newline("  Shutter:")
+                    if Lux.GUI.Active: Lux.LB_gui.newline("  Shutter:")
                     mblurpreset = Lux.Property(cam, "mblurpreset", "true")
                     Lux.TypedControls.Bool("mblurpreset", mblurpreset, "Preset", "Enable use of Shutter Presets", 0.4)
                     if(mblurpreset.get() == "true"):
@@ -2617,7 +2693,7 @@ class Lux:
                 if filmtype.get() == "fleximage":
                     context = Lux.scene.getRenderingContext()
                     if context:
-                        if Lux.LB_gui: Lux.LB_gui.newline("  Resolution:")
+                        if Lux.GUI.Active: Lux.LB_gui.newline("  Resolution:")
                         Lux.TypedControls.Int("xresolution", Lux.Attribute(context, "sizeX"), 0, 8192, "X", "width of the render", 0.666)
                         Lux.TypedControls.Int("yresolution", Lux.Attribute(context, "sizeY"), 0, 8192, "Y", "height of the render", 0.666)
                         scale = Lux.Property(Lux.scene, "film.scale", "100 %")
@@ -2631,12 +2707,12 @@ class Lux:
                         else:
                             str += "\n   \"integer xresolution\" [%d] \n   \"integer yresolution\" [%d]"%(Lux.Attribute(context, "sizeX").get()*scale/100, Lux.Attribute(context, "sizeY").get()*scale/100)
         
-                    if Lux.LB_gui: Lux.LB_gui.newline("  Halt:")
+                    if Lux.GUI.Active: Lux.LB_gui.newline("  Halt:")
                     str += Lux.TypedControls.Int("haltspp", Lux.Property(Lux.scene, "haltspp", 0), 0, 32768, "haltspp", "Stop rendering after specified amount of samples per pixel / 0 = never halt")
                     palpha = Lux.Property(Lux.scene, "film.premultiplyalpha", "true")
                     str += Lux.TypedControls.Bool("premultiplyalpha", palpha, "premultiplyalpha", "Pre multiply film alpha channel during normalization")
             
-                    if Lux.LB_gui: Lux.LB_gui.newline("  Tonemap:")
+                    if Lux.GUI.Active: Lux.LB_gui.newline("  Tonemap:")
                     tonemapkernel =    Lux.Property(Lux.scene, "film.tonemapkernel", "reinhard")
                     str += Lux.TypedControls.Option("tonemapkernel", tonemapkernel, ["reinhard", "linear", "contrast", "maxwhite"], "Tonemapping Kernel", "Select the tonemapping kernel to use", 2.0)
                     if tonemapkernel.get() == "reinhard":
@@ -2655,10 +2731,10 @@ class Lux:
                     elif tonemapkernel.get() == "contrast":
                         str += Lux.TypedControls.Float("contrast_ywa", Lux.Property(Lux.scene, "film.contrast.ywa", 100.0), 0.0, 1000.0, "Ywa", "Display/World Adaption Luminance")
         
-                    if Lux.LB_gui: Lux.LB_gui.newline("  Display:")
+                    if Lux.GUI.Active: Lux.LB_gui.newline("  Display:")
                     str += Lux.TypedControls.Int("displayinterval", Lux.Property(Lux.scene, "film.displayinterval", 12), 4, 3600, "interval", "Set display Interval (seconds)")
                     
-                    if Lux.LB_gui: Lux.LB_gui.newline("  Write:")
+                    if Lux.GUI.Active: Lux.LB_gui.newline("  Write:")
                     str += Lux.TypedControls.Int("writeinterval", Lux.Property(Lux.scene, "film.writeinterval", 120), 12, 3600, "interval", "Set display Interval (seconds)")
         
                     # override output image dir in case of command line batch mode 
@@ -2672,31 +2748,31 @@ class Lux:
                         # DH - this has gui = None !
                         str += Lux.TypedControls.String("filename", fn, "File name", "save file name")
         
-                    if Lux.LB_gui: Lux.LB_gui.newline("  Formats:")
+                    if Lux.GUI.Active: Lux.LB_gui.newline("  Formats:")
                     savetga = Lux.Property(Lux.scene, "film.write_tonemapped_tga", "true")
                     str += Lux.TypedControls.Bool("write_tonemapped_tga", savetga, "Tonemapped TGA", "save tonemapped TGA file")
-                    if Lux.LB_gui: Lux.LB_gui.newline("")
+                    if Lux.GUI.Active: Lux.LB_gui.newline("")
                     savetmexr = Lux.Property(Lux.scene, "film.write_tonemapped_exr", "false")
                     saveexr = Lux.Property(Lux.scene, "film.write_untonemapped_exr", "false")
                     str += Lux.TypedControls.Bool("write_tonemapped_exr", savetmexr, "Tonemapped EXR", "save tonemapped EXR file")
                     str += Lux.TypedControls.Bool("write_untonemapped_exr", saveexr, "Untonemapped EXR", "save untonemapped EXR file")
-                    if Lux.LB_gui: Lux.LB_gui.newline("")
+                    if Lux.GUI.Active: Lux.LB_gui.newline("")
                     savetmigi = Lux.Property(Lux.scene, "film.write_tonemapped_igi", "false")
                     saveigi = Lux.Property(Lux.scene, "film.write_untonemapped_igi", "false")
                     str += Lux.TypedControls.Bool("write_tonemapped_igi", savetmigi, "Tonemapped IGI", "save tonemapped IGI file")
                     str += Lux.TypedControls.Bool("write_untonemapped_igi", saveigi, "Untonemapped IGI", "save untonemapped IGI file")
-                    if Lux.LB_gui: Lux.LB_gui.newline("  Resume:")
+                    if Lux.GUI.Active: Lux.LB_gui.newline("  Resume:")
                     resumeflm = Lux.Property(Lux.scene, "film.write_resume_flm", "false")
                     str += Lux.TypedControls.Bool("write_resume_flm", resumeflm, "Write/Use FLM", "Write a resume fleximage .flm file, or resume rendering if it already exists")
                     restartflm = Lux.Property(Lux.scene, "film.restart_resume_flm", "false")
                     str += Lux.TypedControls.Bool("restart_resume_flm", restartflm, "Restart/Erase", "Restart with a black flm, even it a previous flm exists")
-                    if Lux.LB_gui: Lux.LB_gui.newline("  Reject:")
+                    if Lux.GUI.Active: Lux.LB_gui.newline("  Reject:")
                     str += Lux.TypedControls.Int("reject_warmup", Lux.Property(Lux.scene, "film.reject_warmup", 128), 0, 32768, "warmup_spp", "Specify amount of samples per pixel for high intensity rejection")
                     debugmode = Lux.Property(Lux.scene, "film.debug", "false")
                     str += Lux.TypedControls.Bool("debug", debugmode, "debug", "Turn on debug reporting and switch off reject")
         
                     # Colorspace
-                    if Lux.LB_gui: Lux.LB_gui.newline("  Colorspace:")
+                    if Lux.GUI.Active: Lux.LB_gui.newline("  Colorspace:")
         
                     cspaceusepreset = Lux.Property(Lux.scene, "film.colorspaceusepreset", "true")
                     Lux.TypedControls.Bool("colorspaceusepreset", cspaceusepreset, "Preset", "Select from a list of predefined presets", 0.4)
@@ -2760,7 +2836,7 @@ class Lux:
                         Lux.TypedControls.Bool("gammausecolorspace", gammausecspace, "Colorspace Gamma", "Use default output gamma for selected colorspace", 1.0)
         
                         if(whitepointusecspace.get() == "false"):
-                            if Lux.LB_gui: Lux.LB_gui.newline("  Whitepoint:")
+                            if Lux.GUI.Active: Lux.LB_gui.newline("  Whitepoint:")
                             whitepointusepreset = Lux.Property(Lux.scene, "film.whitepointusepreset", "true")
                             Lux.TypedControls.Bool("whitepointusepreset", whitepointusepreset, "Preset", "Select from a list of predefined presets", 0.4)
         
@@ -2786,7 +2862,7 @@ class Lux:
                                 Lux.TypedControls.Float("white Y", cspacewhiteY, 0.0, 1.0, "white Y", "Whitepoint Y weight", 0.8)
         
                         if(gammausecspace.get() == "false"):
-                            if Lux.LB_gui: Lux.LB_gui.newline("  Gamma:")
+                            if Lux.GUI.Active: Lux.LB_gui.newline("  Gamma:")
                             Lux.TypedControls.Float("gamma", gamma, 0.1, 6.0, "gamma", "Output and RGC Gamma", 2.0)
                     else:
                         # manual controls
@@ -2798,7 +2874,7 @@ class Lux:
                         Lux.TypedControls.Float("green Y", cspacegreenY, 0.0, 1.0, "green Y", "Green component Y weight", 1.0)
                         Lux.TypedControls.Float("blue X", cspaceblueX, 0.0, 1.0, "blue X", "Blue component X weight", 1.0)
                         Lux.TypedControls.Float("blue Y", cspaceblueY, 0.0, 1.0, "blue Y", "Blue component Y weight", 1.0)
-                        if Lux.LB_gui: Lux.LB_gui.newline("  Gamma:")
+                        if Lux.GUI.Active: Lux.LB_gui.newline("  Gamma:")
                         Lux.TypedControls.Float("gamma", gamma, 0.1, 6.0, "gamma", "Output and RGC Gamma", 2.0)
         
                     str += "\n   \"float colorspace_white\" [%f %f]"%(cspacewhiteX.get(), cspacewhiteY.get())
@@ -2828,21 +2904,21 @@ class Lux:
                 if filtertype.get() == "box":
                     if showadvanced.get()=="true":
                         # Advanced parameters
-                        if Lux.LB_gui: Lux.LB_gui.newline()
+                        if Lux.GUI.Active: Lux.LB_gui.newline()
                         str += Lux.TypedControls.Float("xwidth", Lux.Property(Lux.scene, "pixelfilter.box.xwidth", 0.5), 0.0, 10.0, "x-width", "Width of the filter in the x direction")
                         str += Lux.TypedControls.Float("ywidth", Lux.Property(Lux.scene, "pixelfilter.box.ywidth", 0.5), 0.0, 10.0, "y-width", "Width of the filter in the y direction")
                 if filtertype.get() == "gaussian":
                     if showadvanced.get()=="true":
                         # Advanced parameters
-                        if Lux.LB_gui: Lux.LB_gui.newline()
+                        if Lux.GUI.Active: Lux.LB_gui.newline()
                         str += Lux.TypedControls.Float("xwidth", Lux.Property(Lux.scene, "pixelfilter.gaussian.xwidth", 2.0), 0.0, 10.0, "x-width", "Width of the filter in the x direction")
                         str += Lux.TypedControls.Float("ywidth", Lux.Property(Lux.scene, "pixelfilter.gaussian.ywidth", 2.0), 0.0, 10.0, "y-width", "Width of the filter in the y direction")
-                        if Lux.LB_gui: Lux.LB_gui.newline()
+                        if Lux.GUI.Active: Lux.LB_gui.newline()
                         str += Lux.TypedControls.Float("alpha", Lux.Property(Lux.scene, "pixelfilter.gaussian.alpha", 2.0), 0.0, 10.0, "alpha", "Gaussian rate of falloff. Lower values give blurrier images")
                 if filtertype.get() == "mitchell":
                     if showadvanced.get()=="false":
                         # Default parameters
-                        if Lux.LB_gui: Lux.LB_gui.newline("", 8, 0, None, [0.4,0.4,0.4])
+                        if Lux.GUI.Active: Lux.LB_gui.newline("", 8, 0, None, [0.4,0.4,0.4])
                         slidval = Lux.Property(Lux.scene, "pixelfilter.mitchell.sharp", 0.33)
                         Lux.TypedControls.Float("sharpness", slidval, 0.0, 1.0, "sharpness", "Specify amount between blurred (left) and sharp/ringed (right)", 2.0, 1)
                         # rule: B + 2*c = 1.0
@@ -2853,10 +2929,10 @@ class Lux:
         
                     if showadvanced.get()=="true":
                         # Advanced parameters
-                        if Lux.LB_gui: Lux.LB_gui.newline()
+                        if Lux.GUI.Active: Lux.LB_gui.newline()
                         str += Lux.TypedControls.Float("xwidth", Lux.Property(Lux.scene, "pixelfilter.mitchell.xwidth", 2.0), 0.0, 10.0, "x-width", "Width of the filter in the x direction")
                         str += Lux.TypedControls.Float("ywidth", Lux.Property(Lux.scene, "pixelfilter.mitchell.ywidth", 2.0), 0.0, 10.0, "y-width", "Width of the filter in the y direction")
-                        if Lux.LB_gui: Lux.LB_gui.newline()
+                        if Lux.GUI.Active: Lux.LB_gui.newline()
             
                         optmode = Lux.Property(Lux.scene, "pixelfilter.mitchell.optmode", "slider")
                         Lux.TypedControls.Option("optmode", optmode, ["slider", "preset", "manual"], "Mode", "Mode of configuration", 0.5)
@@ -2878,15 +2954,15 @@ class Lux:
                 if filtertype.get() == "sinc":
                     if showadvanced.get()=="true":
                         # Advanced parameters
-                        if Lux.LB_gui: Lux.LB_gui.newline()
+                        if Lux.GUI.Active: Lux.LB_gui.newline()
                         str += Lux.TypedControls.Float("xwidth", Lux.Property(Lux.scene, "pixelfilter.sinc.xwidth", 4.0), 0.0, 10.0, "x-width", "Width of the filter in the x direction")
                         str += Lux.TypedControls.Float("ywidth", Lux.Property(Lux.scene, "pixelfilter.sinc.ywidth", 4.0), 0.0, 10.0, "y-width", "Width of the filter in the y direction")
-                        if Lux.LB_gui: Lux.LB_gui.newline()
+                        if Lux.GUI.Active: Lux.LB_gui.newline()
                         str += Lux.TypedControls.Float("tau", Lux.Property(Lux.scene, "pixelfilter.sinc.tau", 3.0), 0.0, 10.0, "tau", "Permitted number of cycles of the sinc function before it is clamped to zero")
                 if filtertype.get() == "triangle":
                     if showadvanced.get()=="true":
                         # Advanced parameters
-                        if Lux.LB_gui: Lux.LB_gui.newline()
+                        if Lux.GUI.Active: Lux.LB_gui.newline()
                         str += Lux.TypedControls.Float("xwidth", Lux.Property(Lux.scene, "pixelfilter.triangle.xwidth", 2.0), 0.0, 10.0, "x-width", "Width of the filter in the x direction")
                         str += Lux.TypedControls.Float("ywidth", Lux.Property(Lux.scene, "pixelfilter.triangle.ywidth", 2.0), 0.0, 10.0, "y-width", "Width of the filter in the y direction")
             return str
@@ -2912,42 +2988,42 @@ class Lux:
                 if samplertype.get() == "metropolis":
                     if showadvanced.get()=="false":
                         # Default parameters
-                        if Lux.LB_gui: Lux.LB_gui.newline("  Mutation:", 8, 0, None, [0.4,0.4,0.4])
+                        if Lux.GUI.Active: Lux.LB_gui.newline("  Mutation:", 8, 0, None, [0.4,0.4,0.4])
                         strength = Lux.Property(Lux.scene, "sampler.metro.strength", 0.6)
                         Lux.TypedControls.Float("strength", strength, 0.0, 1.0, "strength", "Mutation Strength (lmprob = 1.0-strength)", 2.0, 1)
                         v = 1.0 - strength.get()
                         str += "\n   \"float largemutationprob\" [%f]"%v
                     if showadvanced.get()=="true":
                         # Advanced parameters
-                        if Lux.LB_gui: Lux.LB_gui.newline("  Mutation:")
+                        if Lux.GUI.Active: Lux.LB_gui.newline("  Mutation:")
                         str += Lux.TypedControls.Float("largemutationprob", Lux.Property(Lux.scene, "sampler.metro.lmprob", 0.4), 0.0, 1.0, "LM.prob.", "Probability of generating a large sample (mutation)")
                         str += Lux.TypedControls.Int("maxconsecrejects", Lux.Property(Lux.scene, "sampler.metro.maxrejects", 512), 0, 32768, "max.rejects", "number of consecutive rejects before a new mutation is forced")
-                        if Lux.LB_gui: Lux.LB_gui.newline("  Screen:")
+                        if Lux.GUI.Active: Lux.LB_gui.newline("  Screen:")
                         str += Lux.TypedControls.Int("initsamples", Lux.Property(Lux.scene, "sampler.metro.initsamples", 262144), 1, 1000000, "initsamples", "")
                         str += Lux.TypedControls.Int("stratawidth", Lux.Property(Lux.scene, "sampler.metro.stratawidth", 256), 1, 32768, "stratawidth", "The number of x/y strata for stratified sampling of seeds")
                         str += Lux.TypedControls.Bool("usevariance",Lux.Property(Lux.scene, "sampler.metro.usevariance", "false"), "usevariance", "Accept based on variance", 1.0)
         
                     if showhelp.get()=="true":
-                        if Lux.LB_gui: Lux.LB_gui.newline("  Description:", 8, 0, icon_help, [0.4,0.5,0.56])
+                        if Lux.GUI.Active: Lux.LB_gui.newline("  Description:", 8, 0, icon_help, [0.4,0.5,0.56])
                         r = Lux.LB_gui.getRect(2,1); Blender.BGL.glRasterPos2i(r[0],r[1]+5) 
                         Blender.Draw.Text("A Metropolis-Hastings mutating sampler which implements MLT", 'small')    
         
                 if samplertype.get() == "erpt":
                     str += Lux.TypedControls.Int("initsamples", Lux.Property(Lux.scene, "sampler.erpt.initsamples", 100000), 1, 1000000, "initsamples", "")
-                    if Lux.LB_gui: Lux.LB_gui.newline("  Mutation:")
+                    if Lux.GUI.Active: Lux.LB_gui.newline("  Mutation:")
                     str += Lux.TypedControls.Int("chainlength", Lux.Property(Lux.scene, "sampler.erpt.chainlength", 512), 1, 32768, "chainlength", "The number of mutations from a given seed")
-                    if Lux.LB_gui: Lux.LB_gui.newline()
+                    if Lux.GUI.Active: Lux.LB_gui.newline()
                     str += Lux.TypedControls.Int("stratawidth", Lux.Property(Lux.scene, "sampler.erpt.stratawidth", 256), 1, 32768, "stratawidth", "The number of x/y strata for stratified sampling of seeds")
         
                 if samplertype.get() == "lowdiscrepancy":
-                    if Lux.LB_gui: Lux.LB_gui.newline("  PixelSampler:")
+                    if Lux.GUI.Active: Lux.LB_gui.newline("  PixelSampler:")
                     str += Lux.TypedControls.Option("pixelsampler", Lux.Property(Lux.scene, "sampler.lowdisc.pixelsampler", "lowdiscrepancy"), ["linear", "tile", "random", "vegas","lowdiscrepancy","hilbert"], "pixel-sampler", "select pixel-sampler")
                     str += Lux.TypedControls.Int("pixelsamples", Lux.Property(Lux.scene, "sampler.lowdisc.pixelsamples", 4), 1, 2048, "samples", "Average number of samples taken per pixel. More samples create a higher quality image at the cost of render time")
         
                 if samplertype.get() == "random":
-                    if Lux.LB_gui: Lux.LB_gui.newline("  PixelSampler:")
+                    if Lux.GUI.Active: Lux.LB_gui.newline("  PixelSampler:")
                     str += Lux.TypedControls.Option("pixelsampler", Lux.Property(Lux.scene, "sampler.random.pixelsampler", "vegas"), ["linear", "tile", "random", "vegas","lowdiscrepancy","hilbert"], "pixel-sampler", "select pixel-sampler")
-                    if Lux.LB_gui: Lux.LB_gui.newline()
+                    if Lux.GUI.Active: Lux.LB_gui.newline()
                     str += Lux.TypedControls.Int("xsamples", Lux.Property(Lux.scene, "sampler.random.xsamples", 2), 1, 512, "xsamples", "Allows you to specify how many samples per pixel are taking in the x direction")
                     str += Lux.TypedControls.Int("ysamples", Lux.Property(Lux.scene, "sampler.random.ysamples", 2), 1, 512, "ysamples", "Allows you to specify how many samples per pixel are taking in the y direction")
             return str            
@@ -2972,28 +3048,28 @@ class Lux:
                 if integratortype.get() == "directlighting":
                     if showadvanced.get()=="false":
                         # Default parameters
-                        if Lux.LB_gui: Lux.LB_gui.newline("  Depth:", 8, 0, None, [0.4,0.4,0.4])
+                        if Lux.GUI.Active: Lux.LB_gui.newline("  Depth:", 8, 0, None, [0.4,0.4,0.4])
                         str += Lux.TypedControls.Int("maxdepth", Lux.Property(Lux.scene, "sintegrator.dlighting.maxdepth", 8), 0, 2048, "bounces", "The maximum recursion depth for ray casting", 2.0)
         
                     if showadvanced.get()=="true":
                         # Advanced parameters
                         str += Lux.TypedControls.Option("strategy", Lux.Property(Lux.scene, "sintegrator.dlighting.strategy", "auto"), ["one", "all", "auto"], "strategy", "select directlighting strategy")
-                        if Lux.LB_gui: Lux.LB_gui.newline("  Depth:")
+                        if Lux.GUI.Active: Lux.LB_gui.newline("  Depth:")
                         str += Lux.TypedControls.Int("maxdepth", Lux.Property(Lux.scene, "sintegrator.dlighting.maxdepth", 8), 0, 2048, "max-depth", "The maximum recursion depth for ray casting")
-                        if Lux.LB_gui: Lux.LB_gui.newline()
+                        if Lux.GUI.Active: Lux.LB_gui.newline()
         
                 if integratortype.get() == "path":
                     if showadvanced.get()=="false":
                         # Default parameters
-                        if Lux.LB_gui: Lux.LB_gui.newline("  Depth:", 8, 0, None, [0.4,0.4,0.4])
+                        if Lux.GUI.Active: Lux.LB_gui.newline("  Depth:", 8, 0, None, [0.4,0.4,0.4])
                         str += Lux.TypedControls.Int("maxdepth", Lux.Property(Lux.scene, "sintegrator.path.maxdepth", 10), 0, 2048, "bounces", "The maximum recursion depth for ray casting", 2.0)
         
                     if showadvanced.get()=="true":
                         # Advanced parameters
-                        if Lux.LB_gui: Lux.LB_gui.newline("  Depth:")
+                        if Lux.GUI.Active: Lux.LB_gui.newline("  Depth:")
                         str += Lux.TypedControls.Int("maxdepth", Lux.Property(Lux.scene, "sintegrator.path.maxdepth", 10), 0, 2048, "maxdepth", "The maximum recursion depth for ray casting")
                         str += Lux.TypedControls.Option("strategy", Lux.Property(Lux.scene, "sintegrator.path.strategy", "auto"), ["one", "all", "auto"], "strategy", "select directlighting strategy")
-                        if Lux.LB_gui: Lux.LB_gui.newline("  RR:")
+                        if Lux.GUI.Active: Lux.LB_gui.newline("  RR:")
                         rrstrat = Lux.Property(Lux.scene, "sintegrator.path.rrstrategy", "efficiency")
                         str += Lux.TypedControls.Option("rrstrategy", rrstrat, ["efficiency", "probability", "none"], "RR strategy", "select Russian Roulette path termination strategy")
                         if rrstrat.get() == "probability":
@@ -3002,7 +3078,7 @@ class Lux:
                 if integratortype.get() == "bidirectional":
                     if showadvanced.get()=="false":
                         # Default parameters
-                        if Lux.LB_gui: Lux.LB_gui.newline("  Depth:", 8, 0, None, [0.4,0.4,0.4])
+                        if Lux.GUI.Active: Lux.LB_gui.newline("  Depth:", 8, 0, None, [0.4,0.4,0.4])
                         bounces = Lux.Property(Lux.scene, "sintegrator.bidir.bounces", 10)
                         Lux.TypedControls.Int("bounces", bounces, 5, 32, "bounces", "The maximum recursion depth for ray casting (in both directions)", 2.0)
                         str += "\n   \"integer eyedepth\" [%i]\n"%bounces.get()
@@ -3010,24 +3086,24 @@ class Lux:
         
                     if showadvanced.get()=="true":
                         # Advanced parameters
-                        if Lux.LB_gui: Lux.LB_gui.newline("  Depth:")
+                        if Lux.GUI.Active: Lux.LB_gui.newline("  Depth:")
                         str += Lux.TypedControls.Int("eyedepth", Lux.Property(Lux.scene, "sintegrator.bidir.eyedepth", 10), 0, 2048, "eyedepth", "The maximum recursion depth for ray casting")
                         str += Lux.TypedControls.Int("lightdepth", Lux.Property(Lux.scene, "sintegrator.bidir.lightdepth", 10), 0, 2048, "lightdepth", "The maximum recursion depth for light ray casting")
                         str += Lux.TypedControls.Option("strategy", Lux.Property(Lux.scene, "sintegrator.bidir.strategy", "auto"), ["one", "all", "auto"], "strategy", "select directlighting strategy")
         
                 if integratortype.get() == "exphotonmap":
-                    if Lux.LB_gui: Lux.LB_gui.newline("  Photons:")
+                    if Lux.GUI.Active: Lux.LB_gui.newline("  Photons:")
                     str += Lux.TypedControls.Int("indirectphotons", Lux.Property(Lux.scene, "sintegrator.photonmap.idphotons", 200000), 0, 10000000, "indirect", "The number of photons to shoot for indirect lighting during preprocessing of the photon map")
                     str += Lux.TypedControls.Int("maxdirectphotons", Lux.Property(Lux.scene, "sintegrator.photonmap.maxdphotons", 1000000), 0, 10000000, "maxdirect", "The maximum number of photons to shoot for direct lighting during preprocessing of the photon map")
                     str += Lux.TypedControls.Int("causticphotons", Lux.Property(Lux.scene, "sintegrator.photonmap.cphotons", 20000), 0, 10000000, "caustic", "The number of photons to shoot for caustics during preprocessing of the photon map")
-                    if Lux.LB_gui: Lux.LB_gui.newline("  Render:")
+                    if Lux.GUI.Active: Lux.LB_gui.newline("  Render:")
                     str += Lux.TypedControls.Option("strategy", Lux.Property(Lux.scene, "sintegrator.photonmap.strategy", "auto"), ["one", "all", "auto"], "strategy", "select directlighting strategy")
                     str += Lux.TypedControls.Int("maxdepth", Lux.Property(Lux.scene, "sintegrator.photonmap.maxdepth", 6), 1, 1024, "maxdepth", "The maximum recursion depth of specular reflection and refraction")
                     str += Lux.TypedControls.Float("maxdist", Lux.Property(Lux.scene, "sintegrator.photonmap.maxdist", 0.1), 0.0, 10.0, "maxdist", "The maximum distance between a point being shaded and a photon that can contribute to that point")
                     str += Lux.TypedControls.Int("nused", Lux.Property(Lux.scene, "sintegrator.photonmap.nused", 50), 0, 1000000, "nused", "The number of photons to use in density estimation")
                     str += Lux.TypedControls.Option("renderingmode", Lux.Property(Lux.scene, "sintegrator.photonmap.renderingmode", "directlighting"), ["directlighting", "path"], "renderingmode", "select rendering mode")
         
-                    if Lux.LB_gui: Lux.LB_gui.newline("  FinalGather:")
+                    if Lux.GUI.Active: Lux.LB_gui.newline("  FinalGather:")
                     fg = Lux.Property(Lux.scene, "sintegrator.photonmap.fgather", "true")
                     str += Lux.TypedControls.Bool("finalgather", fg, "finalgather", "Enable use of final gather during rendering")
                     if fg.get() == "true":
@@ -3039,29 +3115,29 @@ class Lux:
         
                 if integratortype.get() == "distributedpath":
                     str += Lux.TypedControls.Option("strategy", Lux.Property(Lux.scene, "sintegrator.distributedpath.strategy", "auto"), ["one", "all", "auto"], "strategy", "select directlighting strategy")
-                    if Lux.LB_gui: Lux.LB_gui.newline("  Direct:")
+                    if Lux.GUI.Active: Lux.LB_gui.newline("  Direct:")
                     str += Lux.TypedControls.Bool("directsampleall",Lux.Property(Lux.scene, "sintegrator.distributedpath.directsampleall", "true"), "Direct ALL", "Include diffuse direct light sample at first vertex", 0.75)
                     str += Lux.TypedControls.Int("directsamples", Lux.Property(Lux.scene, "sintegrator.distributedpath.directsamples", 1), 0, 1024, "s", "The number of direct light samples to take at the eye vertex", 0.25)
                     str += Lux.TypedControls.Bool("indirectsampleall",Lux.Property(Lux.scene, "sintegrator.distributedpath.indirectsampleall", "false"), "Indirect ALL", "Include diffuse direct light sample at first vertex", 0.75)
                     str += Lux.TypedControls.Int("indirectsamples", Lux.Property(Lux.scene, "sintegrator.distributedpath.indirectsamples", 1), 0, 1024, "s", "The number of direct light samples to take at the remaining vertices", 0.25)
-                    if Lux.LB_gui: Lux.LB_gui.newline("  Diffuse:")
+                    if Lux.GUI.Active: Lux.LB_gui.newline("  Diffuse:")
                     str += Lux.TypedControls.Int("diffusereflectdepth", Lux.Property(Lux.scene, "sintegrator.distributedpath.diffusereflectdepth", 3), 0, 2048, "Reflect", "The maximum recursion depth for diffuse reflection ray casting", 0.5)
                     str += Lux.TypedControls.Int("diffusereflectsamples", Lux.Property(Lux.scene, "sintegrator.distributedpath.diffusereflectsamples", 1), 0, 1024, "s", "The number of diffuse reflection samples to take at the eye vertex", 0.25)
                     str += Lux.TypedControls.Int("diffuserefractdepth", Lux.Property(Lux.scene, "sintegrator.distributedpath.diffuserefractdepth", 5), 0, 2048, "Refract", "The maximum recursion depth for diffuse refraction ray casting", 0.5)
                     str += Lux.TypedControls.Int("diffuserefractsamples", Lux.Property(Lux.scene, "sintegrator.distributedpath.diffuserefractsamples", 1), 0, 1024, "s", "The number of diffuse refraction samples to take at the eye vertex", 0.25)
                     str += Lux.TypedControls.Bool("directdiffuse",Lux.Property(Lux.scene, "sintegrator.distributedpath.directdiffuse", "true"), "DL", "Include diffuse direct light sample at first vertex", 0.25)
                     str += Lux.TypedControls.Bool("indirectdiffuse",Lux.Property(Lux.scene, "sintegrator.distributedpath.indirectdiffuse", "true"), "IDL", "Include diffuse indirect light sample at first vertex", 0.25)
-                    if Lux.LB_gui: Lux.LB_gui.newline("  Glossy:")
+                    if Lux.GUI.Active: Lux.LB_gui.newline("  Glossy:")
                     str += Lux.TypedControls.Int("glossyreflectdepth", Lux.Property(Lux.scene, "sintegrator.distributedpath.glossyreflectdepth", 2), 0, 2048, "Reflect", "The maximum recursion depth for glossy reflection ray casting", 0.5)
                     str += Lux.TypedControls.Int("glossyreflectsamples", Lux.Property(Lux.scene, "sintegrator.distributedpath.glossyreflectsamples", 1), 0, 1024, "s", "The number of glossy reflection samples to take at the eye vertex", 0.25)
                     str += Lux.TypedControls.Int("glossyrefractdepth", Lux.Property(Lux.scene, "sintegrator.distributedpath.glossyrefractdepth", 5), 0, 2048, "Refract", "The maximum recursion depth for glossy refraction ray casting", 0.5)
                     str += Lux.TypedControls.Int("glossyrefractsamples", Lux.Property(Lux.scene, "sintegrator.distributedpath.glossyrefractsamples", 1), 0, 1024, "s", "The number of glossy refraction samples to take at the eye vertex", 0.25)
                     str += Lux.TypedControls.Bool("directglossy",Lux.Property(Lux.scene, "sintegrator.distributedpath.directglossy", "true"), "DL", "Include glossy direct light sample at first vertex", 0.25)
                     str += Lux.TypedControls.Bool("indirectglossy",Lux.Property(Lux.scene, "sintegrator.distributedpath.indirectglossy", "true"), "IDL", "Include glossy indirect light sample at first vertex", 0.25)
-                    if Lux.LB_gui: Lux.LB_gui.newline("  Specular:")
+                    if Lux.GUI.Active: Lux.LB_gui.newline("  Specular:")
                     str += Lux.TypedControls.Int("specularreflectdepth", Lux.Property(Lux.scene, "sintegrator.distributedpath.specularreflectdepth", 3), 0, 2048, "Reflect", "The maximum recursion depth for specular reflection ray casting", 1.0)
                     str += Lux.TypedControls.Int("specularrefractdepth", Lux.Property(Lux.scene, "sintegrator.distributedpath.specularrefractdepth", 5), 0, 2048, "Refract", "The maximum recursion depth for specular refraction ray casting", 1.0)
-                    if Lux.LB_gui: Lux.LB_gui.newline("  Caustics:")
+                    if Lux.GUI.Active: Lux.LB_gui.newline("  Caustics:")
                     str += Lux.TypedControls.Bool("causticsondiffuse",Lux.Property(Lux.scene, "sintegrator.distributedpath.causticsondiffuse", "false"), "Caustics on Diffuse", "Enable caustics on diffuse surfaces (warning: might generate bright pixels)", 1.0)
                     str += Lux.TypedControls.Bool("causticsonglossy",Lux.Property(Lux.scene, "sintegrator.distributedpath.causticsonglossy", "true"), "Caustics on Glossy", "Enable caustics on glossy surfaces (warning: might generate bright pixels)", 1.0)
         
@@ -3088,7 +3164,7 @@ class Lux:
             if Lux.scene:
                 envtype = Lux.Property(Lux.scene, "env.type", "infinite")
                 lsstr = Lux.TypedControls.Identifier("LightSource", envtype, ["none", "infinite", "sunsky"], "ENVIRONMENT", "select environment light type", icon_c_environment)
-                if Lux.LB_gui: Lux.LB_gui.newline()
+                if Lux.GUI.Active: Lux.LB_gui.newline()
                 str = ""
                 if envtype.get() != "none":
                     if envtype.get() in ["infinite", "sunsky"]:
@@ -3137,13 +3213,13 @@ class Lux:
                             str += Lux.TypedControls.Float("gain", Lux.Property(Lux.scene, "env.sunsky.gain", 1.0), 0.0, 1000.0, "gain", "Sky gain")
                             str += Lux.TypedControls.Float("turbidity", Lux.Property(Lux.scene, "env.sunsky.turbidity", 2.2), 2.0, 50.0, "turbidity", "Sky turbidity")
                         else:
-                            if Lux.LB_gui:
+                            if Lux.GUI.Active:
                                 Lux.LB_gui.newline(); r = Lux.LB_gui.getRect(2,1); Blender.BGL.glRasterPos2i(r[0],r[1]+5) 
                                 Blender.Draw.Text("create a blender Sun Lamp")
         
         
                     str += "\n"
-                if Lux.LB_gui: Lux.LB_gui.newline("GLOBAL:", 8, 0, None, [0.75,0.5,0.25])
+                if Lux.GUI.Active: Lux.LB_gui.newline("GLOBAL:", 8, 0, None, [0.75,0.5,0.25])
                 Lux.TypedControls.Float("scale", Lux.Property(Lux.scene, "global.scale", 1.0), 0.0, 10.0, "scale", "global world scale")
                 
             return str
@@ -3155,21 +3231,21 @@ class Lux:
                 acceltype = Lux.Property(Lux.scene, "accelerator.type", "tabreckdtree")
                 str = Lux.TypedControls.Identifier("Accelerator", acceltype, ["none", "tabreckdtree", "grid", "bvh"], "ACCEL", "select accelerator type")
                 if acceltype.get() == "tabreckdtree":
-                    if Lux.LB_gui: Lux.LB_gui.newline()
+                    if Lux.GUI.Active: Lux.LB_gui.newline()
                     str += Lux.TypedControls.Int("intersectcost", Lux.Property(Lux.scene, "accelerator.kdtree.interscost", 80), 0, 1000, "inters.cost", "specifies how expensive ray-object intersections are")
                     str += Lux.TypedControls.Int("traversalcost", Lux.Property(Lux.scene, "accelerator.kdtree.travcost", 1), 0, 1000, "trav.cost", "specifies how expensive traversing a ray through the kdtree is")
-                    if Lux.LB_gui: Lux.LB_gui.newline()
+                    if Lux.GUI.Active: Lux.LB_gui.newline()
                     str += Lux.TypedControls.Float("emptybonus", Lux.Property(Lux.scene, "accelerator.kdtree.emptybonus", 0.2), 0.0, 100.0, "empty.b", "promotes kd-tree nodes that represent empty space")
-                    if Lux.LB_gui: Lux.LB_gui.newline()
+                    if Lux.GUI.Active: Lux.LB_gui.newline()
                     str += Lux.TypedControls.Int("maxprims", Lux.Property(Lux.scene, "accelerator.kdtree.maxprims", 1), 0, 1000, "maxprims", "maximum number of primitives in a kdtree volume before further splitting of the volume occurs")
                     str += Lux.TypedControls.Int("maxdepth", Lux.Property(Lux.scene, "accelerator.kdtree.maxdepth", -1), -1, 100, "maxdepth", "If positive, the maximum depth of the tree. If negative this value is set automatically")
                 if acceltype.get() == "unsafekdtree":
-                    if Lux.LB_gui: Lux.LB_gui.newline()
+                    if Lux.GUI.Active: Lux.LB_gui.newline()
                     str += Lux.TypedControls.Int("intersectcost", Lux.Property(Lux.scene, "accelerator.kdtree.interscost", 80), 0, 1000, "inters.cost", "specifies how expensive ray-object intersections are")
                     str += Lux.TypedControls.Int("traversalcost", Lux.Property(Lux.scene, "accelerator.kdtree.travcost", 1), 0, 1000, "trav.cost", "specifies how expensive traversing a ray through the kdtree is")
-                    if Lux.LB_gui: Lux.LB_gui.newline()
+                    if Lux.GUI.Active: Lux.LB_gui.newline()
                     str += Lux.TypedControls.Float("emptybonus", Lux.Property(Lux.scene, "accelerator.kdtree.emptybonus", 0.2), 0.0, 100.0, "empty.b", "promotes kd-tree nodes that represent empty space")
-                    if Lux.LB_gui: Lux.LB_gui.newline()
+                    if Lux.GUI.Active: Lux.LB_gui.newline()
                     str += Lux.TypedControls.Int("maxprims", Lux.Property(Lux.scene, "accelerator.kdtree.maxprims", 1), 0, 1000, "maxprims", "maximum number of primitives in a kdtree volume before further splitting of the volume occurs")
                     str += Lux.TypedControls.Int("maxdepth", Lux.Property(Lux.scene, "accelerator.kdtree.maxdepth", -1), -1, 100, "maxdepth", "If positive, the maximum depth of the tree. If negative this value is set automatically")
                 if acceltype.get() == "grid":
@@ -3179,51 +3255,51 @@ class Lux:
         @staticmethod
         def System():
             if Lux.scene:
-                if Lux.LB_gui: Lux.LB_gui.newline("PATHS:", 10)
+                if Lux.GUI.Active: Lux.LB_gui.newline("PATHS:", 10)
                 lp = Lux.Property(Lux.scene, "lux", "")
                 lp.set(Blender.sys.dirname(lp.get())+os.sep)
                 Lux.TypedControls.Path("LUX dir", lp, "lux binary dir", "Lux installation path", 2.0)
         
         #        Lux.Types.File("GUI filename", Lux.Property(Lux.scene, "lux", ""), "lux-file", "filename and path of the lux GUI executable", 2.0)
         #        Lux.Types.File("Console filename", Lux.Property(Lux.scene, "luxconsole", ""), "lux-file-console", "filename and path of the lux console executable", 2.0)
-                if Lux.LB_gui: Lux.LB_gui.newline()
+                if Lux.GUI.Active: Lux.LB_gui.newline()
                 Lux.TypedControls.File("datadir", Lux.Property(Lux.scene, "datadir", ""), "default out dir", "default.lxs save path", 2.0)
         
-                if Lux.LB_gui: Lux.LB_gui.newline("PRIORITY:", 10)
+                if Lux.GUI.Active: Lux.LB_gui.newline("PRIORITY:", 10)
                 luxnice = Lux.Property(Lux.scene, "luxnice", 0)
                 if osys.platform=="win32":
                     r = Lux.LB_gui.getRect(2, 1)
                     Blender.Draw.Menu("priority%t|abovenormal%x-10|normal%x0|belownormal%x10|low%x19", Lux.Events.LuxGui, r[0], r[1], r[2], r[3], luxnice.get(), "", lambda e,v: luxnice.set(v))
                 else: Lux.TypedControls.Int("nice", luxnice, -20, 19, "nice", "nice value. Range goes from -20 (highest priority) to 19 (lowest)")  
         
-                if Lux.LB_gui: Lux.LB_gui.newline("THREADS:", 10)
+                if Lux.GUI.Active: Lux.LB_gui.newline("THREADS:", 10)
                 autothreads = Lux.Property(Lux.scene, "autothreads", "true")
                 Lux.TypedControls.Bool("autothreads", autothreads, "Auto Detect", "Automatically use all available processors", 1.0)
                 if autothreads.get()=="false":
                     Lux.TypedControls.Int("threads", Lux.Property(Lux.scene, "threads", 1), 1, 100, "threads", "number of threads used for rendering", 1.0)
         
-                if Lux.LB_gui: Lux.LB_gui.newline("ANIM:", 10)
+                if Lux.GUI.Active: Lux.LB_gui.newline("ANIM:", 10)
                 useparamkeys = Lux.Property(Lux.scene, "useparamkeys", "false")
                 Lux.TypedControls.Bool("useparamkeys", useparamkeys, "Enable Parameter IPO Keyframing", "Enables keyframing of luxblend parameters", 2.0)
         
-                if Lux.LB_gui: Lux.LB_gui.newline("PARAMS:", 10)
+                if Lux.GUI.Active: Lux.LB_gui.newline("PARAMS:", 10)
                 parammodeadvanced = Lux.Property(Lux.scene, "parammodeadvanced", "false")
                 Lux.TypedControls.Bool("parammodeadvanced", parammodeadvanced, "Default Advanced Parameters", "Always use advanced parameters by default", 2.0)
         
-                if Lux.LB_gui: Lux.LB_gui.newline("PREVIEW:", 10)
+                if Lux.GUI.Active: Lux.LB_gui.newline("PREVIEW:", 10)
                 qs = ["low","medium","high","very high"]
                 defprevmat = Lux.Property(Lux.scene, "defprevmat", "high")
                 Lux.TypedControls.Option("defprevmat", defprevmat, qs, "Materials", "Select default preview quality in material editor for materials", 1.0)
         
-                if Lux.LB_gui: Lux.LB_gui.newline("GAMMA:", 10)
+                if Lux.GUI.Active: Lux.LB_gui.newline("GAMMA:", 10)
                 Lux.TypedControls.Bool("RGC", Lux.Property(Lux.scene, "RGC", "true"), "RGC", "use reverse gamma correction")
                 Lux.TypedControls.Bool("ColClamp", Lux.Property(Lux.scene, "colorclamp", "false"), "ColClamp", "clamp all colors to 0.0-0.9")
-                if Lux.LB_gui: Lux.LB_gui.newline("MESH:", 10)
+                if Lux.GUI.Active: Lux.LB_gui.newline("MESH:", 10)
                 Lux.TypedControls.Bool("mesh_optimizing", Lux.Property(Lux.scene, "mesh_optimizing", "true"), "optimize meshes", "Optimize meshes during export", 2.0)
                 #Lux.Types.Int("trianglemesh thr", Lux.Property(Lux.scene, "trianglemesh_thr", 0), 0, 10000000, "trianglemesh threshold", "Vertex threshold for exporting (wald) trianglemesh object(s)", 2.0)
-                #if Lux.LB_gui: Lux.LB_gui.newline()
+                #if Lux.GUI.Active: Lux.LB_gui.newline()
                 #Lux.Types.Int("barytrianglemesh thr", Lux.Property(Lux.scene, "barytrianglemesh_thr", 300000), 0, 100000000, "barytrianglemesh threshold", "Vertex threshold for exporting barytrianglemesh object(s) (slower but uses less memory)", 2.0)
-                if Lux.LB_gui: Lux.LB_gui.newline("INSTANCING:", 10)
+                if Lux.GUI.Active: Lux.LB_gui.newline("INSTANCING:", 10)
                 Lux.TypedControls.Int("instancing_threshold", Lux.Property(Lux.scene, "instancing_threshold", 2), 0, 1000000, "object instanding threshold", "Threshold to created instanced objects", 2.0)
     
     class Textures:
@@ -3245,7 +3321,7 @@ class Lux:
             level = matlevel + texlevel
             keyname = "%s:%s"%(parentkey, name)
             texname = "%s:%s"%(mat.getName(), keyname)
-        #    if Lux.LB_gui: Lux.LB_gui.newline(caption+":", 0, level)
+        #    if Lux.GUI.Active: Lux.LB_gui.newline(caption+":", 0, level)
             if(lightsource == 0):
                 if texlevel == 0: texture = Lux.Property(mat, keyname+".texture", "imagemap")
                 else: texture = Lux.Property(mat, keyname+".texture", "constant")
@@ -3254,7 +3330,7 @@ class Lux:
         
             textures = ["constant","blackbody","equalenergy", "frequency", "gaussian", "regulardata", "irregulardata", "imagemap","mix","scale","bilerp","uv", "checkerboard","dots","fbm","marble","wrinkled", "windy", "blender_marble", "blender_musgrave", "blender_wood", "blender_clouds", "blender_blend", "blender_distortednoise", "blender_noise", "blender_magic", "blender_stucci", "blender_voronoi", "harlequin"]
         
-            if Lux.LB_gui:
+            if Lux.GUI.Active:
                 if(overrideicon != ""):
                     icon = overrideicon
                 else:
@@ -3272,8 +3348,8 @@ class Lux:
             Lux.TypedControls.Option("texture", texture, textures, "texture", "", 0.9)
             str = "Texture \"%s\" \"%s\" \"%s\""%(texname, type, texture.get())
         
-            if Lux.LB_gui: Blender.Draw.PushButton(">", Lux.Events.LuxGui, Lux.LB_gui.xmax+Lux.LB_gui.h, Lux.LB_gui.y-Lux.LB_gui.h, Lux.LB_gui.h, Lux.LB_gui.h, "Menu", lambda e,v: showMatTexMenu(mat,keyname,True))
-            if Lux.LB_gui: # Draw Texture level Material preview
+            if Lux.GUI.Active: Blender.Draw.PushButton(">", Lux.Events.LuxGui, Lux.LB_gui.xmax+Lux.LB_gui.h, Lux.LB_gui.y-Lux.LB_gui.h, Lux.LB_gui.h, Lux.LB_gui.h, "Menu", lambda e,v: Lux.GUI.showMatTexMenu(mat,keyname,True))
+            if Lux.GUI.Active: # Draw Texture level Material preview
                 Lux.Preview.Preview(mat, parentkey, 1, False, False, name, texlevel, [0.5, 0.5, 0.5])
                 # Add an offset for next controls
                 #r = Lux.LB_gui.getRect(1.0, 1)
@@ -3291,7 +3367,7 @@ class Lux:
         #        else: str += " \"%s value\" [%s]"%(type, value.get())
         
             if texture.get() == "blackbody":
-                if Lux.LB_gui:
+                if Lux.GUI.Active:
                     if Lux.LB_gui.xmax-Lux.LB_gui.x < Lux.LB_gui.w: Lux.LB_gui.newline()
                     r = Lux.LB_gui.getRect(1.0, 1)
                     Lux.LB_gui.newline()
@@ -3299,7 +3375,7 @@ class Lux:
                 str += Lux.TypedControls.Float("temperature", Lux.Property(mat, keyname+".bbtemp", 6500.0), 1000.0, 10000.0, "temperature", "Black Body temperature in degrees Kelvin", 2.0, 1)
         
             if texture.get() == "equalenergy":
-                if Lux.LB_gui:
+                if Lux.GUI.Active:
                     if Lux.LB_gui.xmax-Lux.LB_gui.x < Lux.LB_gui.w: Lux.LB_gui.newline()
                     r = Lux.LB_gui.getRect(1.0, 1)
                     Lux.LB_gui.newline()
@@ -3312,7 +3388,7 @@ class Lux:
                 str += Lux.TypedControls.Float("energy", Lux.Property(mat, keyname+".energy", 1.0), 0.0, 1.0, "energy", "Amount of mean energy", 0.9, 1)
         
             if texture.get() == "gaussian":
-                if Lux.LB_gui:
+                if Lux.GUI.Active:
                     if Lux.LB_gui.xmax-Lux.LB_gui.x < Lux.LB_gui.w: Lux.LB_gui.newline()
                     r = Lux.LB_gui.getRect(1.0, 1)
                     Lux.LB_gui.newline()
@@ -3351,17 +3427,17 @@ class Lux:
                 if type == "float":
                     str += Lux.TypedControls.Float("v00", Lux.Property(mat, keyname+".v00", 0.0), min, max, "v00", "", 1.0)
                     str += Lux.TypedControls.Float("v01", Lux.Property(mat, keyname+".v01", 1.0), min, max, "v01", "", 1.0)
-                    if Lux.LB_gui: Lux.LB_gui.newline("", -2)
+                    if Lux.GUI.Active: Lux.LB_gui.newline("", -2)
                     str += Lux.TypedControls.Float("v10", Lux.Property(mat, keyname+".v10", 0.0), min, max, "v10", "", 1.0)
                     str += Lux.TypedControls.Float("v11", Lux.Property(mat, keyname+".v11", 1.0), min, max, "v11", "", 1.0)
                 elif type == "color":
-                    if Lux.LB_gui: Lux.LB_gui.newline("          v00:", -2)
+                    if Lux.GUI.Active: Lux.LB_gui.newline("          v00:", -2)
                     str += Lux.TypedControls.RGB("v00", Lux.Property(mat, keyname+".v00", "0.0 0.0 0.0"), max, "v00", "", 2.0)
-                    if Lux.LB_gui: Lux.LB_gui.newline("          v01:", -2)
+                    if Lux.GUI.Active: Lux.LB_gui.newline("          v01:", -2)
                     str += Lux.TypedControls.RGB("v01", Lux.Property(mat, keyname+".v01", "1.0 1.0 1.0"), max, "v01", "", 2.0)
-                    if Lux.LB_gui: Lux.LB_gui.newline("          v10:", -2)
+                    if Lux.GUI.Active: Lux.LB_gui.newline("          v10:", -2)
                     str += Lux.TypedControls.RGB("v10", Lux.Property(mat, keyname+".v10", "0.0 0.0 0.0"), max, "v10", "", 2.0)
-                    if Lux.LB_gui: Lux.LB_gui.newline("          v11:", -2)
+                    if Lux.GUI.Active: Lux.LB_gui.newline("          v11:", -2)
                     str += Lux.TypedControls.RGB("v11", Lux.Property(mat, keyname+".v11", "1.0 1.0 1.0"), max, "v11", "", 2.0)
                 str += Lux.Mapping.Mapping2D(keyname, mat, level+1)
         
@@ -3373,7 +3449,7 @@ class Lux:
                 dim = Lux.Property(mat, keyname+".dim", 2)
                 str += Lux.TypedControls.Int("dimension", dim, 2, 3, "dim", "", 0.5)
                 if dim.get() == 2: str += Lux.TypedControls.Option("aamode", Lux.Property(mat, keyname+".aamode", "closedform"), ["closedform","supersample","none"], "aamode", "antialiasing mode", 0.6)
-                if Lux.LB_gui: Lux.LB_gui.newline("", -2)
+                if Lux.GUI.Active: Lux.LB_gui.newline("", -2)
                 (s, l) = c(("", ""), Lux.Textures.Texture("tex1", keyname, type, default, min, max, "tex1", "", mat, matlevel, texlevel+1, lightsource))
                 (s, l) = c((s, l), Lux.Textures.Texture("tex2", keyname, type, alternativedefault(type, default), min, max, "tex2", "", mat, matlevel, texlevel+1, lightsource))
                 str = s + str + l
@@ -3389,30 +3465,30 @@ class Lux:
         
             if texture.get() == "fbm":
                 str += Lux.TypedControls.Int("octaves", Lux.Property(mat, keyname+".octaves", 8), 1, 100, "octaves", "", 1.1)
-                if Lux.LB_gui: Lux.LB_gui.newline("", -2)
+                if Lux.GUI.Active: Lux.LB_gui.newline("", -2)
                 str += Lux.TypedControls.Float("roughness", Lux.Property(mat, keyname+".roughness", 0.5), 0.0, 1.0, "roughness", "", 2.0, 1)
-                if Lux.LB_gui: Lux.LB_gui.newline("", -2)
+                if Lux.GUI.Active: Lux.LB_gui.newline("", -2)
                 str += Lux.Mapping.Mapping3D(keyname, mat, level+1)
         
             if texture.get() == "marble":
                 str += Lux.TypedControls.Int("octaves", Lux.Property(mat, keyname+".octaves", 8), 1, 100, "octaves", "", 1.1)
-                if Lux.LB_gui: Lux.LB_gui.newline("", -2)
+                if Lux.GUI.Active: Lux.LB_gui.newline("", -2)
                 str += Lux.TypedControls.Float("roughness", Lux.Property(mat, keyname+".roughness", 0.5), 0.0, 1.0, "roughness", "", 2.0, 1)
-                if Lux.LB_gui: Lux.LB_gui.newline("", -2)
+                if Lux.GUI.Active: Lux.LB_gui.newline("", -2)
                 str += Lux.TypedControls.Float("nscale", Lux.Property(mat, keyname+".nscale", 1.0), 0.0, 100.0, "nscale", "Scaling factor for the noise input", 1.0)
                 str += Lux.TypedControls.Float("variation", Lux.Property(mat, keyname+".variation", 0.2), 0.0, 100.0, "variation", "A scaling factor for the noise input function", 1.0)
-                if Lux.LB_gui: Lux.LB_gui.newline("", -2)
+                if Lux.GUI.Active: Lux.LB_gui.newline("", -2)
                 str += Lux.Mapping.Mapping3D(keyname, mat, level+1)
         
             if texture.get() == "wrinkled":
                 str += Lux.TypedControls.Int("octaves", Lux.Property(mat, keyname+".octaves", 8), 1, 100, "octaves", "", 1.1)
-                if Lux.LB_gui: Lux.LB_gui.newline("", -2)
+                if Lux.GUI.Active: Lux.LB_gui.newline("", -2)
                 str += Lux.TypedControls.Float("roughness", Lux.Property(mat, keyname+".roughness", 0.5), 0.0, 1.0, "roughness", "", 2.0, 1)
-                if Lux.LB_gui: Lux.LB_gui.newline("", -2)
+                if Lux.GUI.Active: Lux.LB_gui.newline("", -2)
                 str += Lux.Mapping.Mapping3D(keyname, mat, level+1)
         
             if texture.get() == "blender_marble":
-                if Lux.LB_gui: Lux.LB_gui.newline("noise:", -2, level+1, icon_texparam)
+                if Lux.GUI.Active: Lux.LB_gui.newline("noise:", -2, level+1, icon_texparam)
         
                 mtype = Lux.Property(mat, keyname+".mtype", "soft")
                 mtypes = ["soft","sharp","sharper"]
@@ -3427,7 +3503,7 @@ class Lux:
                 str += Lux.TypedControls.Float("noisesize", Lux.Property(mat, keyname+".noisesize", 0.25), 0.0, 2.0, "noisesize", "", 1.0)
                 str += Lux.TypedControls.Float("turbulance", Lux.Property(mat, keyname+".turbulance", 5.0), 0.0, 200.0, "turbulance", "", 1.0)
         
-                if Lux.LB_gui: Lux.LB_gui.newline("basis:", -2, level+1, icon_texparam)
+                if Lux.GUI.Active: Lux.LB_gui.newline("basis:", -2, level+1, icon_texparam)
                 noisebasis2 = Lux.Property(mat, keyname+".noisebasis2", "sin")
                 noisebasises2 = ["sin","saw","tri"]
                 str += Lux.TypedControls.Option("noisebasis2", noisebasis2, noisebasises2, "noisebasis2", "", 0.7)
@@ -3436,7 +3512,7 @@ class Lux:
                 noisebasises = ["blender_original","original_perlin", "improved_perlin", "voronoi_f1", "voronoi_f2", "voronoi_f3", "voronoi_f4", "voronoi_f2f1", "voronoi_crackle", "cell_noise"]
                 str += Lux.TypedControls.Option("noisebasis", noisebasis, noisebasises, "noisebasis", "", 1.3)
         
-                if Lux.LB_gui: Lux.LB_gui.newline("level:", -2, level+1, icon_texparam)
+                if Lux.GUI.Active: Lux.LB_gui.newline("level:", -2, level+1, icon_texparam)
                 str += Lux.TypedControls.Float("bright", Lux.Property(mat, keyname+".bright", 1.0), 0.0, 2.0, "bright", "", 1.0)
                 str += Lux.TypedControls.Float("contrast", Lux.Property(mat, keyname+".contrast", 1.0), 0.0, 10.0, "contrast", "", 1.0)
         
@@ -3447,7 +3523,7 @@ class Lux:
                 str += Lux.Mapping.Mapping3D(keyname, mat, level+1)
         
             if texture.get() == "blender_musgrave":
-                if Lux.LB_gui: Lux.LB_gui.newline("type:", -2, level+1, icon_texparam)
+                if Lux.GUI.Active: Lux.LB_gui.newline("type:", -2, level+1, icon_texparam)
                 mtype = Lux.Property(mat, keyname+".mtype", "multifractal")
                 mtypes = ["multifractal","ridged_multifractal", "hybrid_multifractal", "hetero_terrain", "fbm"]
                 str += Lux.TypedControls.Option("type", mtype, mtypes, "type", "", 2.0)
@@ -3468,12 +3544,12 @@ class Lux:
                 str += Lux.TypedControls.Float("outscale", Lux.Property(mat, keyname+".outscale", 1.0), 0.0, 10.0, "iscale", "", 1.0)
                 str += Lux.TypedControls.Float("noisesize", Lux.Property(mat, keyname+".noisesize", 0.25), 0.0, 2.0, "noisesize", "", 1.0)
         
-                if Lux.LB_gui: Lux.LB_gui.newline("basis:", -2, level+1, icon_texparam)
+                if Lux.GUI.Active: Lux.LB_gui.newline("basis:", -2, level+1, icon_texparam)
                 noisebasis = Lux.Property(mat, keyname+".noisebasis", "blender_original")
                 noisebasises = ["blender_original","original_perlin", "improved_perlin", "voronoi_f1", "voronoi_f2", "voronoi_f3", "voronoi_f4", "voronoi_f2f1", "voronoi_crackle", "cell_noise"]
                 str += Lux.TypedControls.Option("noisebasis", noisebasis, noisebasises, "noisebasis", "", 2.0)
         
-                if Lux.LB_gui: Lux.LB_gui.newline("level:", -2, level+1, icon_texparam)
+                if Lux.GUI.Active: Lux.LB_gui.newline("level:", -2, level+1, icon_texparam)
                 str += Lux.TypedControls.Float("bright", Lux.Property(mat, keyname+".bright", 1.0), 0.0, 2.0, "bright", "", 1.0)
                 str += Lux.TypedControls.Float("contrast", Lux.Property(mat, keyname+".contrast", 1.0), 0.0, 10.0, "contrast", "", 1.0)
         
@@ -3484,7 +3560,7 @@ class Lux:
                 str += Lux.Mapping.Mapping3D(keyname, mat, level+1)
         
             if texture.get() == "blender_wood":
-                if Lux.LB_gui: Lux.LB_gui.newline("noise:", -2, level+1, icon_texparam)
+                if Lux.GUI.Active: Lux.LB_gui.newline("noise:", -2, level+1, icon_texparam)
         
                 mtype = Lux.Property(mat, keyname+".mtype", "bands")
                 mtypes = ["bands","rings","bandnoise", "ringnoise"]
@@ -3497,7 +3573,7 @@ class Lux:
                 str += Lux.TypedControls.Float("noisesize", Lux.Property(mat, keyname+".noisesize", 0.25), 0.0, 2.0, "noisesize", "", 1.0)
                 str += Lux.TypedControls.Float("turbulance", Lux.Property(mat, keyname+".turbulance", 5.0), 0.0, 200.0, "turbulance", "", 1.0)
         
-                if Lux.LB_gui: Lux.LB_gui.newline("basis:", -2, level+1, icon_texparam)
+                if Lux.GUI.Active: Lux.LB_gui.newline("basis:", -2, level+1, icon_texparam)
                 noisebasis2 = Lux.Property(mat, keyname+".noisebasis2", "sin")
                 noisebasises2 = ["sin","saw","tri"]
                 str += Lux.TypedControls.Option("noisebasis2", noisebasis2, noisebasises2, "noisebasis2", "", 0.7)
@@ -3506,7 +3582,7 @@ class Lux:
                 noisebasises = ["blender_original","original_perlin", "improved_perlin", "voronoi_f1", "voronoi_f2", "voronoi_f3", "voronoi_f4", "voronoi_f2f1", "voronoi_crackle", "cell_noise"]
                 str += Lux.TypedControls.Option("noisebasis", noisebasis, noisebasises, "noisebasis", "", 1.3)
         
-                if Lux.LB_gui: Lux.LB_gui.newline("level:", -2, level+1, icon_texparam)
+                if Lux.GUI.Active: Lux.LB_gui.newline("level:", -2, level+1, icon_texparam)
                 str += Lux.TypedControls.Float("bright", Lux.Property(mat, keyname+".bright", 1.0), 0.0, 2.0, "bright", "", 1.0)
                 str += Lux.TypedControls.Float("contrast", Lux.Property(mat, keyname+".contrast", 1.0), 0.0, 10.0, "contrast", "", 1.0)
         
@@ -3517,7 +3593,7 @@ class Lux:
                 str += Lux.Mapping.Mapping3D(keyname, mat, level+1)
         
             if texture.get() == "blender_clouds":
-                if Lux.LB_gui: Lux.LB_gui.newline("noise:", -2, level+1, icon_texparam)
+                if Lux.GUI.Active: Lux.LB_gui.newline("noise:", -2, level+1, icon_texparam)
         
                 mtype = Lux.Property(mat, keyname+".mtype", "default")
                 mtypes = ["default","color"]
@@ -3530,12 +3606,12 @@ class Lux:
                 str += Lux.TypedControls.Float("noisesize", Lux.Property(mat, keyname+".noisesize", 0.25), 0.0, 2.0, "noisesize", "", 1.0)
                 str += Lux.TypedControls.Int("noisedepth", Lux.Property(mat, keyname+".noisedepth", 2), 0, 6, "noisedepth", "", 1.0)
         
-                if Lux.LB_gui: Lux.LB_gui.newline("basis:", -2, level+1, icon_texparam)
+                if Lux.GUI.Active: Lux.LB_gui.newline("basis:", -2, level+1, icon_texparam)
                 noisebasis = Lux.Property(mat, keyname+".noisebasis", "blender_original")
                 noisebasises = ["blender_original","original_perlin", "improved_perlin", "voronoi_f1", "voronoi_f2", "voronoi_f3", "voronoi_f4", "voronoi_f2f1", "voronoi_crackle", "cell_noise"]
                 str += Lux.TypedControls.Option("noisebasis", noisebasis, noisebasises, "noisebasis", "", 1.3)
         
-                if Lux.LB_gui: Lux.LB_gui.newline("level:", -2, level+1, icon_texparam)
+                if Lux.GUI.Active: Lux.LB_gui.newline("level:", -2, level+1, icon_texparam)
                 str += Lux.TypedControls.Float("bright", Lux.Property(mat, keyname+".bright", 1.0), 0.0, 2.0, "bright", "", 1.0)
                 str += Lux.TypedControls.Float("contrast", Lux.Property(mat, keyname+".contrast", 1.0), 0.0, 10.0, "contrast", "", 1.0)
         
@@ -3546,7 +3622,7 @@ class Lux:
                 str += Lux.Mapping.Mapping3D(keyname, mat, level+1)
         
             if texture.get() == "blender_blend":
-                if Lux.LB_gui: Lux.LB_gui.newline("type:", -2, level+1, icon_texparam)
+                if Lux.GUI.Active: Lux.LB_gui.newline("type:", -2, level+1, icon_texparam)
         
                 mtype = Lux.Property(mat, keyname+".mtype", "lin")
                 mtypes = ["lin","quad","ease","diag","sphere","halo","radial"]
@@ -3555,7 +3631,7 @@ class Lux:
                 mflag = Lux.Property(mat, keyname+".flag", "false")
                 str += Lux.TypedControls.Bool("flipxy", mflag, "flipXY", "", 0.5)
         
-                if Lux.LB_gui: Lux.LB_gui.newline("level:", -2, level+1, icon_texparam)
+                if Lux.GUI.Active: Lux.LB_gui.newline("level:", -2, level+1, icon_texparam)
                 str += Lux.TypedControls.Float("bright", Lux.Property(mat, keyname+".bright", 1.0), 0.0, 2.0, "bright", "", 1.0)
                 str += Lux.TypedControls.Float("contrast", Lux.Property(mat, keyname+".contrast", 1.0), 0.0, 10.0, "contrast", "", 1.0)
         
@@ -3566,23 +3642,23 @@ class Lux:
                 str += Lux.Mapping.Mapping3D(keyname, mat, level+1)
         
             if texture.get() == "blender_distortednoise":
-                if Lux.LB_gui: Lux.LB_gui.newline("noise:", -2, level+1, icon_texparam)
+                if Lux.GUI.Active: Lux.LB_gui.newline("noise:", -2, level+1, icon_texparam)
                 
                 str += Lux.TypedControls.Float("distamount", Lux.Property(mat, keyname+".distamount", 1.0), 0.0, 10.0, "distamount", "", 1.0)
                 str += Lux.TypedControls.Float("noisesize", Lux.Property(mat, keyname+".noisesize", 0.25), 0.0, 2.0, "noisesize", "", 1.0)
                 str += Lux.TypedControls.Float("nabla", Lux.Property(mat, keyname+".nabla", 0.025), 0.000, 2.0, "nabla", "", 1.0)
                 
-                if Lux.LB_gui: Lux.LB_gui.newline("distortion:", -2, level+1, icon_texparam)
+                if Lux.GUI.Active: Lux.LB_gui.newline("distortion:", -2, level+1, icon_texparam)
                 ntype = Lux.Property(mat, keyname+".type", "blender_original")
                 ntypes = ["blender_original","original_perlin", "improved_perlin", "voronoi_f1", "voronoi_f2", "voronoi_f3", "voronoi_f4", "voronoi_f2f1", "voronoi_crackle", "cell_noise"]
                 str += Lux.TypedControls.Option("type", ntype, ntypes, "type", "", 1.3)
                 
-                if Lux.LB_gui: Lux.LB_gui.newline("basis:", -2, level+1, icon_texparam)
+                if Lux.GUI.Active: Lux.LB_gui.newline("basis:", -2, level+1, icon_texparam)
                 noisebasis = Lux.Property(mat, keyname+".noisebasis", "blender_original")
                 noisebasises = ["blender_original","original_perlin", "improved_perlin", "voronoi_f1", "voronoi_f2", "voronoi_f3", "voronoi_f4", "voronoi_f2f1", "voronoi_crackle", "cell_noise"]
                 str += Lux.TypedControls.Option("noisebasis", noisebasis, noisebasises, "noisebasis", "", 1.3)
         
-                if Lux.LB_gui: Lux.LB_gui.newline("level:", -2, level+1, icon_texparam)
+                if Lux.GUI.Active: Lux.LB_gui.newline("level:", -2, level+1, icon_texparam)
                 str += Lux.TypedControls.Float("bright", Lux.Property(mat, keyname+".bright", 1.0), 0.0, 2.0, "bright", "", 1.0)
                 str += Lux.TypedControls.Float("contrast", Lux.Property(mat, keyname+".contrast", 1.0), 0.0, 10.0, "contrast", "", 1.0)
         
@@ -3593,7 +3669,7 @@ class Lux:
                 str += Lux.Mapping.Mapping3D(keyname, mat, level+1)
         
             if texture.get() == "blender_noise":        
-                if Lux.LB_gui: Lux.LB_gui.newline("level:", -2, level+1, icon_texparam)
+                if Lux.GUI.Active: Lux.LB_gui.newline("level:", -2, level+1, icon_texparam)
                 str += Lux.TypedControls.Float("bright", Lux.Property(mat, keyname+".bright", 1.0), 0.0, 2.0, "bright", "", 1.0)
                 str += Lux.TypedControls.Float("contrast", Lux.Property(mat, keyname+".contrast", 1.0), 0.0, 10.0, "contrast", "", 1.0)
         
@@ -3604,12 +3680,12 @@ class Lux:
                 str += Lux.Mapping.Mapping3D(keyname, mat, level+1)
                 
             if texture.get() == "blender_magic":
-                if Lux.LB_gui: Lux.LB_gui.newline("noise:", -2, level+1, icon_texparam)
+                if Lux.GUI.Active: Lux.LB_gui.newline("noise:", -2, level+1, icon_texparam)
                 
                 str += Lux.TypedControls.Int("noisedepth", Lux.Property(mat, keyname+".noisedepth", 2), 0.0, 10.0, "noisedepth", "", 1.0)
                 str += Lux.TypedControls.Float("turbulance", Lux.Property(mat, keyname+".turbulance", 5.0), 0.0, 2.0, "turbulance", "", 1.0)
         
-                if Lux.LB_gui: Lux.LB_gui.newline("level:", -2, level+1, icon_texparam)
+                if Lux.GUI.Active: Lux.LB_gui.newline("level:", -2, level+1, icon_texparam)
                 str += Lux.TypedControls.Float("bright", Lux.Property(mat, keyname+".bright", 1.0), 0.0, 2.0, "bright", "", 1.0)
                 str += Lux.TypedControls.Float("contrast", Lux.Property(mat, keyname+".contrast", 1.0), 0.0, 10.0, "contrast", "", 1.0)
         
@@ -3620,7 +3696,7 @@ class Lux:
                 str += Lux.Mapping.Mapping3D(keyname, mat, level+1)
                 
             if texture.get() == "blender_stucci":
-                if Lux.LB_gui: Lux.LB_gui.newline("noise:", -2, level+1, icon_texparam)
+                if Lux.GUI.Active: Lux.LB_gui.newline("noise:", -2, level+1, icon_texparam)
                 mtype = Lux.Property(mat, keyname+".mtype", "Plastic")
                 mtypes = ["Plastic","Wall In","Wall Out"]
                 str += Lux.TypedControls.Option("type", mtype, mtypes, "type", "", 0.5)
@@ -3636,7 +3712,7 @@ class Lux:
                 noisebasises = ["blender_original","original_perlin", "improved_perlin", "voronoi_f1", "voronoi_f2", "voronoi_f3", "voronoi_f4", "voronoi_f2f1", "voronoi_crackle", "cell_noise"]
                 str += Lux.TypedControls.Option("noisebasis", noisebasis, noisebasises, "noisebasis", "", 1.3)
         
-                if Lux.LB_gui: Lux.LB_gui.newline("level:", -2, level+1, icon_texparam)
+                if Lux.GUI.Active: Lux.LB_gui.newline("level:", -2, level+1, icon_texparam)
                 str += Lux.TypedControls.Float("bright", Lux.Property(mat, keyname+".bright", 1.0), 0.0, 2.0, "bright", "", 1.0)
                 str += Lux.TypedControls.Float("contrast", Lux.Property(mat, keyname+".contrast", 1.0), 0.0, 10.0, "contrast", "", 1.0)
         
@@ -3647,23 +3723,23 @@ class Lux:
                 str += Lux.Mapping.Mapping3D(keyname, mat, level+1)
         
             if texture.get() == "blender_voronoi":
-                #if Lux.LB_gui: Lux.LB_gui.newline("distmetric:", -2, level+1, icon_texparam)
+                #if Lux.GUI.Active: Lux.LB_gui.newline("distmetric:", -2, level+1, icon_texparam)
                 mtype = Lux.Property(mat, keyname+".distmetric", "actual_distance")
                 mtypes = ["actual_distance","distance_squared","manhattan", "chebychev", "minkovsky_half", "minkovsky_four", "minkovsky"]
                 str += Lux.TypedControls.Option("distmetric", mtype, mtypes, "distmetric", "", 1.1)
         
-                if Lux.LB_gui: Lux.LB_gui.newline("param:", -2, level+1, icon_texparam)
+                if Lux.GUI.Active: Lux.LB_gui.newline("param:", -2, level+1, icon_texparam)
                 str += Lux.TypedControls.Float("minkovsky_exp", Lux.Property(mat, keyname+".minkovsky_exp", 2.5), 0.001, 10.0, "minkovsky_exp", "", 1.0)
                 str += Lux.TypedControls.Float("outscale", Lux.Property(mat, keyname+".outscale", 1.0), 0.01, 10.0, "outscale", "", 1.0)
                 str += Lux.TypedControls.Float("noisesize", Lux.Property(mat, keyname+".noisesize", 0.25), 0.0, 2.0, "noisesize", "", 1.0)
                 str += Lux.TypedControls.Float("nabla", Lux.Property(mat, keyname+".nabla", 0.025), 0.001, 0.1, "nabla", "", 1.0)
-                if Lux.LB_gui: Lux.LB_gui.newline("wparam:", -2, level+1, icon_texparam)
+                if Lux.GUI.Active: Lux.LB_gui.newline("wparam:", -2, level+1, icon_texparam)
                 str += Lux.TypedControls.Float("w1", Lux.Property(mat, keyname+".w1", 1.0), -2.0, 2.0, "w1", "", 1.0)
                 str += Lux.TypedControls.Float("w2", Lux.Property(mat, keyname+".w2", 0.0), -2.0, 2.0, "w2", "", 1.0)
                 str += Lux.TypedControls.Float("w3", Lux.Property(mat, keyname+".w3", 0.0), -2.0, 2.0, "w3", "", 1.0)
                 str += Lux.TypedControls.Float("w4", Lux.Property(mat, keyname+".w4", 0.0), -2.0, 2.0, "w4", "", 1.0)
         
-                if Lux.LB_gui: Lux.LB_gui.newline("level:", -2, level+1, icon_texparam)
+                if Lux.GUI.Active: Lux.LB_gui.newline("level:", -2, level+1, icon_texparam)
                 str += Lux.TypedControls.Float("bright", Lux.Property(mat, keyname+".bright", 1.0), 0.0, 2.0, "bright", "", 1.0)
                 str += Lux.TypedControls.Float("contrast", Lux.Property(mat, keyname+".contrast", 1.0), 0.0, 10.0, "contrast", "", 1.0)
         
@@ -3681,16 +3757,16 @@ class Lux:
         @staticmethod
         def SpectrumTexture(name, key, default, max, caption, hint, mat, level=0):
             icon_col = Lux.Icon.get_icon('icon_col')
-            if Lux.LB_gui: Lux.LB_gui.newline(caption, 4, level, icon_col, Lux.Util.scalelist([0.5,0.6,0.5],2.0/(level+2)))
+            if Lux.GUI.Active: Lux.LB_gui.newline(caption, 4, level, icon_col, Lux.Util.scalelist([0.5,0.6,0.5],2.0/(level+2)))
             str = ""
             keyname = "%s:%s"%(key, name)
             texname = "%s:%s"%(mat.getName(), keyname)
             value = Lux.Property(mat, keyname, default)
             link = Lux.TypedControls.RGB(name, value, max, "", hint, 2.0)
             tex = Lux.Property(mat, keyname+".textured", False)
-            if Lux.LB_gui: Blender.Draw.Toggle("T", Lux.Events.LuxGui, Lux.LB_gui.x, Lux.LB_gui.y-Lux.LB_gui.h, Lux.LB_gui.h, Lux.LB_gui.h, tex.get()=="true", "use texture", lambda e,v:tex.set(["false","true"][bool(v)]))
+            if Lux.GUI.Active: Blender.Draw.Toggle("T", Lux.Events.LuxGui, Lux.LB_gui.x, Lux.LB_gui.y-Lux.LB_gui.h, Lux.LB_gui.h, Lux.LB_gui.h, tex.get()=="true", "use texture", lambda e,v:tex.set(["false","true"][bool(v)]))
             if tex.get()=="true":
-                if Lux.LB_gui: Lux.LB_gui.newline("", -2)
+                if Lux.GUI.Active: Lux.LB_gui.newline("", -2)
                 (str, link) = Lux.Textures.Texture(name, key, "color", default, 0, max, caption, hint, mat, level+1)
                 if value.getRGB() != (1.0, 1.0, 1.0):
                     if str == "": # handle special case if texture is a just a constant
@@ -3702,7 +3778,7 @@ class Lux:
         # was luxLightSpectrumTexture
         @staticmethod
         def LightSpectrumTexture(name, key, default, max, caption, hint, mat, level=0):
-            #if Lux.LB_gui: Lux.LB_gui.newline(caption, 4, level, icon_emission, Lux.Util.scalelist([0.6,0.5,0.5],2.0/(level+2)))
+            #if Lux.GUI.Active: Lux.LB_gui.newline(caption, 4, level, icon_emission, Lux.Util.scalelist([0.6,0.5,0.5],2.0/(level+2)))
             str = ""
             keyname = "%s:%s"%(key, name)
             texname = "%s:%s"%(mat.getName(), keyname)
@@ -3713,16 +3789,16 @@ class Lux:
         @staticmethod
         def FloatTexture(name, key, default, min, max, caption, hint, mat, level=0):
             icon_float = Lux.Icon.get_icon('icon_float')
-            if Lux.LB_gui: Lux.LB_gui.newline(caption, 4, level, icon_float, Lux.Util.scalelist([0.5,0.5,0.6],2.0/(level+2)))
+            if Lux.GUI.Active: Lux.LB_gui.newline(caption, 4, level, icon_float, Lux.Util.scalelist([0.5,0.5,0.6],2.0/(level+2)))
             str = ""
             keyname = "%s:%s"%(key, name)
             texname = "%s:%s"%(mat.getName(), keyname)
             value = Lux.Property(mat, keyname, default)
             link = Lux.TypedControls.Float(name, value, min, max, "", hint, 2.0)
             tex = Lux.Property(mat, keyname+".textured", False)
-            if Lux.LB_gui: Blender.Draw.Toggle("T", Lux.Events.LuxGui, Lux.LB_gui.x, Lux.LB_gui.y-Lux.LB_gui.h, Lux.LB_gui.h, Lux.LB_gui.h, tex.get()=="true", "use texture", lambda e,v:tex.set(["false","true"][bool(v)]))
+            if Lux.GUI.Active: Blender.Draw.Toggle("T", Lux.Events.LuxGui, Lux.LB_gui.x, Lux.LB_gui.y-Lux.LB_gui.h, Lux.LB_gui.h, Lux.LB_gui.h, tex.get()=="true", "use texture", lambda e,v:tex.set(["false","true"][bool(v)]))
             if tex.get()=="true":
-                if Lux.LB_gui: Lux.LB_gui.newline("", -2)
+                if Lux.GUI.Active: Lux.LB_gui.newline("", -2)
                 (str, link) = Lux.Textures.Texture(name, key, "float", default, min, max, caption, hint, mat, level+1)
                 if value.get() != 1.0:
                     if str == "": # handle special case if texture is a just a constant
@@ -3735,16 +3811,16 @@ class Lux:
         @staticmethod
         def FloatSliderTexture(name, key, default, min, max, caption, hint, mat, level=0):
             icon_float = Lux.Icon.get_icon('icon_float')
-            if Lux.LB_gui: Lux.LB_gui.newline(caption, 4, level, icon_float, Lux.Util.scalelist([0.5,0.5,0.6],2.0/(level+2)))
+            if Lux.GUI.Active: Lux.LB_gui.newline(caption, 4, level, icon_float, Lux.Util.scalelist([0.5,0.5,0.6],2.0/(level+2)))
             str = ""
             keyname = "%s:%s"%(key, name)
             texname = "%s:%s"%(mat.getName(), keyname)
             value = Lux.Property(mat, keyname, default)
             link = Lux.TypedControls.Float(name, value, min, max, caption, hint, 2.0, 1)
             tex = Lux.Property(mat, keyname+".textured", False)
-            if Lux.LB_gui: Blender.Draw.Toggle("T", Lux.Events.LuxGui, Lux.LB_gui.x, Lux.LB_gui.y-Lux.LB_gui.h, Lux.LB_gui.h, Lux.LB_gui.h, tex.get()=="true", "use texture", lambda e,v:tex.set(["false","true"][bool(v)]))
+            if Lux.GUI.Active: Blender.Draw.Toggle("T", Lux.Events.LuxGui, Lux.LB_gui.x, Lux.LB_gui.y-Lux.LB_gui.h, Lux.LB_gui.h, Lux.LB_gui.h, tex.get()=="true", "use texture", lambda e,v:tex.set(["false","true"][bool(v)]))
             if tex.get()=="true":
-                    if Lux.LB_gui: Lux.LB_gui.newline("", -2)
+                    if Lux.GUI.Active: Lux.LB_gui.newline("", -2)
                     (str, link) = Lux.Textures.Texture(name, key, "float", default, min, max, caption, hint, mat, level+1)
                     if value.get() != 1.0:
                             if str == "": # handle special case if texture is a just a constant
@@ -3757,7 +3833,7 @@ class Lux:
         @staticmethod
         def ExponentTexture(name, key, default, min, max, caption, hint, mat, level=0):
             icon_float = Lux.Icon.get_icon('icon_float')
-            if Lux.LB_gui: Lux.LB_gui.newline(caption, 4, level, icon_float, Lux.Util.scalelist([0.5,0.5,0.6],2.0/(level+2)))
+            if Lux.GUI.Active: Lux.LB_gui.newline(caption, 4, level, icon_float, Lux.Util.scalelist([0.5,0.5,0.6],2.0/(level+2)))
             str = ""
             keyname = "%s:%s"%(key, name)
             texname = "%s:%s"%(mat.getName(), keyname)
@@ -3766,15 +3842,15 @@ class Lux:
             if(value.get() == None): value.set(0.002)
         
         #    link = Lux.Types.Float(name, value, min, max, "", hint, 2.0)
-            if Lux.LB_gui:
+            if Lux.GUI.Active:
                 r = Lux.LB_gui.getRect(2.0, 1)
                 Blender.Draw.Number("", Lux.Events.LuxGui, r[0], r[1], r[2], r[3], float(1.0/value.getFloat()), 1.0, 1000000.0, hint, lambda e,v: value.set(1.0/v))
             link = " \"float %s\" [%f]"%(name, value.getFloat())
         
             tex = Lux.Property(mat, keyname+".textured", False)
-            if Lux.LB_gui: Blender.Draw.Toggle("T", Lux.Events.LuxGui, Lux.LB_gui.x, Lux.LB_gui.y-Lux.LB_gui.h, Lux.LB_gui.h, Lux.LB_gui.h, tex.get()=="true", "use texture", lambda e,v:tex.set(["false","true"][bool(v)]))
+            if Lux.GUI.Active: Blender.Draw.Toggle("T", Lux.Events.LuxGui, Lux.LB_gui.x, Lux.LB_gui.y-Lux.LB_gui.h, Lux.LB_gui.h, Lux.LB_gui.h, tex.get()=="true", "use texture", lambda e,v:tex.set(["false","true"][bool(v)]))
             if tex.get()=="true":
-                if Lux.LB_gui: Lux.LB_gui.newline("", -2)
+                if Lux.GUI.Active: Lux.LB_gui.newline("", -2)
                 (str, link) = Lux.Textures.Texture(name, key, "float", default, min, max, caption, hint, mat, level+1)
                 if value.get() != 1.0:
                     if str == "": # handle special case if texture is a just a constant
@@ -3787,16 +3863,16 @@ class Lux:
         @staticmethod
         def DispFloatTexture(name, key, default, min, max, caption, hint, mat, level=0):
             icon_float = Lux.Icon.get_icon('icon_float')
-            if Lux.LB_gui: Lux.LB_gui.newline(caption, 4, level, icon_float, Lux.Util.scalelist([0.5,0.5,0.6],2.0/(level+2)))
+            if Lux.GUI.Active: Lux.LB_gui.newline(caption, 4, level, icon_float, Lux.Util.scalelist([0.5,0.5,0.6],2.0/(level+2)))
             str = ""
             keyname = "%s:%s"%(key, name)
             texname = "%s:%s"%(mat.getName(), keyname)
             value = Lux.Property(mat, keyname, default)
             link = Lux.TypedControls.Float(name, value, min, max, "", hint, 2.0)
             tex = Lux.Property(mat, keyname+".textured", False)
-            if Lux.LB_gui: Blender.Draw.Toggle("T", Lux.Events.LuxGui, Lux.LB_gui.x, Lux.LB_gui.y-Lux.LB_gui.h, Lux.LB_gui.h, Lux.LB_gui.h, tex.get()=="true", "use texture", lambda e,v:tex.set(["false","true"][bool(v)]))
+            if Lux.GUI.Active: Blender.Draw.Toggle("T", Lux.Events.LuxGui, Lux.LB_gui.x, Lux.LB_gui.y-Lux.LB_gui.h, Lux.LB_gui.h, Lux.LB_gui.h, tex.get()=="true", "use texture", lambda e,v:tex.set(["false","true"][bool(v)]))
             if tex.get()=="true":
-                if Lux.LB_gui: Lux.LB_gui.newline("", -2)
+                if Lux.GUI.Active: Lux.LB_gui.newline("", -2)
                 (str, link) = Lux.Textures.Texture(name, key, "float", default, min, max, caption, hint, mat, level+1)
                 str += "Texture \"%s\" \"float\" \"scale\" \"texture tex1\" [\"%s\"] \"float tex2\" [%s]\n"%(texname+".scale", texname, value.get())
                 link = " \"texture %s\" [\"%s\"]"%(name, texname+".scale")
@@ -3816,7 +3892,7 @@ class Lux:
             1.470, 1.470, 1.760, 1.31, 1.388, 1.36, 1.36, 1.35, 1.4729, 1.490, 1.516, 1.50, 1.544, 1.584, 1.4893, 1.57, 1.575, 1.60, 1.485, 1.46, 1.661, 1.523, 2.15, 2.419, 2.65, 3.02, 3.5, 3.927, 4.01]
         
             icon_float = Lux.Icon.get_icon('icon_float')
-            if Lux.LB_gui: Lux.LB_gui.newline(caption, 4, level, icon_float, Lux.Util.scalelist([0.5,0.5,0.6],2.0/(level+2)))
+            if Lux.GUI.Active: Lux.LB_gui.newline(caption, 4, level, icon_float, Lux.Util.scalelist([0.5,0.5,0.6],2.0/(level+2)))
             str = ""
             keyname = "%s:%s"%(key, name)
             texname = "%s:%s"%(mat.getName(), keyname)
@@ -3827,7 +3903,7 @@ class Lux:
         
             if(iorusepreset.get() == "true"):
                 iorpreset = Lux.Property(mat, keyname+".iorpreset", "24 - Fused silica glass")
-                if Lux.LB_gui:
+                if Lux.GUI.Active:
                     def setIor(i, value, preset, tree, dict): # callback function to set ior value after selection
                         def getTreeNameById(tree, i): # helper function to retrive name of the selected treemenu-item
                             for t in tree:
@@ -3851,9 +3927,9 @@ class Lux:
                 link = Lux.TypedControls.Float(name, value, min, max, "IOR", hint, 1.6, 1)
         
             tex = Lux.Property(mat, keyname+".textured", False)
-            if Lux.LB_gui: Blender.Draw.Toggle("T", Lux.Events.LuxGui, Lux.LB_gui.x, Lux.LB_gui.y-Lux.LB_gui.h, Lux.LB_gui.h, Lux.LB_gui.h, tex.get()=="true", "use texture", lambda e,v:tex.set(["false","true"][bool(v)]))
+            if Lux.GUI.Active: Blender.Draw.Toggle("T", Lux.Events.LuxGui, Lux.LB_gui.x, Lux.LB_gui.y-Lux.LB_gui.h, Lux.LB_gui.h, Lux.LB_gui.h, tex.get()=="true", "use texture", lambda e,v:tex.set(["false","true"][bool(v)]))
             if tex.get()=="true":
-                if Lux.LB_gui: Lux.LB_gui.newline("", -2)
+                if Lux.GUI.Active: Lux.LB_gui.newline("", -2)
                 (str, link) = Lux.Textures.Texture(name, key, "float", default, min, max, caption, hint, mat, level+1)
                 if value.get() != 1.0:
                     str += "Texture \"%s\" \"float\" \"scale\" \"texture tex1\" [\"%s\"] \"float tex2\" [%s]\n"%(texname+".scale", texname, value.get())
@@ -3868,7 +3944,7 @@ class Lux:
             cauchybvals = [ 0.00354, 0.00420, 0.00459, 0.00531, 0.00743, 0.01342 ]
         
             icon_float = Lux.Icon.get_icon('icon_float')
-            if Lux.LB_gui: Lux.LB_gui.newline(caption, 4, level, icon_float, Lux.Util.scalelist([0.5,0.5,0.6],2.0/(level+2)))
+            if Lux.GUI.Active: Lux.LB_gui.newline(caption, 4, level, icon_float, Lux.Util.scalelist([0.5,0.5,0.6],2.0/(level+2)))
             str = ""
             keyname = "%s:%s"%(key, name)
             texname = "%s:%s"%(mat.getName(), keyname)
@@ -3889,9 +3965,9 @@ class Lux:
                 link = Lux.TypedControls.Float(name, value, min, max, "cauchyb", hint, 1.6, 1)
         
             tex = Lux.Property(mat, keyname+".textured", False)
-            if Lux.LB_gui: Blender.Draw.Toggle("T", Lux.Events.LuxGui, Lux.LB_gui.x, Lux.LB_gui.y-Lux.LB_gui.h, Lux.LB_gui.h, Lux.LB_gui.h, tex.get()=="true", "use texture", lambda e,v:tex.set(["false","true"][bool(v)]))
+            if Lux.GUI.Active: Blender.Draw.Toggle("T", Lux.Events.LuxGui, Lux.LB_gui.x, Lux.LB_gui.y-Lux.LB_gui.h, Lux.LB_gui.h, Lux.LB_gui.h, tex.get()=="true", "use texture", lambda e,v:tex.set(["false","true"][bool(v)]))
             if tex.get()=="true":
-                if Lux.LB_gui: Lux.LB_gui.newline("", -2)
+                if Lux.GUI.Active: Lux.LB_gui.newline("", -2)
                 (str, link) = Lux.Textures.Texture(name, key, "float", default, min, max, caption, hint, mat, level+1)
                 if value.get() != 1.0:
                     str += "Texture \"%s\" \"float\" \"scale\" \"texture tex1\" [\"%s\"] \"float tex2\" [%s]\n"%(texname+".scale", texname, value.get())
@@ -3954,7 +4030,7 @@ class Lux:
         
                 materials = ["carpaint","glass","matte","mattetranslucent","metal","mirror","roughglass","shinymetal","glossy","mix","null"]
                 if level == 0: materials = ["light","portal","boundvolume"]+materials
-                if Lux.LB_gui:
+                if Lux.GUI.Active:
                     icon = icon_mat
                     if mattype.get() == "mix": icon = icon_matmix
                     if level == 0: Lux.LB_gui.newline("Material type:", 12, level, icon, [0.75,0.5,0.25])
@@ -3968,16 +4044,16 @@ class Lux:
                 Lux.TypedControls.Help("help", showhelp, "Help", "Show Help Information",  0.4)
         
                 # show copy/paste menu button
-                if Lux.LB_gui: Blender.Draw.PushButton(">", Lux.Events.LuxGui, Lux.LB_gui.xmax+Lux.LB_gui.h, Lux.LB_gui.y-Lux.LB_gui.h, Lux.LB_gui.h, Lux.LB_gui.h, "Menu", lambda e,v: showMatTexMenu(mat,keyname,False))
+                if Lux.GUI.Active: Blender.Draw.PushButton(">", Lux.Events.LuxGui, Lux.LB_gui.xmax+Lux.LB_gui.h, Lux.LB_gui.y-Lux.LB_gui.h, Lux.LB_gui.h, Lux.LB_gui.h, "Menu", lambda e,v: Lux.GUI.showMatTexMenu(mat,keyname,False))
         
                 # Draw Material preview option
                 showmatprev = False
                 if level == 0:
                     showmatprev = True
-                if Lux.LB_gui: Lux.Preview.Preview(mat, keyname, 0, showmatprev, True, None, level, [0.746, 0.625, 0.5])
+                if Lux.GUI.Active: Lux.Preview.Preview(mat, keyname, 0, showmatprev, True, None, level, [0.746, 0.625, 0.5])
         
         
-                if Lux.LB_gui: Lux.LB_gui.newline()
+                if Lux.GUI.Active: Lux.LB_gui.newline()
                 has_object_options   = 0 # disable object options by default
                 has_bump_options     = 0 # disable bump mapping options by default
                 has_emission_options = 0 # disable emission options by default
@@ -4008,20 +4084,20 @@ class Lux:
                     if voltype.get() == "exponential":
                         link = "Volume \"exponential\""
         
-                    if Lux.LB_gui: Lux.LB_gui.newline("absorption:", 0, level+1)
+                    if Lux.GUI.Active: Lux.LB_gui.newline("absorption:", 0, level+1)
                     link += Lux.TypedControls.RGB("sigma_a", Lux.Property(mat, kn+"vol.sig_a", "1.0 1.0 1.0"), 1.0, "sigma_a", "The absorption cross section")
-                    if Lux.LB_gui: Lux.LB_gui.newline("scattering:", 0, level+1)
+                    if Lux.GUI.Active: Lux.LB_gui.newline("scattering:", 0, level+1)
                     link += Lux.TypedControls.RGB("sigma_s", Lux.Property(mat, kn+"vol.sig_b", "0.0 0.0 0.0"), 1.0, "sigma_b", "The scattering cross section")
-                    if Lux.LB_gui: Lux.LB_gui.newline("emission:", 0, level+1)
+                    if Lux.GUI.Active: Lux.LB_gui.newline("emission:", 0, level+1)
                     link += Lux.TypedControls.RGB("Le", Lux.Property(mat, kn+"vol.le", "0.0 0.0 0.0"), 1.0, "Le", "The volume's emission spectrum")
-                    if Lux.LB_gui: Lux.LB_gui.newline("assymetry:", 0, level+1)
+                    if Lux.GUI.Active: Lux.LB_gui.newline("assymetry:", 0, level+1)
                     link += Lux.TypedControls.Float("g", Lux.Property(mat, kn+"vol.g", 0.0), 0.0, 100.0, "g", "The phase function asymmetry parameter")
         
                     if voltype.get() == "exponential":
-                        if Lux.LB_gui: Lux.LB_gui.newline("form:", 0, level+1)
+                        if Lux.GUI.Active: Lux.LB_gui.newline("form:", 0, level+1)
                         link += Lux.TypedControls.Float("a", Lux.Property(mat, kn+"vol.a", 1.0), 0.0, 100.0, "a/scale", "exponential::a parameter in the ae^{-bh} formula")
                         link += Lux.TypedControls.Float("b", Lux.Property(mat, kn+"vol.b", 2.0), 0.0, 100.0, "b/falloff", "exponential::b parameter in the ae^{-bh} formula")
-                        if Lux.LB_gui: Lux.LB_gui.newline("updir:", 0, level+1)
+                        if Lux.GUI.Active: Lux.LB_gui.newline("updir:", 0, level+1)
                         link += Lux.TypedControls.Vector("updir", Lux.Property(mat, kn+"vol.updir", "0 0 1"), -1.0, 1.0, "updir", "Up direction vector", 2.0)
         
                     link += str_opt
@@ -4033,7 +4109,7 @@ class Lux:
                     return (str, link)
         
                 if mattype.get() == "carpaint":
-                    if Lux.LB_gui: Lux.LB_gui.newline("name:", 0, level+1)
+                    if Lux.GUI.Active: Lux.LB_gui.newline("name:", 0, level+1)
                     carname = Lux.Property(mat, kn+"carpaint.name", "white")
                     cars = ["","ford f8","polaris silber","opel titan","bmw339","2k acrylack","white","blue","blue matte"]
                     carlink = Lux.TypedControls.Option("name", carname, cars, "name", "")
@@ -4091,17 +4167,17 @@ class Lux:
                     has_object_options = 1
                     has_emission_options = 1
                 if mattype.get() == "metal":
-                    if Lux.LB_gui: Lux.LB_gui.newline("name:", 0, level+1)
+                    if Lux.GUI.Active: Lux.LB_gui.newline("name:", 0, level+1)
                     metalname = Lux.Property(mat, kn+"metal.name", "")
                     metals = ["aluminium","amorphous carbon","silver","gold","copper"]
         
                     if not(metalname.get() in metals):
                         metals.append(metalname.get())
                     metallink = Lux.TypedControls.Option("name", metalname, metals, "name", "", 1.88)
-                    if Lux.LB_gui: Blender.Draw.Button("...", Lux.Events.LuxGui, Lux.LB_gui.x, Lux.LB_gui.y-Lux.LB_gui.h, Lux.LB_gui.h, Lux.LB_gui.h, "click to select a nk file",lambda e,v:Blender.Window.FileSelector(lambda s:metalname.set(s), "Select nk file"))
+                    if Lux.GUI.Active: Blender.Draw.Button("...", Lux.Events.LuxGui, Lux.LB_gui.x, Lux.LB_gui.y-Lux.LB_gui.h, Lux.LB_gui.h, Lux.LB_gui.h, "click to select a nk file",lambda e,v:Blender.Window.FileSelector(lambda s:metalname.set(s), "Select nk file"))
                     link += Lux.Util.luxstr(metallink)
                     anisotropic = Lux.Property(mat, kn+"metal.anisotropic", "false")
-                    if Lux.LB_gui:
+                    if Lux.GUI.Active:
                         Lux.LB_gui.newline("")
                         Blender.Draw.Toggle("A", Lux.Events.LuxGui, Lux.LB_gui.x-Lux.LB_gui.h, Lux.LB_gui.y-Lux.LB_gui.h, Lux.LB_gui.h, Lux.LB_gui.h, anisotropic.get()=="true", "anisotropic roughness", lambda e,v:anisotropic.set(["false","true"][bool(v)]))
                     if anisotropic.get()=="true":
@@ -4130,7 +4206,7 @@ class Lux:
                     (str,link) = c((str,link), Lux.Textures.SpectrumTexture("Kr", keyname, "1.0 1.0 1.0", 1.0, "reflection", "", mat, level+1))
                     (str,link) = c((str,link), Lux.Textures.SpectrumTexture("Kt", keyname, "1.0 1.0 1.0", 1.0, "transmission", "", mat, level+1))
                     anisotropic = Lux.Property(mat, kn+"roughglass.anisotropic", "false")
-                    if Lux.LB_gui:
+                    if Lux.GUI.Active:
                         Lux.LB_gui.newline("")
                         Blender.Draw.Toggle("A", Lux.Events.LuxGui, Lux.LB_gui.x-Lux.LB_gui.h, Lux.LB_gui.y-Lux.LB_gui.h, Lux.LB_gui.h, Lux.LB_gui.h, anisotropic.get()=="true", "anisotropic roughness", lambda e,v:anisotropic.set(["false","true"][bool(v)]))
                     if anisotropic.get()=="true":
@@ -4152,7 +4228,7 @@ class Lux:
                     (str,link) = c((str,link), Lux.Textures.SpectrumTexture("Kr", keyname, "1.0 1.0 1.0", 1.0, "reflection", "", mat, level+1))
                     (str,link) = c((str,link), Lux.Textures.SpectrumTexture("Ks", keyname, "1.0 1.0 1.0", 1.0, "specular", "", mat, level+1))
                     anisotropic = Lux.Property(mat, kn+"shinymetal.anisotropic", "false")
-                    if Lux.LB_gui:
+                    if Lux.GUI.Active:
                         Lux.LB_gui.newline("")
                         Blender.Draw.Toggle("A", Lux.Events.LuxGui, Lux.LB_gui.x-Lux.LB_gui.h, Lux.LB_gui.y-Lux.LB_gui.h, Lux.LB_gui.h, Lux.LB_gui.h, anisotropic.get()=="true", "anisotropic roughness", lambda e,v:anisotropic.set(["false","true"][bool(v)]))
                     if anisotropic.get()=="true":
@@ -4175,7 +4251,7 @@ class Lux:
                 if mattype.get() == "glossy":
                     (str,link) = c((str,link), Lux.Textures.SpectrumTexture("Kd", keyname, "1.0 1.0 1.0", 1.0, "diffuse", "", mat, level+1))
                     useior = Lux.Property(mat, keyname+".useior", "false")
-                    if Lux.LB_gui:
+                    if Lux.GUI.Active:
                         Lux.LB_gui.newline("")
                         Blender.Draw.Toggle("I", Lux.Events.LuxGui, Lux.LB_gui.x-Lux.LB_gui.h, Lux.LB_gui.y-Lux.LB_gui.h, Lux.LB_gui.h, Lux.LB_gui.h, useior.get()=="true", "Use IOR/Reflective index input", lambda e,v:useior.set(["false","true"][bool(v)]))
                     if useior.get() == "true":
@@ -4185,7 +4261,7 @@ class Lux:
                         (str,link) = c((str,link), Lux.Textures.SpectrumTexture("Ks", keyname, "1.0 1.0 1.0", 1.0, "specular", "", mat, level+1))
                         link += " \"float index\" [0.0]"    
                     anisotropic = Lux.Property(mat, kn+"glossy.anisotropic", "false")
-                    if Lux.LB_gui:
+                    if Lux.GUI.Active:
                         Lux.LB_gui.newline("")
                         Blender.Draw.Toggle("A", Lux.Events.LuxGui, Lux.LB_gui.x-Lux.LB_gui.h, Lux.LB_gui.y-Lux.LB_gui.h, Lux.LB_gui.h, Lux.LB_gui.h, anisotropic.get()=="true", "anisotropic roughness", lambda e,v:anisotropic.set(["false","true"][bool(v)]))
                     if anisotropic.get()=="true":
@@ -4216,7 +4292,7 @@ class Lux:
                 # emission options (common)
                 if (level == 0):
                     if (has_emission_options == 1):
-                        if Lux.LB_gui: Lux.LB_gui.newline("", 2, level, None, [0.6,0.6,0.4])
+                        if Lux.GUI.Active: Lux.LB_gui.newline("", 2, level, None, [0.6,0.6,0.4])
                         useemission = Lux.Property(mat, "emission", "false")
                         Lux.TypedControls.Bool("useemission", useemission, "Emission", "Enable emission options", 2.0)
                         if useemission.get() == "true":
@@ -4226,14 +4302,14 @@ class Lux:
         
                 # transformation options (common)
                 if (level == 0):
-                    if Lux.LB_gui: Lux.LB_gui.newline("", 2, level, None, [0.6,0.6,0.4])
+                    if Lux.GUI.Active: Lux.LB_gui.newline("", 2, level, None, [0.6,0.6,0.4])
                     usetransformation = Lux.Property(mat, "transformation", "false")
                     Lux.TypedControls.Bool("usetransformation", usetransformation, "Texture Transformation", "Enable transformation option", 2.0)
                     if usetransformation.get() == "true":
                         scale = Lux.Property(mat, "3dscale", 1.0)
                         rotate = Lux.Property(mat, "3drotate", "0 0 0")
                         translate = Lux.Property(mat, "3dtranslate", "0 0 0")
-                        if Lux.LB_gui:
+                        if Lux.GUI.Active:
                             Lux.LB_gui.newline("scale:", -2, level, icon_map3dparam)
                             Lux.TypedControls.VectorUniform("scale", scale, 0.001, 1000.0, "scale", "scale-vector", 2.0)
                             Lux.LB_gui.newline("rot:", -2, level, icon_map3dparam)
@@ -4244,7 +4320,7 @@ class Lux:
         
                 # Object options (common)
                 if (level == 0) and (has_object_options == 1):
-                    if Lux.LB_gui: Lux.LB_gui.newline("Mesh:", 2, level, icon, [0.6,0.6,0.4])
+                    if Lux.GUI.Active: Lux.LB_gui.newline("Mesh:", 2, level, icon, [0.6,0.6,0.4])
                     usesubdiv = Lux.Property(mat, "subdiv", "false")
                     Lux.TypedControls.Bool("usesubdiv", usesubdiv, "Subdivision", "Enable Loop Subdivision options", 1.0)
                     usedisp = Lux.Property(mat, "dispmap", "false")
@@ -4282,7 +4358,7 @@ class Lux:
             icon_map2d      = Lux.Icon.get_icon('icon_map2d')
             icon_map2dparam = Lux.Icon.get_icon('icon_map2dparam')
             
-            if Lux.LB_gui: Lux.LB_gui.newline("2Dmap:", -2, level, icon_map2d)
+            if Lux.GUI.Active: Lux.LB_gui.newline("2Dmap:", -2, level, icon_map2d)
             mapping = Lux.Property(mat, key+".mapping", "uv")
             mappings = ["uv","spherical","cylindrical","planar"]
             str = Lux.TypedControls.Option("mapping", mapping, mappings, "mapping", "", 0.5)
@@ -4294,9 +4370,9 @@ class Lux:
             if mapping.get() == "planar":
                 str += Lux.TypedControls.Float("udelta", Lux.Property(mat, key+".udelta", 0.0), -100.0, 100.0, "Ud", "u-delta", 0.75)
                 str += Lux.TypedControls.Float("vdelta", Lux.Property(mat, key+".vdelta", 0.0), -100.0, 100.0, "Vd", "v-delta", 0.75)
-                if Lux.LB_gui: Lux.LB_gui.newline("v1:", -2, level+1, icon_map2dparam)
+                if Lux.GUI.Active: Lux.LB_gui.newline("v1:", -2, level+1, icon_map2dparam)
                 str += Lux.TypedControls.Vector("v1", Lux.Property(mat, key+".v1", "1 0 0"), -100.0, 100.0, "v1", "v1-vector", 2.0)
-                if Lux.LB_gui: Lux.LB_gui.newline("v2:", -2, level+1, icon_map2dparam)
+                if Lux.GUI.Active: Lux.LB_gui.newline("v2:", -2, level+1, icon_map2dparam)
                 str += Lux.TypedControls.Vector("v2", Lux.Property(mat, key+".v2", "0 1 0"), -100.0, 100.0, "v2", "v2-vector", 2.0)
             return str
         
@@ -4305,11 +4381,11 @@ class Lux:
             icon_map3dparam = Lux.Icon.get_icon('icon_map3dparam')
             
             str = ""
-            if Lux.LB_gui: Lux.LB_gui.newline("scale:", -2, level, icon_map3dparam)
+            if Lux.GUI.Active: Lux.LB_gui.newline("scale:", -2, level, icon_map3dparam)
             str += Lux.TypedControls.VectorUniform("scale", Lux.Property(mat, key+".3dscale", 1.0), 0.001, 1000.0, "scale", "scale-vector", 2.0)
-            if Lux.LB_gui: Lux.LB_gui.newline("rot:", -2, level, icon_map3dparam)
+            if Lux.GUI.Active: Lux.LB_gui.newline("rot:", -2, level, icon_map3dparam)
             str += Lux.TypedControls.Vector("rotate", Lux.Property(mat, key+".3drotate", "0 0 0"), -360.0, 360.0, "rotate", "rotate-vector", 2.0)
-            if Lux.LB_gui: Lux.LB_gui.newline("move:", -2, level, icon_map3dparam)
+            if Lux.GUI.Active: Lux.LB_gui.newline("move:", -2, level, icon_map3dparam)
             str += Lux.TypedControls.Vector("translate", Lux.Property(mat, key+".3dtranslate", "0 0 0"), -1000.0, 1000.0, "move", "translate-vector", 2.0)
             return str
         
@@ -4317,19 +4393,19 @@ class Lux:
         # was luxLight
         @staticmethod
         def Area(name, kn, mat, level):
-            if Lux.LB_gui:
+            if Lux.GUI.Active:
                 if name != "": Lux.LB_gui.newline(name+":", 10, level)
                 else: Lux.LB_gui.newline("color:", 0, level+1)
             (str,link) = Lux.Textures.LightSpectrumTexture("L", kn+"light", "1.0 1.0 1.0", 1.0, "Spectrum", "", mat, level+1)
-            if Lux.LB_gui: Lux.LB_gui.newline("")
+            if Lux.GUI.Active: Lux.LB_gui.newline("")
             link += Lux.TypedControls.Float("power", Lux.Property(mat, kn+"light.power", 100.0), 0.0, 10000.0, "Power(W)", "AreaLight Power in Watts")
             link += Lux.TypedControls.Float("efficacy", Lux.Property(mat, kn+"light.efficacy", 17.0), 0.0, 100.0, "Efficacy(lm/W)", "Efficacy Luminous flux/watt")
-            if Lux.LB_gui: Lux.LB_gui.newline("")
+            if Lux.GUI.Active: Lux.LB_gui.newline("")
             link += Lux.TypedControls.Float("gain", Lux.Property(mat, kn+"light.gain", 1.0), 0.0, 100.0, "gain", "Gain/scale multiplier")
             lightgroup = Lux.Property(mat, kn+"light.lightgroup", "default")
             Lux.TypedControls.String("lightgroup", lightgroup, "group", "assign light to a named light-group", 1.0)
         
-            if Lux.LB_gui: Lux.LB_gui.newline("Photometric")
+            if Lux.GUI.Active: Lux.LB_gui.newline("Photometric")
             pm = Lux.Property(mat, kn+"light.usepm", "false")
             Lux.TypedControls.Bool("photometric", pm, "Photometric Diagram", "Enable Photometric Diagram options", 2.0)
         
@@ -4349,18 +4425,19 @@ class Lux:
             return (str, link)
         
         #was luxLamp
+        @staticmethod
         def Point(name, kn, mat, level):
-            if Lux.LB_gui:
+            if Lux.GUI.Active:
                 if name != "": Lux.LB_gui.newline(name+":", 10, level)
                 else: Lux.LB_gui.newline("color:", 0, level+1)
-        #    if Lux.LB_gui: Lux.LB_gui.newline("", 10, level)
+        #    if Lux.GUI.Active: Lux.LB_gui.newline("", 10, level)
             (str,link) = Lux.Textures.LightSpectrumTexture("L", kn+"light", "1.0 1.0 1.0", 1.0, "Spectrum", "", mat, level+1)
-            if Lux.LB_gui: Lux.LB_gui.newline("")
+            if Lux.GUI.Active: Lux.LB_gui.newline("")
             link += Lux.TypedControls.Float("gain", Lux.Property(mat, kn+"light.gain", 1.0), 0.0, 100.0, "gain", "Gain/scale multiplier")
             lightgroup = Lux.Property(mat, kn+"light.lightgroup", "default")
             Lux.TypedControls.String("lightgroup", lightgroup, "group", "assign light to a named light-group", 1.0)
         
-            if Lux.LB_gui: Lux.LB_gui.newline("Photometric")
+            if Lux.GUI.Active: Lux.LB_gui.newline("Photometric")
             pm = Lux.Property(mat, kn+"light.usepm", "false")
             Lux.TypedControls.Bool("photometric", pm, "Photometric Diagram", "Enable Photometric Diagram options", 2.0)
         
@@ -4380,18 +4457,19 @@ class Lux:
             return (str, link)
         
         #was luxSpot
+        @staticmethod
         def Spot(name, kn, mat, level):
-            if Lux.LB_gui:
+            if Lux.GUI.Active:
                 if name != "": Lux.LB_gui.newline(name+":", 10, level)
                 else: Lux.LB_gui.newline("color:", 0, level+1)
-        #    if Lux.LB_gui: Lux.LB_gui.newline("", 10, level)
+        #    if Lux.GUI.Active: Lux.LB_gui.newline("", 10, level)
             (str,link) = Lux.Textures.LightSpectrumTexture("L", kn+"light", "1.0 1.0 1.0", 1.0, "Spectrum", "", mat, level+1)
-            if Lux.LB_gui: Lux.LB_gui.newline("")
+            if Lux.GUI.Active: Lux.LB_gui.newline("")
             link += Lux.TypedControls.Float("gain", Lux.Property(mat, kn+"light.gain", 1.0), 0.0, 100.0, "gain", "Gain/scale multiplier")
             lightgroup = Lux.Property(mat, kn+"light.lightgroup", "default")
             Lux.TypedControls.String("lightgroup", lightgroup, "group", "assign light to a named light-group", 1.0)
         
-            if Lux.LB_gui: Lux.LB_gui.newline("Projection")
+            if Lux.GUI.Active: Lux.LB_gui.newline("Projection")
             proj = Lux.Property(mat, kn+"light.usetexproj", "false")
             Lux.TypedControls.Bool("projection", proj, "Texture Projection", "Enable imagemap texture projection", 2.0)
         
@@ -4470,7 +4548,7 @@ class Lux:
             p.stdin.write('Film "fleximage" "integer xresolution" [%i] "integer yresolution" [%i] "integer displayinterval" [3] "integer ldr_writeinterval" [3600] "string tonemapper" ["reinhard"] "integer haltspp" [1] "integer reject_warmup" [64] "bool write_tonemapped_tga" ["false"] "bool write_untonemapped_exr" ["false"] "bool write_tonemapped_exr" ["false"] "bool write_untonemapped_igi" ["false"] "bool write_tonemapped_igi" ["false"] \n'%(thumbres, thumbres))
             p.stdin.write('PixelFilter "sinc"\n')
             # Quality
-            Lux.scene = Blender.Scene.GetCurrent()
+            
             defprevmat = Lux.Property(Lux.scene, "defprevmat", "high")
             quality = Lux.Property(mat, kn+"prev_quality", defprevmat.get())
             if quality.get()=="low":
@@ -4562,7 +4640,7 @@ class Lux:
         # was luxPreview
         @staticmethod
         def Preview(mat, name, defType=0, defEnabled=False, defLarge=False, texName=None, level=0, color=None):
-            if Lux.LB_gui:
+            if Lux.GUI.Active:
                 kn = name
                 if texName: kn += ":"+texName
                 if kn != "": kn += "."
@@ -4621,7 +4699,7 @@ class Lux:
         
                     # Preview Quality
                     qs = ["low","medium","high","very high"]
-                    Lux.scene = Blender.Scene.GetCurrent()
+                    #Lux.scene = Blender.Scene.GetCurrent()
                     defprevmat = Lux.Property(Lux.scene, "defprevmat", "high")
                     quality = Lux.Property(mat, kn+"prev_quality", defprevmat.get())
                     Lux.TypedControls.OptionRect("quality", quality, qs, "  Quality", "select preview quality", r[0]+200, r[1]+100+voffset, 88, 18)
@@ -4926,6 +5004,7 @@ class Lux:
             
         ### MatTex functions ###
         ### MatTex : is a dictionary of material or texture properties
+        @staticmethod
         def getMatTex(mat, basekey='', tex=False):
             Lux.usedproperties = {}
             Lux.usedpropertiesfilterobj = mat
@@ -4940,6 +5019,7 @@ class Lux:
             dict["__type__"] = ["material","texture"][bool(tex)]
             return dict
         
+        @staticmethod
         def putMatTex(mat, dict, basekey='', tex=None):
             if dict and (tex!=None) and (tex ^ (dict.has_key("__type__") and (dict["__type__"]=="texture"))):
                 print "ERROR: Can't apply %s as %s"%(["texture","material"][bool(tex)],["material","texture"][bool(tex)])
@@ -4968,8 +5048,9 @@ class Lux:
         
         LBX_VERSION = '0.7'
         
-        def MatTex2str(d, tex = None):
-            if Lux.Convertor.LBX_VERSION == '0.6':
+        @staticmethod
+        def MatTex2dict(d, tex = None):
+            if Lux.Converter.LBX_VERSION == '0.6':
             
                 if tex is not None and tex == True:
                     d['LUX_DATA'] = 'TEXTURE'
@@ -4977,9 +5058,10 @@ class Lux:
                     d['LUX_DATA'] = 'MATERIAL'
                 
                 d['LUX_VERSION'] = '0.6'
-                return str(d).replace(", \'", ",\n\'")
+                
+                return d
             
-            elif Lux.Convertor.LBX_VERSION == '0.7':
+            elif Lux.Converter.LBX_VERSION == '0.7':
                 definition = []
                 for k in d.keys():
                     if type(d[k]) == types.IntType:
@@ -5009,16 +5091,27 @@ class Lux:
                         ['string', 'generator', 'luxblend'],
                     ]
                 }
-                return str(lbx).replace("], \'", "],\n\'").replace("[","\n\t[")
+                
+                return lbx
+        
+        @staticmethod
+        def MatTex2str(d, tex = None):
+            if   Lux.Converter.LBX_VERSION == '0.6':
+                return str( Lux.Converter.MatTex2dict(d, tex) ).replace(", \'", ",\n\'")
+            
+            elif Lux.Converter.LBX_VERSION == '0.7':
+                return str( Lux.Converter.MatTex2dict(d, tex) ).replace("], \'", "],\n\'").replace("[","\n\t[")        
+        
         
         # todo: this is not absolutely save from attacks!!!
+        @staticmethod
         def str2MatTex(s, tex = None):
             s = s.strip()
             if (s[0]=='{') and (s[-1]=='}'):
                 d = eval(s, dict(__builtins__=None,True=True,False=False))
                 if type(d)==types.DictType:
                     
-                    if Lux.Convertor.LBX_VERSION == '0.6':
+                    if Lux.Converter.LBX_VERSION == '0.6':
                     
                         if tex is not None and tex == True:
                             test_str = 'TEXTURE'
@@ -5031,7 +5124,7 @@ class Lux:
                         else:
                             reason = 'Missing/incorrect metadata'
                             
-                    elif Lux.Convertor.LBX_VERSION == '0.7':
+                    elif Lux.Converter.LBX_VERSION == '0.7':
                         
                         def lb_list_to_dict(list):
                             d = {}
@@ -5086,6 +5179,7 @@ class Lux:
         def download(mat, id):
             if not Lux.Web.WEB_Connect: return None
             
+            import socket
             if id.isalnum():
                 try:
                     HOST = 'www.luxrender.net'
@@ -5106,7 +5200,7 @@ class Lux:
                         return None
                     str = (str.split("\r\n\r\n")[1]).strip()
                     if (str[0]=="{") and (str[-1]=="}"):
-                        return str2MatTex(str)
+                        return Lux.Converter.str2MatTex(str)
                     print "ERROR: downloaded data is not a material or texture"
                 except:
                     print "ERROR: download failed"
@@ -5223,7 +5317,7 @@ class Lux:
                 
                         return self._parse_response(host_connection.getfile(), sock)
                 
-                self.XMLRPC_CookieTransport = CookieTransport()
+                Lux.Web.XMLRPC_CookieTransport = CookieTransport
                 
                 print "INFO: Advanced Web support available"
             except:
@@ -5256,13 +5350,13 @@ class Lux:
                 result = 'Unknown Error'
                 
                 if tex:
-                    name = Draw.PupStrInput('Texture Name: ', '', 32)
+                    name = Blender.Draw.PupStrInput('Texture Name: ', '', 32)
                 else:
                     name = mat.name
                 
                 result = self.XMLRPC_SERVER.object.submit(
                     name,
-                    MatTex2dict( getMatTex(mat, basekey, tex), tex )
+                    Lux.Converter.MatTex2dict( Lux.Converter.getMatTex(mat, basekey, tex), tex )
                 )
                 if result is not True:
                     raise
@@ -5275,25 +5369,25 @@ class Lux:
         def check_creds(self):
             if self.XMLRPC_SERVER is None:
                 try:
-                    self.XMLRPC_SERVER = xmlrpclib.ServerProxy(self.host, transport=self.XMLRPC_CookieTransport())
+                    import xmlrpclib #cookielib, urllib2, xmlrpclib
+                    self.XMLRPC_SERVER = xmlrpclib.ServerProxy(self.XMLRPC_host, transport=Lux.Web.XMLRPC_CookieTransport())
                 except:
                     self.XMLRPC_last_error_str = 'ServerProxy init failed'
                     return False
-            
             
             if not self.XMLRPC_logged_in:
                 self.request_username()
                 self.request_password()
                     
-                return self.XMLRPC_login()
+                return self.login()
             else:
                 return True
                 
         def request_username(self):
-            self.XMLRPC_username = Draw.PupStrInput("Username:", self.XMLRPC_username, 32)
+            self.XMLRPC_username = Blender.Draw.PupStrInput("Username:", self.XMLRPC_username, 32)
             
         def request_password(self):
-            self.XMLRPC_password = Draw.PupStrInput("Password:", self.XMLRPC_password, 32)
+            self.XMLRPC_password = Blender.Draw.PupStrInput("Password:", self.XMLRPC_password, 32)
 
     #LB_Web = Web()
 
@@ -5308,48 +5402,7 @@ class Lux:
 #            return str
         
         
-        def showMatTexMenu(mat, basekey='', tex=False):
-            if tex: menu="Texture menu:%t"
-            else: menu="Material menu:%t"
-            menu += "|Copy%x1"
-            try:
-                if Lux.clipboard and (not(tex) ^ (Lux.clipboard["__type__"]=="texture")): menu +="|Paste%x2"
-            except: pass
-            if (tex):
-                menu += "|Load LBT%x3|Save LBT%x4"
-            else:
-                menu += "|Load LBM%x3|Save LBM%x4"
-            if  Lux.Web.WEB_Connect: menu += "|Download from DB%x5" #not(tex) and
-        
-        #    menu += "|%l|dump material%x99|dump clipboard%x98"
-            r = Blender.Draw.PupMenu(menu)
-            if r==1:
-                Lux.clipboard = getMatTex(mat, basekey, tex)
-            elif r==2: putMatTex(mat, Lux.clipboard, basekey, tex)
-            elif r==3: 
-                Lux.scene = Blender.Scene.GetCurrent()
-                if (tex):
-                    Blender.Window.FileSelector(lambda fn:loadMatTex(mat, fn, basekey, tex), "load texture", Lux.Property(Lux.scene, "lux", "").get()+os.sep+".lbt")
-                else:
-                    Blender.Window.FileSelector(lambda fn:loadMatTex(mat, fn, basekey, tex), "load material", Lux.Property(Lux.scene, "lux", "").get()+os.sep+".lbm")
-            elif r==4:
-                Lux.scene = Blender.Scene.GetCurrent()
-                if (tex):
-                    Blender.Window.FileSelector(lambda fn:saveMatTex(mat, fn, basekey, tex), "save texture", Lux.Property(Lux.scene, "lux", "").get()+os.sep+".lbt")
-                else:
-                    Blender.Window.FileSelector(lambda fn:saveMatTex(mat, fn, basekey, tex), "save material", Lux.Property(Lux.scene, "lux", "").get()+os.sep+".lbm")
-            elif r==5:
-                if not tex:
-                    id = Blender.Draw.PupStrInput("Material ID:", "", 32)
-                else:
-                    id = Blender.Draw.PupStrInput("Texture ID:", "", 32)
-                if id: putMatTex(mat, Lux.Web.download(mat, id), basekey, tex)
-        #    elif r==99:
-        #        for k,v in mat.properties['luxblend'].convert_to_pyobject().items(): print k+"="+repr(v)
-        #    elif r==98:
-        #        for k,v in Lux.clipboard.items(): print k+"="+repr(v)
-        #    print ""
-            Blender.Draw.Redraw()
+
         
         
         def saveMatTex(mat, fn, basekey='', tex=False):
@@ -5357,135 +5410,137 @@ class Lux:
             file = open(fn, 'w')
             file.write(MatTex2str(d, tex))
             file.close()
-            if Lux.LB_gui: Blender.Draw.Redraw()
+            if Lux.GUI.Active: Blender.Draw.Redraw()
         
         
         def loadMatTex(mat, fn, basekey='', tex=None):
             file = open(fn, 'r')
             data = file.read()
             file.close()
-            data = str2MatTex(data, tex)
-            putMatTex(mat, data, basekey, tex) 
-            if Lux.LB_gui: Blender.Draw.Redraw()
+            data = Lux.Converter.str2MatTex(data, tex)
+            Lux.Converter.putMatTex(mat, data, basekey, tex) 
+            if Lux.GUI.Active: Blender.Draw.Redraw()
         
         
+    def __init__(self):
+        ## Parse command line arguments for batch mode rendering if supplied
+        #try:
+        #    batchindex = osys.argv.index('--batch')
+        #    pyargs = osys.argv[osys.argv.index('--batch')+1:]
+        #except: pyargs = []
+        #
+        if False:
+            pass
+        #if (pyargs != []) and (batchindex != 0):
+        #    print "\n\nLuxBlend CVS - BATCH mode\n"
+        #    #Lux.LB_gui = False
+        #
+        #    Lux.scene = Blender.Scene.GetCurrent()
+        #    context = scene.getRenderingContext()
+        #
+        #    luxpath = ""
+        #    import getopt
+        #    o, a = getopt.getopt(pyargs, 's:e:o:t:l:',["scale=","haltspp=","run=", "lbm=", "lbt="])
+        #
+        #    opts = {}
+        #    for k,v in o:
+        #        opts[k] = v
+        #
+        #    if (opts.has_key('--run')) and (opts['--run'] == 'false'):
+        #        print "Run: false"
+        #        Lux.Property(scene, "run", "true").set("false")
+        #    else:
+        #        Lux.Property(scene, "run", "true").set("true")
+        #
+        #    if opts.has_key('--scale'):
+        #        print "Zoom: %s" %opts['--scale']
+        #        Lux.Property(scene, "film.scale", "100 %").set(opts['--scale'])
+        #
+        #    if opts.has_key('--haltspp'):
+        #        print "haltspp: %s" %opts['--haltspp']
+        #        Lux.Property(scene, "haltspp", 0).set(int(opts['--haltspp']))
+        #
+        #    if opts.has_key('-s'):
+        #        print "Start frame: %s" %opts['-s']
+        #        context.startFrame(int(opts['-s']))
+        #    else:
+        #        print "Error: Start frame not supplied (-s)"; osys.exit(1)
+        #    if opts.has_key('-e'):
+        #        print "End frame: %s" %opts['-e']
+        #        context.endFrame(int(opts['-e']))
+        #    else:
+        #        print "Error: End frame not supplied (-e)"; osys.exit(1)
+        #    if opts.has_key('-l'):
+        #        print "Path to lux binary: %s" %opts['-l']
+        #        luxpathprop = Lux.Property(scene, "lux", "")
+        #        luxpathprop.set(opts['-l'])
+        #    else:
+        #        print "Error: path to lux binary not supplied (-l)"; osys.exit(1)    
+        #    if opts.has_key('-o'):
+        #        print "Image output path: %s" %opts['-o']
+        #        Lux.Property(scene, "overrideoutputpath", "").set(opts['-o'])
+        #    else:
+        #        print "Error: image output path not supplied (-o)"; osys.exit(1)    
+        #    if opts.has_key('-t'):
+        #        print "Temporary export path: %s" %opts['-t']
+        #        Lux.Property(scene, "datadir", "").set(opts['-t'])
+        #    else:
+        #        print "Error: Temporary export path not supplied (-t)"; osys.exit(1)            
+        #    
+        #    if opts.has_key('--lbm'):
+        #        print "Load material: %s" %opts['--lbm']
+        #        mat = Material.Get("Material")
+        #        if mat: loadMatTex(mat, opts['--lbm'])
+        #        else:
+        #            print "Error: No material with name \"Material\" found (--lbm)"; osys.exit(1)
+        #            
+        #    if opts.has_key('--lbt'):
+        #        print "Load material: %s" %opts['--lbt']
+        #        mat = Material.Get("Material")
+        #        if mat: loadMatTex(mat, opts['--lbt'], ':Kd')
+        #        else:
+        #            print "Error: No material with name \"Material\" found (--lbt)"; osys.exit(1)
+        #
+        #    Lux.Launch.ExportAnim(False, False, False) # as by zukazuka (http://www.luxrender.net/forum/viewtopic.php?f=11&t=1288)
+        #    osys.exit(0)
+        #
+        else:
+            print "\n\nLuxBlend CVS - UI mode\n"
+            
+            Lux.LB_Presets          = Lux.Presets()
+            Lux.LB_web              = Lux.Web()
+            Lux.GUI.LB_scrollbar    = Lux.GUI.scrollbar()
+            
+            Lux.scene               = Blender.Scene.GetCurrent()
+            
+            Blender.Draw.Register(Lux.GUI.luxDraw, Lux.GUI.luxEvent, Lux.GUI.luxButtonEvt) # init GUI
         
+            luxpathprop = Lux.Property(Lux.scene, "lux", "")
+            luxpath = luxpathprop.get()
+            luxrun = Lux.Property(Lux.scene, "run", True).get()
+            checkluxpath = Lux.Property(Lux.scene, "checkluxpath", True).get()
+        
+            if checkluxpath and luxrun:
+                if (luxpath is None) or (Blender.sys.exists(luxpath)<=0):
+                    # luxpath not valid, so delete entry from .blend scene file ...
+                    luxpathprop.delete()
+                    # and re-get luxpath, so we get the path from default-settings
+                    luxpath = luxpathprop.get()
+                    if (luxpath is None) or (Blender.sys.exists(luxpath)<=0):
+                        print "WARNING: LuxPath \"%s\" is not valid\n"%(luxpath)
+                        
+                        if Lux.scene:
+                            r = Blender.Draw.PupMenu("Installation: Set path to the lux render software?%t|Yes%x1|No%x0|Never%x2")
+                            if r == 1:
+                                Blender.Window.FileSelector(lambda s:Lux.Property(Lux.scene, "lux", "").set(Blender.sys.dirname(s)+os.sep), "Select file in Lux path")
+                                Lux.Presets.saveluxdefaults()
+                            if r == 2:
+                                Lux.Presets.newluxdefaults["checkluxpath"] = False
+                                Lux.Presets.saveluxdefaults()
+            else    :
+                print "Lux path check disabled\n"
 
 #------------------------------------------------------------------------------ 
 # START !
 #------------------------------------------------------------------------------ 
-
-## Parse command line arguments for batch mode rendering if supplied
-#try:
-#    batchindex = osys.argv.index('--batch')
-#    pyargs = osys.argv[osys.argv.index('--batch')+1:]
-#except: pyargs = []
-#
-if False:
-    pass
-#if (pyargs != []) and (batchindex != 0):
-#    print "\n\nLuxBlend CVS - BATCH mode\n"
-#    #Lux.LB_gui = False
-#
-#    scene = Blender.Scene.GetCurrent()
-#    context = scene.getRenderingContext()
-#
-#    luxpath = ""
-#    import getopt
-#    o, a = getopt.getopt(pyargs, 's:e:o:t:l:',["scale=","haltspp=","run=", "lbm=", "lbt="])
-#
-#    opts = {}
-#    for k,v in o:
-#        opts[k] = v
-#
-#    if (opts.has_key('--run')) and (opts['--run'] == 'false'):
-#        print "Run: false"
-#        Lux.Property(scene, "run", "true").set("false")
-#    else:
-#        Lux.Property(scene, "run", "true").set("true")
-#
-#    if opts.has_key('--scale'):
-#        print "Zoom: %s" %opts['--scale']
-#        Lux.Property(scene, "film.scale", "100 %").set(opts['--scale'])
-#
-#    if opts.has_key('--haltspp'):
-#        print "haltspp: %s" %opts['--haltspp']
-#        Lux.Property(scene, "haltspp", 0).set(int(opts['--haltspp']))
-#
-#    if opts.has_key('-s'):
-#        print "Start frame: %s" %opts['-s']
-#        context.startFrame(int(opts['-s']))
-#    else:
-#        print "Error: Start frame not supplied (-s)"; osys.exit(1)
-#    if opts.has_key('-e'):
-#        print "End frame: %s" %opts['-e']
-#        context.endFrame(int(opts['-e']))
-#    else:
-#        print "Error: End frame not supplied (-e)"; osys.exit(1)
-#    if opts.has_key('-l'):
-#        print "Path to lux binary: %s" %opts['-l']
-#        luxpathprop = Lux.Property(scene, "lux", "")
-#        luxpathprop.set(opts['-l'])
-#    else:
-#        print "Error: path to lux binary not supplied (-l)"; osys.exit(1)    
-#    if opts.has_key('-o'):
-#        print "Image output path: %s" %opts['-o']
-#        Lux.Property(scene, "overrideoutputpath", "").set(opts['-o'])
-#    else:
-#        print "Error: image output path not supplied (-o)"; osys.exit(1)    
-#    if opts.has_key('-t'):
-#        print "Temporary export path: %s" %opts['-t']
-#        Lux.Property(scene, "datadir", "").set(opts['-t'])
-#    else:
-#        print "Error: Temporary export path not supplied (-t)"; osys.exit(1)            
-#    
-#    if opts.has_key('--lbm'):
-#        print "Load material: %s" %opts['--lbm']
-#        mat = Material.Get("Material")
-#        if mat: loadMatTex(mat, opts['--lbm'])
-#        else:
-#            print "Error: No material with name \"Material\" found (--lbm)"; osys.exit(1)
-#            
-#    if opts.has_key('--lbt'):
-#        print "Load material: %s" %opts['--lbt']
-#        mat = Material.Get("Material")
-#        if mat: loadMatTex(mat, opts['--lbt'], ':Kd')
-#        else:
-#            print "Error: No material with name \"Material\" found (--lbt)"; osys.exit(1)
-#
-#    Lux.Launch.ExportAnim(False, False, False) # as by zukazuka (http://www.luxrender.net/forum/viewtopic.php?f=11&t=1288)
-#    osys.exit(0)
-#
-else:
-    print "\n\nLuxBlend CVS - UI mode\n"
-    
-    Lux.LB_Presets          = Lux.Presets()
-    Lux.LB_web              = Lux.Web()
-    Lux.GUI.LB_scrollbar    = Lux.GUI.scrollbar()
-    
-    Blender.Draw.Register(Lux.GUI.luxDraw, Lux.GUI.luxEvent, Lux.GUI.luxButtonEvt) # init GUI
-
-    luxpathprop = Lux.Property(Blender.Scene.GetCurrent(), "lux", "")
-    luxpath = luxpathprop.get()
-    luxrun = Lux.Property(Blender.Scene.GetCurrent(), "run", True).get()
-    checkluxpath = Lux.Property(Blender.Scene.GetCurrent(), "checkluxpath", True).get()
-
-    if checkluxpath and luxrun:
-        if (luxpath is None) or (Blender.sys.exists(luxpath)<=0):
-            # luxpath not valid, so delete entry from .blend scene file ...
-            luxpathprop.delete()
-            # and re-get luxpath, so we get the path from default-settings
-            luxpath = luxpathprop.get()
-            if (luxpath is None) or (Blender.sys.exists(luxpath)<=0):
-                print "WARNING: LuxPath \"%s\" is not valid\n"%(luxpath)
-                Lux.scene = Blender.Scene.GetCurrent()
-                if Lux.scene:
-                    r = Blender.Draw.PupMenu("Installation: Set path to the lux render software?%t|Yes%x1|No%x0|Never%x2")
-                    if r == 1:
-                        Blender.Window.FileSelector(lambda s:Lux.Property(Lux.scene, "lux", "").set(Blender.sys.dirname(s)+os.sep), "Select file in Lux path")
-                        Lux.Presets.saveluxdefaults()
-                    if r == 2:
-                        Lux.Presets.newluxdefaults["checkluxpath"] = False
-                        Lux.Presets.saveluxdefaults()
-    else    :
-        print "Lux path check disabled\n"
+LB = Lux()
