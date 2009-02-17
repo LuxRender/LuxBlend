@@ -4901,7 +4901,7 @@ def showMatTexMenu(mat, basekey='', tex=False):
 		else:
 			msg = 'OK'
 			
-		Draw.PupBlock('Upload', [msg])
+		Draw.PupMenu("Upload: "+msg+".%t|OK")
 #	elif r==99:
 #		for k,v in mat.properties['luxblend'].convert_to_pyobject().items(): print k+"="+repr(v)
 #	elif r==98:
