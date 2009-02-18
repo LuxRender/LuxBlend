@@ -2795,8 +2795,7 @@ class Lux:
                         str += "\n   \"string filename\" [\"%s\"]"%(filename)
                     else:
                         fn = Lux.Property(Lux.scene, "filename", "default-%05d" %  (Blender_API.Get('curframe')))
-                        # DH - this has gui = None !
-                        str += Lux.TypedControls.String().create("filename", fn, "File name", "save file name")
+                        str += Lux.TypedControls.String(hidden=True).create("filename", fn, "File name", "save file name")
         
                     if Lux.LB_UI.Active: Lux.LB_UI.newline("  Formats:")
                     savetga = Lux.Property(Lux.scene, "film.write_tonemapped_tga", "true")
@@ -3968,8 +3967,7 @@ class Lux:
                     r = Lux.LB_UI.getRect(1.6, 1)
                     Blender_API.Draw.Button(iorpreset.get(), Lux.Events.LuxGui, r[0], r[1], r[2], r[3], "select IOR preset", lambda e,v: setIor(Blender_API.Draw.PupTreeMenu(iortree), value, iorpreset, iortree, iordict))
                 
-                # DH - this line had gui = None !
-                link = Lux.TypedControls.Float().create(name, value, min, max, "IOR", hint, 1.6)
+                link = Lux.TypedControls.Float(hidden=True).create(name, value, min, max, "IOR", hint, 1.6)
             else:
                 link = Lux.TypedControls.Float().create(name, value, min, max, "IOR", hint, 1.6, 1)
         
@@ -4006,8 +4004,7 @@ class Lux:
                 idx = cauchybnames.index(cauchybpreset.get())
                 value.set(cauchybvals[idx])
                 
-                # DH - this line had gui = None !
-                link = Lux.TypedControls.Float().create(name, value, min, max, "cauchyb", hint, 1.6)
+                link = Lux.TypedControls.Float(hidden=True).create(name, value, min, max, "cauchyb", hint, 1.6)
             else:
                 link = Lux.TypedControls.Float().create(name, value, min, max, "cauchyb", hint, 1.6, 1)
         
