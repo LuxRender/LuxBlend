@@ -73,7 +73,6 @@ class Lux:
     LB_gui              = False
     LB_web              = False
     LB_Presets          = None
-    LB_Event_Handler    = None
     
     # current scene
     scene               = None
@@ -127,17 +126,17 @@ class Lux:
                     self.activeObject = Lux.scene.objects.active
                     Lux.Materials.activemat = None
                     Blender_API.Window.QRedrawAll()
-            if (evt == Blender_API.Draw.MOUSEX) or (evt == Blender_API.Draw.MOUSEY): Lux.GUI.LB_scrollbar.Mouse()
-            if  evt == Blender_API.Draw.WHEELUPMOUSE:   Lux.GUI.LB_scrollbar.scroll(-16)
-            if  evt == Blender_API.Draw.WHEELDOWNMOUSE: Lux.GUI.LB_scrollbar.scroll(16)
-            if  evt == Blender_API.Draw.PAGEUPKEY:      Lux.GUI.LB_scrollbar.scroll(-50)
-            if  evt == Blender_API.Draw.PAGEDOWNKEY:    Lux.GUI.LB_scrollbar.scroll(50)
+            if (evt == Blender_API.Draw.MOUSEX) or (evt == Blender_API.Draw.MOUSEY): Lux.LB_gui.LB_scrollbar.Mouse()
+            if  evt == Blender_API.Draw.WHEELUPMOUSE:   Lux.LB_gui.LB_scrollbar.scroll(-16)
+            if  evt == Blender_API.Draw.WHEELDOWNMOUSE: Lux.LB_gui.LB_scrollbar.scroll(16)
+            if  evt == Blender_API.Draw.PAGEUPKEY:      Lux.LB_gui.LB_scrollbar.scroll(-50)
+            if  evt == Blender_API.Draw.PAGEDOWNKEY:    Lux.LB_gui.LB_scrollbar.scroll(50)
         
             # scroll to [T]op and [B]ottom
             if evt == Blender_API.Draw.TKEY:
-                Lux.GUI.LB_scrollbar.scroll(-Lux.GUI.LB_scrollbar.position)
+                Lux.LB_gui.LB_scrollbar.scroll(-Lux.LB_gui.LB_scrollbar.position)
             if evt == Blender_API.Draw.BKEY:
-                Lux.GUI.LB_scrollbar.scroll(100000)   # Some large number should be enough ?!
+                Lux.LB_gui.LB_scrollbar.scroll(100000)   # Some large number should be enough ?!
         
             # R key shortcut to launch render
             # E key shortcut to export current scene (not render)
@@ -177,7 +176,7 @@ class Lux:
             #        # Mouse clicked in left button bar
             #    if((mousex > 399) and (mousex < 418)):
             #        # Mouse clicked in right button bar
-            #        mousey = my - size[1] - Lux.GUI.LB_scrollbar.position
+            #        mousey = my - size[1] - Lux.LB_gui.LB_scrollbar.position
             #        Lux.Log("mousey = %i"%mousey)
                    
 
@@ -1970,9 +1969,13 @@ class Lux:
         '''
         
         # Enable export routines to disable drawing of GUI
-        Active          = None
+        Active              = True
         
-        LB_scrollbar    = None
+        LB_scrollbar        = None
+        LB_Event_Handler    = None
+        
+        def handlers(self):
+            return self.Draw, self.LB_Event_Handler.keyHandler, self.LB_Event_Handler.buttonHandler
         
         def __init__(self, y=200):
             self.x = 110 # left start position after captions
@@ -1984,6 +1987,9 @@ class Lux:
             self.xgap = 4
             self.ygap = 4
             self.resethmax = False
+            
+            self.LB_scrollbar     = Lux.GUI.scrollbar()
+            self.LB_Event_Handler = Lux.Events()
             
         def getRect(self, wu, hu):
             w = int(self.w * wu + self.xgap * (wu-1))
@@ -2059,19 +2065,14 @@ class Lux:
                 self.over = over
         
         # gui main draw
-        @staticmethod
-        def Draw():
-            y = int(Lux.GUI.LB_scrollbar.getTop()) # 420
-            
+        def Draw(self):
             Lux.scene = Blender_API.Scene.GetCurrent()
-            if Lux.scene:
+            
+            if Lux.scene and self.Active:
                 luxpage = Lux.Property(Lux.scene, "page", 0)
                 
-                if Lux.LB_gui and (Lux.GUI.Active != False):
-                    Lux.LB_gui.y = y-70
-                else:
-                    if (Lux.GUI.Active == None): Lux.GUI.Active = True
-                    Lux.LB_gui = Lux.GUI(y-70)
+                y = int(self.LB_scrollbar.getTop()) # 420
+                Lux.LB_gui.y = y-70
                 
                 Blender_API.BGL.glClear(Blender_API.BGL.GL_COLOR_BUFFER_BIT)
                 Blender_API.BGL.glColor3f(0.1,0.1,0.1); Blender_API.BGL.glRectf(0,0,440,y)
@@ -2198,9 +2199,10 @@ class Lux:
                 Blender_API.Draw.Toggle(".lxo", 0, 320, y+20, 30, 16, lxo.get()=="true", "export .lxo geometry file", lambda e,v: lxo.set(["false","true"][bool(v)]))
                 Blender_API.Draw.Toggle(".lxm", 0, 350, y+20, 30, 16, lxm.get()=="true", "export .lxm material file", lambda e,v: lxm.set(["false","true"][bool(v)]))
                 Blender_API.Draw.Toggle(".lxv", 0, 380, y+20, 30, 16, lxm.get()=="true", "export .lxv volume file", lambda e,v: lxm.set(["false","true"][bool(v)]))
-            Blender_API.BGL.glColor3f(0.9, 0.9, 0.9) ; Blender_API.BGL.glRasterPos2i(340,y+5) ; Blender_API.Draw.Text("Press Q or ESC to quit.", "tiny")
-            Lux.GUI.LB_scrollbar.height = Lux.GUI.LB_scrollbar.getTop() - y
-            Lux.GUI.LB_scrollbar.draw()
+                
+                Blender_API.BGL.glColor3f(0.9, 0.9, 0.9) ; Blender_API.BGL.glRasterPos2i(340,y+5) ; Blender_API.Draw.Text("Press Q or ESC to quit.", "tiny")
+                self.LB_scrollbar.height = self.LB_scrollbar.getTop() - y
+                self.LB_scrollbar.draw()
         
         #mouse_xr=1 
         #mouse_yr=1 
@@ -5554,13 +5556,13 @@ class Lux:
         else:
             Lux.Log(Lux.Version + " - UI mode")
             
+            # Init web integration
             Lux.LB_web              = Lux.Web()
-            Lux.GUI.LB_scrollbar    = Lux.GUI.scrollbar()
-            Lux.LB_Event_Handler    = Lux.Events()
             
             # init GUI
-            Blender_API.Draw.Register(Lux.GUI.Draw, Lux.LB_Event_Handler.keyHandler, Lux.LB_Event_Handler.buttonHandler)
-                    
+            Lux.LB_gui = Lux.GUI()
+            Blender_API.Draw.Register(*Lux.LB_gui.handlers())
+            
             luxpathprop = Lux.Property(Lux.scene, "lux", "")
             luxpath = luxpathprop.get()
             luxrun = Lux.Property(Lux.scene, "run", True).get()
