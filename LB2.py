@@ -40,7 +40,6 @@ Tooltip: 'Export/Render to LuxRender CVS scene format (.lxs)'
 import math, os, sys as osys, types, subprocess, types
 import Blender
 
-
 #===============================================================================
 # Lux Class
 #===============================================================================
@@ -74,6 +73,11 @@ class Lux:
     
     # dictionary that will hold all preview images
     previewCache    = {}
+    
+    @staticmethod
+    def Log(msg = '', popup = False):
+        print '[LuxBlend] %s' % msg
+        if popup and Lux.GUI.Active: Blender.Draw.PupMenu(msg + '%t|OK%x1')
     
     # Event IDs
     class Events:
@@ -116,7 +120,7 @@ class Lux:
         
         export_total_steps = 12.0
         
-        print("Lux Render Export started...\n")
+        Lux.Log("Lux Render Export started...")
         time1 = Blender.sys.time()
         Lux.scene = Blender.Scene.GetCurrent()
     
@@ -144,14 +148,13 @@ class Lux:
                     if obj.getData(mesh=1).getType() == 1: # sun object # data
                         sun = obj
         if not(export.analyseScene()) and not(envtype == "infinite") and not((envtype == "sunsky") and (sun != None)):
-            print("ERROR: No light source found")
-            Blender.Draw.PupMenu("ERROR: No light source found%t|OK%x1")
+            Lux.Log("ERROR: No light source found", popup = True)
             return False
     
         if Lux.LB_gui: Blender.Window.DrawProgressBar(0.0/export_total_steps,'Setting up Scene file')
         if Lux.Property(Lux.scene, "lxs", "true").get()=="true":
             ##### Determine/open files
-            print("Exporting scene to '" + filename + "'...\n")
+            Lux.Log("Exporting scene to '" + filename + "'...")
             file = open(filename, 'w')
     
             ##### Write Header ######
@@ -164,7 +167,7 @@ class Lux:
     
             if Lux.LB_gui: Blender.Window.DrawProgressBar(1.0/export_total_steps,'Exporting Camera')
             if camObj:
-                print "processing Camera..."
+                Lux.Log("processing Camera...")
                 cam = camObj.data
                 cammblur = Lux.Property(cam, "cammblur", "true")
                 usemblur = Lux.Property(cam, "usemblur", "false")
@@ -180,7 +183,7 @@ class Lux:
                     Blender.Set('curframe', frame)
                     if m1 != matrix:
                         # Motion detected, write endtransform
-                        print "  motion blur"
+                        Lux.Log("  motion blur")
                         motion = m1
                         pos = m1[3]
                         forwards = -m1[2]
@@ -277,7 +280,7 @@ class Lux:
         if Lux.Property(Lux.scene, "lxm", "true").get()=="true":
             if Lux.LB_gui: Blender.Window.DrawProgressBar(9.0/export_total_steps,'Exporting Materials')
             ##### Write Material file #####
-            print("Exporting materials to '" + Lux.mat_filename + "'...\n")
+            Lux.Log("Exporting materials to '" + Lux.mat_filename + "'...")
             mat_file = open(Lux.mat_filename, 'w')
             mat_file.write("")
             export.Materials(mat_file)
@@ -287,7 +290,7 @@ class Lux:
         if Lux.Property(Lux.scene, "lxo", "true").get()=="true":
             if Lux.LB_gui: Blender.Window.DrawProgressBar(10.0/export_total_steps,'Exporting Geometry')
             ##### Write Geometry file #####
-            print("Exporting geometry to '" + Lux.geom_filename + "'...\n")
+            Lux.Log("Exporting geometry to '" + Lux.geom_filename + "'...")
             geom_file = open(Lux.geom_filename, 'w')
             Lux.meshlist = []
             geom_file.write("")
@@ -300,7 +303,7 @@ class Lux:
         if Lux.Property(Lux.scene, "lxv", "true").get()=="true":
             if Lux.LB_gui: Blender.Window.DrawProgressBar(11.0/export_total_steps,'Exporting Volumes')
             ##### Write Volume file #####
-            print("Exporting volumes to '" + Lux.vol_filename + "'...\n")
+            Lux.Log("Exporting volumes to '" + Lux.vol_filename + "'...")
             vol_file = open(Lux.vol_filename, 'w')
             Lux.meshlist = []
             vol_file.write("")
@@ -309,11 +312,11 @@ class Lux:
             vol_file.close()
         
         if Lux.LB_gui: Blender.Window.DrawProgressBar(12.0/export_total_steps,'Export Finished')
-        print("Finished.\n")
+        Lux.Log("Finished.")
         del export
     
         time2 = Blender.sys.time()
-        print("Processing time: %f\n" %(time2-time1))
+        Lux.Log("Processing time: %f" %(time2-time1))
         
         if Lux.LB_gui:
             Lux.GUI.Active = True
@@ -327,11 +330,11 @@ class Lux:
         Lux.scene = Blender.Scene.GetCurrent()
         Run = Lux.Property(Lux.scene, "run", "true").get()
     
-        print("\n\nRendering animation (frame %i to %i)\n\n"%(startF, endF))
+        Lux.Log("Rendering animation (frame %i to %i)"%(startF, endF))
     
         for i in range (startF, endF+1):
             Blender.Set('curframe', i)
-            print("Rendering frame %i"%(i))
+            Lux.Log("Rendering frame %i"%(i))
             Blender.Redraw()
             frameindex = ("-%05d" % (i)) + ".lxs"
             indexedname = Blender.sys.makename(filename, frameindex)
@@ -344,7 +347,7 @@ class Lux:
     
             Lux.MatSaved = True
     
-        print("\n\nFinished Rendering animation\n")
+        Lux.Log("Finished Rendering animation")
         
     @staticmethod
     def save_still(filename):
@@ -778,8 +781,6 @@ class Lux:
                 Lux.Presets.savePreset('luxblend_materials', name, d)
             except: pass
     
-    #LB_Presets = Presets()
-    
     class Util:
         '''Lux Utilities'''
         
@@ -813,7 +814,7 @@ class Lux:
                 try:
                     refLoc = (Blender.Object.GetSelected()[0]).getLocation()
                 except:
-                    print "select an object to focus\n"
+                    Lux.Log("select an object to focus", popup = True)
             elif target == "C":
                 refLoc = Blender.Window.GetCursorPos()
             else:
@@ -851,8 +852,6 @@ class Lux:
             else:
                 return 1.0
             
-    
-            
     class Export:
         '''Lux Export functions'''
         
@@ -884,7 +883,8 @@ class Lux:
                 if compress:
                     mats = [m for m in mats if m]
             else:
-                print "Warning: object %s has no material assigned" % obj.getName()
+                # This gets quite annoying.. can it be logged elsewhere?
+                Lux.Log("Warning: object %s has no material assigned" % obj.getName())
                 mats = []
             # clay option
             if Lux.Property(Lux.scene, "clay", "false").get()=="true":
@@ -967,7 +967,7 @@ class Lux:
             '''exports materials to the file'''
             
             for mat in self.materials:
-                print "material %s"%(mat.getName())
+                Lux.Log("material %s"%(mat.getName()))
                 self.Material(file, mat)
     
         def getMeshType(self, vertcount, mat):
@@ -1106,7 +1106,7 @@ class Lux:
                                     file.write("\t] \"float uv\" [\n")
                                     file.write("".join(["%f %f\n"%tuple(vertex[1]) for vertex in exportVerts])) 
                             file.write("\t]\n")
-                            print "  shape(%s): %d vertices, %d faces"%(shapeText[shape], len(exportVerts), len(exportFaces))
+                            Lux.Log("  shape(%s): %d vertices, %d faces"%(shapeText[shape], len(exportVerts), len(exportFaces)))
     
         def Meshes(self, file):
             '''exports meshes that uses instancing (meshes that are used by at least "instancing_threshold" objects)'''
@@ -1127,7 +1127,7 @@ class Lux:
                 if allow_instancing and (len(objs) >= instancing_threshold):
                     del self.meshes[mesh_name]
                     mesh.getFromObject(objs[0], 0, 1)
-                    print "blender-mesh: %s (%d vertices, %d faces)"%(mesh_name, len(mesh.verts), len(mesh.faces))
+                    Lux.Log("blender-mesh: %s (%d vertices, %d faces)"%(mesh_name, len(mesh.verts), len(mesh.faces)))
                     file.write("ObjectBegin \"%s\"\n"%mesh_name)
                     if (mesh_optimizing):
                         self.MeshOpt(file, mesh, mats, mesh_name)
@@ -1145,7 +1145,7 @@ class Lux:
             mesh_optimizing = Lux.Property(self.scene, "mesh_optimizing", True).get()
             mesh = Blender.Mesh.New('')
             for [obj, matrix] in self.objects:
-                print "object: %s"%(obj.getName())
+                Lux.Log("object: %s"%(obj.getName()))
                 mesh_name = obj.getData(name_only=True)
     
                 motion = None
@@ -1156,7 +1156,7 @@ class Lux:
                     m1 = 1.0*matrix # multiply by 1.0 to get a copy of orignal matrix (will be frame-independant) 
                     Blender.Set('curframe', frame)
                     if m1 != matrix:
-                        print "  motion blur"
+                        Lux.Log("  motion blur")
                         motion = m1
         
                 if motion: # motion-blur only works with instances, so ensure mesh is exported as instance first
@@ -1164,7 +1164,7 @@ class Lux:
                         del self.meshes[mesh_name]
                         mesh.getFromObject(obj, 0, 1)
                         mats = self.getMaterials(obj)
-                        print "  blender-mesh: %s (%d vertices, %d faces)"%(mesh_name, len(mesh.verts), len(mesh.faces))
+                        Lux.Log("  blender-mesh: %s (%d vertices, %d faces)"%(mesh_name, len(mesh.verts), len(mesh.faces)))
                         file.write("ObjectBegin \"%s\"\n"%mesh_name)
                         if (mesh_optimizing):
                             self.MeshOpt(file, mesh, mats, mesh_name)
@@ -1191,13 +1191,13 @@ class Lux:
                 if mesh_name in self.meshes:
                     mesh.getFromObject(obj, 0, 1)
                     mats = self.getMaterials(obj)
-                    print "  blender-mesh: %s (%d vertices, %d faces)"%(mesh_name, len(mesh.verts), len(mesh.faces))
+                    Lux.Log("  blender-mesh: %s (%d vertices, %d faces)"%(mesh_name, len(mesh.verts), len(mesh.faces)))
                     if (mesh_optimizing):
                         self.MeshOpt(file, mesh, mats, mesh_name)
                     else:
                         self.Mesh(file, mesh, mats, mesh_name)
                 else:
-                    print "  instance %s"%(mesh_name)
+                    Lux.Log("  instance %s"%(mesh_name))
                     if motion:
                         file.write("\tMotionInstance \"%s\" 0.0 1.0 \"%s\"\n"%(mesh_name, obj.getName()+"_motion"))
                     else:
@@ -1211,7 +1211,7 @@ class Lux:
             mesh_optimizing = Lux.Property(self.scene, "mesh_optimizing", True).get()
             mesh = Blender.Mesh.New('')
             for [obj, matrix] in self.portals:
-                print "portal: %s"%(obj.getName())
+                Lux.Log("portal: %s"%(obj.getName()))
                 file.write("\tTransform [%s %s %s %s  %s %s %s %s  %s %s %s %s  %s %s %s %s]\n"\
                     %(matrix[0][0], matrix[0][1], matrix[0][2], matrix[0][3],\
                       matrix[1][0], matrix[1][1], matrix[1][2], matrix[1][3],\
@@ -1231,7 +1231,7 @@ class Lux:
             for [obj, matrix] in self.lights:
                 ltype = obj.getData(mesh=1).getType() # data
                 if (ltype == Blender.Lamp.Types["Lamp"]) or (ltype == Blender.Lamp.Types["Spot"]) or (ltype == Blender.Lamp.Types["Area"]):
-                    print "light: %s"%(obj.getName())
+                    Lux.Log("light: %s"%(obj.getName()))
                     if ltype == Blender.Lamp.Types["Area"]:
                         # DH - this had gui = None
                         (str, link) = Lux.Light.Area("", "", obj, 0)
@@ -1284,7 +1284,7 @@ class Lux:
         def Volumes(self, file):
             '''exports volumes to the file'''
             for [obj, matrix] in self.volumes:
-                print "volume: %s"%(obj.getName())
+                Lux.Log("volume: %s"%(obj.getName()))
                 file.write("# Volume: %s\n"%(obj.getName()))
     
                 # trickery to obtain objectspace boundingbox AABB
@@ -1314,8 +1314,6 @@ class Lux:
                     file.write("%s"%link)
                     file.write("\n\n")
             
-    
-    
     class Launch:
         '''
         LAUNCH LuxRender AND RENDER CURRENT SCENE
@@ -1388,7 +1386,7 @@ class Lux:
                     cmd = "(nice -n %d \"%s\" --threads=%d \"%s\")&"%(luxnice, ic, threads, filename)
         
             # call external shell script to start Lux    
-            print("Running Luxrender:\n"+cmd)
+            Lux.Log("Running Luxrender: "+cmd)
             os.system(cmd)
         
         @staticmethod
@@ -1424,7 +1422,7 @@ class Lux:
                     cmd = "(\"%s\" --threads=%d \"%s\")&"%(ic, threads, filename)
         
             # call external shell script to start Lux    
-            print("Running Luxrender:\n"+cmd)
+            Lux.Log("Running Luxrender: "+cmd)
         
             import subprocess
             p = subprocess.Popen(cmd, stdin=subprocess.PIPE)
@@ -1457,7 +1455,7 @@ class Lux:
                 else:
                     cmd = "start /b /WAIT \"\" \"%s\" \"%s\" --threads=%d"%(ic, filename, threads)        
                 # call external shell script to start Lux    
-                #print("Running Luxrender:\n"+cmd)
+                #Lux.Log("Running Luxrender: "+cmd)
                 #os.spawnv(os.P_WAIT, cmd, 0)
                 os.system(cmd)
         
@@ -1641,14 +1639,15 @@ class Lux:
         def __init__(self, obj, name, default):
             self.obj = obj
             self.name = name
-    #        if len(name)>31: print "Warning: property-name \"%s\" has more than 31 chars."%(name)
+            #if len(name)>31: Lux.Log("Warning: property-name \"%s\" has more than 31 chars."%(name))
             self.hashmode = len(name)>31   # activate hash mode for keynames longer 31 chars (limited by blenders ID-prop)
             self.hashname = "__hash:%x"%(name.__hash__())
             self.default = default
             
         def parseassignment(self, s, name):
             l = s.split(" = ")
-            if l[0] != name: print "Warning: property-name \"%s\" has hash-collide with \"%s\"."%(name, l[0])
+            if l[0] != name:
+                Lux.Log("Warning: property-name \"%s\" has hash-collide with \"%s\"."%(name, l[0]), popup = True)
             return l[1]
         
         def createassignment(self, name, value):
@@ -2010,7 +2009,7 @@ class Lux:
                     Lux.SceneElements.Accelerator()
                     Lux.LB_gui.newline("MATERIALS:", 10)
                     r = Lux.LB_gui.getRect(2,1)
-                    Blender.Draw.Button("convert all blender materials", 0, r[0], r[1], r[2], r[3], "convert all blender-materials to lux-materials", lambda e,v:convertAllMaterials())
+                    Blender.Draw.Button("convert all blender materials", 0, r[0], r[1], r[2], r[3], "convert all blender-materials to lux-materials", lambda e,v:Lux.Converter.convertAllMaterials())
                     Lux.LB_gui.newline("SETTINGS:", 10)
                     r = Lux.LB_gui.getRect(2,1)
                     Blender.Draw.Button("save defaults", 0, r[0], r[1], r[2], r[3], "save current settings as defaults", lambda e,v:Lux.Presets.saveluxdefaults())
@@ -2043,8 +2042,8 @@ class Lux:
             Lux.GUI.LB_scrollbar.height = Lux.GUI.LB_scrollbar.getTop() - y
             Lux.GUI.LB_scrollbar.draw()
         
-        mouse_xr=1 
-        mouse_yr=1 
+        #mouse_xr=1 
+        #mouse_yr=1 
         
         activeObject = None
         activeEvent = None
@@ -2062,6 +2061,7 @@ class Lux:
             if evt == Blender.Draw.ESCKEY or evt == Blender.Draw.QKEY:
                 stop = Blender.Draw.PupMenu("OK?%t|Cancel export %x1")
                 if stop == 1:
+                    Lux.Log('Quitting')
                     Blender.Draw.Exit()
                     return
             Lux.scene = Blender.Scene.GetCurrent()
@@ -2111,20 +2111,20 @@ class Lux:
                   
         
             # Handle icon button events - note - radiance - this is a work in progress! :)
-        #    if evt == Blender.Draw.LEFTMOUSE and not val: 
-        #           size=Blender.BGL.Buffer(Blender.BGL.GL_FLOAT, 4) 
-        #           Blender.BGL.glGetFloatv(Blender.BGL.GL_SCISSOR_BOX, size) 
-        #            size= [int(s) for s in size] 
-        #        mx, my = Blender.Window.GetMouseCoords()
-        #        mousex = mx - size[0]
-        #        print "mousex = %i"%mousex
-        #        #if((mousex > 2) and (mousex < 25)):
-        #            # Mouse clicked in left button bar
-        #        if((mousex > 399) and (mousex < 418)):
-        #            # Mouse clicked in right button bar
-        #            mousey = my - size[1] - Lux.GUI.LB_scrollbar.position
-        #            print "mousey = %i"%mousey
-                    
+            #if evt == Blender.Draw.LEFTMOUSE and not val: 
+            #       size=Blender.BGL.Buffer(Blender.BGL.GL_FLOAT, 4) 
+            #       Blender.BGL.glGetFloatv(Blender.BGL.GL_SCISSOR_BOX, size) 
+            #        size= [int(s) for s in size] 
+            #    mx, my = Blender.Window.GetMouseCoords()
+            #    mousex = mx - size[0]
+            #    Lux.Log("mousex = %i"%mousex)
+            #    #if((mousex > 2) and (mousex < 25)):
+            #        # Mouse clicked in left button bar
+            #    if((mousex > 399) and (mousex < 418)):
+            #        # Mouse clicked in right button bar
+            #        mousey = my - size[1] - Lux.GUI.LB_scrollbar.position
+            #        Lux.Log("mousey = %i"%mousey)
+                   
         @staticmethod
         def luxButtonEvt(evt):  # function that handles button events
             Lux.scene = Blender.Scene.GetCurrent()
@@ -2147,7 +2147,7 @@ class Lux:
                         Lux.Property(Lux.scene, "preset", "").set(name)
                         Blender.Draw.Redraw()
             if evt == Lux.Events.DeletePreset:
-                presets = getScenePresets().keys()
+                presets = Lux.Presets.getScenePresets().keys()
                 presets.sort()
                 presetsstr = "delete preset: %t"
                 for i, v in enumerate(presets): presetsstr += "|%s %%x%d"%(v, i)
@@ -2158,7 +2158,7 @@ class Lux:
         
             if evt == Lux.Events.LoadMaterial:
                 if Lux.Materials.activemat:
-                    mats = getMaterialPresets()
+                    mats = Lux.Presets.getMaterialPresets()
                     matskeys = mats.keys()
                     matskeys.sort()
                     matsstr = "load preset: %t"
@@ -2167,7 +2167,7 @@ class Lux:
                     if r >= 0:
                         name = matskeys[r]
                         try:
-        #                    for k,v in mats[name].items(): Lux.Materials.activemat.properties['luxblend'][k] = v
+                            #for k,v in mats[name].items(): Lux.Materials.activemat.properties['luxblend'][k] = v
                             for k,v in mats[name].items(): Lux.Property(Lux.Materials.activemat, k, None).set(v)
                         except: pass
                         Blender.Draw.Redraw()
@@ -2178,23 +2178,23 @@ class Lux:
                         Lux.usedproperties = {}
                         Lux.usedpropertiesfilterobj = Lux.Materials.activemat
                         Lux.Materials.Material(Lux.Materials.activemat)
-                        saveMaterialPreset(name, Lux.usedproperties.copy())
+                        Lux.Presets.saveMaterialPreset(name, Lux.usedproperties.copy())
                         Blender.Draw.Redraw()
             if evt == Lux.Events.DeleteMaterial:
-                matskeys = getMaterialPresets().keys()
+                matskeys = Lux.Presets.getMaterialPresets().keys()
                 matskeys.sort()
                 matsstr = "delete preset: %t"
                 for i, v in enumerate(matskeys): matsstr += "|%s %%x%d"%(v, i)
                 r = Blender.Draw.PupMenu(matsstr, 20)
                 if r >= 0:
-                    saveMaterialPreset(matskeys[r], None)
+                    Lux.Presets.saveMaterialPreset(matskeys[r], None)
                     Blender.Draw.Redraw()
             if evt == Lux.Events.ConvertMaterial:
-                if Lux.Materials.activemat: convertMaterial(Lux.Materials.activemat)
+                if Lux.Materials.activemat: Lux.Converter.convertMaterial(Lux.Materials.activemat)
                 Blender.Draw.Redraw()
             if evt == Lux.Events.LoadMaterial2:
                 if Lux.Materials.activemat:
-                    Blender.Window.FileSelector(lambda fn:loadMatTex(Lux.Materials.activemat, fn), "load material", Lux.Property(Lux.scene, "lux", "").get()+os.sep+".lbm")
+                    Blender.Window.FileSelector(lambda fn:Lux.Converter.loadMatTex(Lux.Materials.activemat, fn), "load material", Lux.Property(Lux.scene, "lux", "").get()+os.sep+".lbm")
             if evt == Lux.Events.SaveMaterial2:
                 if Lux.Materials.activemat:
                     Blender.Window.FileSelector(lambda fn:saveMaterial(Lux.Materials.activemat, fn), "save material", Lux.Property(Lux.scene, "lux", "").get()+os.sep+".lbm")
@@ -2215,23 +2215,23 @@ class Lux:
                 menu += "|Download from DB%x5" #not(tex) and
                 menu += "|Upload to DB%x6"
         
-        #    menu += "|%l|dump material%x99|dump clipboard%x98"
+            #menu += "|%l|dump material%x99|dump clipboard%x98"
             r = Blender.Draw.PupMenu(menu)
             if r==1:
-                Lux.clipboard = getMatTex(mat, basekey, tex)
+                Lux.clipboard = Lux.Converter.getMatTex(mat, basekey, tex)
             elif r==2: Lux.Converter.putMatTex(mat, Lux.clipboard, basekey, tex)
             elif r==3: 
                 #Lux.scene = Blender.Scene.GetCurrent()
                 if (tex):
-                    Blender.Window.FileSelector(lambda fn:loadMatTex(mat, fn, basekey, tex), "load texture", Lux.Property(Lux.scene, "lux", "").get()+os.sep+".lbt")
+                    Blender.Window.FileSelector(lambda fn:Lux.Converter.loadMatTex(mat, fn, basekey, tex), "load texture", Lux.Property(Lux.scene, "lux", "").get()+os.sep+".lbt")
                 else:
-                    Blender.Window.FileSelector(lambda fn:loadMatTex(mat, fn, basekey, tex), "load material", Lux.Property(Lux.scene, "lux", "").get()+os.sep+".lbm")
+                    Blender.Window.FileSelector(lambda fn:Lux.Converter.loadMatTex(mat, fn, basekey, tex), "load material", Lux.Property(Lux.scene, "lux", "").get()+os.sep+".lbm")
             elif r==4:
                 #Lux.scene = Blender.Scene.GetCurrent()
                 if (tex):
-                    Blender.Window.FileSelector(lambda fn:saveMatTex(mat, fn, basekey, tex), "save texture", Lux.Property(Lux.scene, "lux", "").get()+os.sep+".lbt")
+                    Blender.Window.FileSelector(lambda fn:Lux.Converter.saveMatTex(mat, fn, basekey, tex), "save texture", Lux.Property(Lux.scene, "lux", "").get()+os.sep+".lbt")
                 else:
-                    Blender.Window.FileSelector(lambda fn:saveMatTex(mat, fn, basekey, tex), "save material", Lux.Property(Lux.scene, "lux", "").get()+os.sep+".lbm")
+                    Blender.Window.FileSelector(lambda fn:Lux.Converter.saveMatTex(mat, fn, basekey, tex), "save material", Lux.Property(Lux.scene, "lux", "").get()+os.sep+".lbm")
             elif r==5:
                 if not tex:
                     id = Blender.Draw.PupStrInput("Material ID:", "", 32)
@@ -2245,11 +2245,11 @@ class Lux:
                     msg = 'OK'
                     
                 Blender.Draw.PupMenu("Upload: "+msg+".%t|OK")
-        #    elif r==99:
-        #        for k,v in mat.properties['luxblend'].convert_to_pyobject().items(): print k+"="+repr(v)
-        #    elif r==98:
-        #        for k,v in Lux.clipboard.items(): print k+"="+repr(v)
-        #    print ""
+            #elif r==99:
+            #    for k,v in mat.properties['luxblend'].convert_to_pyobject().items(): Lux.Log(k+"="+repr(v))
+            #elif r==98:
+            #    for k,v in Lux.clipboard.items(): Lux.Log(k+"="+repr(v))
+            #Lux.Log("")
             Blender.Draw.Redraw()
                 
     class TypedControls:
@@ -2275,7 +2275,7 @@ class Lux:
                         lux.set(lux.default) # not found, so try default value
                         i = options.index(lux.get())
                     except ValueError:
-                        print "value %s not found in options list"%(lux.get())
+                        Lux.Log("ERROR: value %s not found in options list"%(lux.get()), popup = True)
                         i = 0
                 r = Lux.LB_gui.getRect(width, 1)
                 Blender.Draw.Menu(menustr, Lux.Events.LuxGui, r[0], r[1], r[2], r[3], i, hint, lambda e,v: lux.set(options[v]))
@@ -2293,7 +2293,7 @@ class Lux:
                         lux.set(lux.default) # not found, so try default value
                         i = options.index(lux.get())
                     except ValueError:
-                        print "value %s not found in options list"%(lux.get())
+                        Lux.Log("ERROR: value %s not found in options list"%(lux.get()), popup = True)
                         i = 0
                 Blender.Draw.Menu(menustr, Lux.Events.LuxGui, x, y, xx, yy, i, hint, lambda e,v: lux.set(options[v]))
             return "\n   \"string %s\" [\"%s\"]"%(name, lux.get())
@@ -2534,8 +2534,9 @@ class Lux:
                     Lux.TypedControls.Float("fov", fov, 8.0, 170.0, "fov", "camera field-of-view angle")
                     if Lux.GUI.Active: Lux.LB_gui.newline()
                     str += Lux.TypedControls.File("specfile", Lux.Property(cam, "camera.realistic.specfile", ""), "spec-file", "", 1.0)
-        #            if Lux.GUI.Active: Lux.LB_gui.newline()
-        # auto calc        str += Lux.Types.Float("filmdistance", Lux.Property(cam, "camera.realistic.filmdistance", 70.0), 0.1, 1000.0, "film-dist", "film-distance [mm]")
+                    #if Lux.GUI.Active: Lux.LB_gui.newline()
+                    # auto calc
+                    #str += Lux.Types.Float("filmdistance", Lux.Property(cam, "camera.realistic.filmdistance", 70.0), 0.1, 1000.0, "film-dist", "film-distance [mm]")
                     filmdiag = Lux.Property(cam, "camera.realistic.filmdiag", 35.0)
                     str += Lux.TypedControls.Float("filmdiag", filmdiag, 0.1, 1000.0, "film-diag", "[mm]")
                     if Lux.GUI.Active: Lux.LB_gui.newline()
@@ -2547,14 +2548,14 @@ class Lux:
                         Blender.Draw.Button("S", Lux.Events.LuxGui, Lux.LB_gui.x, Lux.LB_gui.y-Lux.LB_gui.h, Lux.LB_gui.h, Lux.LB_gui.h, "focus selected object", lambda e,v:Lux.Util.setFocus("S"))
                         Blender.Draw.Button("C", Lux.Events.LuxGui, Lux.LB_gui.x+Lux.LB_gui.h, Lux.LB_gui.y-Lux.LB_gui.h, Lux.LB_gui.h, Lux.LB_gui.h, "focus cursor", lambda e,v:Lux.Util.setFocus("C"))
                     focal = filmdiag.get()*0.001 / math.tan(fov.get() * math.pi / 360.0) / 2.0
-                    print "calculated focal length: %f mm"%(focal * 1000.0)
+                    Lux.Log("Realistic camera: calculated focal length: %f mm"%(focal * 1000.0))
                     aperture_diameter = focal / fstop.get()
-                    print "calculated aperture diameter: %f mm"%(aperture_diameter * 1000.0)
+                    Lux.Log("Realistic camera: calculated aperture diameter: %f mm"%(aperture_diameter * 1000.0))
                     str += "\n   \"float aperture_diameter\" [%f]"%(aperture_diameter*1000.0)
                     filmdistance = dofdist.get() * focal / (dofdist.get() - focal)
-                    print "calculated film distance: %f mm"%(filmdistance * 1000.0)
+                    Lux.Log("Realistic camera: calculated film distance: %f mm"%(filmdistance * 1000.0))
                     str += "\n   \"float filmdistance\" [%f]"%(filmdistance*1000.0)
-        
+                    
                 # Clipping
                 useclip = Lux.Property(cam, "useclip", "false")
                 Lux.TypedControls.Bool("useclip", useclip, "Near & Far Clipping", "Enable Camera near and far clipping options", 2.0)
@@ -2625,9 +2626,9 @@ class Lux:
         
                 # Note - radiance - this is a work in progress
                 # Flash lamp option for perspective and ortho cams
-        #        if camtype.get() in ["perspective", "orthographic"]:
-        #            useflash = Lux.Property(cam, "useflash", "false")
-        #            Lux.Types.Bool("useflash", useflash, "Flash Lamp", "Enable Camera mounted flash lamp options", 2.0)
+                #if camtype.get() in ["perspective", "orthographic"]:
+                #    useflash = Lux.Property(cam, "useflash", "false")
+                #    Lux.Types.Bool("useflash", useflash, "Flash Lamp", "Enable Camera mounted flash lamp options", 2.0)
         
                 # Motion Blur Options (common to all cameras)
                 usemblur = Lux.Property(cam, "usemblur", "false")
@@ -2702,7 +2703,8 @@ class Lux:
                         # render region option
                         if context.borderRender:
                             (x1,y1,x2,y2) = context.border
-                            if (x1==x2) and (y1==y2): print "WARNING: empty render-region, use SHIFT-B to set render region in Blender."
+                            if (x1==x2) and (y1==y2):
+                                Lux.Log("WARNING: empty render-region, use SHIFT-B to set render region in Blender.", popup = True)
                             str += "\n   \"integer xresolution\" [%d] \n   \"integer yresolution\" [%d]"%(Lux.Attribute(context, "sizeX").get()*scale/100*(x2-x1), Lux.Attribute(context, "sizeY").get()*scale/100*(y2-y1))
                         else:
                             str += "\n   \"integer xresolution\" [%d] \n   \"integer yresolution\" [%d]"%(Lux.Attribute(context, "sizeX").get()*scale/100, Lux.Attribute(context, "sizeY").get()*scale/100)
@@ -2946,7 +2948,7 @@ class Lux:
                             str += "\n   \"float B\" [%f]"%(B)
                             str += "\n   \"float C\" [%f]"%(C)
                         elif(optmode.get() == "preset"):
-                            print "not implemented"
+                            print("not implemented")
                         else:
                             str += Lux.TypedControls.Float("B", Lux.Property(Lux.scene, "pixelfilter.mitchell.B", 0.3333), 0.0, 1.0, "B", "Specify the shape of the Mitchell filter. Often best result is when B + 2C = 1", 0.75)
                             str += Lux.TypedControls.Float("C", Lux.Property(Lux.scene, "pixelfilter.mitchell.C", 0.3333), 0.0, 1.0, "C", "Specify the shape of the Mitchell filter. Often best result is when B + 2C = 1", 0.75)
@@ -3216,8 +3218,7 @@ class Lux:
                             if Lux.GUI.Active:
                                 Lux.LB_gui.newline(); r = Lux.LB_gui.getRect(2,1); Blender.BGL.glRasterPos2i(r[0],r[1]+5) 
                                 Blender.Draw.Text("create a blender Sun Lamp")
-        
-        
+                    
                     str += "\n"
                 if Lux.GUI.Active: Lux.LB_gui.newline("GLOBAL:", 8, 0, None, [0.75,0.5,0.25])
                 Lux.TypedControls.Float("scale", Lux.Property(Lux.scene, "global.scale", 1.0), 0.0, 10.0, "scale", "global world scale")
@@ -3260,8 +3261,8 @@ class Lux:
                 lp.set(Blender.sys.dirname(lp.get())+os.sep)
                 Lux.TypedControls.Path("LUX dir", lp, "lux binary dir", "Lux installation path", 2.0)
         
-        #        Lux.Types.File("GUI filename", Lux.Property(Lux.scene, "lux", ""), "lux-file", "filename and path of the lux GUI executable", 2.0)
-        #        Lux.Types.File("Console filename", Lux.Property(Lux.scene, "luxconsole", ""), "lux-file-console", "filename and path of the lux console executable", 2.0)
+                #Lux.Types.File("GUI filename", Lux.Property(Lux.scene, "lux", ""), "lux-file", "filename and path of the lux GUI executable", 2.0)
+                #Lux.Types.File("Console filename", Lux.Property(Lux.scene, "luxconsole", ""), "lux-file-console", "filename and path of the lux console executable", 2.0)
                 if Lux.GUI.Active: Lux.LB_gui.newline()
                 Lux.TypedControls.File("datadir", Lux.Property(Lux.scene, "datadir", ""), "default out dir", "default.lxs save path", 2.0)
         
@@ -3321,7 +3322,7 @@ class Lux:
             level = matlevel + texlevel
             keyname = "%s:%s"%(parentkey, name)
             texname = "%s:%s"%(mat.getName(), keyname)
-        #    if Lux.GUI.Active: Lux.LB_gui.newline(caption+":", 0, level)
+            #if Lux.GUI.Active: Lux.LB_gui.newline(caption+":", 0, level)
             if(lightsource == 0):
                 if texlevel == 0: texture = Lux.Property(mat, keyname+".texture", "imagemap")
                 else: texture = Lux.Property(mat, keyname+".texture", "constant")
@@ -3359,12 +3360,12 @@ class Lux:
                 value = Lux.Property(mat, keyname+".value", default)
                 if type == "float": Lux.TypedControls.Float("value", value, min, max, "", "", 1.1)
                 elif type == "color": Lux.TypedControls.RGB("value", value, max, "", "", 1.1)
-        # direct version
+                # direct version
                 if type == "color": return ("", " \"%s %s\" [%s]"%(type, name, value.getRGC()))
                 return ("", " \"%s %s\" [%s]"%(type, name, value.get()))
-        # indirect version
-        #        if type == "color": str += " \"%s value\" [%s]"%(type, value.getRGC())
-        #        else: str += " \"%s value\" [%s]"%(type, value.get())
+                # indirect version
+                #if type == "color": str += " \"%s value\" [%s]"%(type, value.getRGC())
+                #else: str += " \"%s value\" [%s]"%(type, value.get())
         
             if texture.get() == "blackbody":
                 if Lux.GUI.Active:
@@ -3748,9 +3749,7 @@ class Lux:
                 str = s + str + l
         
                 str += Lux.Mapping.Mapping3D(keyname, mat, level+1)
-        
-        
-        
+            
             return (str+"\n", " \"texture %s\" [\"%s\"]"%(name, texname))
         
         #was luxSpectrumTexture
@@ -3841,7 +3840,7 @@ class Lux:
         
             if(value.get() == None): value.set(0.002)
         
-        #    link = Lux.Types.Float(name, value, min, max, "", hint, 2.0)
+            #link = Lux.Types.Float(name, value, min, max, "", hint, 2.0)
             if Lux.GUI.Active:
                 r = Lux.LB_gui.getRect(2.0, 1)
                 Blender.Draw.Number("", Lux.Events.LuxGui, r[0], r[1], r[2], r[3], float(1.0/value.getFloat()), 1.0, 1000000.0, hint, lambda e,v: value.set(1.0/v))
@@ -3988,9 +3987,9 @@ class Lux:
             str = ""
             if mat:
                 if Lux.Property(mat, "type", "").get()=="": # lux material not defined yet
-                    print "Blender material \"%s\" has no lux material definition, converting..."%(mat.getName())
+                    Lux.Log("Blender material \"%s\" has no lux material definition, converting..."%(mat.getName()))
                     try:
-                        convertMaterial(mat) # try converting the blender material to a lux material
+                        Lux.Converter.convertMaterial(mat) # try converting the blender material to a lux material
                     except: pass
                 (str, link) = Lux.Materials.MaterialBlock("", "", "", mat, 0)
                 if Lux.Property(mat, "type", "matte").get() != "light":
@@ -4430,7 +4429,7 @@ class Lux:
             if Lux.GUI.Active:
                 if name != "": Lux.LB_gui.newline(name+":", 10, level)
                 else: Lux.LB_gui.newline("color:", 0, level+1)
-        #    if Lux.GUI.Active: Lux.LB_gui.newline("", 10, level)
+            #if Lux.GUI.Active: Lux.LB_gui.newline("", 10, level)
             (str,link) = Lux.Textures.LightSpectrumTexture("L", kn+"light", "1.0 1.0 1.0", 1.0, "Spectrum", "", mat, level+1)
             if Lux.GUI.Active: Lux.LB_gui.newline("")
             link += Lux.TypedControls.Float("gain", Lux.Property(mat, kn+"light.gain", 1.0), 0.0, 100.0, "gain", "Gain/scale multiplier")
@@ -4462,7 +4461,7 @@ class Lux:
             if Lux.GUI.Active:
                 if name != "": Lux.LB_gui.newline(name+":", 10, level)
                 else: Lux.LB_gui.newline("color:", 0, level+1)
-        #    if Lux.GUI.Active: Lux.LB_gui.newline("", 10, level)
+            #if Lux.GUI.Active: Lux.LB_gui.newline("", 10, level)
             (str,link) = Lux.Textures.LightSpectrumTexture("L", kn+"light", "1.0 1.0 1.0", 1.0, "Spectrum", "", mat, level+1)
             if Lux.GUI.Active: Lux.LB_gui.newline("")
             link += Lux.TypedControls.Float("gain", Lux.Property(mat, kn+"light.gain", 1.0), 0.0, 100.0, "gain", "Gain/scale multiplier")
@@ -4480,18 +4479,21 @@ class Lux:
             return (str, link)
         
     class Preview:
+        @staticmethod
         def Sphereset(mat, kn, state):
             if state=="true":
                 Lux.Property(mat, kn+"prev_sphere", "true").set("true")
                 Lux.Property(mat, kn+"prev_plane", "false").set("false")
                 Lux.Property(mat, kn+"prev_torus", "false").set("false")
         
+        @staticmethod
         def Planeset(mat, kn, state):
             if state=="true":
                 Lux.Property(mat, kn+"prev_sphere", "true").set("false")
                 Lux.Property(mat, kn+"prev_plane", "false").set("true")
                 Lux.Property(mat, kn+"prev_torus", "false").set("false")
         
+        @staticmethod
         def Torusset(mat, kn, state):
             if state=="true":
                 Lux.Property(mat, kn+"prev_sphere", "true").set("false")
@@ -4500,7 +4502,7 @@ class Lux:
         
         @staticmethod
         def Update(mat, kn, defLarge, defType, texName, name, level):
-            #print "%s %s %s %s %s %s %s" % (mat, kn, defLarge, defType, texName, name, level)
+            #Lux.Log("%s %s %s %s %s %s %s" % (mat, kn, defLarge, defType, texName, name, level))
             
             Blender.Window.WaitCursor(True)
             Lux.scene = Blender.Scene.GetCurrent()
@@ -4516,7 +4518,7 @@ class Lux:
         
             thumbbuf = thumbres*thumbres*3
         
-        #        consolebin = Lux.Property(Lux.scene, "luxconsole", "").get()
+            #consolebin = Lux.Property(Lux.scene, "luxconsole", "").get()
             consolebin = Blender.sys.dirname(Lux.Property(Lux.scene, "lux", "").get()) + os.sep + "luxconsole"
             if osys.platform == "win32": consolebin = consolebin + ".exe"
         
@@ -4577,7 +4579,7 @@ class Lux:
             p.stdin.write('TransformBegin\n')
             p.stdin.write('Scale %f %f %f\n'%(obw,obw,obw))
             if texName:
-                print "texture "+texName+"  "+name
+                Lux.Log("texture "+texName+"  "+name)
                 # DH - this had gui = None
                 (str, link) = Lux.Textures.Texture(texName, name, "color", "1.0 1.0 1.0", None, None, "", "", mat, 0, level)
                 link = link.replace(" "+texName+"\"", " Kd\"") # swap texture name to "Kd"
@@ -4629,7 +4631,7 @@ class Lux:
             data = p.communicate()[0]
             p.stdin.close()
             if(len(data) < thumbbuf): 
-                print "error on preview"
+                Lux.Log("Error: Preview data corrupt", popup = True)
                 return
             image = Lux.Image()
             image.decodeLuxConsole(thumbres, thumbres, data)
@@ -4679,9 +4681,9 @@ class Lux:
                         prev_torus = Lux.Property(mat, kn+"prev_torus", "true")
         
                     # preview mode toggle buttons
-                    Blender.Draw.Toggle("S", Lux.Events.LuxGui, r[0]-108, r[1]+100+voffset, 22, 22, prev_sphere.get()=="true", "Draw Sphere", lambda e,v: Preview_Sphereset(mat, kn, ["false","true"][bool(v)]))
-                    Blender.Draw.Toggle("P", Lux.Events.LuxGui, r[0]-108, r[1]+74+voffset, 22, 22, prev_plane.get()=="true", "Draw 2D Plane", lambda e,v: Preview_Planeset(mat, kn, ["false","true"][bool(v)]))
-                    Blender.Draw.Toggle("T", Lux.Events.LuxGui, r[0]-108, r[1]+48+voffset, 22, 22, prev_torus.get()=="true", "Draw Torus", lambda e,v: Preview_Torusset(mat, kn, ["false","true"][bool(v)]))
+                    Blender.Draw.Toggle("S", Lux.Events.LuxGui, r[0]-108, r[1]+100+voffset, 22, 22, prev_sphere.get()=="true", "Draw Sphere", lambda e,v: Lux.Preview.Sphereset(mat, kn, ["false","true"][bool(v)]))
+                    Blender.Draw.Toggle("P", Lux.Events.LuxGui, r[0]-108, r[1]+74+voffset, 22, 22, prev_plane.get()=="true", "Draw 2D Plane", lambda e,v: Lux.Preview.Planeset(mat, kn, ["false","true"][bool(v)]))
+                    Blender.Draw.Toggle("T", Lux.Events.LuxGui, r[0]-108, r[1]+48+voffset, 22, 22, prev_torus.get()=="true", "Draw Torus", lambda e,v: Lux.Preview.Torusset(mat, kn, ["false","true"][bool(v)]))
         
                     # Zoom toggle
                     zoom = Lux.Property(mat, kn+"prev_zoom", "false")
@@ -4714,9 +4716,8 @@ class Lux:
         
     class Converter:
         
-        
-        
         # convert a Blender material to lux material
+        @staticmethod
         def convertMaterial(mat):
             def dot(str):
                 if str != "": return str+"."
@@ -4738,7 +4739,7 @@ class Lux:
                     Lux.Property(mat, dot(name)+"udelta", 0.0).set(tex.ofs[0]+0.5*(1.0-tex.size[0]))
                     Lux.Property(mat, dot(name)+"vdelta", 0.0).set(-tex.ofs[1]-0.5*(1.0-tex.size[1]))
                     if tex.mapping != Texture.Mappings["FLAT"]:
-                        print "Material Conversion Warning: for UV-texture-input only FLAT mapping is supported\n" 
+                        Lux.Log("Material Conversion Warning: for UV-texture-input only FLAT mapping is supported", popup = True)
                 else:
                     if tex.mapping == Texture.Mappings["FLAT"]:
                         Lux.Property(mat, dot(name)+"mapping","").set("planar")
@@ -4770,7 +4771,7 @@ class Lux:
                     Lux.Property(mat, dot(name)+"wrap", "").set(mapConstDict(texture.extend, Texture.ExtendModes, {"REPEAT":"repeat", "EXTEND":"clamp", "CLIP":"black"}, ""))
                 else:
                     if tex.texco != Texture.TexCo["GLOB"]:
-                        print "Material Conversion Warning: procedural textures supports global mapping only\n"
+                        Lux.Log("Material Conversion Warning: procedural textures supports global mapping only", popup = True)
                     noiseDict = {"BLENDER":"blender_original", "CELLNOISE":"cell_noise", "IMPROVEDPERLIN":"improved_perlin", "PERLIN":"original_perlin", "VORONOICRACKLE":"voronoi_crackle", "VORONOIF1":"voronoi_f1", "VORONOIF2":"voronoi_f2", "VORONOIF2F1":"voronoi_f2f1", "VORONOIF3":"voronoi_f3", "VORONOIF4":"voronoi_f4"}
                     Lux.Property(mat, dot(name)+"bright", 1.0).set(texture.brightness)
                     Lux.Property(mat, dot(name)+"contrast", 1.0).set(texture.contrast)
@@ -4848,7 +4849,7 @@ class Lux:
                         Lux.Property(mat, dot(name)+"type", "").set(mapConstDict(texture.stype, Texture.STypes, {"BLN_LIN":"lin", "BLN_QUAD":"quad", "BLN_EASE":"ease", "BLN_DIAG":"diag", "BLN_SPHERE":"sphere", "BLN_HALO":"halo", "BLN_RADIAL":"radial"}, ""))
                         Lux.Property(mat, dot(name)+"flipXY", "false").set({0:"false", 1:"true"}[texture.rot90])
                     else:
-                        print "Material Conversion Warning: SORRY, this procedural texture isn\'t implemented in conversion\n"
+                        Lux.Log("Material Conversion Warning: SORRY, procedural texture '%s' isn't implemented in conversion" % texture.type, popup = True)
         
             def convertTextures(basename, texs, type="float", channel="col", val=1.0):
                 tex = texs.pop()
@@ -4894,7 +4895,6 @@ class Lux:
                     else: Lux.Property(mat, ddot(name)+"tex1.value", 1.0).set(val1)
                     if type == "col": Lux.Property(mat, ddot(name)+"tex2.value", "1.0 1.0 1.0").setRGB(val2)
                     else: Lux.Property(mat, ddot(name)+"tex2.value", 1.0).set(val2)
-        
         
             def convertDiffuseTexture(name):
                 texs = []
@@ -4967,7 +4967,7 @@ class Lux:
                 convertMirrorTexture(name+":Kr")
                 convertDiffuseTexture(name+":Kt")
                 convertBumpTexture(name)
-            print "convert Blender material \"%s\" to lux material"%(mat.name)
+            Lux.Log("convert Blender material \"%s\" to lux material"%(mat.name))
             mat.properties['luxblend'] = {}
             if mat.emit > 0.0001:
                 Lux.Property(mat, "type", "").set("light")
@@ -4975,7 +4975,7 @@ class Lux:
                 Lux.Property(mat, "light.gain", 1.0).set(mat.emit)
                 return
             alpha = mat.alpha
-            if not(mat.mode & Material.Modes.RAYTRANSP): alpha = 1.0
+            if not(mat.mode & Blender.Material.Modes.RAYTRANSP): alpha = 1.0
             alpha0name, alpha1name = "", ""
             if (alpha > 0.0) and (alpha < 1.0):
                 Lux.Property(mat, "type", "").set("mix")
@@ -4983,7 +4983,7 @@ class Lux:
                 alpha0name, alpha1name = "mat2", "mat1"
             if alpha > 0.0:
                 mirror = mat.rayMirr
-                if not(mat.mode & Material.Modes.RAYMIRROR): mirror = 0.0
+                if not(mat.mode & Blender.Material.Modes.RAYMIRROR): mirror = 0.0
                 mirror0name, mirror1name = alpha1name, alpha1name
                 if (mirror > 0.0) and (mirror < 1.0):
                     Lux.Property(mat, dot(alpha1name)+"type", "").set("mix")
@@ -4999,11 +4999,10 @@ class Lux:
                 if mat.glossTra < 1.0: makeRoughnessGlass(alpha0name, 1.0-mat.glossTra**2)
                 else: makeGlass(alpha0name)
         
+        @staticmethod
         def convertAllMaterials():
-            for mat in Material.Get(): convertMaterial(mat)
-            
-        ### MatTex functions ###
-        ### MatTex : is a dictionary of material or texture properties
+            for mat in Material.Get(): Lux.Converter.convertMaterial(mat)
+        
         @staticmethod
         def getMatTex(mat, basekey='', tex=False):
             Lux.usedproperties = {}
@@ -5022,7 +5021,7 @@ class Lux:
         @staticmethod
         def putMatTex(mat, dict, basekey='', tex=None):
             if dict and (tex!=None) and (tex ^ (dict.has_key("__type__") and (dict["__type__"]=="texture"))):
-                print "ERROR: Can't apply %s as %s"%(["texture","material"][bool(tex)],["material","texture"][bool(tex)])
+                Lux.Log("ERROR: Can't apply %s as %s"%(["texture","material"][bool(tex)],["material","texture"][bool(tex)]), popup = True)
                 return
             if dict:
                 # remove all current properties in mat that starts with basekey
@@ -5102,6 +5101,23 @@ class Lux:
             elif Lux.Converter.LBX_VERSION == '0.7':
                 return str( Lux.Converter.MatTex2dict(d, tex) ).replace("], \'", "],\n\'").replace("[","\n\t[")        
         
+        @staticmethod
+        def saveMatTex(mat, fn, basekey='', tex=False):
+            d = Lux.Converter.getMatTex(mat, basekey, tex)
+            file = open(fn, 'w')
+            file.write(Lux.Converter.MatTex2str(d, tex))
+            file.close()
+            if Lux.GUI.Active: Blender.Draw.Redraw()
+        
+        @staticmethod
+        def loadMatTex(mat, fn, basekey='', tex=None):
+            file = open(fn, 'r')
+            data = file.read()
+            file.close()
+            data = Lux.Converter.str2MatTex(data, tex)
+            Lux.Converter.putMatTex(mat, data, basekey, tex) 
+            if Lux.GUI.Active: Blender.Draw.Redraw()
+
         
         # todo: this is not absolutely save from attacks!!!
         @staticmethod
@@ -5159,7 +5175,7 @@ class Lux:
                 reason = 'Not a stored dict'
                     
                     
-            print "ERROR: string to material/texture conversion failed: %s" % reason
+            Lux.Log("ERROR: string to material/texture conversion failed: %s" % reason, popup = True)
             return None
 
             
@@ -5196,18 +5212,18 @@ class Lux:
                         data = sock.recv(1024)
                     sock.close()
                     if str.split("\n", 1)[0].find("200") < 0:
-                        print "ERROR: server error: %s"%(str.split("\n",1)[0])
+                        Lux.Log("ERROR: server error: %s"%(str.split("\n",1)[0]), popup = True)
                         return None
                     str = (str.split("\r\n\r\n")[1]).strip()
                     if (str[0]=="{") and (str[-1]=="}"):
                         return Lux.Converter.str2MatTex(str)
-                    print "ERROR: downloaded data is not a material or texture"
+                    Lux.Log("ERROR: downloaded data is not a material or texture", popup = True)
                 except:
-                    print "ERROR: download failed"
+                    Lux.Log("ERROR: download failed", popup = True)
                 finally:
                     Blender.Window.DrawProgressBar(1.0,'')
             else:
-                print "ERROR: material id is not valid"
+                Lux.Log("ERROR: material id is not valid", popup = True)
                 return None
         
         def __init__(self):
@@ -5215,9 +5231,9 @@ class Lux:
             try:
                 import socket
                 Lux.Web.WEB_Connect = True
-                print "INFO: Simple Web support available"
+                Lux.Log("INFO: Simple Web support available")
             except:
-                print "WARNING: Simple Web support not available"
+                Lux.Log("WARNING: Simple Web support not available")
                 
             try:
                 import cookielib, urllib2, xmlrpclib
@@ -5319,9 +5335,9 @@ class Lux:
                 
                 Lux.Web.XMLRPC_CookieTransport = CookieTransport
                 
-                print "INFO: Advanced Web support available"
+                Lux.Log("INFO: Advanced Web support available")
             except:
-                print "WARNING: Advanced Web support not available"
+                Lux.Log("WARNING: Advanced Web support not available")
 
         # XMLRPC Methods
         def last_error(self):
@@ -5389,39 +5405,15 @@ class Lux:
         def request_password(self):
             self.XMLRPC_password = Blender.Draw.PupStrInput("Password:", self.XMLRPC_password, 32)
 
-    #LB_Web = Web()
-
-    class Homeless:
-     
-        # DH - ORPHAN, not found in original LuxBlend
+#    class Homeless:
+#        #DH - ORPHAN, not found in original LuxBlend
 #        def luxVolume(mat, gui=None):
 #            str = ""
 #            if mat:
 #                (str, link) = Lux.Materials.MaterialBlock("", "", "", mat, 0)
 #                Lux.Property(mat, "link", "").set("".join(link))
 #            return str
-        
-        
 
-        
-        
-        def saveMatTex(mat, fn, basekey='', tex=False):
-            d = getMatTex(mat, basekey, tex)
-            file = open(fn, 'w')
-            file.write(MatTex2str(d, tex))
-            file.close()
-            if Lux.GUI.Active: Blender.Draw.Redraw()
-        
-        
-        def loadMatTex(mat, fn, basekey='', tex=None):
-            file = open(fn, 'r')
-            data = file.read()
-            file.close()
-            data = Lux.Converter.str2MatTex(data, tex)
-            Lux.Converter.putMatTex(mat, data, basekey, tex) 
-            if Lux.GUI.Active: Blender.Draw.Redraw()
-        
-        
     def __init__(self):
         ## Parse command line arguments for batch mode rendering if supplied
         #try:
@@ -5490,14 +5482,14 @@ class Lux:
         #    if opts.has_key('--lbm'):
         #        print "Load material: %s" %opts['--lbm']
         #        mat = Material.Get("Material")
-        #        if mat: loadMatTex(mat, opts['--lbm'])
+        #        if mat: Lux.Converter.loadMatTex(mat, opts['--lbm'])
         #        else:
         #            print "Error: No material with name \"Material\" found (--lbm)"; osys.exit(1)
         #            
         #    if opts.has_key('--lbt'):
         #        print "Load material: %s" %opts['--lbt']
         #        mat = Material.Get("Material")
-        #        if mat: loadMatTex(mat, opts['--lbt'], ':Kd')
+        #        if mat: Lux.Converter.loadMatTex(mat, opts['--lbt'], ':Kd')
         #        else:
         #            print "Error: No material with name \"Material\" found (--lbt)"; osys.exit(1)
         #
@@ -5505,7 +5497,7 @@ class Lux:
         #    osys.exit(0)
         #
         else:
-            print "\n\nLuxBlend CVS - UI mode\n"
+            Lux.Log("LuxBlend CVS - UI mode")
             
             Lux.LB_Presets          = Lux.Presets()
             Lux.LB_web              = Lux.Web()
@@ -5527,7 +5519,7 @@ class Lux:
                     # and re-get luxpath, so we get the path from default-settings
                     luxpath = luxpathprop.get()
                     if (luxpath is None) or (Blender.sys.exists(luxpath)<=0):
-                        print "WARNING: LuxPath \"%s\" is not valid\n"%(luxpath)
+                        Lux.Log("WARNING: LuxPath \"%s\" is not valid" % (luxpath))
                         
                         if Lux.scene:
                             r = Blender.Draw.PupMenu("Installation: Set path to the lux render software?%t|Yes%x1|No%x0|Never%x2")
@@ -5538,7 +5530,7 @@ class Lux:
                                 Lux.Presets.newluxdefaults["checkluxpath"] = False
                                 Lux.Presets.saveluxdefaults()
             else    :
-                print "Lux path check disabled\n"
+                Lux.Log("Lux path check disabled")
 
 #------------------------------------------------------------------------------ 
 # START !
