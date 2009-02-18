@@ -47,37 +47,40 @@ class Lux:
     '''Lux Export Class'''
     
     # Material stuff ?
-    dummyMat        = 2394723948
-    clayMat         = None
-    MatSaved        = False
+    dummyMat            = 2394723948
+    clayMat             = None
+    MatSaved            = False
     
     # lists
-    meshlist        = None
-    matnames        = None
+    meshlist            = None
+    matnames            = None
     
     # filenames
-    geom_filename   = None
-    geom_pfilename  = None
-    mat_filename    = None
-    mat_pfilename   = None
-    vol_filename    = None
-    vol_pfilename   = None
+    geom_filename       = None
+    geom_pfilename      = None
+    mat_filename        = None
+    mat_pfilename       = None
+    vol_filename        = None
+    vol_pfilename       = None
     
     # enabled features ('instances')
-    LB_gui          = False
-    LB_web          = False
-    LB_Presets      = None
+    LB_gui              = False
+    LB_web              = False
+    LB_Presets          = None
+    LB_Event_Handler    = None
     
     # current scene
-    scene           = None
+    scene               = None
     
     # dictionary that will hold all preview images
-    previewCache    = {}
+    previewCache        = {}
     
     @staticmethod
-    def Log(msg = '', popup = False):
+    def Log(msg = '', popup = False, fatal = False):
         print '[LuxBlend] %s' % msg
         if popup and Lux.GUI.Active: Blender.Draw.PupMenu(msg + '%t|OK%x1')
+        
+        if fatal: osys.exit(1)
     
     # Event IDs
     class Events:
@@ -91,6 +94,160 @@ class Lux:
         ConvertMaterial  = 92
         SaveMaterial2    = 91
         LoadMaterial2    = 90
+        
+        activeObject    = None
+        activeEvent     = None
+        lastEventTime   = 0
+        retriggerTime   = 5
+        
+        key_tabs = {
+            Blender.Draw.ONEKEY:     0,
+            Blender.Draw.TWOKEY:     1,
+            Blender.Draw.THREEKEY:   2,
+            Blender.Draw.FOURKEY:    3,
+            Blender.Draw.FIVEKEY:    4,
+        }
+        
+        # function that handles keyboard and mouse events
+        def keyHandler(self, evt, val):
+            if evt == Blender.Draw.ESCKEY or evt == Blender.Draw.QKEY:
+                if Blender.Draw.PupMenu("OK?%t|Cancel export %x1") == 1:
+                    Lux.Log('Quitting')
+                    Blender.Draw.Exit()
+                    return
+            Lux.scene = Blender.Scene.GetCurrent()
+            if Lux.scene:
+                if Lux.scene.objects.active != self.activeObject:
+                    self.activeObject = Lux.scene.objects.active
+                    Lux.Materials.activemat = None
+                    Blender.Window.QRedrawAll()
+            if (evt == Blender.Draw.MOUSEX) or (evt == Blender.Draw.MOUSEY): Lux.GUI.LB_scrollbar.Mouse()
+            if  evt == Blender.Draw.WHEELUPMOUSE:   Lux.GUI.LB_scrollbar.scroll(-16)
+            if  evt == Blender.Draw.WHEELDOWNMOUSE: Lux.GUI.LB_scrollbar.scroll(16)
+            if  evt == Blender.Draw.PAGEUPKEY:      Lux.GUI.LB_scrollbar.scroll(-50)
+            if  evt == Blender.Draw.PAGEDOWNKEY:    Lux.GUI.LB_scrollbar.scroll(50)
+        
+            # scroll to [T]op and [B]ottom
+            if evt == Blender.Draw.TKEY:
+                Lux.GUI.LB_scrollbar.scroll(-Lux.GUI.LB_scrollbar.position)
+            if evt == Blender.Draw.BKEY:
+                Lux.GUI.LB_scrollbar.scroll(100000)   # Some large number should be enough ?!
+        
+            # R key shortcut to launch render
+            # E key shortcut to export current scene (not render)
+            # P key shortcut to preview current material
+            # These keys need time and process-complete locks
+            if evt in [Blender.Draw.RKEY, Blender.Draw.EKEY, Blender.Draw.PKEY]:
+                if self.activeEvent == None and (Blender.sys.time() - self.lastEventTime) > self.retriggerTime:
+                    self.lastEventTime = Blender.sys.time()
+                    if evt == Blender.Draw.RKEY:
+                        self.activeEvent = 'RKEY'
+                        Lux.Launch.ExportStill(Lux.Property(Lux.scene, "default", "true").get() == "true", True)
+                        self.activeEvent = None
+                    if evt == Blender.Draw.EKEY:
+                        self.activeEvent = 'EKEY'
+                        Lux.Launch.ExportStill(Lux.Property(Lux.scene, "default", "true").get() == "true", False)
+                        self.activeEvent = None
+                    if evt == Blender.Draw.PKEY:
+                        self.activeEvent = 'PKEY'
+                        if Lux.Materials.activemat != None:
+                            Lux.Preview.Update(Lux.Materials.activemat, '', True, 0, None, None, None)
+                        self.activeEvent = None
+                
+            # Switch GUI tabs with number keys
+            if evt in self.key_tabs.keys():
+                Lux.Property(Lux.scene, "page", 0).set(self.key_tabs[evt])
+                Blender.Draw.Redraw()
+            
+            # Handle icon button events - note - radiance - this is a work in progress! :)
+            #if evt == Blender.Draw.LEFTMOUSE and not val: 
+            #       size=Blender.BGL.Buffer(Blender.BGL.GL_FLOAT, 4) 
+            #       Blender.BGL.glGetFloatv(Blender.BGL.GL_SCISSOR_BOX, size) 
+            #        size= [int(s) for s in size] 
+            #    mx, my = Blender.Window.GetMouseCoords()
+            #    mousex = mx - size[0]
+            #    Lux.Log("mousex = %i"%mousex)
+            #    #if((mousex > 2) and (mousex < 25)):
+            #        # Mouse clicked in left button bar
+            #    if((mousex > 399) and (mousex < 418)):
+            #        # Mouse clicked in right button bar
+            #        mousey = my - size[1] - Lux.GUI.LB_scrollbar.position
+            #        Lux.Log("mousey = %i"%mousey)
+                   
+
+        # function that handles button events
+        def buttonHandler(self, evt):
+            Lux.scene = Blender.Scene.GetCurrent()
+            
+            if evt == self.LuxGui:
+                Blender.Draw.Redraw()
+            if evt == self.SavePreset:
+                if Lux.scene:
+                    name = Blender.Draw.PupStrInput("preset name: ", "")
+                    if name != "":
+                        Lux.usedproperties = {}
+                        Lux.usedpropertiesfilterobj = None
+                        Lux.SceneElements.SurfaceIntegrator()
+                        Lux.SceneElements.Sampler()
+                        Lux.SceneElements.PixelFilter()
+                        # Lux.SceneElements.Film()
+                        Lux.SceneElements.Accelerator()
+                        # LuxSceneElements.Environment()
+                        Lux.Presets.saveScenePreset(name, Lux.usedproperties.copy())
+                        Lux.Property(Lux.scene, "preset", "").set(name)
+                        Blender.Draw.Redraw()
+            if evt == self.DeletePreset:
+                presets = Lux.Presets.getScenePresets().keys()
+                presets.sort()
+                presetsstr = "delete preset: %t"
+                for i, v in enumerate(presets): presetsstr += "|%s %%x%d"%(v, i)
+                r = Blender.Draw.PupMenu(presetsstr, 20)
+                if r >= 0:
+                    Lux.Presets.saveScenePreset(presets[r], None)
+                    Blender.Draw.Redraw()
+        
+            if evt == self.LoadMaterial:
+                if Lux.Materials.activemat:
+                    mats = Lux.Presets.getMaterialPresets()
+                    matskeys = mats.keys()
+                    matskeys.sort()
+                    matsstr = "load preset: %t"
+                    for i, v in enumerate(matskeys): matsstr += "|%s %%x%d"%(v, i)
+                    r = Blender.Draw.PupMenu(matsstr, 20)
+                    if r >= 0:
+                        name = matskeys[r]
+                        try:
+                            #for k,v in mats[name].items(): Lux.Materials.activemat.properties['luxblend'][k] = v
+                            for k,v in mats[name].items(): Lux.Property(Lux.Materials.activemat, k, None).set(v)
+                        except: pass
+                        Blender.Draw.Redraw()
+            if evt == self.SaveMaterial:
+                if Lux.Materials.activemat:
+                    name = Blender.Draw.PupStrInput("preset name: ", "")
+                    if name != "":
+                        Lux.usedproperties = {}
+                        Lux.usedpropertiesfilterobj = Lux.Materials.activemat
+                        Lux.Materials.Material(Lux.Materials.activemat)
+                        Lux.Presets.saveMaterialPreset(name, Lux.usedproperties.copy())
+                        Blender.Draw.Redraw()
+            if evt == self.DeleteMaterial:
+                matskeys = Lux.Presets.getMaterialPresets().keys()
+                matskeys.sort()
+                matsstr = "delete preset: %t"
+                for i, v in enumerate(matskeys): matsstr += "|%s %%x%d"%(v, i)
+                r = Blender.Draw.PupMenu(matsstr, 20)
+                if r >= 0:
+                    Lux.Presets.saveMaterialPreset(matskeys[r], None)
+                    Blender.Draw.Redraw()
+            if evt == self.ConvertMaterial:
+                if Lux.Materials.activemat: Lux.Converter.convertMaterial(Lux.Materials.activemat)
+                Blender.Draw.Redraw()
+            if evt == self.LoadMaterial2:
+                if Lux.Materials.activemat:
+                    Blender.Window.FileSelector(lambda fn:Lux.Converter.loadMatTex(Lux.Materials.activemat, fn), "load material", Lux.Property(Lux.scene, "lux", "").get()+os.sep+".lbm")
+            if evt == self.SaveMaterial2:
+                if Lux.Materials.activemat:
+                    Blender.Window.FileSelector(lambda fn:Lux.Converter.saveMatTex(Lux.Materials.activemat, fn), "save material", Lux.Property(Lux.scene, "lux", "").get()+os.sep+".lbm")
 
     # Property lists
     usedproperties = {} # variable to collect used properties for storing presets
@@ -395,11 +552,8 @@ class Lux:
         def getScenePresets():
             presets = Lux.Presets.getPresets('luxblend_presets').copy()
             
-            # DH - reenable
-            return presets
-        
             # radiance's hardcoded render presets:
-            presets = presets.update({
+            presets.update({
                 '1 Preview - Direct Lighting': {
                     'film.displayinterval': 4,
                     'haltspp': 0,
@@ -1443,8 +1597,8 @@ class Lux:
             if ostype == "darwin": ic = ic + ".app/Contents/MacOS/luxrender"
             checkluxpath = Lux.Property(Lux.scene, "checkluxpath", True).get()
             if checkluxpath:
-                if sys.exists(ic) != 1:
-                    Blender.Draw.PupMenu("Error: Lux renderer not found. Please set path on System page.%t|OK")
+                if Blender.sys.exists(ic) != 1:
+                    Lux.Log("Error: Lux renderer not found. Please set path on command line.", popup=True)
                     return        
             autothreads = Lux.Property(Lux.scene, "autothreads", "true").get()
             threads = Lux.Property(Lux.scene, "threads", 1).get()
@@ -1900,7 +2054,7 @@ class Lux:
         
         # gui main draw
         @staticmethod
-        def luxDraw():
+        def Draw():
             y = int(Lux.GUI.LB_scrollbar.getTop()) # 420
             
             Lux.scene = Blender.Scene.GetCurrent()
@@ -2045,160 +2199,6 @@ class Lux:
         #mouse_xr=1 
         #mouse_yr=1 
         
-        activeObject = None
-        activeEvent = None
-        lastEventTime = 0
-        key_tabs = {
-            Blender.Draw.ONEKEY:     0,
-            Blender.Draw.TWOKEY:     1,
-            Blender.Draw.THREEKEY:   2,
-            Blender.Draw.FOURKEY:    3,
-            Blender.Draw.FIVEKEY:    4,
-        }
-        
-        @staticmethod
-        def luxEvent(evt, val):  # function that handles keyboard and mouse events
-            if evt == Blender.Draw.ESCKEY or evt == Blender.Draw.QKEY:
-                stop = Blender.Draw.PupMenu("OK?%t|Cancel export %x1")
-                if stop == 1:
-                    Lux.Log('Quitting')
-                    Blender.Draw.Exit()
-                    return
-            Lux.scene = Blender.Scene.GetCurrent()
-            if Lux.scene:
-                if Lux.scene.objects.active != Lux.GUI.activeObject:
-                    Lux.GUI.activeObject = Lux.scene.objects.active
-                    Lux.Materials.activemat = None
-                    Blender.Window.QRedrawAll()
-            if (evt == Blender.Draw.MOUSEX) or (evt == Blender.Draw.MOUSEY): Lux.GUI.LB_scrollbar.Mouse()
-            if  evt == Blender.Draw.WHEELUPMOUSE:   Lux.GUI.LB_scrollbar.scroll(-16)
-            if  evt == Blender.Draw.WHEELDOWNMOUSE: Lux.GUI.LB_scrollbar.scroll(16)
-            if  evt == Blender.Draw.PAGEUPKEY:      Lux.GUI.LB_scrollbar.scroll(-50)
-            if  evt == Blender.Draw.PAGEDOWNKEY:    Lux.GUI.LB_scrollbar.scroll(50)
-        
-            # scroll to [T]op and [B]ottom
-            if evt == Blender.Draw.TKEY:
-                Lux.GUI.LB_scrollbar.scroll(-Lux.GUI.LB_scrollbar.position)
-            if evt == Blender.Draw.BKEY:
-                Lux.GUI.LB_scrollbar.scroll(100000)   # Some large number should be enough ?!
-        
-            # R key shortcut to launch render
-            # E key shortcut to export current scene (not render)
-            # P key shortcut to preview current material
-            # These keys need time and process-complete locks
-            if evt in [Blender.Draw.RKEY, Blender.Draw.EKEY, Blender.Draw.PKEY]:
-                if Lux.GUI.activeEvent == None and (Blender.sys.time() - Lux.GUI.lastEventTime) > 5:
-                    Lux.GUI.lastEventTime = Blender.sys.time()
-                    if evt == Blender.Draw.RKEY:
-                        Lux.GUI.activeEvent = 'RKEY'
-                        Lux.Launch.ExportStill(Lux.Property(Lux.scene, "default", "true").get() == "true", True)
-                        Lux.GUI.activeEvent = None
-                    if evt == Blender.Draw.EKEY:
-                        Lux.GUI.activeEvent = 'EKEY'
-                        Lux.Launch.ExportStill(Lux.Property(Lux.scene, "default", "true").get() == "true", False)
-                        Lux.GUI.activeEvent = None
-                    if evt == Blender.Draw.PKEY:
-                        Lux.GUI.activeEvent = 'PKEY'
-                        if Lux.Materials.activemat != None:
-                            Lux.Preview.Update(Lux.Materials.activemat, '', True, 0, None, None, None)
-                        Lux.GUI.activeEvent = None
-                
-            # Switch GUI tabs with number keys
-            if evt in Lux.GUI.key_tabs.keys():
-                Lux.Property(Lux.scene, "page", 0).set(Lux.GUI.key_tabs[evt])        
-                Lux.GUI.luxDraw()
-                Blender.Window.QRedrawAll()
-                  
-        
-            # Handle icon button events - note - radiance - this is a work in progress! :)
-            #if evt == Blender.Draw.LEFTMOUSE and not val: 
-            #       size=Blender.BGL.Buffer(Blender.BGL.GL_FLOAT, 4) 
-            #       Blender.BGL.glGetFloatv(Blender.BGL.GL_SCISSOR_BOX, size) 
-            #        size= [int(s) for s in size] 
-            #    mx, my = Blender.Window.GetMouseCoords()
-            #    mousex = mx - size[0]
-            #    Lux.Log("mousex = %i"%mousex)
-            #    #if((mousex > 2) and (mousex < 25)):
-            #        # Mouse clicked in left button bar
-            #    if((mousex > 399) and (mousex < 418)):
-            #        # Mouse clicked in right button bar
-            #        mousey = my - size[1] - Lux.GUI.LB_scrollbar.position
-            #        Lux.Log("mousey = %i"%mousey)
-                   
-        @staticmethod
-        def luxButtonEvt(evt):  # function that handles button events
-            Lux.scene = Blender.Scene.GetCurrent()
-            
-            if evt == Lux.Events.LuxGui:
-                Blender.Draw.Redraw()
-            if evt == Lux.Events.SavePreset:
-                if Lux.scene:
-                    name = Blender.Draw.PupStrInput("preset name: ", "")
-                    if name != "":
-                        Lux.usedproperties = {}
-                        Lux.usedpropertiesfilterobj = None
-                        luxSurfaceIntegrator(Lux.scene)
-                        luxSampler(Lux.scene)
-                        luxPixelFilter(Lux.scene)
-                        # Lux.SceneElements.Film()
-                        luxAccelerator(Lux.scene)
-                        # luxEnvironment(Lux.scene)
-                        saveScenePreset(name, Lux.usedproperties.copy())
-                        Lux.Property(Lux.scene, "preset", "").set(name)
-                        Blender.Draw.Redraw()
-            if evt == Lux.Events.DeletePreset:
-                presets = Lux.Presets.getScenePresets().keys()
-                presets.sort()
-                presetsstr = "delete preset: %t"
-                for i, v in enumerate(presets): presetsstr += "|%s %%x%d"%(v, i)
-                r = Blender.Draw.PupMenu(presetsstr, 20)
-                if r >= 0:
-                    saveScenePreset(presets[r], None)
-                    Blender.Draw.Redraw()
-        
-            if evt == Lux.Events.LoadMaterial:
-                if Lux.Materials.activemat:
-                    mats = Lux.Presets.getMaterialPresets()
-                    matskeys = mats.keys()
-                    matskeys.sort()
-                    matsstr = "load preset: %t"
-                    for i, v in enumerate(matskeys): matsstr += "|%s %%x%d"%(v, i)
-                    r = Blender.Draw.PupMenu(matsstr, 20)
-                    if r >= 0:
-                        name = matskeys[r]
-                        try:
-                            #for k,v in mats[name].items(): Lux.Materials.activemat.properties['luxblend'][k] = v
-                            for k,v in mats[name].items(): Lux.Property(Lux.Materials.activemat, k, None).set(v)
-                        except: pass
-                        Blender.Draw.Redraw()
-            if evt == Lux.Events.SaveMaterial:
-                if Lux.Materials.activemat:
-                    name = Blender.Draw.PupStrInput("preset name: ", "")
-                    if name != "":
-                        Lux.usedproperties = {}
-                        Lux.usedpropertiesfilterobj = Lux.Materials.activemat
-                        Lux.Materials.Material(Lux.Materials.activemat)
-                        Lux.Presets.saveMaterialPreset(name, Lux.usedproperties.copy())
-                        Blender.Draw.Redraw()
-            if evt == Lux.Events.DeleteMaterial:
-                matskeys = Lux.Presets.getMaterialPresets().keys()
-                matskeys.sort()
-                matsstr = "delete preset: %t"
-                for i, v in enumerate(matskeys): matsstr += "|%s %%x%d"%(v, i)
-                r = Blender.Draw.PupMenu(matsstr, 20)
-                if r >= 0:
-                    Lux.Presets.saveMaterialPreset(matskeys[r], None)
-                    Blender.Draw.Redraw()
-            if evt == Lux.Events.ConvertMaterial:
-                if Lux.Materials.activemat: Lux.Converter.convertMaterial(Lux.Materials.activemat)
-                Blender.Draw.Redraw()
-            if evt == Lux.Events.LoadMaterial2:
-                if Lux.Materials.activemat:
-                    Blender.Window.FileSelector(lambda fn:Lux.Converter.loadMatTex(Lux.Materials.activemat, fn), "load material", Lux.Property(Lux.scene, "lux", "").get()+os.sep+".lbm")
-            if evt == Lux.Events.SaveMaterial2:
-                if Lux.Materials.activemat:
-                    Blender.Window.FileSelector(lambda fn:saveMaterial(Lux.Materials.activemat, fn), "save material", Lux.Property(Lux.scene, "lux", "").get()+os.sep+".lbm")
-            
         @staticmethod
         def showMatTexMenu(mat, basekey='', tex=False):
             if tex: menu="Texture menu:%t"
@@ -5414,99 +5414,148 @@ class Lux:
 #                Lux.Property(mat, "link", "").set("".join(link))
 #            return str
 
+    class CLI_Args:
+        
+        is_cli      = False
+        raw_args    = None
+        args        = {}
+        
+        args_long   = ["scale=", "haltspp=", "run=", "lbm=", "lbt="]
+        args_short  = 's:e:o:t:l:'
+        
+        args_required   = {
+            '-s': 'Start frame not supplied',
+            '-e': 'End frame not supplied',
+            '-o': 'Image output path not supplied',
+            '-t': 'Temporary export path not supplied',
+            '-l': 'Path to lux binary not supplied',
+        }
+        
+        def __init__(self):
+            try:
+                batchindex = osys.argv.index('--batch')
+                self.raw_args = osys.argv[osys.argv.index('--batch')+1:]
+            except:
+                self.raw_args      = []
+                
+            if (self.raw_args != []) and (batchindex != 0):
+                self.is_cli = True
+        
+        def validate(self):
+            import getopt
+            try:
+                o, a = getopt.getopt(self.raw_args, self.args_short, self.args_long)
+            except getopt.GetoptError, er:
+                Lux.Log('CLI Error: %s'%er, fatal = True)
+                
+            for k,v in o:
+                self.args[k] = v
+            
+            for req in self.args_required.keys():
+                if req not in self.args.keys():
+                    Lux.Log('CLI Error: ' + self.args_required[req] + ' (%s)'%req, fatal=True)
+        
+        def get_long(self, arg):
+            return self.args['--%s' % arg]
+                
+        def present_long(self, arg):
+            return self.args.has_key('--%s' % arg)
+        
+        def present_long_with_value(self, arg, value):
+            return self.present_long(arg) and self.args['--%s' % arg] == value
+        
+        def get_short(self, arg):
+            return self.args['-%s' % arg]
+        
+        def present_short(self, arg):
+            return self.args.has_key('-%s' % arg)
+
     def __init__(self):
-        ## Parse command line arguments for batch mode rendering if supplied
-        #try:
-        #    batchindex = osys.argv.index('--batch')
-        #    pyargs = osys.argv[osys.argv.index('--batch')+1:]
-        #except: pyargs = []
-        #
-        if False:
-            pass
-        #if (pyargs != []) and (batchindex != 0):
-        #    print "\n\nLuxBlend CVS - BATCH mode\n"
-        #    #Lux.LB_gui = False
-        #
-        #    Lux.scene = Blender.Scene.GetCurrent()
-        #    context = scene.getRenderingContext()
-        #
-        #    luxpath = ""
-        #    import getopt
-        #    o, a = getopt.getopt(pyargs, 's:e:o:t:l:',["scale=","haltspp=","run=", "lbm=", "lbt="])
-        #
-        #    opts = {}
-        #    for k,v in o:
-        #        opts[k] = v
-        #
-        #    if (opts.has_key('--run')) and (opts['--run'] == 'false'):
-        #        print "Run: false"
-        #        Lux.Property(scene, "run", "true").set("false")
-        #    else:
-        #        Lux.Property(scene, "run", "true").set("true")
-        #
-        #    if opts.has_key('--scale'):
-        #        print "Zoom: %s" %opts['--scale']
-        #        Lux.Property(scene, "film.scale", "100 %").set(opts['--scale'])
-        #
-        #    if opts.has_key('--haltspp'):
-        #        print "haltspp: %s" %opts['--haltspp']
-        #        Lux.Property(scene, "haltspp", 0).set(int(opts['--haltspp']))
-        #
-        #    if opts.has_key('-s'):
-        #        print "Start frame: %s" %opts['-s']
-        #        context.startFrame(int(opts['-s']))
-        #    else:
-        #        print "Error: Start frame not supplied (-s)"; osys.exit(1)
-        #    if opts.has_key('-e'):
-        #        print "End frame: %s" %opts['-e']
-        #        context.endFrame(int(opts['-e']))
-        #    else:
-        #        print "Error: End frame not supplied (-e)"; osys.exit(1)
-        #    if opts.has_key('-l'):
-        #        print "Path to lux binary: %s" %opts['-l']
-        #        luxpathprop = Lux.Property(scene, "lux", "")
-        #        luxpathprop.set(opts['-l'])
-        #    else:
-        #        print "Error: path to lux binary not supplied (-l)"; osys.exit(1)    
-        #    if opts.has_key('-o'):
-        #        print "Image output path: %s" %opts['-o']
-        #        Lux.Property(scene, "overrideoutputpath", "").set(opts['-o'])
-        #    else:
-        #        print "Error: image output path not supplied (-o)"; osys.exit(1)    
-        #    if opts.has_key('-t'):
-        #        print "Temporary export path: %s" %opts['-t']
-        #        Lux.Property(scene, "datadir", "").set(opts['-t'])
-        #    else:
-        #        print "Error: Temporary export path not supplied (-t)"; osys.exit(1)            
-        #    
-        #    if opts.has_key('--lbm'):
-        #        print "Load material: %s" %opts['--lbm']
-        #        mat = Material.Get("Material")
-        #        if mat: Lux.Converter.loadMatTex(mat, opts['--lbm'])
-        #        else:
-        #            print "Error: No material with name \"Material\" found (--lbm)"; osys.exit(1)
-        #            
-        #    if opts.has_key('--lbt'):
-        #        print "Load material: %s" %opts['--lbt']
-        #        mat = Material.Get("Material")
-        #        if mat: Lux.Converter.loadMatTex(mat, opts['--lbt'], ':Kd')
-        #        else:
-        #            print "Error: No material with name \"Material\" found (--lbt)"; osys.exit(1)
-        #
-        #    Lux.Launch.ExportAnim(False, False, False) # as by zukazuka (http://www.luxrender.net/forum/viewtopic.php?f=11&t=1288)
-        #    osys.exit(0)
-        #
+        
+        Lux.LB_Presets  = Lux.Presets()
+        
+        args            = Lux.CLI_Args()
+        
+        if args.is_cli:
+            Lux.Log("LuxBlend CVS - BATCH mode")
+            
+            Lux.scene = Blender.Scene.GetCurrent()
+            context = Lux.scene.getRenderingContext()
+            luxpath = ""
+            
+            # Check for required and rogue CLI args
+            args.validate()
+            #------------------------------------------------------------------------------
+            # LONG ARGS 
+            if args.present_long_with_value('run', 'false'):
+                Lux.Log("Run: false")
+                Lux.Property(Lux.scene, "run", "true").set("false")
+            else:
+                Lux.Property(Lux.scene, "run", "true").set("true")
+        
+            if args.present_long('scale'):
+                Lux.Log("Zoom: %s" % args.get_long('scale'))
+                Lux.Property(scene, "film.scale", "100 %").set(args.get_long('scale'))
+        
+            if args.present_long('haltspp'):
+                Lux.Log("haltspp: %s" % args.get_long('haltspp'))
+                Lux.Property(Lux.scene, "haltspp", 0).set(int(args.get_long('haltspp')))
+            
+            if args.present_long('lbm'):
+                Lux.Log("Load material: %s" % args.get_long('lbm'))
+                mat = Material.Get("Material")
+                if mat:
+                    Lux.Converter.loadMatTex(mat, args.get_long('lbm'))
+                else:
+                    Lux.Log('Error: No material with name "Material" found (--lbm)', fatal = True)
+                    
+            if args.present_long('lbt'):
+                Lux.Log("Load material: %s" % args.get_long('lbt'))
+                mat = Material.Get("Material")
+                if mat:
+                    Lux.Converter.loadMatTex(mat, args.get_long('lbt'), ':Kd')
+                else:
+                    Lux.Log('Error: No material with name "Material" found (--lbt)', fatal = True)
+            
+            #------------------------------------------------------------------------------
+            # SHORT ARGS 
+            # -s
+            Lux.Log("Start frame: %s" % args.get_short('s'))
+            context.startFrame(int(args.get_short('s')))
+            
+            # -e
+            Lux.Log("End frame: %s" % args.get_short('e'))
+            context.endFrame(int(args.get_short('e')))
+            
+            # -l
+            Lux.Log("Path to lux binary: %s" % args.get_short('l'))
+            Lux.Property(Lux.scene, "lux", "").set(args.get_short('l'))
+            
+            # -o
+            Lux.Log("Image output path: %s" % args.get_short('o'))
+            Lux.Property(Lux.scene, "overrideoutputpath", "").set(args.get_short('o'))
+            
+            # -t
+            Lux.Log("Temporary export path: %s" % args.get_short('t'))
+            Lux.Property(Lux.scene, "datadir", "").set(args.get_short('t'))
+            
+            #------------------------------------------------------------------------------
+            # GO! 
+            Lux.Launch.ExportAnim(False, False, False)
+            osys.exit(0)
+        
         else:
             Lux.Log("LuxBlend CVS - UI mode")
             
-            Lux.LB_Presets          = Lux.Presets()
             Lux.LB_web              = Lux.Web()
             Lux.GUI.LB_scrollbar    = Lux.GUI.scrollbar()
+            Lux.LB_Event_Handler    = Lux.Events()
             
             Lux.scene               = Blender.Scene.GetCurrent()
             
-            Blender.Draw.Register(Lux.GUI.luxDraw, Lux.GUI.luxEvent, Lux.GUI.luxButtonEvt) # init GUI
-        
+            # init GUI
+            Blender.Draw.Register(Lux.GUI.Draw, Lux.LB_Event_Handler.keyHandler, Lux.LB_Event_Handler.buttonHandler)
+                    
             luxpathprop = Lux.Property(Lux.scene, "lux", "")
             luxpath = luxpathprop.get()
             luxrun = Lux.Property(Lux.scene, "run", True).get()
@@ -5519,7 +5568,7 @@ class Lux:
                     # and re-get luxpath, so we get the path from default-settings
                     luxpath = luxpathprop.get()
                     if (luxpath is None) or (Blender.sys.exists(luxpath)<=0):
-                        Lux.Log("WARNING: LuxPath \"%s\" is not valid" % (luxpath))
+                        Lux.Log('WARNING: LuxPath "%s" is not valid' % (luxpath))
                         
                         if Lux.scene:
                             r = Blender.Draw.PupMenu("Installation: Set path to the lux render software?%t|Yes%x1|No%x0|Never%x2")
