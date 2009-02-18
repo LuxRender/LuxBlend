@@ -35,16 +35,22 @@ Tooltip: 'Export/Render to LuxRender CVS scene format (.lxs)'
 #===============================================================================
 
 #===============================================================================
-# IMPORT FROM PYTHON AND BLENDER
+# IMPORT FROM PYTHON
 #===============================================================================
 import math, os, sys as osys, types, subprocess, types
-import Blender
+
+#===============================================================================
+# IMPORT FROM BLENDER - Aliased in case we need to swap it out in the future
+#===============================================================================
+import Blender as Blender_API
 
 #===============================================================================
 # Lux Class
 #===============================================================================
 class Lux:
     '''Lux Export Class'''
+    
+    Version             = 'LuxBlend CVS'
     
     # Material stuff ?
     dummyMat            = 2394723948
@@ -78,7 +84,7 @@ class Lux:
     @staticmethod
     def Log(msg = '', popup = False, fatal = False):
         print '[LuxBlend] %s' % msg
-        if popup and Lux.GUI.Active: Blender.Draw.PupMenu(msg + '%t|OK%x1')
+        if popup and Lux.GUI.Active: Blender_API.Draw.PupMenu(msg + '%t|OK%x1')
         
         if fatal: osys.exit(1)
     
@@ -101,54 +107,54 @@ class Lux:
         retriggerTime   = 5
         
         key_tabs = {
-            Blender.Draw.ONEKEY:     0,
-            Blender.Draw.TWOKEY:     1,
-            Blender.Draw.THREEKEY:   2,
-            Blender.Draw.FOURKEY:    3,
-            Blender.Draw.FIVEKEY:    4,
+            Blender_API.Draw.ONEKEY:     0,
+            Blender_API.Draw.TWOKEY:     1,
+            Blender_API.Draw.THREEKEY:   2,
+            Blender_API.Draw.FOURKEY:    3,
+            Blender_API.Draw.FIVEKEY:    4,
         }
         
         # function that handles keyboard and mouse events
         def keyHandler(self, evt, val):
-            if evt == Blender.Draw.ESCKEY or evt == Blender.Draw.QKEY:
-                if Blender.Draw.PupMenu("OK?%t|Cancel export %x1") == 1:
+            if evt == Blender_API.Draw.ESCKEY or evt == Blender_API.Draw.QKEY:
+                if Blender_API.Draw.PupMenu("OK?%t|Cancel export %x1") == 1:
                     Lux.Log('Quitting')
-                    Blender.Draw.Exit()
+                    Blender_API.Draw.Exit()
                     return
-            Lux.scene = Blender.Scene.GetCurrent()
+            Lux.scene = Blender_API.Scene.GetCurrent()
             if Lux.scene:
                 if Lux.scene.objects.active != self.activeObject:
                     self.activeObject = Lux.scene.objects.active
                     Lux.Materials.activemat = None
-                    Blender.Window.QRedrawAll()
-            if (evt == Blender.Draw.MOUSEX) or (evt == Blender.Draw.MOUSEY): Lux.GUI.LB_scrollbar.Mouse()
-            if  evt == Blender.Draw.WHEELUPMOUSE:   Lux.GUI.LB_scrollbar.scroll(-16)
-            if  evt == Blender.Draw.WHEELDOWNMOUSE: Lux.GUI.LB_scrollbar.scroll(16)
-            if  evt == Blender.Draw.PAGEUPKEY:      Lux.GUI.LB_scrollbar.scroll(-50)
-            if  evt == Blender.Draw.PAGEDOWNKEY:    Lux.GUI.LB_scrollbar.scroll(50)
+                    Blender_API.Window.QRedrawAll()
+            if (evt == Blender_API.Draw.MOUSEX) or (evt == Blender_API.Draw.MOUSEY): Lux.GUI.LB_scrollbar.Mouse()
+            if  evt == Blender_API.Draw.WHEELUPMOUSE:   Lux.GUI.LB_scrollbar.scroll(-16)
+            if  evt == Blender_API.Draw.WHEELDOWNMOUSE: Lux.GUI.LB_scrollbar.scroll(16)
+            if  evt == Blender_API.Draw.PAGEUPKEY:      Lux.GUI.LB_scrollbar.scroll(-50)
+            if  evt == Blender_API.Draw.PAGEDOWNKEY:    Lux.GUI.LB_scrollbar.scroll(50)
         
             # scroll to [T]op and [B]ottom
-            if evt == Blender.Draw.TKEY:
+            if evt == Blender_API.Draw.TKEY:
                 Lux.GUI.LB_scrollbar.scroll(-Lux.GUI.LB_scrollbar.position)
-            if evt == Blender.Draw.BKEY:
+            if evt == Blender_API.Draw.BKEY:
                 Lux.GUI.LB_scrollbar.scroll(100000)   # Some large number should be enough ?!
         
             # R key shortcut to launch render
             # E key shortcut to export current scene (not render)
             # P key shortcut to preview current material
             # These keys need time and process-complete locks
-            if evt in [Blender.Draw.RKEY, Blender.Draw.EKEY, Blender.Draw.PKEY]:
-                if self.activeEvent == None and (Blender.sys.time() - self.lastEventTime) > self.retriggerTime:
-                    self.lastEventTime = Blender.sys.time()
-                    if evt == Blender.Draw.RKEY:
+            if evt in [Blender_API.Draw.RKEY, Blender_API.Draw.EKEY, Blender_API.Draw.PKEY]:
+                if self.activeEvent == None and (Blender_API.sys.time() - self.lastEventTime) > self.retriggerTime:
+                    self.lastEventTime = Blender_API.sys.time()
+                    if evt == Blender_API.Draw.RKEY:
                         self.activeEvent = 'RKEY'
                         Lux.Launch.ExportStill(Lux.Property(Lux.scene, "default", "true").get() == "true", True)
                         self.activeEvent = None
-                    if evt == Blender.Draw.EKEY:
+                    if evt == Blender_API.Draw.EKEY:
                         self.activeEvent = 'EKEY'
                         Lux.Launch.ExportStill(Lux.Property(Lux.scene, "default", "true").get() == "true", False)
                         self.activeEvent = None
-                    if evt == Blender.Draw.PKEY:
+                    if evt == Blender_API.Draw.PKEY:
                         self.activeEvent = 'PKEY'
                         if Lux.Materials.activemat != None:
                             Lux.Preview.Update(Lux.Materials.activemat, '', True, 0, None, None, None)
@@ -157,14 +163,14 @@ class Lux:
             # Switch GUI tabs with number keys
             if evt in self.key_tabs.keys():
                 Lux.Property(Lux.scene, "page", 0).set(self.key_tabs[evt])
-                Blender.Draw.Redraw()
+                Blender_API.Draw.Redraw()
             
             # Handle icon button events - note - radiance - this is a work in progress! :)
-            #if evt == Blender.Draw.LEFTMOUSE and not val: 
-            #       size=Blender.BGL.Buffer(Blender.BGL.GL_FLOAT, 4) 
-            #       Blender.BGL.glGetFloatv(Blender.BGL.GL_SCISSOR_BOX, size) 
+            #if evt == Blender_API.Draw.LEFTMOUSE and not val: 
+            #       size=Blender_API.BGL.Buffer(Blender_API.BGL.GL_FLOAT, 4) 
+            #       Blender_API.BGL.glGetFloatv(Blender_API.BGL.GL_SCISSOR_BOX, size) 
             #        size= [int(s) for s in size] 
-            #    mx, my = Blender.Window.GetMouseCoords()
+            #    mx, my = Blender_API.Window.GetMouseCoords()
             #    mousex = mx - size[0]
             #    Lux.Log("mousex = %i"%mousex)
             #    #if((mousex > 2) and (mousex < 25)):
@@ -177,13 +183,13 @@ class Lux:
 
         # function that handles button events
         def buttonHandler(self, evt):
-            Lux.scene = Blender.Scene.GetCurrent()
+            Lux.scene = Blender_API.Scene.GetCurrent()
             
             if evt == self.LuxGui:
-                Blender.Draw.Redraw()
+                Blender_API.Draw.Redraw()
             if evt == self.SavePreset:
                 if Lux.scene:
-                    name = Blender.Draw.PupStrInput("preset name: ", "")
+                    name = Blender_API.Draw.PupStrInput("preset name: ", "")
                     if name != "":
                         Lux.usedproperties = {}
                         Lux.usedpropertiesfilterobj = None
@@ -195,16 +201,16 @@ class Lux:
                         # LuxSceneElements.Environment()
                         Lux.Presets.saveScenePreset(name, Lux.usedproperties.copy())
                         Lux.Property(Lux.scene, "preset", "").set(name)
-                        Blender.Draw.Redraw()
+                        Blender_API.Draw.Redraw()
             if evt == self.DeletePreset:
                 presets = Lux.Presets.getScenePresets().keys()
                 presets.sort()
                 presetsstr = "delete preset: %t"
                 for i, v in enumerate(presets): presetsstr += "|%s %%x%d"%(v, i)
-                r = Blender.Draw.PupMenu(presetsstr, 20)
+                r = Blender_API.Draw.PupMenu(presetsstr, 20)
                 if r >= 0:
                     Lux.Presets.saveScenePreset(presets[r], None)
-                    Blender.Draw.Redraw()
+                    Blender_API.Draw.Redraw()
         
             if evt == self.LoadMaterial:
                 if Lux.Materials.activemat:
@@ -213,41 +219,41 @@ class Lux:
                     matskeys.sort()
                     matsstr = "load preset: %t"
                     for i, v in enumerate(matskeys): matsstr += "|%s %%x%d"%(v, i)
-                    r = Blender.Draw.PupMenu(matsstr, 20)
+                    r = Blender_API.Draw.PupMenu(matsstr, 20)
                     if r >= 0:
                         name = matskeys[r]
                         try:
                             #for k,v in mats[name].items(): Lux.Materials.activemat.properties['luxblend'][k] = v
                             for k,v in mats[name].items(): Lux.Property(Lux.Materials.activemat, k, None).set(v)
                         except: pass
-                        Blender.Draw.Redraw()
+                        Blender_API.Draw.Redraw()
             if evt == self.SaveMaterial:
                 if Lux.Materials.activemat:
-                    name = Blender.Draw.PupStrInput("preset name: ", "")
+                    name = Blender_API.Draw.PupStrInput("preset name: ", "")
                     if name != "":
                         Lux.usedproperties = {}
                         Lux.usedpropertiesfilterobj = Lux.Materials.activemat
                         Lux.Materials.Material(Lux.Materials.activemat)
                         Lux.Presets.saveMaterialPreset(name, Lux.usedproperties.copy())
-                        Blender.Draw.Redraw()
+                        Blender_API.Draw.Redraw()
             if evt == self.DeleteMaterial:
                 matskeys = Lux.Presets.getMaterialPresets().keys()
                 matskeys.sort()
                 matsstr = "delete preset: %t"
                 for i, v in enumerate(matskeys): matsstr += "|%s %%x%d"%(v, i)
-                r = Blender.Draw.PupMenu(matsstr, 20)
+                r = Blender_API.Draw.PupMenu(matsstr, 20)
                 if r >= 0:
                     Lux.Presets.saveMaterialPreset(matskeys[r], None)
-                    Blender.Draw.Redraw()
+                    Blender_API.Draw.Redraw()
             if evt == self.ConvertMaterial:
                 if Lux.Materials.activemat: Lux.Converter.convertMaterial(Lux.Materials.activemat)
-                Blender.Draw.Redraw()
+                Blender_API.Draw.Redraw()
             if evt == self.LoadMaterial2:
                 if Lux.Materials.activemat:
-                    Blender.Window.FileSelector(lambda fn:Lux.Converter.loadMatTex(Lux.Materials.activemat, fn), "load material", Lux.Property(Lux.scene, "lux", "").get()+os.sep+".lbm")
+                    Blender_API.Window.FileSelector(lambda fn:Lux.Converter.loadMatTex(Lux.Materials.activemat, fn), "load material", Lux.Property(Lux.scene, "lux", "").get()+os.sep+".lbm")
             if evt == self.SaveMaterial2:
                 if Lux.Materials.activemat:
-                    Blender.Window.FileSelector(lambda fn:Lux.Converter.saveMatTex(Lux.Materials.activemat, fn), "save material", Lux.Property(Lux.scene, "lux", "").get()+os.sep+".lbm")
+                    Blender_API.Window.FileSelector(lambda fn:Lux.Converter.saveMatTex(Lux.Materials.activemat, fn), "save material", Lux.Property(Lux.scene, "lux", "").get()+os.sep+".lbm")
 
     # Property lists
     usedproperties = {} # variable to collect used properties for storing presets
@@ -272,14 +278,14 @@ class Lux:
     def save_lux(filename, unindexedname):
         '''EXPORT'''
         
-        Lux.scene = Blender.Scene.GetCurrent()
+        Lux.scene = Blender_API.Scene.GetCurrent()
         if Lux.LB_gui: Lux.GUI.Active  = False
         
         export_total_steps = 12.0
         
         Lux.Log("Lux Render Export started...")
-        time1 = Blender.sys.time()
-        Lux.scene = Blender.Scene.GetCurrent()
+        time1 = Blender_API.sys.time()
+        Lux.scene = Blender_API.Scene.GetCurrent()
     
         filepath = os.path.dirname(filename)
         filebase = os.path.splitext(os.path.basename(filename))[0]
@@ -308,7 +314,7 @@ class Lux:
             Lux.Log("ERROR: No light source found", popup = True)
             return False
     
-        if Lux.LB_gui: Blender.Window.DrawProgressBar(0.0/export_total_steps,'Setting up Scene file')
+        if Lux.LB_gui: Blender_API.Window.DrawProgressBar(0.0/export_total_steps,'Setting up Scene file')
         if Lux.Property(Lux.scene, "lxs", "true").get()=="true":
             ##### Determine/open files
             Lux.Log("Exporting scene to '" + filename + "'...")
@@ -322,7 +328,7 @@ class Lux:
             ##### Write camera ######
             camObj = Lux.scene.objects.camera
     
-            if Lux.LB_gui: Blender.Window.DrawProgressBar(1.0/export_total_steps,'Exporting Camera')
+            if Lux.LB_gui: Blender_API.Window.DrawProgressBar(1.0/export_total_steps,'Exporting Camera')
             if camObj:
                 Lux.Log("processing Camera...")
                 cam = camObj.data
@@ -334,10 +340,10 @@ class Lux:
                 motion = None
                 if(cammblur.get() == "true" and usemblur.get() == "true"):
                     # motion blur
-                    frame = Blender.Get('curframe')
-                    Blender.Set('curframe', frame+1)
+                    frame = Blender_API.Get('curframe')
+                    Blender_API.Set('curframe', frame+1)
                     m1 = 1.0*matrix # multiply by 1.0 to get a copy of original matrix (will be frame-independant) 
-                    Blender.Set('curframe', frame)
+                    Blender_API.Set('curframe', frame)
                     if m1 != matrix:
                         # Motion detected, write endtransform
                         Lux.Log("  motion blur")
@@ -363,32 +369,32 @@ class Lux:
                 file.write("\n")
             file.write("\n")
         
-            if Lux.LB_gui: Blender.Window.DrawProgressBar(2.0/export_total_steps,'Exporting Film Settings')
+            if Lux.LB_gui: Blender_API.Window.DrawProgressBar(2.0/export_total_steps,'Exporting Film Settings')
             ##### Write film ######
             file.write(Lux.SceneElements.Film())
             file.write("\n")
     
-            if Lux.LB_gui: Blender.Window.DrawProgressBar(3.0/export_total_steps,'Exporting Pixel Filter')
+            if Lux.LB_gui: Blender_API.Window.DrawProgressBar(3.0/export_total_steps,'Exporting Pixel Filter')
             ##### Write Pixel Filter ######
             file.write(Lux.SceneElements.PixelFilter())
             file.write("\n")
         
-            if Lux.LB_gui: Blender.Window.DrawProgressBar(4.0/export_total_steps,'Exporting Sampler')
+            if Lux.LB_gui: Blender_API.Window.DrawProgressBar(4.0/export_total_steps,'Exporting Sampler')
             ##### Write Sampler ######
             file.write(Lux.SceneElements.Sampler())
             file.write("\n")
         
-            if Lux.LB_gui: Blender.Window.DrawProgressBar(5.0/export_total_steps,'Exporting Surface Integrator')
+            if Lux.LB_gui: Blender_API.Window.DrawProgressBar(5.0/export_total_steps,'Exporting Surface Integrator')
             ##### Write Surface Integrator ######
             file.write(Lux.SceneElements.SurfaceIntegrator())
             file.write("\n")
             
-            if Lux.LB_gui: Blender.Window.DrawProgressBar(6.0/export_total_steps,'Exporting Volume Integrator')
+            if Lux.LB_gui: Blender_API.Window.DrawProgressBar(6.0/export_total_steps,'Exporting Volume Integrator')
             ##### Write Volume Integrator ######
             file.write(Lux.SceneElements.VolumeIntegrator())
             file.write("\n")
             
-            if Lux.LB_gui: Blender.Window.DrawProgressBar(7.0/export_total_steps,'Exporting Accelerator')
+            if Lux.LB_gui: Blender_API.Window.DrawProgressBar(7.0/export_total_steps,'Exporting Accelerator')
             ##### Write Acceleration ######
             file.write(Lux.SceneElements.Accelerator())
             file.write("\n")    
@@ -406,7 +412,7 @@ class Lux:
                 file.write("Transform [%s 0.0 0.0 0.0  0.0 %s 0.0 0.0  0.0 0.0 %s 0.0  0.0 0.0 0 1.0]\n"%(scale, scale, scale))
                 file.write("\n")
             
-            if Lux.LB_gui: Blender.Window.DrawProgressBar(8.0/export_total_steps,'Exporting Environment')
+            if Lux.LB_gui: Blender_API.Window.DrawProgressBar(8.0/export_total_steps,'Exporting Environment')
             ##### Write World Background, Sunsky or Env map ######
             env = Lux.SceneElements.Environment()
             if env != "":
@@ -435,7 +441,7 @@ class Lux:
             file.close()
             
         if Lux.Property(Lux.scene, "lxm", "true").get()=="true":
-            if Lux.LB_gui: Blender.Window.DrawProgressBar(9.0/export_total_steps,'Exporting Materials')
+            if Lux.LB_gui: Blender_API.Window.DrawProgressBar(9.0/export_total_steps,'Exporting Materials')
             ##### Write Material file #####
             Lux.Log("Exporting materials to '" + Lux.mat_filename + "'...")
             mat_file = open(Lux.mat_filename, 'w')
@@ -445,7 +451,7 @@ class Lux:
             mat_file.close()
         
         if Lux.Property(Lux.scene, "lxo", "true").get()=="true":
-            if Lux.LB_gui: Blender.Window.DrawProgressBar(10.0/export_total_steps,'Exporting Geometry')
+            if Lux.LB_gui: Blender_API.Window.DrawProgressBar(10.0/export_total_steps,'Exporting Geometry')
             ##### Write Geometry file #####
             Lux.Log("Exporting geometry to '" + Lux.geom_filename + "'...")
             geom_file = open(Lux.geom_filename, 'w')
@@ -458,7 +464,7 @@ class Lux:
             geom_file.close()
     
         if Lux.Property(Lux.scene, "lxv", "true").get()=="true":
-            if Lux.LB_gui: Blender.Window.DrawProgressBar(11.0/export_total_steps,'Exporting Volumes')
+            if Lux.LB_gui: Blender_API.Window.DrawProgressBar(11.0/export_total_steps,'Exporting Volumes')
             ##### Write Volume file #####
             Lux.Log("Exporting volumes to '" + Lux.vol_filename + "'...")
             vol_file = open(Lux.vol_filename, 'w')
@@ -468,35 +474,35 @@ class Lux:
             vol_file.write("")
             vol_file.close()
         
-        if Lux.LB_gui: Blender.Window.DrawProgressBar(12.0/export_total_steps,'Export Finished')
+        if Lux.LB_gui: Blender_API.Window.DrawProgressBar(12.0/export_total_steps,'Export Finished')
         Lux.Log("Finished.")
         del export
     
-        time2 = Blender.sys.time()
+        time2 = Blender_API.sys.time()
         Lux.Log("Processing time: %f" %(time2-time1))
         
         if Lux.LB_gui:
             Lux.GUI.Active = True
-            Blender.Draw.Redraw()
+            Blender_API.Draw.Redraw()
         return True
     
     @staticmethod
     def save_anim(filename):
-        startF = Blender.Get('staframe')
-        endF = Blender.Get('endframe')
-        Lux.scene = Blender.Scene.GetCurrent()
+        startF = Blender_API.Get('staframe')
+        endF = Blender_API.Get('endframe')
+        Lux.scene = Blender_API.Scene.GetCurrent()
         Run = Lux.Property(Lux.scene, "run", "true").get()
     
         Lux.Log("Rendering animation (frame %i to %i)"%(startF, endF))
     
         for i in range (startF, endF+1):
-            Blender.Set('curframe', i)
+            Blender_API.Set('curframe', i)
             Lux.Log("Rendering frame %i"%(i))
-            Blender.Redraw()
+            Blender_API.Redraw()
             frameindex = ("-%05d" % (i)) + ".lxs"
-            indexedname = Blender.sys.makename(filename, frameindex)
+            indexedname = Blender_API.sys.makename(filename, frameindex)
             unindexedname = filename
-            Lux.Property(Lux.scene, "filename", Blender.Get("filename")).set(Blender.sys.makename(filename, "-%05d" %  (Blender.Get('curframe'))))
+            Lux.Property(Lux.scene, "filename", Blender_API.Get("filename")).set(Blender_API.sys.makename(filename, "-%05d" %  (Blender_API.Get('curframe'))))
     
             success = Lux.save_lux(filename, unindexedname) 
             if Run == "true" and success:
@@ -508,8 +514,8 @@ class Lux:
         
     @staticmethod
     def save_still(filename):
-        Lux.scene = Blender.Scene.GetCurrent()
-        Lux.Property(Lux.scene, "filename", Blender.Get("filename")).set(Blender.sys.makename(filename, ""))
+        Lux.scene = Blender_API.Scene.GetCurrent()
+        Lux.Property(Lux.scene, "filename", Blender_API.Get("filename")).set(Blender_API.sys.makename(filename, ""))
         Lux.MatSaved = False
         unindexedname = filename
         if Lux.save_lux(filename, unindexedname) and Lux.runRenderAfterExport:
@@ -525,7 +531,7 @@ class Lux:
             # default settings
             
             try:
-                Lux.Presets.luxdefaults = Blender.Registry.GetKey('luxblend', True)
+                Lux.Presets.luxdefaults = Blender_API.Registry.GetKey('luxblend', True)
                 if not(type(Lux.Presets.luxdefaults) is types.DictType):
                     Lux.Presets.luxdefaults = {}
             except:
@@ -537,13 +543,13 @@ class Lux:
         def saveluxdefaults():
             try:
                 del Lux.Presets.newluxdefaults['page']
-                Blender.Registry.SetKey('luxblend', Lux.Presets.newluxdefaults, True)
+                Blender_API.Registry.SetKey('luxblend', Lux.Presets.newluxdefaults, True)
             except:
                 pass
             
         @staticmethod
         def getPresets(key):
-            presets = Blender.Registry.GetKey(key, True)
+            presets = Blender_API.Registry.GetKey(key, True)
             if not(type(presets) is types.DictType):
                 presets = {}
             return presets
@@ -914,7 +920,7 @@ class Lux:
                     presets[name] = d.copy()
                 else:
                     del presets[name]
-                Blender.Registry.SetKey(key, presets, True)
+                Blender_API.Registry.SetKey(key, presets, True)
             except: pass    
         
         @staticmethod
@@ -941,7 +947,7 @@ class Lux:
         @staticmethod
         def newFName(ext):
             '''New name based on old with a different extension'''
-            return Blender.Get('filename')[: -len(Blender.Get('filename').split('.', -1)[-1]) ] + ext
+            return Blender_API.Get('filename')[: -len(Blender_API.Get('filename').split('.', -1)[-1]) ] + ext
         
         @staticmethod
         def base64value(char):
@@ -966,14 +972,14 @@ class Lux:
             camObj = Lux.scene.objects.camera
             if target == "S":
                 try:
-                    refLoc = (Blender.Object.GetSelected()[0]).getLocation()
+                    refLoc = (Blender_API.Object.GetSelected()[0]).getLocation()
                 except:
                     Lux.Log("select an object to focus", popup = True)
             elif target == "C":
-                refLoc = Blender.Window.GetCursorPos()
+                refLoc = Blender_API.Window.GetCursorPos()
             else:
-                refLoc = (Blender.Object.Get(target)).getLocation()
-            dist = Blender.Mathutils.Vector(refLoc) - Blender.Mathutils.Vector(camObj.getLocation())
+                refLoc = (Blender_API.Object.Get(target)).getLocation()
+            dist = Blender_API.Mathutils.Vector(refLoc) - Blender_API.Mathutils.Vector(camObj.getLocation())
             camDir = camObj.getMatrix()[2]*(-1.0)
             camObj.getData(mesh=1).dofDist = (camDir[0]*dist[0]+camDir[1]*dist[1]+camDir[2]*dist[2])/camDir.length # data
     
@@ -983,7 +989,7 @@ class Lux:
         @staticmethod
         def rg(col):
             '''Reverse Gamma Correction'''
-            #Lux.scene = Blender.Scene.GetCurrent()
+            #Lux.scene = Blender_API.Scene.GetCurrent()
             if Lux.Property(Lux.scene, "RGC", "true").get()=="true":
                 gamma = Lux.Property(Lux.scene, "film.gamma", 2.2).get()
             else:
@@ -1000,7 +1006,7 @@ class Lux:
         @staticmethod
         def texturegamma():
             '''Apply Gamma Value'''
-            #Lux.scene = Blender.Scene.GetCurrent()
+            #Lux.scene = Blender_API.Scene.GetCurrent()
             if Lux.Property(Lux.scene, "RGC", "true").get()=="true":
                 return Lux.Property(Lux.scene, "film.gamma", 2.2).get()
             else:
@@ -1042,7 +1048,7 @@ class Lux:
                 mats = []
             # clay option
             if Lux.Property(Lux.scene, "clay", "false").get()=="true":
-                if Lux.clayMat==None: Lux.clayMat = Blender.Material.New("lux_clayMat")
+                if Lux.clayMat==None: Lux.clayMat = Blender_API.Material.New("lux_clayMat")
                 for i in range(len(mats)):
                     if mats[i]:
                         mattype = Lux.Property(mats[i], "type", "").get()
@@ -1092,7 +1098,7 @@ class Lux:
                         self.objects.append([obj, matrix])
                 elif (obj_type == "Lamp"):
                     ltype = obj.getData(mesh=1).getType() # data
-                    if (ltype == Blender.Lamp.Types["Lamp"]) or (ltype == Blender.Lamp.Types["Spot"]) or (ltype == Blender.Lamp.Types["Area"]):
+                    if (ltype == Blender_API.Lamp.Types["Lamp"]) or (ltype == Blender_API.Lamp.Types["Spot"]) or (ltype == Blender_API.Lamp.Types["Area"]):
                         self.lights.append([obj, matrix])
                         light = True
             return light
@@ -1126,7 +1132,7 @@ class Lux:
     
         def getMeshType(self, vertcount, mat):
             '''returns type of mesh as string to use depending on thresholds'''
-            #Lux.scene = Blender.Scene.GetCurrent()
+            #Lux.scene = Blender_API.Scene.GetCurrent()
             if mat != Lux.dummyMat:
                 usesubdiv = Lux.Property(mat, "subdiv", "false")
                 usedisp = Lux.Property(mat, "dispmap", "false")
@@ -1264,10 +1270,10 @@ class Lux:
     
         def Meshes(self, file):
             '''exports meshes that uses instancing (meshes that are used by at least "instancing_threshold" objects)'''
-            #Lux.scene = Blender.Scene.GetCurrent()
+            #Lux.scene = Blender_API.Scene.GetCurrent()
             instancing_threshold = Lux.Property(self.scene, "instancing_threshold", 2).get()
             mesh_optimizing = Lux.Property(self.scene, "mesh_optimizing", True).get()
-            mesh = Blender.Mesh.New('')
+            mesh = Blender_API.Mesh.New('')
             for (mesh_name, objs) in self.meshes.items():
                 allow_instancing = True
                 mats = self.getMaterials(objs[0]) # mats = obj.getData().getMaterials()
@@ -1292,12 +1298,12 @@ class Lux:
     
         def Objects(self, file):
             '''exports objects to the file'''
-            #Lux.scene = Blender.Scene.GetCurrent()
+            #Lux.scene = Blender_API.Scene.GetCurrent()
             cam = self.scene.objects.camera.data
             objectmblur = Lux.Property(cam, "objectmblur", "true")
             usemblur = Lux.Property(cam, "usemblur", "false")
             mesh_optimizing = Lux.Property(self.scene, "mesh_optimizing", True).get()
-            mesh = Blender.Mesh.New('')
+            mesh = Blender_API.Mesh.New('')
             for [obj, matrix] in self.objects:
                 Lux.Log("object: %s"%(obj.getName()))
                 mesh_name = obj.getData(name_only=True)
@@ -1305,10 +1311,10 @@ class Lux:
                 motion = None
                 if(objectmblur.get() == "true" and usemblur.get() == "true"):
                     # motion blur
-                    frame = Blender.Get('curframe')
-                    Blender.Set('curframe', frame+1)
+                    frame = Blender_API.Get('curframe')
+                    Blender_API.Set('curframe', frame+1)
                     m1 = 1.0*matrix # multiply by 1.0 to get a copy of orignal matrix (will be frame-independant) 
-                    Blender.Set('curframe', frame)
+                    Blender_API.Set('curframe', frame)
                     if m1 != matrix:
                         Lux.Log("  motion blur")
                         motion = m1
@@ -1361,9 +1367,9 @@ class Lux:
     
         def Portals(self, file):
             '''exports portals objects to the file'''
-            #Lux.scene = Blender.Scene.GetCurrent()
+            #Lux.scene = Blender_API.Scene.GetCurrent()
             mesh_optimizing = Lux.Property(self.scene, "mesh_optimizing", True).get()
-            mesh = Blender.Mesh.New('')
+            mesh = Blender_API.Mesh.New('')
             for [obj, matrix] in self.portals:
                 Lux.Log("portal: %s"%(obj.getName()))
                 file.write("\tTransform [%s %s %s %s  %s %s %s %s  %s %s %s %s  %s %s %s %s]\n"\
@@ -1384,13 +1390,13 @@ class Lux:
             '''exports lights to the file'''
             for [obj, matrix] in self.lights:
                 ltype = obj.getData(mesh=1).getType() # data
-                if (ltype == Blender.Lamp.Types["Lamp"]) or (ltype == Blender.Lamp.Types["Spot"]) or (ltype == Blender.Lamp.Types["Area"]):
+                if (ltype == Blender_API.Lamp.Types["Lamp"]) or (ltype == Blender_API.Lamp.Types["Spot"]) or (ltype == Blender_API.Lamp.Types["Area"]):
                     Lux.Log("light: %s"%(obj.getName()))
-                    if ltype == Blender.Lamp.Types["Area"]:
+                    if ltype == Blender_API.Lamp.Types["Area"]:
                         # DH - this had gui = None
                         (str, link) = Lux.Light.Area("", "", obj, 0)
                         file.write(str)
-                    if ltype == Blender.Lamp.Types["Area"]: file.write("AttributeBegin # %s\n"%obj.getName())
+                    if ltype == Blender_API.Lamp.Types["Area"]: file.write("AttributeBegin # %s\n"%obj.getName())
                     else: file.write("TransformBegin # %s\n"%obj.getName())
                     file.write("\tTransform [%s %s %s %s  %s %s %s %s  %s %s %s %s  %s %s %s %s]\n"\
                         %(matrix[0][0], matrix[0][1], matrix[0][2], matrix[0][3],\
@@ -1399,13 +1405,13 @@ class Lux:
                           matrix[3][0], matrix[3][1], matrix[3][2], matrix[3][3]))
                     col = obj.getData(mesh=1).col # data
                     energy = obj.getData(mesh=1).energy # data
-                    if ltype == Blender.Lamp.Types["Lamp"]:
+                    if ltype == Blender_API.Lamp.Types["Lamp"]:
                         lightgroup = Lux.Property(obj, "light.lightgroup", "default")
                         file.write("LightGroup \"%s\"\n"%lightgroup.get())
                         # DH - this had gui = None
                         (str, link) = Lux.Light.Point("", "", obj, 0)
                         file.write(str+"LightSource \"point\""+link+"\n")
-                    if ltype == Blender.Lamp.Types["Spot"]:
+                    if ltype == Blender_API.Lamp.Types["Spot"]:
                         # DH - this had gui = None
                         (str, link) = Lux.Light.Spot("", "", obj, 0)
                         file.write(str)
@@ -1419,7 +1425,7 @@ class Lux:
                             file.write("LightSource \"spot\" \"point from\" [0 0 0] \"point to\" [0 0 -1] \"float coneangle\" [%f] \"float conedeltaangle\" [%f]"\
                                 %(obj.getData(mesh=1).spotSize*0.5, obj.getData(mesh=1).spotSize*0.5*obj.getData(mesh=1).spotBlend)) # data
                         file.write(link+"\n")
-                    if ltype == Blender.Lamp.Types["Area"]:
+                    if ltype == Blender_API.Lamp.Types["Area"]:
                         lightgroup = Lux.Property(obj, "light.lightgroup", "default")
                         file.write("LightGroup \"%s\"\n"%lightgroup.get())
                         file.write("\tAreaLightSource \"area\"")
@@ -1431,7 +1437,7 @@ class Lux:
                         if (True): areay = areax
                         else: areay = obj.getData(mesh=1).getAreaSizeY()
                         file.write('\tShape "trianglemesh" "integer indices" [0 1 2 0 2 3] "point P" [-%(x)f %(y)f 0.0 %(x)f %(y)f 0.0 %(x)f -%(y)f 0.0 -%(x)f -%(y)f 0.0]\n'%{"x":areax/2, "y":areay/2})
-                    if ltype == Blender.Lamp.Types["Area"]: file.write("AttributeEnd # %s\n"%obj.getName())
+                    if ltype == Blender_API.Lamp.Types["Area"]: file.write("AttributeEnd # %s\n"%obj.getName())
                     else: file.write("TransformEnd # %s\n"%obj.getName())
                     file.write("\n")
                     
@@ -1478,26 +1484,26 @@ class Lux:
             Lux.runRenderAfterExport = run
             if default:
                 datadir = Lux.Property(Lux.scene, "datadir", "").get()
-                if datadir=="": datadir = Blender.Get("datadir")
+                if datadir=="": datadir = Blender_API.Get("datadir")
                 filename = datadir + os.sep + "default.lxs"
                 Lux.save_still(filename)
             else:
-                Blender.Window.FileSelector(Lux.save_still, "Export", Blender.sys.makename(Blender.Get("filename"), ".lxs"))
+                Blender_API.Window.FileSelector(Lux.save_still, "Export", Blender_API.sys.makename(Blender_API.Get("filename"), ".lxs"))
         
         @staticmethod
         def ExportAnim(default, run, fileselect=True):
             if default:
                 datadir = Lux.Property(Lux.scene, "datadir", "").get()
-                if datadir=="": datadir = Blender.Get("datadir")
+                if datadir=="": datadir = Blender_API.Get("datadir")
                 filename = datadir + os.sep + "default.lxs"
                 Lux.save_anim(filename)
             else:
                 if fileselect:
-                    Blender.Window.FileSelector(Lux.save_anim, "Export", Blender.sys.makename(Blender.Get("filename"), ".lxs"))
+                    Blender_API.Window.FileSelector(Lux.save_anim, "Export", Blender_API.sys.makename(Blender_API.Get("filename"), ".lxs"))
                 else:
                     datadir = Lux.Property(Lux.scene, "datadir", "").get()
-                    if datadir=="": datadir = Blender.Get("datadir")
-                    filename = Blender.sys.makename(Blender.Get("filename") , ".lxs")
+                    if datadir=="": datadir = Blender_API.Get("datadir")
+                    filename = Blender_API.sys.makename(Blender_API.Get("filename") , ".lxs")
                     Lux.save_anim(filename)
         
         @staticmethod
@@ -1505,18 +1511,18 @@ class Lux:
             
             ostype = osys.platform
             #get blenders 'bpydata' directory
-            datadir = Blender.Get("datadir")
+            datadir = Blender_API.Get("datadir")
             
-            Lux.scene = Blender.Scene.GetCurrent()
+            Lux.scene = Blender_API.Scene.GetCurrent()
             
             ic = Lux.Property(Lux.scene, "lux", "").get()
-            ic = Blender.sys.dirname(ic) + os.sep + "luxrender"
+            ic = Blender_API.sys.dirname(ic) + os.sep + "luxrender"
             if ostype == "win32": ic = ic + ".exe"
             if ostype == "darwin": ic = ic + ".app/Contents/MacOS/luxrender"
             checkluxpath = Lux.Property(Lux.scene, "checkluxpath", True).get()
             if checkluxpath:
-                if Blender.sys.exists(ic) != 1:
-                    Blender.Draw.PupMenu("Error: Lux renderer not found. Please set path on System page.%t|OK")
+                if Blender_API.sys.exists(ic) != 1:
+                    Blender_API.Draw.PupMenu("Error: Lux renderer not found. Please set path on System page.%t|OK")
                     return        
             autothreads = Lux.Property(Lux.scene, "autothreads", "true").get()
             threads = Lux.Property(Lux.scene, "threads", 1).get()
@@ -1547,18 +1553,18 @@ class Lux:
         def Piped():
             ostype = osys.platform
             #get blenders 'bpydata' directory
-            datadir = Blender.Get("datadir")
+            datadir = Blender_API.Get("datadir")
             
-            Lux.scene = Blender.Scene.GetCurrent()
+            Lux.scene = Blender_API.Scene.GetCurrent()
             
             ic = Lux.Property(Lux.scene, "lux", "").get()
-            ic = Blender.sys.dirname(ic) + os.sep + "luxrender"
+            ic = Blender_API.sys.dirname(ic) + os.sep + "luxrender"
             if ostype == "win32": ic = ic + ".exe"
             if ostype == "darwin": ic = ic + ".app/Contents/MacOS/luxrender"
             checkluxpath = Lux.Property(Lux.scene, "checkluxpath", True).get()
             if checkluxpath:
                 if sys.exists(ic) != 1:
-                    Blender.Draw.PupMenu("Error: Lux renderer not found. Please set path on System page.%t|OK")
+                    Blender_API.Draw.PupMenu("Error: Lux renderer not found. Please set path on System page.%t|OK")
                     return        
             autothreads = Lux.Property(Lux.scene, "autothreads", "true").get()
             threads = Lux.Property(Lux.scene, "threads", 1).get()
@@ -1587,17 +1593,17 @@ class Lux:
         def Wait(filename):
             ostype = osys.platform
             #get blenders 'bpydata' directory
-            datadir=Blender.Get("datadir")
+            datadir=Blender_API.Get("datadir")
             
-            Lux.scene = Blender.Scene.GetCurrent()
+            Lux.scene = Blender_API.Scene.GetCurrent()
             
             ic = Lux.Property(Lux.scene, "lux", "").get()
-            ic = Blender.sys.dirname(ic) + os.sep + "luxrender"
+            ic = Blender_API.sys.dirname(ic) + os.sep + "luxrender"
             if ostype == "win32": ic = ic + ".exe"
             if ostype == "darwin": ic = ic + ".app/Contents/MacOS/luxrender"
             checkluxpath = Lux.Property(Lux.scene, "checkluxpath", True).get()
             if checkluxpath:
-                if Blender.sys.exists(ic) != 1:
+                if Blender_API.sys.exists(ic) != 1:
                     Lux.Log("Error: Lux renderer not found. Please set path on command line.", popup=True)
                     return        
             autothreads = Lux.Property(Lux.scene, "autothreads", "true").get()
@@ -1678,7 +1684,7 @@ class Lux:
         
         @staticmethod
         def decodeIconStr(s):
-            buf = Blender.BGL.Buffer(Blender.BGL.GL_BYTE, [16,16,4])
+            buf = Blender_API.BGL.Buffer(Blender_API.BGL.GL_BYTE, [16,16,4])
             offset = 0
             for y in range(16):
                 for x in range(16):
@@ -1689,7 +1695,7 @@ class Lux:
         
         @staticmethod
         def decodeLogoStr(s):
-            buf = Blender.BGL.Buffer(Blender.BGL.GL_BYTE, [18,118,4])
+            buf = Blender_API.BGL.Buffer(Blender_API.BGL.GL_BYTE, [18,118,4])
             offset = 0
             for y in range(18):
                 for x in range(118):
@@ -1700,7 +1706,7 @@ class Lux:
         
         @staticmethod
         def decodeBarStr(s):
-            buf = Blender.BGL.Buffer(Blender.BGL.GL_BYTE, [17,138,4])
+            buf = Blender_API.BGL.Buffer(Blender_API.BGL.GL_BYTE, [17,138,4])
             offset = 0
             for y in range(17):
                 for x in range(138):
@@ -1711,27 +1717,27 @@ class Lux:
         
         @staticmethod
         def drawIcon(icon, x, y):
-            Blender.BGL.glEnable(Blender.BGL.GL_BLEND)
-            Blender.BGL.glBlendFunc(Blender.BGL.GL_SRC_ALPHA, Blender.BGL.GL_ONE_MINUS_SRC_ALPHA) 
-            Blender.BGL.glRasterPos2f(int(x)+0.5, int(y)+0.5)
-            Blender.BGL.glDrawPixels(16, 16, Blender.BGL.GL_RGBA, Blender.BGL.GL_UNSIGNED_BYTE, icon)
-            Blender.BGL.glDisable(Blender.BGL.GL_BLEND)
+            Blender_API.BGL.glEnable(Blender_API.BGL.GL_BLEND)
+            Blender_API.BGL.glBlendFunc(Blender_API.BGL.GL_SRC_ALPHA, Blender_API.BGL.GL_ONE_MINUS_SRC_ALPHA) 
+            Blender_API.BGL.glRasterPos2f(int(x)+0.5, int(y)+0.5)
+            Blender_API.BGL.glDrawPixels(16, 16, Blender_API.BGL.GL_RGBA, Blender_API.BGL.GL_UNSIGNED_BYTE, icon)
+            Blender_API.BGL.glDisable(Blender_API.BGL.GL_BLEND)
         
         @staticmethod
         def drawLogo(icon, x, y):
-            Blender.BGL.glEnable(Blender.BGL.GL_BLEND)
-            Blender.BGL.glBlendFunc(Blender.BGL.GL_SRC_ALPHA, Blender.BGL.GL_ONE_MINUS_SRC_ALPHA) 
-            Blender.BGL.glRasterPos2f(int(x)+0.5, int(y)+0.5)
-            Blender.BGL.glDrawPixels(118, 18, Blender.BGL.GL_RGBA, Blender.BGL.GL_UNSIGNED_BYTE, icon)
-            Blender.BGL.glDisable(Blender.BGL.GL_BLEND)
+            Blender_API.BGL.glEnable(Blender_API.BGL.GL_BLEND)
+            Blender_API.BGL.glBlendFunc(Blender_API.BGL.GL_SRC_ALPHA, Blender_API.BGL.GL_ONE_MINUS_SRC_ALPHA) 
+            Blender_API.BGL.glRasterPos2f(int(x)+0.5, int(y)+0.5)
+            Blender_API.BGL.glDrawPixels(118, 18, Blender_API.BGL.GL_RGBA, Blender_API.BGL.GL_UNSIGNED_BYTE, icon)
+            Blender_API.BGL.glDisable(Blender_API.BGL.GL_BLEND)
         
         @staticmethod
         def drawBar(icon, x, y):
-            Blender.BGL.glEnable(Blender.BGL.GL_BLEND)
-            Blender.BGL.glBlendFunc(Blender.BGL.GL_SRC_ALPHA, Blender.BGL.GL_ONE_MINUS_SRC_ALPHA) 
-            Blender.BGL.glRasterPos2f(int(x)+0.5, int(y)+0.5)
-            Blender.BGL.glDrawPixels(138, 17, Blender.BGL.GL_RGBA, Blender.BGL.GL_UNSIGNED_BYTE, icon)
-            Blender.BGL.glDisable(Blender.BGL.GL_BLEND)
+            Blender_API.BGL.glEnable(Blender_API.BGL.GL_BLEND)
+            Blender_API.BGL.glBlendFunc(Blender_API.BGL.GL_SRC_ALPHA, Blender_API.BGL.GL_ONE_MINUS_SRC_ALPHA) 
+            Blender_API.BGL.glRasterPos2f(int(x)+0.5, int(y)+0.5)
+            Blender_API.BGL.glDrawPixels(138, 17, Blender_API.BGL.GL_RGBA, Blender_API.BGL.GL_UNSIGNED_BYTE, icon)
+            Blender_API.BGL.glDisable(Blender_API.BGL.GL_BLEND)
             
     class Image:
         '''
@@ -1744,14 +1750,14 @@ class Lux:
         def resize(self, width, height):
             self.width = width
             self.height = height
-            self.buf = Blender.BGL.Buffer(Blender.BGL.GL_BYTE, [width,height,4]) # GL buffer
+            self.buf = Blender_API.BGL.Buffer(Blender_API.BGL.GL_BYTE, [width,height,4]) # GL buffer
                 
         def draw(self, x, y):
-            Blender.BGL.glEnable(Blender.BGL.GL_BLEND)
-            Blender.BGL.glBlendFunc(Blender.BGL.GL_SRC_ALPHA, Blender.BGL.GL_ONE_MINUS_SRC_ALPHA) 
-            Blender.BGL.glRasterPos2f(int(x)+0.5, int(y)+0.5)
-            Blender.BGL.glDrawPixels(self.width, self.height, Blender.BGL.GL_RGBA, Blender.BGL.GL_UNSIGNED_BYTE, self.buf)
-            Blender.BGL.glDisable(Blender.BGL.GL_BLEND)
+            Blender_API.BGL.glEnable(Blender_API.BGL.GL_BLEND)
+            Blender_API.BGL.glBlendFunc(Blender_API.BGL.GL_SRC_ALPHA, Blender_API.BGL.GL_ONE_MINUS_SRC_ALPHA) 
+            Blender_API.BGL.glRasterPos2f(int(x)+0.5, int(y)+0.5)
+            Blender_API.BGL.glDrawPixels(self.width, self.height, Blender_API.BGL.GL_RGBA, Blender_API.BGL.GL_UNSIGNED_BYTE, self.buf)
+            Blender_API.BGL.glDisable(Blender_API.BGL.GL_BLEND)
             
         def decodeStr(self, width, height, s):
             self.resize(width, height)
@@ -1956,7 +1962,7 @@ class Lux:
         def set(self, value):
             if self.obj:
                 setattr(self.obj, self.name, value)
-                Blender.Window.QRedrawAll()
+                Blender_API.Window.QRedrawAll()
                 
     class GUI:
         '''
@@ -1992,12 +1998,12 @@ class Lux:
         def newline(self, title="", distance=0, level=0, icon=None, color=None):
             self.x = 110
             if not(self.resethmax): self.y -= int(self.hmax + distance)
-            if color!=None: Blender.BGL.glColor3f(color[0],color[1],color[2]); Blender.BGL.glRectf(0,self.y-self.hmax,self.xmax,self.y+distance); Blender.BGL.glColor3f(0.9, 0.9, 0.9)
+            if color!=None: Blender_API.BGL.glColor3f(color[0],color[1],color[2]); Blender_API.BGL.glRectf(0,self.y-self.hmax,self.xmax,self.y+distance); Blender_API.BGL.glColor3f(0.9, 0.9, 0.9)
             if icon!=None:  Lux.Icon.drawIcon(icon, 2+level*10, self.y-16)
             self.resethmax = True
             if title!="":
                 self.getRect(0, 1)
-                Blender.BGL.glColor3f(0.9,0.9,0.9); Blender.BGL.glRasterPos2i(20+level*10,self.y-self.h+5); Blender.Draw.Text(title)
+                Blender_API.BGL.glColor3f(0.9,0.9,0.9); Blender_API.BGL.glRasterPos2i(20+level*10,self.y-self.h+5); Blender_API.Draw.Text(title)
                 
         # scrollbar
         class scrollbar:
@@ -2010,8 +2016,8 @@ class Lux:
             def calcRects(self):
                 # Blender doesn't give us direct access to the window size yet, but it does set the
                 # GL scissor box for it, so we can get the size from that. (thx to Daniel Dunbar)
-                size = Blender.BGL.Buffer(Blender.BGL.GL_FLOAT, 4)
-                Blender.BGL.glGetFloatv(Blender.BGL.GL_SCISSOR_BOX, size)
+                size = Blender_API.BGL.Buffer(Blender_API.BGL.GL_FLOAT, 4)
+                Blender_API.BGL.glGetFloatv(Blender_API.BGL.GL_SCISSOR_BOX, size)
                 size = size.list # [winx, winy, width, height]
                 self.winrect = size[:]
                 self.viewHeight = size[3]
@@ -2024,32 +2030,32 @@ class Lux:
                 self.sliderRect = [size[0]+2, size[3]-2-(self.position+self.viewHeight)*self.factor, size[2]-2, size[3]-2-self.position*self.factor]
             def draw(self):
                 self.calcRects()
-                Blender.BGL.glColor3f(0.5,0.5,0.5); Blender.BGL.glRectf(self.rect[0],self.rect[1],self.rect[2],self.rect[3])
-                if self.over or self.scrolling: Blender.BGL.glColor3f(1.0,1.0,0.7)
-                else: Blender.BGL.glColor3f(0.7,0.7,0.7)
-                Blender.BGL.glRectf(self.sliderRect[0],self.sliderRect[1],self.sliderRect[2],self.sliderRect[3])
+                Blender_API.BGL.glColor3f(0.5,0.5,0.5); Blender_API.BGL.glRectf(self.rect[0],self.rect[1],self.rect[2],self.rect[3])
+                if self.over or self.scrolling: Blender_API.BGL.glColor3f(1.0,1.0,0.7)
+                else: Blender_API.BGL.glColor3f(0.7,0.7,0.7)
+                Blender_API.BGL.glRectf(self.sliderRect[0],self.sliderRect[1],self.sliderRect[2],self.sliderRect[3])
             def getTop(self):
                 return self.viewHeight+self.position
             def scroll(self, delta):
                 self.position = self.position + delta
                 self.calcRects()
-                Blender.Draw.Redraw()
+                Blender_API.Draw.Redraw()
             def Mouse(self):
                 self.calcRects()
-                coord, buttons = Blender.Window.GetMouseCoords(), Blender.Window.GetMouseButtons()
+                coord, buttons = Blender_API.Window.GetMouseCoords(), Blender_API.Window.GetMouseButtons()
                 over = (coord[0]>=self.winrect[0]+self.rect[0]) and (coord[0]<=self.winrect[0]+self.rect[2]) and \
                        (coord[1]>=self.winrect[1]+self.rect[1]) and (coord[1]<=self.winrect[1]+self.rect[3])
-                if Blender.Window.MButs.L and buttons > 0:
+                if Blender_API.Window.MButs.L and buttons > 0:
                     if self.scrolling:
                         if self.factor > 0: self.scroll((self.lastcoord[1]-coord[1])/self.factor)
-                        Blender.Draw.Redraw()
+                        Blender_API.Draw.Redraw()
                     elif self.over:
                         self.scrolling = True
                     self.lastcoord = coord
                 elif self.scrolling:
                     self.scrolling = False
-                    Blender.Draw.Redraw()
-                if self.over != over: Blender.Draw.Redraw()
+                    Blender_API.Draw.Redraw()
+                if self.over != over: Blender_API.Draw.Redraw()
                 self.over = over
         
         # gui main draw
@@ -2057,7 +2063,7 @@ class Lux:
         def Draw():
             y = int(Lux.GUI.LB_scrollbar.getTop()) # 420
             
-            Lux.scene = Blender.Scene.GetCurrent()
+            Lux.scene = Blender_API.Scene.GetCurrent()
             if Lux.scene:
                 luxpage = Lux.Property(Lux.scene, "page", 0)
                 
@@ -2067,14 +2073,14 @@ class Lux:
                     if (Lux.GUI.Active == None): Lux.GUI.Active = True
                     Lux.LB_gui = Lux.GUI(y-70)
                 
-                Blender.BGL.glClear(Blender.BGL.GL_COLOR_BUFFER_BIT)
-                Blender.BGL.glColor3f(0.1,0.1,0.1); Blender.BGL.glRectf(0,0,440,y)
-                Blender.BGL.glColor3f(1.0,0.5,0.0); Blender.BGL.glRasterPos2i(130,y-21); Blender.Draw.Text("CVS")
-                Blender.BGL.glColor3f(0.9,0.9,0.9);
+                Blender_API.BGL.glClear(Blender_API.BGL.GL_COLOR_BUFFER_BIT)
+                Blender_API.BGL.glColor3f(0.1,0.1,0.1); Blender_API.BGL.glRectf(0,0,440,y)
+                Blender_API.BGL.glColor3f(1.0,0.5,0.0); Blender_API.BGL.glRasterPos2i(130,y-21); Blender_API.Draw.Text("CVS")
+                Blender_API.BGL.glColor3f(0.9,0.9,0.9);
                 Lux.Icon.drawLogo(Lux.Icon.get_logo('logo_luxblend'), 6, y-25);
         
                 # render presets
-                Blender.BGL.glRasterPos2i(10,y-45); Blender.Draw.Text("Render presets:")
+                Blender_API.BGL.glRasterPos2i(10,y-45); Blender_API.Draw.Text("Render presets:")
                 luxpreset = Lux.Property(Lux.scene, "preset", "1C - Final - medium MLT/Path Tracing (indoor) (recommended)")
                 presets = Lux.Presets.getScenePresets()
                 presetskeys = presets.keys()
@@ -2084,9 +2090,9 @@ class Lux:
                 for i, v in enumerate(presetskeys): presetsstr = "%s %%x%d|%s"%(v, i, presetsstr)
                 try: i = presetskeys.index(luxpreset.get())
                 except ValueError: i = 0
-                Blender.Draw.Menu(presetsstr, Lux.Events.LuxGui, 110, y-50, 220, 18, i, "", lambda e,v: luxpreset.set(presetskeys[v]))
-                Blender.Draw.Button("save", Lux.Events.SavePreset, 330, y-50, 40, 18, "create a render-settings preset")
-                Blender.Draw.Button("del", Lux.Events.DeletePreset, 370, y-50, 40, 18, "delete a render-settings preset")
+                Blender_API.Draw.Menu(presetsstr, Lux.Events.LuxGui, 110, y-50, 220, 18, i, "", lambda e,v: luxpreset.set(presetskeys[v]))
+                Blender_API.Draw.Button("save", Lux.Events.SavePreset, 330, y-50, 40, 18, "create a render-settings preset")
+                Blender_API.Draw.Button("del", Lux.Events.DeletePreset, 370, y-50, 40, 18, "delete a render-settings preset")
         
                 # if preset is selected load values
                 if luxpreset.get() != "":
@@ -2095,27 +2101,27 @@ class Lux:
                         for k,v in d.items(): Lux.scene.properties['luxblend'][k] = v
                     except: pass
         
-                Blender.Draw.Button("Material", Lux.Events.LuxGui, 10, y-70, 80, 16, "", lambda e,v:luxpage.set(0))
-                Blender.Draw.Button("Cam/Env", Lux.Events.LuxGui, 90, y-70, 80, 16, "", lambda e,v:luxpage.set(1))
-                Blender.Draw.Button("Render", Lux.Events.LuxGui, 170, y-70, 80, 16, "", lambda e,v:luxpage.set(2))
-                Blender.Draw.Button("Output", Lux.Events.LuxGui, 250, y-70, 80, 16, "", lambda e,v:luxpage.set(3))
-                Blender.Draw.Button("System", Lux.Events.LuxGui, 330, y-70, 80, 16, "", lambda e,v:luxpage.set(4))
+                Blender_API.Draw.Button("Material", Lux.Events.LuxGui, 10, y-70, 80, 16, "", lambda e,v:luxpage.set(0))
+                Blender_API.Draw.Button("Cam/Env", Lux.Events.LuxGui, 90, y-70, 80, 16, "", lambda e,v:luxpage.set(1))
+                Blender_API.Draw.Button("Render", Lux.Events.LuxGui, 170, y-70, 80, 16, "", lambda e,v:luxpage.set(2))
+                Blender_API.Draw.Button("Output", Lux.Events.LuxGui, 250, y-70, 80, 16, "", lambda e,v:luxpage.set(3))
+                Blender_API.Draw.Button("System", Lux.Events.LuxGui, 330, y-70, 80, 16, "", lambda e,v:luxpage.set(4))
                 if luxpage.get() == 0:
-                    Blender.BGL.glColor3f(1.0,0.5,0.0);Blender.BGL.glRectf(10,y-74,90,y-70);Blender.BGL.glColor3f(0.9,0.9,0.9)
+                    Blender_API.BGL.glColor3f(1.0,0.5,0.0);Blender_API.BGL.glRectf(10,y-74,90,y-70);Blender_API.BGL.glColor3f(0.9,0.9,0.9)
                     obj = Lux.scene.objects.active
                     if obj:
                         if (obj.getType() == "Lamp"):
                             ltype = obj.getData(mesh=1).getType() # data
-                            if   (ltype == Blender.Lamp.Types["Area"]): Lux.Light.Area("Area LIGHT", "", obj, 0)
-                            elif (ltype == Blender.Lamp.Types["Spot"]): Lux.Light.Spot("Spot LIGHT", "", obj, 0)
-                            elif (ltype == Blender.Lamp.Types["Lamp"]): Lux.Light.Point("Point LIGHT", "", obj, 0)
+                            if   (ltype == Blender_API.Lamp.Types["Area"]): Lux.Light.Area("Area LIGHT", "", obj, 0)
+                            elif (ltype == Blender_API.Lamp.Types["Spot"]): Lux.Light.Spot("Spot LIGHT", "", obj, 0)
+                            elif (ltype == Blender_API.Lamp.Types["Lamp"]): Lux.Light.Point("Point LIGHT", "", obj, 0)
                         else:
                             matfilter = Lux.Property(Lux.scene, "matlistfilter", "false")
                             mats = Lux.Export.getMaterials(obj, True)
                             if (Lux.Materials.activemat == None) and (len(mats) > 0):
                                 Lux.Materials.setactivemat(mats[0])
                             if matfilter.get() == "false":
-                                mats = Blender.Material.Get()
+                                mats = Blender_API.Material.Get()
                             matindex = 0
                             for i, v in enumerate(mats):
                                 if v==Lux.Materials.activemat: matindex = i
@@ -2124,18 +2130,18 @@ class Lux:
                             for i, v in enumerate(matnames): menustr = "%s %%x%d|%s"%(v, i, menustr)
                             Lux.LB_gui.newline("MATERIAL:", 8) 
                             r = Lux.LB_gui.getRect(1.1, 1)
-                            Blender.Draw.Button("C", Lux.Events.ConvertMaterial, r[0]-Lux.LB_gui.h, Lux.LB_gui.y-Lux.LB_gui.h, Lux.LB_gui.h, Lux.LB_gui.h, "convert blender material to lux material")
-                            Blender.Draw.Menu(menustr, Lux.Events.LuxGui, r[0], r[1], r[2], r[3], matindex, "", lambda e,v: Lux.Materials.setactivemat(mats[v]))
+                            Blender_API.Draw.Button("C", Lux.Events.ConvertMaterial, r[0]-Lux.LB_gui.h, Lux.LB_gui.y-Lux.LB_gui.h, Lux.LB_gui.h, Lux.LB_gui.h, "convert blender material to lux material")
+                            Blender_API.Draw.Menu(menustr, Lux.Events.LuxGui, r[0], r[1], r[2], r[3], matindex, "", lambda e,v: Lux.Materials.setactivemat(mats[v]))
                             Lux.TypedControls.Bool("", matfilter, "filter", "only show active object materials", 0.5)
         
-                            Blender.Draw.Button("L", Lux.Events.LoadMaterial, Lux.LB_gui.x, Lux.LB_gui.y-Lux.LB_gui.h, Lux.LB_gui.h, Lux.LB_gui.h, "load a material preset")
-                            Blender.Draw.Button("S", Lux.Events.SaveMaterial, Lux.LB_gui.x+Lux.LB_gui.h, Lux.LB_gui.y-Lux.LB_gui.h, Lux.LB_gui.h, Lux.LB_gui.h, "save a material preset")
-                            Blender.Draw.Button("D", Lux.Events.DeleteMaterial, Lux.LB_gui.x+Lux.LB_gui.h*2, Lux.LB_gui.y-Lux.LB_gui.h, Lux.LB_gui.h, Lux.LB_gui.h, "delete a material preset")
+                            Blender_API.Draw.Button("L", Lux.Events.LoadMaterial, Lux.LB_gui.x, Lux.LB_gui.y-Lux.LB_gui.h, Lux.LB_gui.h, Lux.LB_gui.h, "load a material preset")
+                            Blender_API.Draw.Button("S", Lux.Events.SaveMaterial, Lux.LB_gui.x+Lux.LB_gui.h, Lux.LB_gui.y-Lux.LB_gui.h, Lux.LB_gui.h, Lux.LB_gui.h, "save a material preset")
+                            Blender_API.Draw.Button("D", Lux.Events.DeleteMaterial, Lux.LB_gui.x+Lux.LB_gui.h*2, Lux.LB_gui.y-Lux.LB_gui.h, Lux.LB_gui.h, Lux.LB_gui.h, "delete a material preset")
                             if len(mats) > 0:
                                 Lux.Materials.setactivemat(mats[matindex])
                                 Lux.Materials.Material(Lux.Materials.activemat)
                 if luxpage.get() == 1:
-                    Blender.BGL.glColor3f(1.0,0.5,0.0);Blender.BGL.glRectf(90,y-74,170,y-70);Blender.BGL.glColor3f(0.9,0.9,0.9)
+                    Blender_API.BGL.glColor3f(1.0,0.5,0.0);Blender_API.BGL.glRectf(90,y-74,170,y-70);Blender_API.BGL.glColor3f(0.9,0.9,0.9)
                     cam = Lux.scene.objects.camera
                     if cam:
                         r = Lux.LB_gui.getRect(1.1, 1)
@@ -2143,7 +2149,7 @@ class Lux:
                     Lux.LB_gui.newline("", 10)
                     Lux.SceneElements.Environment()
                 if luxpage.get() == 2:
-                    Blender.BGL.glColor3f(1.0,0.5,0.0);Blender.BGL.glRectf(170,y-74,250,y-70);Blender.BGL.glColor3f(0.9,0.9,0.9)
+                    Blender_API.BGL.glColor3f(1.0,0.5,0.0);Blender_API.BGL.glRectf(170,y-74,250,y-70);Blender_API.BGL.glColor3f(0.9,0.9,0.9)
                     r = Lux.LB_gui.getRect(1.1, 1)
                     Lux.SceneElements.Sampler()
                     Lux.LB_gui.newline("", 10)
@@ -2153,20 +2159,20 @@ class Lux:
                     Lux.LB_gui.newline("", 10)
                     Lux.SceneElements.PixelFilter()
                 if luxpage.get() == 3:
-                    Blender.BGL.glColor3f(1.0,0.5,0.0);Blender.BGL.glRectf(250,y-74,330,y-70);Blender.BGL.glColor3f(0.9,0.9,0.9)
+                    Blender_API.BGL.glColor3f(1.0,0.5,0.0);Blender_API.BGL.glRectf(250,y-74,330,y-70);Blender_API.BGL.glColor3f(0.9,0.9,0.9)
                     r = Lux.LB_gui.getRect(1.1, 1)
                     Lux.SceneElements.Film()
                 if luxpage.get() == 4:
-                    Blender.BGL.glColor3f(1.0,0.5,0.0);Blender.BGL.glRectf(330,y-74,410,y-70);Blender.BGL.glColor3f(0.9,0.9,0.9)
+                    Blender_API.BGL.glColor3f(1.0,0.5,0.0);Blender_API.BGL.glRectf(330,y-74,410,y-70);Blender_API.BGL.glColor3f(0.9,0.9,0.9)
                     Lux.SceneElements.System()
                     Lux.LB_gui.newline("", 10)
                     Lux.SceneElements.Accelerator()
                     Lux.LB_gui.newline("MATERIALS:", 10)
                     r = Lux.LB_gui.getRect(2,1)
-                    Blender.Draw.Button("convert all blender materials", 0, r[0], r[1], r[2], r[3], "convert all blender-materials to lux-materials", lambda e,v:Lux.Converter.convertAllMaterials())
+                    Blender_API.Draw.Button("convert all blender materials", 0, r[0], r[1], r[2], r[3], "convert all blender-materials to lux-materials", lambda e,v:Lux.Converter.convertAllMaterials())
                     Lux.LB_gui.newline("SETTINGS:", 10)
                     r = Lux.LB_gui.getRect(2,1)
-                    Blender.Draw.Button("save defaults", 0, r[0], r[1], r[2], r[3], "save current settings as defaults", lambda e,v:Lux.Presets.saveluxdefaults())
+                    Blender_API.Draw.Button("save defaults", 0, r[0], r[1], r[2], r[3], "save current settings as defaults", lambda e,v:Lux.Presets.saveluxdefaults())
                 y = Lux.LB_gui.y - 80
                 if y > 0: y = 0 # bottom align of render button
                 run = Lux.Property(Lux.scene, "run", "true")
@@ -2179,20 +2185,20 @@ class Lux:
                 net = Lux.Property(Lux.scene, "netrenderctl", "false")
                 donet = Lux.Property(Lux.scene, "donetrender", "true")
                 if (run.get()=="true"):
-                    Blender.Draw.Button("Render", 0, 10, y+20, 100, 36, "Render with Lux", lambda e,v: Lux.Launch.ExportStill(dlt.get()=="true", True))
-                    Blender.Draw.Button("Render Anim", 0, 110, y+20, 100, 36, "Render animation with Lux", lambda e,v:Lux.Launch.ExportAnim(dlt.get()=="true", True))
+                    Blender_API.Draw.Button("Render", 0, 10, y+20, 100, 36, "Render with Lux", lambda e,v: Lux.Launch.ExportStill(dlt.get()=="true", True))
+                    Blender_API.Draw.Button("Render Anim", 0, 110, y+20, 100, 36, "Render animation with Lux", lambda e,v:Lux.Launch.ExportAnim(dlt.get()=="true", True))
                 else:
-                    Blender.Draw.Button("Export", 0, 10, y+20, 100, 36, "Export", lambda e,v: Lux.Launch.ExportStill(dlt.get()=="true", False))
-                    Blender.Draw.Button("Export Anim", 0, 110, y+20, 100, 36, "Export animation", lambda e,v: Lux.Launch.ExportAnim(dlt.get()=="true", False))
+                    Blender_API.Draw.Button("Export", 0, 10, y+20, 100, 36, "Export", lambda e,v: Lux.Launch.ExportStill(dlt.get()=="true", False))
+                    Blender_API.Draw.Button("Export Anim", 0, 110, y+20, 100, 36, "Export animation", lambda e,v: Lux.Launch.ExportAnim(dlt.get()=="true", False))
         
-                Blender.Draw.Toggle("run", Lux.Events.LuxGui, 320, y+40, 30, 16, run.get()=="true", "start Lux after export", lambda e,v: run.set(["false","true"][bool(v)]))
-                Blender.Draw.Toggle("def", Lux.Events.LuxGui, 350, y+40, 30, 16, dlt.get()=="true", "save to default.lxs", lambda e,v: dlt.set(["false","true"][bool(v)]))
-                Blender.Draw.Toggle("clay", Lux.Events.LuxGui, 380, y+40, 30, 16, clay.get()=="true", "all materials are rendered as white-matte", lambda e,v: clay.set(["false","true"][bool(v)]))
-                Blender.Draw.Toggle(".lxs", 0, 290, y+20, 30, 16, lxs.get()=="true", "export .lxs scene file", lambda e,v: lxs.set(["false","true"][bool(v)]))
-                Blender.Draw.Toggle(".lxo", 0, 320, y+20, 30, 16, lxo.get()=="true", "export .lxo geometry file", lambda e,v: lxo.set(["false","true"][bool(v)]))
-                Blender.Draw.Toggle(".lxm", 0, 350, y+20, 30, 16, lxm.get()=="true", "export .lxm material file", lambda e,v: lxm.set(["false","true"][bool(v)]))
-                Blender.Draw.Toggle(".lxv", 0, 380, y+20, 30, 16, lxm.get()=="true", "export .lxv volume file", lambda e,v: lxm.set(["false","true"][bool(v)]))
-            Blender.BGL.glColor3f(0.9, 0.9, 0.9) ; Blender.BGL.glRasterPos2i(340,y+5) ; Blender.Draw.Text("Press Q or ESC to quit.", "tiny")
+                Blender_API.Draw.Toggle("run", Lux.Events.LuxGui, 320, y+40, 30, 16, run.get()=="true", "start Lux after export", lambda e,v: run.set(["false","true"][bool(v)]))
+                Blender_API.Draw.Toggle("def", Lux.Events.LuxGui, 350, y+40, 30, 16, dlt.get()=="true", "save to default.lxs", lambda e,v: dlt.set(["false","true"][bool(v)]))
+                Blender_API.Draw.Toggle("clay", Lux.Events.LuxGui, 380, y+40, 30, 16, clay.get()=="true", "all materials are rendered as white-matte", lambda e,v: clay.set(["false","true"][bool(v)]))
+                Blender_API.Draw.Toggle(".lxs", 0, 290, y+20, 30, 16, lxs.get()=="true", "export .lxs scene file", lambda e,v: lxs.set(["false","true"][bool(v)]))
+                Blender_API.Draw.Toggle(".lxo", 0, 320, y+20, 30, 16, lxo.get()=="true", "export .lxo geometry file", lambda e,v: lxo.set(["false","true"][bool(v)]))
+                Blender_API.Draw.Toggle(".lxm", 0, 350, y+20, 30, 16, lxm.get()=="true", "export .lxm material file", lambda e,v: lxm.set(["false","true"][bool(v)]))
+                Blender_API.Draw.Toggle(".lxv", 0, 380, y+20, 30, 16, lxm.get()=="true", "export .lxv volume file", lambda e,v: lxm.set(["false","true"][bool(v)]))
+            Blender_API.BGL.glColor3f(0.9, 0.9, 0.9) ; Blender_API.BGL.glRasterPos2i(340,y+5) ; Blender_API.Draw.Text("Press Q or ESC to quit.", "tiny")
             Lux.GUI.LB_scrollbar.height = Lux.GUI.LB_scrollbar.getTop() - y
             Lux.GUI.LB_scrollbar.draw()
         
@@ -2216,27 +2222,27 @@ class Lux:
                 menu += "|Upload to DB%x6"
         
             #menu += "|%l|dump material%x99|dump clipboard%x98"
-            r = Blender.Draw.PupMenu(menu)
+            r = Blender_API.Draw.PupMenu(menu)
             if r==1:
                 Lux.clipboard = Lux.Converter.getMatTex(mat, basekey, tex)
             elif r==2: Lux.Converter.putMatTex(mat, Lux.clipboard, basekey, tex)
             elif r==3: 
-                #Lux.scene = Blender.Scene.GetCurrent()
+                #Lux.scene = Blender_API.Scene.GetCurrent()
                 if (tex):
-                    Blender.Window.FileSelector(lambda fn:Lux.Converter.loadMatTex(mat, fn, basekey, tex), "load texture", Lux.Property(Lux.scene, "lux", "").get()+os.sep+".lbt")
+                    Blender_API.Window.FileSelector(lambda fn:Lux.Converter.loadMatTex(mat, fn, basekey, tex), "load texture", Lux.Property(Lux.scene, "lux", "").get()+os.sep+".lbt")
                 else:
-                    Blender.Window.FileSelector(lambda fn:Lux.Converter.loadMatTex(mat, fn, basekey, tex), "load material", Lux.Property(Lux.scene, "lux", "").get()+os.sep+".lbm")
+                    Blender_API.Window.FileSelector(lambda fn:Lux.Converter.loadMatTex(mat, fn, basekey, tex), "load material", Lux.Property(Lux.scene, "lux", "").get()+os.sep+".lbm")
             elif r==4:
-                #Lux.scene = Blender.Scene.GetCurrent()
+                #Lux.scene = Blender_API.Scene.GetCurrent()
                 if (tex):
-                    Blender.Window.FileSelector(lambda fn:Lux.Converter.saveMatTex(mat, fn, basekey, tex), "save texture", Lux.Property(Lux.scene, "lux", "").get()+os.sep+".lbt")
+                    Blender_API.Window.FileSelector(lambda fn:Lux.Converter.saveMatTex(mat, fn, basekey, tex), "save texture", Lux.Property(Lux.scene, "lux", "").get()+os.sep+".lbt")
                 else:
-                    Blender.Window.FileSelector(lambda fn:Lux.Converter.saveMatTex(mat, fn, basekey, tex), "save material", Lux.Property(Lux.scene, "lux", "").get()+os.sep+".lbm")
+                    Blender_API.Window.FileSelector(lambda fn:Lux.Converter.saveMatTex(mat, fn, basekey, tex), "save material", Lux.Property(Lux.scene, "lux", "").get()+os.sep+".lbm")
             elif r==5:
                 if not tex:
-                    id = Blender.Draw.PupStrInput("Material ID:", "", 32)
+                    id = Blender_API.Draw.PupStrInput("Material ID:", "", 32)
                 else:
-                    id = Blender.Draw.PupStrInput("Texture ID:", "", 32)
+                    id = Blender_API.Draw.PupStrInput("Texture ID:", "", 32)
                 if id: Lux.Converter.putMatTex(mat, Lux.Web.download(mat, id), basekey, tex)
             elif r==6:
                 if not Lux.LB_web.submit_object(mat, basekey, tex):
@@ -2244,13 +2250,13 @@ class Lux:
                 else:
                     msg = 'OK'
                     
-                Blender.Draw.PupMenu("Upload: "+msg+".%t|OK")
+                Blender_API.Draw.PupMenu("Upload: "+msg+".%t|OK")
             #elif r==99:
             #    for k,v in mat.properties['luxblend'].convert_to_pyobject().items(): Lux.Log(k+"="+repr(v))
             #elif r==98:
             #    for k,v in Lux.clipboard.items(): Lux.Log(k+"="+repr(v))
             #Lux.Log("")
-            Blender.Draw.Redraw()
+            Blender_API.Draw.Redraw()
                 
     class TypedControls:
         @staticmethod
@@ -2258,7 +2264,7 @@ class Lux:
             icon_help = Lux.Icon.get_icon('icon_help')
             if Lux.GUI.Active:
                 r = Lux.LB_gui.getRect(width, 1)
-                Blender.Draw.Toggle(caption, Lux.Events.LuxGui, r[0], r[1], r[2], r[3], lux.get()=="true", hint, lambda e,v: lux.set(["false","true"][bool(v)]))
+                Blender_API.Draw.Toggle(caption, Lux.Events.LuxGui, r[0], r[1], r[2], r[3], lux.get()=="true", hint, lambda e,v: lux.set(["false","true"][bool(v)]))
                 Lux.Icon.drawIcon(icon_help, r[0], r[1])
         
             return "\n   \"bool %s\" [\"%s\"]"%(name, lux.get())
@@ -2278,7 +2284,7 @@ class Lux:
                         Lux.Log("ERROR: value %s not found in options list"%(lux.get()), popup = True)
                         i = 0
                 r = Lux.LB_gui.getRect(width, 1)
-                Blender.Draw.Menu(menustr, Lux.Events.LuxGui, r[0], r[1], r[2], r[3], i, hint, lambda e,v: lux.set(options[v]))
+                Blender_API.Draw.Menu(menustr, Lux.Events.LuxGui, r[0], r[1], r[2], r[3], i, hint, lambda e,v: lux.set(options[v]))
             return "\n   \"string %s\" [\"%s\"]" % (name, lux.get())
         
         @staticmethod
@@ -2295,7 +2301,7 @@ class Lux:
                     except ValueError:
                         Lux.Log("ERROR: value %s not found in options list"%(lux.get()), popup = True)
                         i = 0
-                Blender.Draw.Menu(menustr, Lux.Events.LuxGui, x, y, xx, yy, i, hint, lambda e,v: lux.set(options[v]))
+                Blender_API.Draw.Menu(menustr, Lux.Events.LuxGui, x, y, xx, yy, i, hint, lambda e,v: lux.set(options[v]))
             return "\n   \"string %s\" [\"%s\"]"%(name, lux.get())
         
         @staticmethod
@@ -2316,9 +2322,9 @@ class Lux:
         
                 # Value
                 if(useslider==1):
-                    Blender.Draw.Slider(caption+": ", Lux.Events.LuxGui, r[0], r[1], r[2], r[3], lux.getFloat(), min, max, 0, hint, lambda e,v: lux.set(v))
+                    Blender_API.Draw.Slider(caption+": ", Lux.Events.LuxGui, r[0], r[1], r[2], r[3], lux.getFloat(), min, max, 0, hint, lambda e,v: lux.set(v))
                 else:
-                    Blender.Draw.Number(caption+": ", Lux.Events.LuxGui, r[0], r[1], r[2], r[3], lux.getFloat(), min, max, hint, lambda e,v: lux.set(v))
+                    Blender_API.Draw.Number(caption+": ", Lux.Events.LuxGui, r[0], r[1], r[2], r[3], lux.getFloat(), min, max, hint, lambda e,v: lux.set(v))
                 if (Lux.Property(Lux.scene, "useparamkeys", "false").get()=="true"):
                     # IPO Curve
                     obj = lux.getobj()
@@ -2326,7 +2332,7 @@ class Lux:
             
                     useipo = Lux.Property(obj, keyname+".IPOuse", "false")
                     i = Lux.LB_gui.getRect(0.12, 1)
-                    Blender.Draw.Toggle("I", Lux.Events.LuxGui, i[0], i[1], i[2], i[3], useipo.get()=="true", "Use IPO Curve", lambda e,v: useipo.set(["false","true"][bool(v)]))
+                    Blender_API.Draw.Toggle("I", Lux.Events.LuxGui, i[0], i[1], i[2], i[3], useipo.get()=="true", "Use IPO Curve", lambda e,v: useipo.set(["false","true"][bool(v)]))
                     
                     if useipo.get() == "true":
                         if Lux.GUI.Active: Lux.LB_gui.newline(caption+"IPO:", 8, 0, None, [0.5,0.45,0.35])
@@ -2336,7 +2342,7 @@ class Lux:
                         else:
                             c = Lux.LB_gui.getRect(1.1, 1)
                         
-                        Blender.Draw.String("Ipo:", Lux.Events.LuxGui, c[0], c[1], c[2], c[3], curve.get(), 250, "Set IPO Name", lambda e,v: curve.set(v))
+                        Blender_API.Draw.String("Ipo:", Lux.Events.LuxGui, c[0], c[1], c[2], c[3], curve.get(), 250, "Set IPO Name", lambda e,v: curve.set(v))
                         
                         usemapping = Lux.Property(obj, keyname+".IPOmap", "false")
                         icu_value = 0
@@ -2344,7 +2350,7 @@ class Lux:
                         # Apply IPO to value
                         if curve.get() != "":
                             try:
-                                ipoob = Blender.Ipo.Get(curve.get())
+                                ipoob = Blender_API.Ipo.Get(curve.get())
                             except: 
                                 curve.set("")
                             pass
@@ -2353,14 +2359,14 @@ class Lux:
                                 ipotype = Lux.Property(obj, keyname+".IPOCurveType", "OB_LOCZ")
                                 Lux.TypedControls.Option("ipocurve", ipotype, names, "IPO Curve", "Set IPO Curve", 0.6)
             
-                                icu = ipoob[eval("Blender.Ipo.%s" % (ipotype.get()))]
-                                icu_value = icu[Blender.Get('curframe')]
+                                icu = ipoob[eval("Blender_API.Ipo.%s" % (ipotype.get()))]
+                                icu_value = icu[Blender_API.Get('curframe')]
                                 if usemapping.get() == "false": # if true is set during mapping below
                                     lux.set(icu_value)    
             
                                 # Mapping options
                                 m = Lux.LB_gui.getRect(0.3, 1)
-                                Blender.Draw.Toggle("Map", Lux.Events.LuxGui, m[0], m[1], m[2], m[3], usemapping.get()=="true", "Edit Curve mapping", lambda e,v: usemapping.set(["false","true"][bool(v)]))
+                                Blender_API.Draw.Toggle("Map", Lux.Events.LuxGui, m[0], m[1], m[2], m[3], usemapping.get()=="true", "Edit Curve mapping", lambda e,v: usemapping.set(["false","true"][bool(v)]))
                                 if usemapping.get() == "true":
                                     if Lux.GUI.Active: Lux.LB_gui.newline(caption+"IPO:", 8, 0, None, [0.5,0.45,0.35])
                                     fmin = Lux.Property(obj, keyname+".IPOCurvefmin", 0.0)
@@ -2377,7 +2383,7 @@ class Lux:
         
                                     # invert
                                     #v = Lux.LB_gui.getRect(0.5, 1)
-                                    #Blender.Draw.Toggle("Invert", Lux.Events.LuxGui, v[0], v[1], v[2], v[3], useipo.get()=="true", "Invert Curve values", lambda e,v: useipo.set(["false","true"][bool(v)]))
+                                    #Blender_API.Draw.Toggle("Invert", Lux.Events.LuxGui, v[0], v[1], v[2], v[3], useipo.get()=="true", "Invert Curve values", lambda e,v: useipo.set(["false","true"][bool(v)]))
             else:
                 if (Lux.Property(Lux.scene, "useparamkeys", "false").get()=="true"):
                     obj = lux.getobj()
@@ -2386,7 +2392,7 @@ class Lux:
                     if useipo.get() == "true":
                         curve = Lux.Property(obj, keyname+".IPOCurveName", "") 
                         try:
-                            ipoob = Blender.Ipo.Get(curve.get())
+                            ipoob = Blender_API.Ipo.Get(curve.get())
                         except: 
                             curve.set("")
                         pass
@@ -2396,8 +2402,8 @@ class Lux:
                             names = list([x[0] for x in ipoob.curveConsts.items()])
                             ipotype = Lux.Property(obj, keyname+".IPOCurveType", "OB_LOCZ")
             
-                            icu = ipoob[eval("Blender.Ipo.%s" % (ipotype.get()))]
-                            icu_value = icu[Blender.Get('curframe')]
+                            icu = ipoob[eval("Blender_API.Ipo.%s" % (ipotype.get()))]
+                            icu_value = icu[Blender_API.Get('curframe')]
                             if usemapping.get() == "false": # if true is set during mapping below
                                 lux.set(icu_value)    
             
@@ -2417,30 +2423,30 @@ class Lux:
             if Lux.GUI.Active:
                 r = Lux.LB_gui.getRect(width, 1)
                 if(useslider==1):
-                    Blender.Draw.Slider(caption+": ", Lux.Events.LuxGui, r[0], r[1], r[2], r[3], lux.getFloat(), min, max, 0, hint, lambda e,v: lux.set(v))
+                    Blender_API.Draw.Slider(caption+": ", Lux.Events.LuxGui, r[0], r[1], r[2], r[3], lux.getFloat(), min, max, 0, hint, lambda e,v: lux.set(v))
                 else:
-                    Blender.Draw.Number(caption+": ", Lux.Events.LuxGui, r[0], r[1], r[2], r[3], lux.getFloat(), min, max, hint, lambda e,v: lux.set(v))
+                    Blender_API.Draw.Number(caption+": ", Lux.Events.LuxGui, r[0], r[1], r[2], r[3], lux.getFloat(), min, max, hint, lambda e,v: lux.set(v))
             return "\n   \"float %s\" [%f]"%(name, lux.getFloat())
                
         @staticmethod
         def Int(name, lux, min, max, caption, hint, width=1.0):
             if Lux.GUI.Active:
                 r = Lux.LB_gui.getRect(width, 1)
-                Blender.Draw.Number(caption+": ", Lux.Events.LuxGui, r[0], r[1], r[2], r[3], lux.getInt(), min, max, hint, lambda e,v: lux.set(v))
+                Blender_API.Draw.Number(caption+": ", Lux.Events.LuxGui, r[0], r[1], r[2], r[3], lux.getInt(), min, max, hint, lambda e,v: lux.set(v))
             return "\n   \"integer %s\" [%d]"%(name, lux.getInt())
         
         @staticmethod
         def Bool(name, lux, caption, hint, width=1.0):
             if Lux.GUI.Active:
                 r = Lux.LB_gui.getRect(width, 1)
-                Blender.Draw.Toggle(caption, Lux.Events.LuxGui, r[0], r[1], r[2], r[3], lux.get()=="true", hint, lambda e,v: lux.set(["false","true"][bool(v)]))
+                Blender_API.Draw.Toggle(caption, Lux.Events.LuxGui, r[0], r[1], r[2], r[3], lux.get()=="true", hint, lambda e,v: lux.set(["false","true"][bool(v)]))
             return "\n   \"bool %s\" [\"%s\"]"%(name, lux.get())
         
         @staticmethod
         def String(name, lux, caption, hint, width=1.0):
             if Lux.GUI.Active:
                 r = Lux.LB_gui.getRect(width, 1)
-                Blender.Draw.String(caption+": ", Lux.Events.LuxGui, r[0], r[1], r[2], r[3], lux.get(), 250, hint, lambda e,v: lux.set(v))
+                Blender_API.Draw.String(caption+": ", Lux.Events.LuxGui, r[0], r[1], r[2], r[3], lux.get(), 250, hint, lambda e,v: lux.set(v))
             if lux.get()==lux.default: return ""
             else: return "\n   \"string %s\" [\"%s\"]"%(name, Lux.Util.luxstr(lux.get()))
         
@@ -2448,16 +2454,16 @@ class Lux:
         def File(name, lux, caption, hint, width=1.0):
             if Lux.GUI.Active:
                 r = Lux.LB_gui.getRect(width, 1)
-                Blender.Draw.String(caption+": ", Lux.Events.LuxGui, r[0], r[1], r[2]-r[3]-2, r[3], lux.get(), 250, hint, lambda e,v: lux.set(v))
-                Blender.Draw.Button("...", 0, r[0]+r[2]-r[3], r[1], r[3], r[3], "click to open file selector", lambda e,v:Blender.Window.FileSelector(lambda s:lux.set(s), "Select %s"%(caption), lux.get()))
+                Blender_API.Draw.String(caption+": ", Lux.Events.LuxGui, r[0], r[1], r[2]-r[3]-2, r[3], lux.get(), 250, hint, lambda e,v: lux.set(v))
+                Blender_API.Draw.Button("...", 0, r[0]+r[2]-r[3], r[1], r[3], r[3], "click to open file selector", lambda e,v:Blender_API.Window.FileSelector(lambda s:lux.set(s), "Select %s"%(caption), lux.get()))
             return "\n   \"string %s\" [\"%s\"]"%(name, Lux.Util.luxstr(lux.get()))
         
         @staticmethod
         def Path(name, lux, caption, hint, width=1.0):
             if Lux.GUI.Active:
                 r = Lux.LB_gui.getRect(width, 1)
-                Blender.Draw.String(caption+": ", Lux.Events.LuxGui, r[0], r[1], r[2]-r[3]-2, r[3], lux.get(), 250, hint, lambda e,v: lux.set(Blender.sys.dirname(v)+os.sep))
-                Blender.Draw.Button("...", 0, r[0]+r[2]-r[3], r[1], r[3], r[3], "click to open file selector", lambda e,v:Blender.Window.FileSelector(lambda s:lux.set(s), "Select %s"%(caption), lux.get()))
+                Blender_API.Draw.String(caption+": ", Lux.Events.LuxGui, r[0], r[1], r[2]-r[3]-2, r[3], lux.get(), 250, hint, lambda e,v: lux.set(Blender_API.sys.dirname(v)+os.sep))
+                Blender_API.Draw.Button("...", 0, r[0]+r[2]-r[3], r[1], r[3], r[3], "click to open file selector", lambda e,v:Blender_API.Window.FileSelector(lambda s:lux.set(s), "Select %s"%(caption), lux.get()))
             return "\n   \"string %s\" [\"%s\"]"%(name, Lux.Util.luxstr(lux.get()))
         
         @staticmethod
@@ -2470,16 +2476,16 @@ class Lux:
                     for i in range(3):
                         if rgb[i] > scale: scale = rgb[i]
                     rgb = (rgb[0]/scale, rgb[1]/scale, rgb[2]/scale)
-                Blender.Draw.ColorPicker(Lux.Events.LuxGui, r[0], r[1], r[3], r[3], rgb, "click to select color", lambda e,v: lux.setRGB((v[0]*scale,v[1]*scale,v[2]*scale)))
+                Blender_API.Draw.ColorPicker(Lux.Events.LuxGui, r[0], r[1], r[3], r[3], rgb, "click to select color", lambda e,v: lux.setRGB((v[0]*scale,v[1]*scale,v[2]*scale)))
                 w = int((r[2]-r[3])/3); m = max
                 if max > 1.0:
                     w = int((r[2]-r[3])/4); m = 1.0
-                drawR, drawG, drawB, drawS = Blender.Draw.Create(rgb[0]), Blender.Draw.Create(rgb[1]), Blender.Draw.Create(rgb[2]), Blender.Draw.Create(scale)
-                drawR = Blender.Draw.Number("R:", Lux.Events.LuxGui, r[0]+r[3], r[1], w, r[3], drawR.val, 0.0, m, "red", lambda e,v: lux.setRGB((v*scale,drawG.val*scale,drawB.val*scale)))
-                drawG = Blender.Draw.Number("G:", Lux.Events.LuxGui, r[0]+r[3]+w, r[1], w, r[3], drawG.val, 0.0, m, "green", lambda e,v: lux.setRGB((drawR.val*scale,v*scale,drawB.val*scale)))
-                drawB = Blender.Draw.Number("B:", Lux.Events.LuxGui, r[0]+r[3]+2*w, r[1], w, r[3], drawB.val, 0.0, m, "blue", lambda e,v: lux.setRGB((drawR.val*scale,drawG.val*scale,v*scale)))
+                drawR, drawG, drawB, drawS = Blender_API.Draw.Create(rgb[0]), Blender_API.Draw.Create(rgb[1]), Blender_API.Draw.Create(rgb[2]), Blender_API.Draw.Create(scale)
+                drawR = Blender_API.Draw.Number("R:", Lux.Events.LuxGui, r[0]+r[3], r[1], w, r[3], drawR.val, 0.0, m, "red", lambda e,v: lux.setRGB((v*scale,drawG.val*scale,drawB.val*scale)))
+                drawG = Blender_API.Draw.Number("G:", Lux.Events.LuxGui, r[0]+r[3]+w, r[1], w, r[3], drawG.val, 0.0, m, "green", lambda e,v: lux.setRGB((drawR.val*scale,v*scale,drawB.val*scale)))
+                drawB = Blender_API.Draw.Number("B:", Lux.Events.LuxGui, r[0]+r[3]+2*w, r[1], w, r[3], drawB.val, 0.0, m, "blue", lambda e,v: lux.setRGB((drawR.val*scale,drawG.val*scale,v*scale)))
                 if max > 1.0:
-                    Blender.Draw.Number("s:", Lux.Events.LuxGui, r[0]+r[3]+3*w, r[1], w, r[3], drawS.val, 0.0, max, "color scale", lambda e,v: lux.setRGB((drawR.val*v,drawG.val*v,drawB.val*v)))
+                    Blender_API.Draw.Number("s:", Lux.Events.LuxGui, r[0]+r[3]+3*w, r[1], w, r[3], drawS.val, 0.0, max, "color scale", lambda e,v: lux.setRGB((drawR.val*v,drawG.val*v,drawB.val*v)))
             if max <= 1.0:
                 return "\n   \"color %s\" [%s]"%(name, lux.getRGC())
             return "\n   \"color %s\" [%s]"%(name, lux.get())
@@ -2490,10 +2496,10 @@ class Lux:
                 r = Lux.LB_gui.getRect(width, 1)
                 vec = lux.getVector()
                 w = int(r[2]/3)
-                drawX, drawY, drawZ = Blender.Draw.Create(vec[0]), Blender.Draw.Create(vec[1]), Blender.Draw.Create(vec[2])
-                drawX = Blender.Draw.Number("x:", Lux.Events.LuxGui, r[0], r[1], w, r[3], drawX.val, min, max, "", lambda e,v: lux.setVector((v,drawY.val,drawZ.val)))
-                drawY = Blender.Draw.Number("y:", Lux.Events.LuxGui, r[0]+w, r[1], w, r[3], drawY.val, min, max, "", lambda e,v: lux.setVector((drawX.val,v,drawZ.val)))
-                drawZ = Blender.Draw.Number("z:", Lux.Events.LuxGui, r[0]+2*w, r[1], w, r[3], drawZ.val, min, max, "", lambda e,v: lux.setVector((drawX.val,drawY.val,v)))
+                drawX, drawY, drawZ = Blender_API.Draw.Create(vec[0]), Blender_API.Draw.Create(vec[1]), Blender_API.Draw.Create(vec[2])
+                drawX = Blender_API.Draw.Number("x:", Lux.Events.LuxGui, r[0], r[1], w, r[3], drawX.val, min, max, "", lambda e,v: lux.setVector((v,drawY.val,drawZ.val)))
+                drawY = Blender_API.Draw.Number("y:", Lux.Events.LuxGui, r[0]+w, r[1], w, r[3], drawY.val, min, max, "", lambda e,v: lux.setVector((drawX.val,v,drawZ.val)))
+                drawZ = Blender_API.Draw.Number("z:", Lux.Events.LuxGui, r[0]+2*w, r[1], w, r[3], drawZ.val, min, max, "", lambda e,v: lux.setVector((drawX.val,drawY.val,v)))
             return "\n   \"vector %s\" [%s]"%(name, lux.get())
         
         @staticmethod
@@ -2504,15 +2510,15 @@ class Lux:
             if Lux.GUI.Active:
                 r = Lux.LB_gui.getRect(width, 1)
                 vec = lux.getVector()
-                Blender.Draw.Toggle("U", Lux.Events.LuxGui, r[0], r[1], Lux.LB_gui.h, Lux.LB_gui.h, lux.isFloat(), "uniform", lambda e,v: setUniform(lux, v))
+                Blender_API.Draw.Toggle("U", Lux.Events.LuxGui, r[0], r[1], Lux.LB_gui.h, Lux.LB_gui.h, lux.isFloat(), "uniform", lambda e,v: setUniform(lux, v))
                 if lux.isFloat():
-                    Blender.Draw.Number("v:", Lux.Events.LuxGui, r[0]+Lux.LB_gui.h, r[1], r[2]-Lux.LB_gui.h, r[3], lux.getFloat(), min, max, "", lambda e,v: lux.set(v))
+                    Blender_API.Draw.Number("v:", Lux.Events.LuxGui, r[0]+Lux.LB_gui.h, r[1], r[2]-Lux.LB_gui.h, r[3], lux.getFloat(), min, max, "", lambda e,v: lux.set(v))
                 else:
                     w = int((r[2]-Lux.LB_gui.h)/3)
-                    drawX, drawY, drawZ = Blender.Draw.Create(vec[0]), Blender.Draw.Create(vec[1]), Blender.Draw.Create(vec[2])
-                    drawX = Blender.Draw.Number("x:", Lux.Events.LuxGui, r[0]+Lux.LB_gui.h, r[1], w, r[3], drawX.val, min, max, "", lambda e,v: lux.setVector((v,drawY.val,drawZ.val)))
-                    drawY = Blender.Draw.Number("y:", Lux.Events.LuxGui, r[0]+w+Lux.LB_gui.h, r[1], w, r[3], drawY.val, min, max, "", lambda e,v: lux.setVector((drawX.val,v,drawZ.val)))
-                    drawZ = Blender.Draw.Number("z:", Lux.Events.LuxGui, r[0]+2*w+Lux.LB_gui.h, r[1], w, r[3], drawZ.val, min, max, "", lambda e,v: lux.setVector((drawX.val,drawY.val,v)))
+                    drawX, drawY, drawZ = Blender_API.Draw.Create(vec[0]), Blender_API.Draw.Create(vec[1]), Blender_API.Draw.Create(vec[2])
+                    drawX = Blender_API.Draw.Number("x:", Lux.Events.LuxGui, r[0]+Lux.LB_gui.h, r[1], w, r[3], drawX.val, min, max, "", lambda e,v: lux.setVector((v,drawY.val,drawZ.val)))
+                    drawY = Blender_API.Draw.Number("y:", Lux.Events.LuxGui, r[0]+w+Lux.LB_gui.h, r[1], w, r[3], drawY.val, min, max, "", lambda e,v: lux.setVector((drawX.val,v,drawZ.val)))
+                    drawZ = Blender_API.Draw.Number("z:", Lux.Events.LuxGui, r[0]+2*w+Lux.LB_gui.h, r[1], w, r[3], drawZ.val, min, max, "", lambda e,v: lux.setVector((drawX.val,drawY.val,v)))
             return "\n   \"vector %s\" [%s]"%(name, lux.getVectorStr())
         
     class SceneElements:
@@ -2545,8 +2551,8 @@ class Lux:
                     dofdist = Lux.Attribute(cam, "dofDist")
                     Lux.TypedControls.Float("focaldistance", dofdist, 0.0, 10000.0, "distance", "Distance from the camera at which objects will be in focus. Has no effect if Lens Radius is 0")
                     if Lux.GUI.Active:
-                        Blender.Draw.Button("S", Lux.Events.LuxGui, Lux.LB_gui.x, Lux.LB_gui.y-Lux.LB_gui.h, Lux.LB_gui.h, Lux.LB_gui.h, "focus selected object", lambda e,v:Lux.Util.setFocus("S"))
-                        Blender.Draw.Button("C", Lux.Events.LuxGui, Lux.LB_gui.x+Lux.LB_gui.h, Lux.LB_gui.y-Lux.LB_gui.h, Lux.LB_gui.h, Lux.LB_gui.h, "focus cursor", lambda e,v:Lux.Util.setFocus("C"))
+                        Blender_API.Draw.Button("S", Lux.Events.LuxGui, Lux.LB_gui.x, Lux.LB_gui.y-Lux.LB_gui.h, Lux.LB_gui.h, Lux.LB_gui.h, "focus selected object", lambda e,v:Lux.Util.setFocus("S"))
+                        Blender_API.Draw.Button("C", Lux.Events.LuxGui, Lux.LB_gui.x+Lux.LB_gui.h, Lux.LB_gui.y-Lux.LB_gui.h, Lux.LB_gui.h, Lux.LB_gui.h, "focus cursor", lambda e,v:Lux.Util.setFocus("C"))
                     focal = filmdiag.get()*0.001 / math.tan(fov.get() * math.pi / 360.0) / 2.0
                     Lux.Log("Realistic camera: calculated focal length: %f mm"%(focal * 1000.0))
                     aperture_diameter = focal / fstop.get()
@@ -2586,8 +2592,8 @@ class Lux:
                         dofdist = Lux.Attribute(cam, "dofDist")
                         str += Lux.TypedControls.Float("focaldistance", dofdist, 0.0, 100.0, "distance", "Distance from the camera at which objects will be in focus. Has no effect if Lens Radius is 0")
                         if Lux.GUI.Active:
-                            Blender.Draw.Button("S", Lux.Events.LuxGui, Lux.LB_gui.x, Lux.LB_gui.y-Lux.LB_gui.h, Lux.LB_gui.h, Lux.LB_gui.h, "focus selected object", lambda e,v:Lux.Util.setFocus("S"))
-                            Blender.Draw.Button("C", Lux.Events.LuxGui, Lux.LB_gui.x+Lux.LB_gui.h, Lux.LB_gui.y-Lux.LB_gui.h, Lux.LB_gui.h, Lux.LB_gui.h, "focus cursor", lambda e,v:Lux.Util.setFocus("C"))
+                            Blender_API.Draw.Button("S", Lux.Events.LuxGui, Lux.LB_gui.x, Lux.LB_gui.y-Lux.LB_gui.h, Lux.LB_gui.h, Lux.LB_gui.h, "focus selected object", lambda e,v:Lux.Util.setFocus("S"))
+                            Blender_API.Draw.Button("C", Lux.Events.LuxGui, Lux.LB_gui.x+Lux.LB_gui.h, Lux.LB_gui.y-Lux.LB_gui.h, Lux.LB_gui.h, Lux.LB_gui.h, "focus cursor", lambda e,v:Lux.Util.setFocus("C"))
         
                 if camtype.get() == "perspective" and usedof.get() == "true":
                     str += Lux.TypedControls.Int("blades", Lux.Property(cam, "camera.blades", 6), 0, 16, "aperture blades", "Number of blade edges of the aperture, values 0 to 2 defaults to a circle")
@@ -2704,7 +2710,7 @@ class Lux:
                         if context.borderRender:
                             (x1,y1,x2,y2) = context.border
                             if (x1==x2) and (y1==y2):
-                                Lux.Log("WARNING: empty render-region, use SHIFT-B to set render region in Blender.", popup = True)
+                                Lux.Log("WARNING: empty render-region, use SHIFT-B to set render region in Blender_API.", popup = True)
                             str += "\n   \"integer xresolution\" [%d] \n   \"integer yresolution\" [%d]"%(Lux.Attribute(context, "sizeX").get()*scale/100*(x2-x1), Lux.Attribute(context, "sizeY").get()*scale/100*(y2-y1))
                         else:
                             str += "\n   \"integer xresolution\" [%d] \n   \"integer yresolution\" [%d]"%(Lux.Attribute(context, "sizeX").get()*scale/100, Lux.Attribute(context, "sizeY").get()*scale/100)
@@ -2742,11 +2748,11 @@ class Lux:
                     # override output image dir in case of command line batch mode 
                     overrideop = Lux.Property(Lux.scene, "overrideoutputpath", "")
                     if overrideop.get() != "":
-                        filebase = os.path.splitext(os.path.basename(Blender.Get('filename')))[0]
-                        filename = overrideop.get() + "/" + filebase + "-%05d" %  (Blender.Get('curframe'))
+                        filebase = os.path.splitext(os.path.basename(Blender_API.Get('filename')))[0]
+                        filename = overrideop.get() + "/" + filebase + "-%05d" %  (Blender_API.Get('curframe'))
                         str += "\n   \"string filename\" [\"%s\"]"%(filename)
                     else:
-                        fn = Lux.Property(Lux.scene, "filename", "default-%05d" %  (Blender.Get('curframe')))
+                        fn = Lux.Property(Lux.scene, "filename", "default-%05d" %  (Blender_API.Get('curframe')))
                         # DH - this has gui = None !
                         str += Lux.TypedControls.String("filename", fn, "File name", "save file name")
         
@@ -3007,8 +3013,8 @@ class Lux:
         
                     if showhelp.get()=="true":
                         if Lux.GUI.Active: Lux.LB_gui.newline("  Description:", 8, 0, icon_help, [0.4,0.5,0.56])
-                        r = Lux.LB_gui.getRect(2,1); Blender.BGL.glRasterPos2i(r[0],r[1]+5) 
-                        Blender.Draw.Text("A Metropolis-Hastings mutating sampler which implements MLT", 'small')    
+                        r = Lux.LB_gui.getRect(2,1); Blender_API.BGL.glRasterPos2i(r[0],r[1]+5) 
+                        Blender_API.Draw.Text("A Metropolis-Hastings mutating sampler which implements MLT", 'small')    
         
                 if samplertype.get() == "erpt":
                     str += Lux.TypedControls.Int("initsamples", Lux.Property(Lux.scene, "sampler.erpt.initsamples", 100000), 1, 1000000, "initsamples", "")
@@ -3189,7 +3195,7 @@ class Lux:
                             str += mapstr
                         else:
                             try:
-                                worldcolor = Blender.World.Get('World').getHor()
+                                worldcolor = Blender_API.World.Get('World').getHor()
                                 str += "\n   \"color L\" [%g %g %g]" %(worldcolor[0], worldcolor[1], worldcolor[2])
                             except: pass
         
@@ -3216,8 +3222,8 @@ class Lux:
                             str += Lux.TypedControls.Float("turbidity", Lux.Property(Lux.scene, "env.sunsky.turbidity", 2.2), 2.0, 50.0, "turbidity", "Sky turbidity")
                         else:
                             if Lux.GUI.Active:
-                                Lux.LB_gui.newline(); r = Lux.LB_gui.getRect(2,1); Blender.BGL.glRasterPos2i(r[0],r[1]+5) 
-                                Blender.Draw.Text("create a blender Sun Lamp")
+                                Lux.LB_gui.newline(); r = Lux.LB_gui.getRect(2,1); Blender_API.BGL.glRasterPos2i(r[0],r[1]+5) 
+                                Blender_API.Draw.Text("create a blender Sun Lamp")
                     
                     str += "\n"
                 if Lux.GUI.Active: Lux.LB_gui.newline("GLOBAL:", 8, 0, None, [0.75,0.5,0.25])
@@ -3258,7 +3264,7 @@ class Lux:
             if Lux.scene:
                 if Lux.GUI.Active: Lux.LB_gui.newline("PATHS:", 10)
                 lp = Lux.Property(Lux.scene, "lux", "")
-                lp.set(Blender.sys.dirname(lp.get())+os.sep)
+                lp.set(Blender_API.sys.dirname(lp.get())+os.sep)
                 Lux.TypedControls.Path("LUX dir", lp, "lux binary dir", "Lux installation path", 2.0)
         
                 #Lux.Types.File("GUI filename", Lux.Property(Lux.scene, "lux", ""), "lux-file", "filename and path of the lux GUI executable", 2.0)
@@ -3270,7 +3276,7 @@ class Lux:
                 luxnice = Lux.Property(Lux.scene, "luxnice", 0)
                 if osys.platform=="win32":
                     r = Lux.LB_gui.getRect(2, 1)
-                    Blender.Draw.Menu("priority%t|abovenormal%x-10|normal%x0|belownormal%x10|low%x19", Lux.Events.LuxGui, r[0], r[1], r[2], r[3], luxnice.get(), "", lambda e,v: luxnice.set(v))
+                    Blender_API.Draw.Menu("priority%t|abovenormal%x-10|normal%x0|belownormal%x10|low%x19", Lux.Events.LuxGui, r[0], r[1], r[2], r[3], luxnice.get(), "", lambda e,v: luxnice.set(v))
                 else: Lux.TypedControls.Int("nice", luxnice, -20, 19, "nice", "nice value. Range goes from -20 (highest priority) to 19 (lowest)")  
         
                 if Lux.GUI.Active: Lux.LB_gui.newline("THREADS:", 10)
@@ -3349,7 +3355,7 @@ class Lux:
             Lux.TypedControls.Option("texture", texture, textures, "texture", "", 0.9)
             str = "Texture \"%s\" \"%s\" \"%s\""%(texname, type, texture.get())
         
-            if Lux.GUI.Active: Blender.Draw.PushButton(">", Lux.Events.LuxGui, Lux.LB_gui.xmax+Lux.LB_gui.h, Lux.LB_gui.y-Lux.LB_gui.h, Lux.LB_gui.h, Lux.LB_gui.h, "Menu", lambda e,v: Lux.GUI.showMatTexMenu(mat,keyname,True))
+            if Lux.GUI.Active: Blender_API.Draw.PushButton(">", Lux.Events.LuxGui, Lux.LB_gui.xmax+Lux.LB_gui.h, Lux.LB_gui.y-Lux.LB_gui.h, Lux.LB_gui.h, Lux.LB_gui.h, "Menu", lambda e,v: Lux.GUI.showMatTexMenu(mat,keyname,True))
             if Lux.GUI.Active: # Draw Texture level Material preview
                 Lux.Preview.Preview(mat, parentkey, 1, False, False, name, texlevel, [0.5, 0.5, 0.5])
                 # Add an offset for next controls
@@ -3763,7 +3769,7 @@ class Lux:
             value = Lux.Property(mat, keyname, default)
             link = Lux.TypedControls.RGB(name, value, max, "", hint, 2.0)
             tex = Lux.Property(mat, keyname+".textured", False)
-            if Lux.GUI.Active: Blender.Draw.Toggle("T", Lux.Events.LuxGui, Lux.LB_gui.x, Lux.LB_gui.y-Lux.LB_gui.h, Lux.LB_gui.h, Lux.LB_gui.h, tex.get()=="true", "use texture", lambda e,v:tex.set(["false","true"][bool(v)]))
+            if Lux.GUI.Active: Blender_API.Draw.Toggle("T", Lux.Events.LuxGui, Lux.LB_gui.x, Lux.LB_gui.y-Lux.LB_gui.h, Lux.LB_gui.h, Lux.LB_gui.h, tex.get()=="true", "use texture", lambda e,v:tex.set(["false","true"][bool(v)]))
             if tex.get()=="true":
                 if Lux.GUI.Active: Lux.LB_gui.newline("", -2)
                 (str, link) = Lux.Textures.Texture(name, key, "color", default, 0, max, caption, hint, mat, level+1)
@@ -3795,7 +3801,7 @@ class Lux:
             value = Lux.Property(mat, keyname, default)
             link = Lux.TypedControls.Float(name, value, min, max, "", hint, 2.0)
             tex = Lux.Property(mat, keyname+".textured", False)
-            if Lux.GUI.Active: Blender.Draw.Toggle("T", Lux.Events.LuxGui, Lux.LB_gui.x, Lux.LB_gui.y-Lux.LB_gui.h, Lux.LB_gui.h, Lux.LB_gui.h, tex.get()=="true", "use texture", lambda e,v:tex.set(["false","true"][bool(v)]))
+            if Lux.GUI.Active: Blender_API.Draw.Toggle("T", Lux.Events.LuxGui, Lux.LB_gui.x, Lux.LB_gui.y-Lux.LB_gui.h, Lux.LB_gui.h, Lux.LB_gui.h, tex.get()=="true", "use texture", lambda e,v:tex.set(["false","true"][bool(v)]))
             if tex.get()=="true":
                 if Lux.GUI.Active: Lux.LB_gui.newline("", -2)
                 (str, link) = Lux.Textures.Texture(name, key, "float", default, min, max, caption, hint, mat, level+1)
@@ -3817,7 +3823,7 @@ class Lux:
             value = Lux.Property(mat, keyname, default)
             link = Lux.TypedControls.Float(name, value, min, max, caption, hint, 2.0, 1)
             tex = Lux.Property(mat, keyname+".textured", False)
-            if Lux.GUI.Active: Blender.Draw.Toggle("T", Lux.Events.LuxGui, Lux.LB_gui.x, Lux.LB_gui.y-Lux.LB_gui.h, Lux.LB_gui.h, Lux.LB_gui.h, tex.get()=="true", "use texture", lambda e,v:tex.set(["false","true"][bool(v)]))
+            if Lux.GUI.Active: Blender_API.Draw.Toggle("T", Lux.Events.LuxGui, Lux.LB_gui.x, Lux.LB_gui.y-Lux.LB_gui.h, Lux.LB_gui.h, Lux.LB_gui.h, tex.get()=="true", "use texture", lambda e,v:tex.set(["false","true"][bool(v)]))
             if tex.get()=="true":
                     if Lux.GUI.Active: Lux.LB_gui.newline("", -2)
                     (str, link) = Lux.Textures.Texture(name, key, "float", default, min, max, caption, hint, mat, level+1)
@@ -3843,11 +3849,11 @@ class Lux:
             #link = Lux.Types.Float(name, value, min, max, "", hint, 2.0)
             if Lux.GUI.Active:
                 r = Lux.LB_gui.getRect(2.0, 1)
-                Blender.Draw.Number("", Lux.Events.LuxGui, r[0], r[1], r[2], r[3], float(1.0/value.getFloat()), 1.0, 1000000.0, hint, lambda e,v: value.set(1.0/v))
+                Blender_API.Draw.Number("", Lux.Events.LuxGui, r[0], r[1], r[2], r[3], float(1.0/value.getFloat()), 1.0, 1000000.0, hint, lambda e,v: value.set(1.0/v))
             link = " \"float %s\" [%f]"%(name, value.getFloat())
         
             tex = Lux.Property(mat, keyname+".textured", False)
-            if Lux.GUI.Active: Blender.Draw.Toggle("T", Lux.Events.LuxGui, Lux.LB_gui.x, Lux.LB_gui.y-Lux.LB_gui.h, Lux.LB_gui.h, Lux.LB_gui.h, tex.get()=="true", "use texture", lambda e,v:tex.set(["false","true"][bool(v)]))
+            if Lux.GUI.Active: Blender_API.Draw.Toggle("T", Lux.Events.LuxGui, Lux.LB_gui.x, Lux.LB_gui.y-Lux.LB_gui.h, Lux.LB_gui.h, Lux.LB_gui.h, tex.get()=="true", "use texture", lambda e,v:tex.set(["false","true"][bool(v)]))
             if tex.get()=="true":
                 if Lux.GUI.Active: Lux.LB_gui.newline("", -2)
                 (str, link) = Lux.Textures.Texture(name, key, "float", default, min, max, caption, hint, mat, level+1)
@@ -3869,7 +3875,7 @@ class Lux:
             value = Lux.Property(mat, keyname, default)
             link = Lux.TypedControls.Float(name, value, min, max, "", hint, 2.0)
             tex = Lux.Property(mat, keyname+".textured", False)
-            if Lux.GUI.Active: Blender.Draw.Toggle("T", Lux.Events.LuxGui, Lux.LB_gui.x, Lux.LB_gui.y-Lux.LB_gui.h, Lux.LB_gui.h, Lux.LB_gui.h, tex.get()=="true", "use texture", lambda e,v:tex.set(["false","true"][bool(v)]))
+            if Lux.GUI.Active: Blender_API.Draw.Toggle("T", Lux.Events.LuxGui, Lux.LB_gui.x, Lux.LB_gui.y-Lux.LB_gui.h, Lux.LB_gui.h, Lux.LB_gui.h, tex.get()=="true", "use texture", lambda e,v:tex.set(["false","true"][bool(v)]))
             if tex.get()=="true":
                 if Lux.GUI.Active: Lux.LB_gui.newline("", -2)
                 (str, link) = Lux.Textures.Texture(name, key, "float", default, min, max, caption, hint, mat, level+1)
@@ -3918,7 +3924,7 @@ class Lux:
                     iortree = [ ("LIQUIDS", [("Acetone", 1), ("Alcohol, Ethyl (grain)", 2), ("Alcohol, Methyl (wood)", 3), ("Beer", 4), ("Benzene", 5), ("Carbon tetrachloride", 6), ("Carbon disulfide", 7), ("Carbonated Beverages", 8), ("Chlorine (liq)", 9), ("Cranberry Juice (25%)", 10), ("Glycerin", 11), ("Honey, 13% water content", 12), ("Honey, 17% water content", 13), ("Honey, 21% water content", 14), ("Ice", 15), ("Milk", 16), ("Oil, Clove", 17), ("Oil, Lemon", 18), ("Oil, Neroli", 19), ("Oil, Orange", 20), ("Oil, Safflower", 21), ("Oil, vegetable (50 C)", 22), ("Oil of Wintergreen", 23), ("Rum, White", 24), ("Shampoo", 25), ("Sugar Solution 30%", 26), ("Sugar Solution 80%", 27), ("Turpentine", 28), ("Vodka", 29), ("Water (0 C)", 30), ("Water (100 C)", 31), ("Water (20 C)", 32), ("Whisky", 33) ] ), ("GASES(0C)", [("Vacuum", 101), ("Air @ STP", 102), ("Air", 103), ("Helium", 104), ("Hydrogen", 105), ("Carbon dioxide", 106) ]), ("TRANSPARENT", [("Eye, Aqueous humor", 201), ("Eye, Cornea", 202), ("Eye, Lens", 203), ("Eye, Vitreous humor", 204), ("Glass, Arsenic Trisulfide", 205), ("Glass, Crown (common)", 206), ("Glass, Flint, 29% lead", 207), ("Glass, Flint, 55% lead", 208), ("Glass, Flint, 71% lead", 209), ("Glass, Fused Silica", 210), ("Glass, Pyrex", 211), ("Lucite", 212), ("Nylon", 213), ("Obsidian", 214), ("Plastic", 215), ("Plexiglas", 216), ("Salt", 217)  ]), ("GEMSTONES", [("Agate", 301), ("Alexandrite", 302), ("Almandine", 303), ("Amber", 304), ("Amethyst", 305), ("Ammolite", 306), ("Andalusite", 307), ("Apatite", 308), ("Aquamarine", 309), ("Axenite", 310), ("Beryl", 311), ("Beryl, Red", 312), ("Chalcedony", 313), ("Chrome Tourmaline", 314), ("Citrine", 315), ("Clinohumite", 316), ("Coral", 317), ("Crystal", 318), ("Crysoberyl, Catseye", 319), ("Danburite", 320), ("Diamond", 321), ("Emerald", 322), ("Emerald Catseye", 323), ("Flourite", 324), ("Garnet, Grossular", 325), ("Garnet, Andradite", 326), ("Garnet, Demantiod", 327), ("Garnet, Mandarin", 328), ("Garnet, Pyrope", 329), ("Garnet, Rhodolite", 330), ("Garnet, Tsavorite", 331), ("Garnet, Uvarovite", 332), ("Hauyn", 333), ("Iolite", 334), ("Jade, Jadeite", 335), ("Jade, Nephrite", 336), ("Jet", 337), ("Kunzite", 338), ("Labradorite", 339), ("Lapis Lazuli", 340), ("Moonstone", 341), ("Morganite", 342), ("Obsidian", 343), ("Opal, Black", 344), ("Opal, Fire", 345), ("Opal, White", 346), ("Oregon Sunstone", 347), ("Padparadja", 348), ("Pearl", 349), ("Peridot", 350), ("Quartz", 351), ("Ruby", 352), ("Sapphire", 353), ("Sapphire, Star", 354), ("Spessarite", 355), ("Spinel", 356), ("Spinel, Blue", 357), ("Spinel, Red", 358), ("Star Ruby", 359), ("Tanzanite", 360), ("Topaz", 361), ("Topaz, Imperial", 362), ("Tourmaline", 363), ("Tourmaline, Blue", 364), ("Tourmaline, Catseye", 365), ("Tourmaline, Green", 366), ("Tourmaline, Paraiba", 367), ("Tourmaline, Red", 368), ("Zircon", 369), ("Zirconia, Cubic", 370) ] ), ("OTHER", [("Pyrex (Borosilicate glass)", 401), ("Ruby", 402), ("Water ice", 403), ("Cryolite", 404), ("Acetone", 405), ("Ethanol", 406), ("Teflon", 407), ("Glycerol", 408), ("Acrylic glass", 409), ("Rock salt", 410), ("Crown glass (pure)", 411), ("Salt (NaCl)", 412), ("Polycarbonate", 413), ("PMMA", 414), ("PETg", 415), ("PET", 416), ("Flint glass (pure)", 417), ("Crown glass (impure)", 418), ("Fused Quartz", 419), ("Bromine", 420), ("Flint glass (impure)", 421), ("Cubic zirconia", 422), ("Moissanite", 423), ("Cinnabar (Mercury sulfide)", 424), ("Gallium(III) prosphide", 425), ("Gallium(III) arsenide", 426), ("Silicon", 427) ] ) ]
                     iordict = {1:1.36, 2:1.36, 3:1.329, 4:1.345, 5:1.501, 6:1.000132, 7:1.00045, 8:1.34, 9:1.385, 10:1.351, 11:1.473, 12:1.504, 13:1.494, 14:1.484, 15:1.309, 16:1.35, 17:1.535, 18:1.481, 19:1.482, 20:1.473, 21:1.466, 22:1.47, 23:1.536, 24:1.361, 25:1.362, 26:1.38, 27:1.49, 28:1.472, 29:1.363, 30:1.33346, 31:1.31766, 32:1.33283, 33:1.356, 101:1.0, 102:1.0002926, 103:1.000293, 104:1.000036, 105:1.000132, 106:1.00045, 201:1.33, 202:1.38, 203:1.41, 204:1.34, 205:2.04, 206:1.52, 207:1.569, 208:1.669, 209:1.805, 210:1.459, 211:1.474, 212:1.495, 213:1.53, 214:1.50, 215:1.460, 216:1.488, 217:1.516, 301:1.544, 302:1.746, 303:1.75, 304:1.539, 305:1.532, 306:1.52, 307:1.629, 308:1.632, 309:1.567, 310:1.674, 311:1.57, 312:1.570, 313:1.544, 314:1.61, 315:1.532, 316:1.625, 317:1.486, 318:2.000, 319:1.746, 320:1.627, 321:2.417, 322:1.560, 323:1.560, 324:1.434, 325:1.72, 326:1.88, 327:1.880, 328:1.790, 329:1.73, 330:1.740, 331:1.739, 332:1.74, 333:1.490, 334:1.522, 335:1.64, 336:1.600, 337:1.660, 338:1.660, 339:1.560, 340:1.50, 341:1.518, 342:1.585, 343:1.50, 344:1.440, 345:1.430, 346:1.440, 347:1.560, 348:1.760, 349:1.53, 350:1.635, 351:1.544, 352:1.757, 353:1.757, 354:1.760, 355:1.79, 356:1.712, 357:1.712, 358:1.708, 359:1.76, 360:1.690, 361:1.607, 362:1.605, 363:1.603, 364:1.61, 365:1.61, 366:1.61, 367:1.61, 368:1.61, 369:1.777, 370:2.173, 401:1.47, 402:1.76, 403:1.31, 404:1.388, 405:1.36, 406:1.36, 407:1.35, 408:1.4729, 409:1.49, 410:1.516, 411:1.5, 412:1.544, 413:1.584, 414:1.4893, 415:1.57, 416:1.575, 417:1.6, 418:1.485, 419:1.46, 420:1.661, 421:1.523, 422:2.15, 423:2.419, 424:2.65, 425:3.02, 426:3.5, 427:3.927}
                     r = Lux.LB_gui.getRect(1.6, 1)
-                    Blender.Draw.Button(iorpreset.get(), Lux.Events.LuxGui, r[0], r[1], r[2], r[3], "select IOR preset", lambda e,v: setIor(Blender.Draw.PupTreeMenu(iortree), value, iorpreset, iortree, iordict))
+                    Blender_API.Draw.Button(iorpreset.get(), Lux.Events.LuxGui, r[0], r[1], r[2], r[3], "select IOR preset", lambda e,v: setIor(Blender_API.Draw.PupTreeMenu(iortree), value, iorpreset, iortree, iordict))
                 
                 # DH - this line had gui = None !
                 link = Lux.TypedControls.Float(name, value, min, max, "IOR", hint, 1.6)
@@ -3926,7 +3932,7 @@ class Lux:
                 link = Lux.TypedControls.Float(name, value, min, max, "IOR", hint, 1.6, 1)
         
             tex = Lux.Property(mat, keyname+".textured", False)
-            if Lux.GUI.Active: Blender.Draw.Toggle("T", Lux.Events.LuxGui, Lux.LB_gui.x, Lux.LB_gui.y-Lux.LB_gui.h, Lux.LB_gui.h, Lux.LB_gui.h, tex.get()=="true", "use texture", lambda e,v:tex.set(["false","true"][bool(v)]))
+            if Lux.GUI.Active: Blender_API.Draw.Toggle("T", Lux.Events.LuxGui, Lux.LB_gui.x, Lux.LB_gui.y-Lux.LB_gui.h, Lux.LB_gui.h, Lux.LB_gui.h, tex.get()=="true", "use texture", lambda e,v:tex.set(["false","true"][bool(v)]))
             if tex.get()=="true":
                 if Lux.GUI.Active: Lux.LB_gui.newline("", -2)
                 (str, link) = Lux.Textures.Texture(name, key, "float", default, min, max, caption, hint, mat, level+1)
@@ -3964,7 +3970,7 @@ class Lux:
                 link = Lux.TypedControls.Float(name, value, min, max, "cauchyb", hint, 1.6, 1)
         
             tex = Lux.Property(mat, keyname+".textured", False)
-            if Lux.GUI.Active: Blender.Draw.Toggle("T", Lux.Events.LuxGui, Lux.LB_gui.x, Lux.LB_gui.y-Lux.LB_gui.h, Lux.LB_gui.h, Lux.LB_gui.h, tex.get()=="true", "use texture", lambda e,v:tex.set(["false","true"][bool(v)]))
+            if Lux.GUI.Active: Blender_API.Draw.Toggle("T", Lux.Events.LuxGui, Lux.LB_gui.x, Lux.LB_gui.y-Lux.LB_gui.h, Lux.LB_gui.h, Lux.LB_gui.h, tex.get()=="true", "use texture", lambda e,v:tex.set(["false","true"][bool(v)]))
             if tex.get()=="true":
                 if Lux.GUI.Active: Lux.LB_gui.newline("", -2)
                 (str, link) = Lux.Textures.Texture(name, key, "float", default, min, max, caption, hint, mat, level+1)
@@ -4043,7 +4049,7 @@ class Lux:
                 Lux.TypedControls.Help("help", showhelp, "Help", "Show Help Information",  0.4)
         
                 # show copy/paste menu button
-                if Lux.GUI.Active: Blender.Draw.PushButton(">", Lux.Events.LuxGui, Lux.LB_gui.xmax+Lux.LB_gui.h, Lux.LB_gui.y-Lux.LB_gui.h, Lux.LB_gui.h, Lux.LB_gui.h, "Menu", lambda e,v: Lux.GUI.showMatTexMenu(mat,keyname,False))
+                if Lux.GUI.Active: Blender_API.Draw.PushButton(">", Lux.Events.LuxGui, Lux.LB_gui.xmax+Lux.LB_gui.h, Lux.LB_gui.y-Lux.LB_gui.h, Lux.LB_gui.h, Lux.LB_gui.h, "Menu", lambda e,v: Lux.GUI.showMatTexMenu(mat,keyname,False))
         
                 # Draw Material preview option
                 showmatprev = False
@@ -4173,12 +4179,12 @@ class Lux:
                     if not(metalname.get() in metals):
                         metals.append(metalname.get())
                     metallink = Lux.TypedControls.Option("name", metalname, metals, "name", "", 1.88)
-                    if Lux.GUI.Active: Blender.Draw.Button("...", Lux.Events.LuxGui, Lux.LB_gui.x, Lux.LB_gui.y-Lux.LB_gui.h, Lux.LB_gui.h, Lux.LB_gui.h, "click to select a nk file",lambda e,v:Blender.Window.FileSelector(lambda s:metalname.set(s), "Select nk file"))
+                    if Lux.GUI.Active: Blender_API.Draw.Button("...", Lux.Events.LuxGui, Lux.LB_gui.x, Lux.LB_gui.y-Lux.LB_gui.h, Lux.LB_gui.h, Lux.LB_gui.h, "click to select a nk file",lambda e,v:Blender_API.Window.FileSelector(lambda s:metalname.set(s), "Select nk file"))
                     link += Lux.Util.luxstr(metallink)
                     anisotropic = Lux.Property(mat, kn+"metal.anisotropic", "false")
                     if Lux.GUI.Active:
                         Lux.LB_gui.newline("")
-                        Blender.Draw.Toggle("A", Lux.Events.LuxGui, Lux.LB_gui.x-Lux.LB_gui.h, Lux.LB_gui.y-Lux.LB_gui.h, Lux.LB_gui.h, Lux.LB_gui.h, anisotropic.get()=="true", "anisotropic roughness", lambda e,v:anisotropic.set(["false","true"][bool(v)]))
+                        Blender_API.Draw.Toggle("A", Lux.Events.LuxGui, Lux.LB_gui.x-Lux.LB_gui.h, Lux.LB_gui.y-Lux.LB_gui.h, Lux.LB_gui.h, Lux.LB_gui.h, anisotropic.get()=="true", "anisotropic roughness", lambda e,v:anisotropic.set(["false","true"][bool(v)]))
                     if anisotropic.get()=="true":
                         (str,link) = c((str,link), Lux.Textures.ExponentTexture("uroughness", keyname, 0.002, 0.0, 1.0, "u-exponent", "", mat, level+1))
                         (str,link) = c((str,link), Lux.Textures.ExponentTexture("vroughness", keyname, 0.002, 0.0, 1.0, "v-exponent", "", mat, level+1))
@@ -4207,7 +4213,7 @@ class Lux:
                     anisotropic = Lux.Property(mat, kn+"roughglass.anisotropic", "false")
                     if Lux.GUI.Active:
                         Lux.LB_gui.newline("")
-                        Blender.Draw.Toggle("A", Lux.Events.LuxGui, Lux.LB_gui.x-Lux.LB_gui.h, Lux.LB_gui.y-Lux.LB_gui.h, Lux.LB_gui.h, Lux.LB_gui.h, anisotropic.get()=="true", "anisotropic roughness", lambda e,v:anisotropic.set(["false","true"][bool(v)]))
+                        Blender_API.Draw.Toggle("A", Lux.Events.LuxGui, Lux.LB_gui.x-Lux.LB_gui.h, Lux.LB_gui.y-Lux.LB_gui.h, Lux.LB_gui.h, Lux.LB_gui.h, anisotropic.get()=="true", "anisotropic roughness", lambda e,v:anisotropic.set(["false","true"][bool(v)]))
                     if anisotropic.get()=="true":
                         (str,link) = c((str,link), Lux.Textures.ExponentTexture("uroughness", keyname, 0.002, 0.0, 1.0, "u-exponent", "", mat, level+1))
                         (str,link) = c((str,link), Lux.Textures.ExponentTexture("vroughness", keyname, 0.002, 0.0, 1.0, "v-exponent", "", mat, level+1))
@@ -4229,7 +4235,7 @@ class Lux:
                     anisotropic = Lux.Property(mat, kn+"shinymetal.anisotropic", "false")
                     if Lux.GUI.Active:
                         Lux.LB_gui.newline("")
-                        Blender.Draw.Toggle("A", Lux.Events.LuxGui, Lux.LB_gui.x-Lux.LB_gui.h, Lux.LB_gui.y-Lux.LB_gui.h, Lux.LB_gui.h, Lux.LB_gui.h, anisotropic.get()=="true", "anisotropic roughness", lambda e,v:anisotropic.set(["false","true"][bool(v)]))
+                        Blender_API.Draw.Toggle("A", Lux.Events.LuxGui, Lux.LB_gui.x-Lux.LB_gui.h, Lux.LB_gui.y-Lux.LB_gui.h, Lux.LB_gui.h, Lux.LB_gui.h, anisotropic.get()=="true", "anisotropic roughness", lambda e,v:anisotropic.set(["false","true"][bool(v)]))
                     if anisotropic.get()=="true":
                         (str,link) = c((str,link), Lux.Textures.ExponentTexture("uroughness", keyname, 0.002, 0.0, 1.0, "u-exponent", "", mat, level+1))
                         (str,link) = c((str,link), Lux.Textures.ExponentTexture("vroughness", keyname, 0.002, 0.0, 1.0, "v-exponent", "", mat, level+1))
@@ -4252,7 +4258,7 @@ class Lux:
                     useior = Lux.Property(mat, keyname+".useior", "false")
                     if Lux.GUI.Active:
                         Lux.LB_gui.newline("")
-                        Blender.Draw.Toggle("I", Lux.Events.LuxGui, Lux.LB_gui.x-Lux.LB_gui.h, Lux.LB_gui.y-Lux.LB_gui.h, Lux.LB_gui.h, Lux.LB_gui.h, useior.get()=="true", "Use IOR/Reflective index input", lambda e,v:useior.set(["false","true"][bool(v)]))
+                        Blender_API.Draw.Toggle("I", Lux.Events.LuxGui, Lux.LB_gui.x-Lux.LB_gui.h, Lux.LB_gui.y-Lux.LB_gui.h, Lux.LB_gui.h, Lux.LB_gui.h, useior.get()=="true", "Use IOR/Reflective index input", lambda e,v:useior.set(["false","true"][bool(v)]))
                     if useior.get() == "true":
                         (str,link) = c((str,link), Lux.Textures.IORFloatTexture("index", keyname, 1.5, 1.0, 50.0, "IOR", "", mat, level+1))
                         link += " \"color Ks\" [1.0 1.0 1.0]"    
@@ -4262,7 +4268,7 @@ class Lux:
                     anisotropic = Lux.Property(mat, kn+"glossy.anisotropic", "false")
                     if Lux.GUI.Active:
                         Lux.LB_gui.newline("")
-                        Blender.Draw.Toggle("A", Lux.Events.LuxGui, Lux.LB_gui.x-Lux.LB_gui.h, Lux.LB_gui.y-Lux.LB_gui.h, Lux.LB_gui.h, Lux.LB_gui.h, anisotropic.get()=="true", "anisotropic roughness", lambda e,v:anisotropic.set(["false","true"][bool(v)]))
+                        Blender_API.Draw.Toggle("A", Lux.Events.LuxGui, Lux.LB_gui.x-Lux.LB_gui.h, Lux.LB_gui.y-Lux.LB_gui.h, Lux.LB_gui.h, Lux.LB_gui.h, anisotropic.get()=="true", "anisotropic roughness", lambda e,v:anisotropic.set(["false","true"][bool(v)]))
                     if anisotropic.get()=="true":
                         (str,link) = c((str,link), Lux.Textures.ExponentTexture("uroughness", keyname, 0.002, 0.0, 1.0, "u-exponent", "", mat, level+1))
                         (str,link) = c((str,link), Lux.Textures.ExponentTexture("vroughness", keyname, 0.002, 0.0, 1.0, "v-exponent", "", mat, level+1))
@@ -4504,8 +4510,8 @@ class Lux:
         def Update(mat, kn, defLarge, defType, texName, name, level):
             #Lux.Log("%s %s %s %s %s %s %s" % (mat, kn, defLarge, defType, texName, name, level))
             
-            Blender.Window.WaitCursor(True)
-            Lux.scene = Blender.Scene.GetCurrent()
+            Blender_API.Window.WaitCursor(True)
+            Lux.scene = Blender_API.Scene.GetCurrent()
         
             # Size of preview thumbnail
             thumbres = 110 # default 110x110
@@ -4519,7 +4525,7 @@ class Lux:
             thumbbuf = thumbres*thumbres*3
         
             #consolebin = Lux.Property(Lux.scene, "luxconsole", "").get()
-            consolebin = Blender.sys.dirname(Lux.Property(Lux.scene, "lux", "").get()) + os.sep + "luxconsole"
+            consolebin = Blender_API.sys.dirname(Lux.Property(Lux.scene, "lux", "").get()) + os.sep + "luxconsole"
             if osys.platform == "win32": consolebin = consolebin + ".exe"
         
             PIPE = subprocess.PIPE
@@ -4636,8 +4642,8 @@ class Lux:
             image = Lux.Image()
             image.decodeLuxConsole(thumbres, thumbres, data)
             Lux.previewCache[(mat.name+":"+kn).__hash__()] = image
-            Blender.Draw.Redraw()
-            Blender.Window.WaitCursor(False)
+            Blender_API.Draw.Redraw()
+            Blender_API.Window.WaitCursor(False)
         
         # was luxPreview
         @staticmethod
@@ -4650,7 +4656,7 @@ class Lux:
                     showpreview = Lux.Property(mat, kn+"prev_show", "true")
                 else:
                     showpreview = Lux.Property(mat, kn+"prev_show", "false")
-                Blender.Draw.Toggle("P", Lux.Events.LuxGui, Lux.LB_gui.xmax, Lux.LB_gui.y-Lux.LB_gui.h, Lux.LB_gui.h, Lux.LB_gui.h, showpreview.get()=="true", "Preview", lambda e,v: showpreview.set(["false","true"][bool(v)]))
+                Blender_API.Draw.Toggle("P", Lux.Events.LuxGui, Lux.LB_gui.xmax, Lux.LB_gui.y-Lux.LB_gui.h, Lux.LB_gui.h, Lux.LB_gui.h, showpreview.get()=="true", "Preview", lambda e,v: showpreview.set(["false","true"][bool(v)]))
                 if showpreview.get()=="true": 
                     if(defLarge):
                         large = Lux.Property(mat, kn+"prev_large", "true")
@@ -4664,7 +4670,7 @@ class Lux:
                     Lux.LB_gui.newline()
                     r = Lux.LB_gui.getRect(1.1, rr)
                     if(color != None):
-                        Blender.BGL.glColor3f(color[0],color[1],color[2]); Blender.BGL.glRectf(r[0]-110, r[1], 418, r[1]+128+voffset); Blender.BGL.glColor3f(0.9, 0.9, 0.9)
+                        Blender_API.BGL.glColor3f(color[0],color[1],color[2]); Blender_API.BGL.glRectf(r[0]-110, r[1], 418, r[1]+128+voffset); Blender_API.BGL.glColor3f(0.9, 0.9, 0.9)
                     try: Lux.previewCache[(mat.name+":"+kn).__hash__()].draw(r[0]-82, r[1]+4)
                     except: pass
         
@@ -4681,33 +4687,33 @@ class Lux:
                         prev_torus = Lux.Property(mat, kn+"prev_torus", "true")
         
                     # preview mode toggle buttons
-                    Blender.Draw.Toggle("S", Lux.Events.LuxGui, r[0]-108, r[1]+100+voffset, 22, 22, prev_sphere.get()=="true", "Draw Sphere", lambda e,v: Lux.Preview.Sphereset(mat, kn, ["false","true"][bool(v)]))
-                    Blender.Draw.Toggle("P", Lux.Events.LuxGui, r[0]-108, r[1]+74+voffset, 22, 22, prev_plane.get()=="true", "Draw 2D Plane", lambda e,v: Lux.Preview.Planeset(mat, kn, ["false","true"][bool(v)]))
-                    Blender.Draw.Toggle("T", Lux.Events.LuxGui, r[0]-108, r[1]+48+voffset, 22, 22, prev_torus.get()=="true", "Draw Torus", lambda e,v: Lux.Preview.Torusset(mat, kn, ["false","true"][bool(v)]))
+                    Blender_API.Draw.Toggle("S", Lux.Events.LuxGui, r[0]-108, r[1]+100+voffset, 22, 22, prev_sphere.get()=="true", "Draw Sphere", lambda e,v: Lux.Preview.Sphereset(mat, kn, ["false","true"][bool(v)]))
+                    Blender_API.Draw.Toggle("P", Lux.Events.LuxGui, r[0]-108, r[1]+74+voffset, 22, 22, prev_plane.get()=="true", "Draw 2D Plane", lambda e,v: Lux.Preview.Planeset(mat, kn, ["false","true"][bool(v)]))
+                    Blender_API.Draw.Toggle("T", Lux.Events.LuxGui, r[0]-108, r[1]+48+voffset, 22, 22, prev_torus.get()=="true", "Draw Torus", lambda e,v: Lux.Preview.Torusset(mat, kn, ["false","true"][bool(v)]))
         
                     # Zoom toggle
                     zoom = Lux.Property(mat, kn+"prev_zoom", "false")
-                    Blender.Draw.Toggle("Zoom", Lux.Events.LuxGui, r[0]+66, r[1]+100+voffset, 50, 18, zoom.get()=="true", "Zoom", lambda e,v: zoom.set(["false","true"][bool(v)]))
+                    Blender_API.Draw.Toggle("Zoom", Lux.Events.LuxGui, r[0]+66, r[1]+100+voffset, 50, 18, zoom.get()=="true", "Zoom", lambda e,v: zoom.set(["false","true"][bool(v)]))
         
                     area = Lux.Property(mat, kn+"prev_arealight", "false")
-                    Blender.Draw.Toggle("Area", Lux.Events.LuxGui, r[0]+66, r[1]+5, 50, 18, area.get()=="true", "Area", lambda e,v: area.set(["false","true"][bool(v)]))
+                    Blender_API.Draw.Toggle("Area", Lux.Events.LuxGui, r[0]+66, r[1]+5, 50, 18, area.get()=="true", "Area", lambda e,v: area.set(["false","true"][bool(v)]))
         
                     # Object width
                     obwidth = Lux.Property(mat, kn+"prev_obwidth", 1.0)
-                    Blender.Draw.Number("Width:", Lux.Events.LuxGui, r[0]+66, r[1]+78+voffset, 129, 18, obwidth.get(), 0.001, 10, "The width of the preview object in blender/lux 1m units", lambda e,v: obwidth.set(v))
+                    Blender_API.Draw.Number("Width:", Lux.Events.LuxGui, r[0]+66, r[1]+78+voffset, 129, 18, obwidth.get(), 0.001, 10, "The width of the preview object in blender/lux 1m units", lambda e,v: obwidth.set(v))
         
                     # large/small size
-                    Blender.Draw.Toggle("large", Lux.Events.LuxGui, r[0]+200, r[1]+78+voffset, 88, 18, large.get()=="true", "Large", lambda e,v: large.set(["false","true"][bool(v)]))
+                    Blender_API.Draw.Toggle("large", Lux.Events.LuxGui, r[0]+200, r[1]+78+voffset, 88, 18, large.get()=="true", "Large", lambda e,v: large.set(["false","true"][bool(v)]))
         
                     # Preview Quality
                     qs = ["low","medium","high","very high"]
-                    #Lux.scene = Blender.Scene.GetCurrent()
+                    #Lux.scene = Blender_API.Scene.GetCurrent()
                     defprevmat = Lux.Property(Lux.scene, "defprevmat", "high")
                     quality = Lux.Property(mat, kn+"prev_quality", defprevmat.get())
                     Lux.TypedControls.OptionRect("quality", quality, qs, "  Quality", "select preview quality", r[0]+200, r[1]+100+voffset, 88, 18)
         
                     # Update preview
-                    Blender.Draw.Button("Update Preview", Lux.Events.LuxGui, r[0]+120, r[1]+5, 167, 18, "Update Material Preview", lambda e,v: Lux.Preview.Update(mat, kn, defLarge, defType, texName, name, level))
+                    Blender_API.Draw.Button("Update Preview", Lux.Events.LuxGui, r[0]+120, r[1]+5, 167, 18, "Update Material Preview", lambda e,v: Lux.Preview.Update(mat, kn, defLarge, defType, texName, name, level))
         
                     # Reset depths after getRect()
                     Lux.LB_gui.y -= 92+voffset
@@ -4975,7 +4981,7 @@ class Lux:
                 Lux.Property(mat, "light.gain", 1.0).set(mat.emit)
                 return
             alpha = mat.alpha
-            if not(mat.mode & Blender.Material.Modes.RAYTRANSP): alpha = 1.0
+            if not(mat.mode & Blender_API.Material.Modes.RAYTRANSP): alpha = 1.0
             alpha0name, alpha1name = "", ""
             if (alpha > 0.0) and (alpha < 1.0):
                 Lux.Property(mat, "type", "").set("mix")
@@ -4983,7 +4989,7 @@ class Lux:
                 alpha0name, alpha1name = "mat2", "mat1"
             if alpha > 0.0:
                 mirror = mat.rayMirr
-                if not(mat.mode & Blender.Material.Modes.RAYMIRROR): mirror = 0.0
+                if not(mat.mode & Blender_API.Material.Modes.RAYMIRROR): mirror = 0.0
                 mirror0name, mirror1name = alpha1name, alpha1name
                 if (mirror > 0.0) and (mirror < 1.0):
                     Lux.Property(mat, dot(alpha1name)+"type", "").set("mix")
@@ -5107,7 +5113,7 @@ class Lux:
             file = open(fn, 'w')
             file.write(Lux.Converter.MatTex2str(d, tex))
             file.close()
-            if Lux.GUI.Active: Blender.Draw.Redraw()
+            if Lux.GUI.Active: Blender_API.Draw.Redraw()
         
         @staticmethod
         def loadMatTex(mat, fn, basekey='', tex=None):
@@ -5116,7 +5122,7 @@ class Lux:
             file.close()
             data = Lux.Converter.str2MatTex(data, tex)
             Lux.Converter.putMatTex(mat, data, basekey, tex) 
-            if Lux.GUI.Active: Blender.Draw.Redraw()
+            if Lux.GUI.Active: Blender_API.Draw.Redraw()
 
         
         # todo: this is not absolutely save from attacks!!!
@@ -5201,7 +5207,7 @@ class Lux:
                     HOST = 'www.luxrender.net'
                     GET = '/lrmdb/en/material/download/'+id
                     PORT = 80
-                    Blender.Window.DrawProgressBar(0.0,'Getting Material #'+id)
+                    Blender_API.Window.DrawProgressBar(0.0,'Getting Material #'+id)
                     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
                     sock.connect((HOST, PORT))
                     sock.send("GET %s HTTP/1.0\r\nHost: %s\r\n\r\n" % (GET, HOST))
@@ -5221,7 +5227,7 @@ class Lux:
                 except:
                     Lux.Log("ERROR: download failed", popup = True)
                 finally:
-                    Blender.Window.DrawProgressBar(1.0,'')
+                    Blender_API.Window.DrawProgressBar(1.0,'')
             else:
                 Lux.Log("ERROR: material id is not valid", popup = True)
                 return None
@@ -5366,7 +5372,7 @@ class Lux:
                 result = 'Unknown Error'
                 
                 if tex:
-                    name = Blender.Draw.PupStrInput('Texture Name: ', '', 32)
+                    name = Blender_API.Draw.PupStrInput('Texture Name: ', '', 32)
                 else:
                     name = mat.name
                 
@@ -5400,10 +5406,10 @@ class Lux:
                 return True
                 
         def request_username(self):
-            self.XMLRPC_username = Blender.Draw.PupStrInput("Username:", self.XMLRPC_username, 32)
+            self.XMLRPC_username = Blender_API.Draw.PupStrInput("Username:", self.XMLRPC_username, 32)
             
         def request_password(self):
-            self.XMLRPC_password = Blender.Draw.PupStrInput("Password:", self.XMLRPC_password, 32)
+            self.XMLRPC_password = Blender_API.Draw.PupStrInput("Password:", self.XMLRPC_password, 32)
 
 #    class Homeless:
 #        #DH - ORPHAN, not found in original LuxBlend
@@ -5473,13 +5479,14 @@ class Lux:
     def __init__(self):
         
         Lux.LB_Presets  = Lux.Presets()
+        Lux.scene       = Blender_API.Scene.GetCurrent()
         
         args            = Lux.CLI_Args()
         
         if args.is_cli:
-            Lux.Log("LuxBlend CVS - BATCH mode")
+            Lux.Log(Lux.Version + " - BATCH mode")
             
-            Lux.scene = Blender.Scene.GetCurrent()
+            
             context = Lux.scene.getRenderingContext()
             luxpath = ""
             
@@ -5545,16 +5552,14 @@ class Lux:
             osys.exit(0)
         
         else:
-            Lux.Log("LuxBlend CVS - UI mode")
+            Lux.Log(Lux.Version + " - UI mode")
             
             Lux.LB_web              = Lux.Web()
             Lux.GUI.LB_scrollbar    = Lux.GUI.scrollbar()
             Lux.LB_Event_Handler    = Lux.Events()
             
-            Lux.scene               = Blender.Scene.GetCurrent()
-            
             # init GUI
-            Blender.Draw.Register(Lux.GUI.Draw, Lux.LB_Event_Handler.keyHandler, Lux.LB_Event_Handler.buttonHandler)
+            Blender_API.Draw.Register(Lux.GUI.Draw, Lux.LB_Event_Handler.keyHandler, Lux.LB_Event_Handler.buttonHandler)
                     
             luxpathprop = Lux.Property(Lux.scene, "lux", "")
             luxpath = luxpathprop.get()
@@ -5562,18 +5567,18 @@ class Lux:
             checkluxpath = Lux.Property(Lux.scene, "checkluxpath", True).get()
         
             if checkluxpath and luxrun:
-                if (luxpath is None) or (Blender.sys.exists(luxpath)<=0):
+                if (luxpath is None) or (Blender_API.sys.exists(luxpath)<=0):
                     # luxpath not valid, so delete entry from .blend scene file ...
                     luxpathprop.delete()
                     # and re-get luxpath, so we get the path from default-settings
                     luxpath = luxpathprop.get()
-                    if (luxpath is None) or (Blender.sys.exists(luxpath)<=0):
+                    if (luxpath is None) or (Blender_API.sys.exists(luxpath)<=0):
                         Lux.Log('WARNING: LuxPath "%s" is not valid' % (luxpath))
                         
                         if Lux.scene:
-                            r = Blender.Draw.PupMenu("Installation: Set path to the lux render software?%t|Yes%x1|No%x0|Never%x2")
+                            r = Blender_API.Draw.PupMenu("Installation: Set path to the lux render software?%t|Yes%x1|No%x0|Never%x2")
                             if r == 1:
-                                Blender.Window.FileSelector(lambda s:Lux.Property(Lux.scene, "lux", "").set(Blender.sys.dirname(s)+os.sep), "Select file in Lux path")
+                                Blender_API.Window.FileSelector(lambda s:Lux.Property(Lux.scene, "lux", "").set(Blender_API.sys.dirname(s)+os.sep), "Select file in Lux path")
                                 Lux.Presets.saveluxdefaults()
                             if r == 2:
                                 Lux.Presets.newluxdefaults["checkluxpath"] = False
