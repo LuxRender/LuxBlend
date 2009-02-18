@@ -102,6 +102,7 @@ class Lux:
         
         activeObject    = None
         activeEvent     = None
+        lastEvent		= None
         lastEventTime   = 0
         retriggerTime   = 5
         
@@ -126,7 +127,10 @@ class Lux:
                     self.activeObject = Lux.scene.objects.active
                     Lux.Materials.activemat = None
                     Blender_API.Window.QRedrawAll()
-            if (evt == Blender_API.Draw.MOUSEX) or (evt == Blender_API.Draw.MOUSEY): Lux.LB_UI.LB_scrollbar.Mouse()
+            if (evt == Blender_API.Draw.MOUSEX) or (evt == Blender_API.Draw.MOUSEY):
+            	Lux.LB_UI.LB_scrollbar.Mouse()
+            	#self.lastEvent = None
+            	
             if  evt == Blender_API.Draw.WHEELUPMOUSE:   Lux.LB_UI.LB_scrollbar.scroll(-16)
             if  evt == Blender_API.Draw.WHEELDOWNMOUSE: Lux.LB_UI.LB_scrollbar.scroll(16)
             if  evt == Blender_API.Draw.PAGEUPKEY:      Lux.LB_UI.LB_scrollbar.scroll(-50)
@@ -143,18 +147,18 @@ class Lux:
             # P key shortcut to preview current material
             # These keys need time and process-complete locks
             if evt in [Blender_API.Draw.RKEY, Blender_API.Draw.EKEY, Blender_API.Draw.PKEY]:
-                if self.activeEvent == None and (Blender_API.sys.time() - self.lastEventTime) > self.retriggerTime:
+                if self.activeEvent == None and ((Blender_API.sys.time() - self.lastEventTime) > self.retriggerTime):
                     self.lastEventTime = Blender_API.sys.time()
-                    if evt == Blender_API.Draw.RKEY:
-                        self.activeEvent = 'RKEY'
+                    if evt == Blender_API.Draw.RKEY and (self.et is None or not self.et.isAlive()):
+                        self.activeEvent = self.LastEvent = 'RKEY'
                         Lux.Launch.ExportStill(Lux.Property(Lux.scene, "default", "true").get() == "true", True)
                         self.activeEvent = None
                     if evt == Blender_API.Draw.EKEY:
-                        self.activeEvent = 'EKEY'
+                        self.activeEvent = self.LastEvent = 'EKEY'
                         Lux.Launch.ExportStill(Lux.Property(Lux.scene, "default", "true").get() == "true", False)
                         self.activeEvent = None
                     if evt == Blender_API.Draw.PKEY:
-                        self.activeEvent = 'PKEY'
+                        self.activeEvent = self.LastEvent = 'PKEY'
                         if Lux.Materials.activemat != None:
                             Lux.Preview.Update(Lux.Materials.activemat, '', True, 0, None, None, None)
                         self.activeEvent = None
@@ -2085,7 +2089,8 @@ class Lux:
             Lux.scene = Blender_API.Scene.GetCurrent()
             
             if Lux.scene and self.Active:
-                luxpage = Lux.Property(Lux.scene, "page", 0)
+            	
+            	luxpage = Lux.Property(Lux.scene, "page", 0)
                 
                 y = int(self.LB_scrollbar.getTop()) # 420
                 Lux.LB_UI.y = y-70
@@ -3440,7 +3445,7 @@ class Lux:
                     if Lux.LB_UI.xmax-Lux.LB_UI.x < Lux.LB_UI.w: Lux.LB_UI.newline()
                     r = Lux.LB_UI.getRect(1.0, 1)
                     Lux.LB_UI.newline()
-                    Lux.Icon.drawBar(bar_spectrum, Lux.LB_UI.xmax-Lux.LB_UI.w-7, r[1])
+                    Lux.Icon.drawBar(Lux.Icon.get_bar('bar_spectrum'), Lux.LB_UI.xmax-Lux.LB_UI.w-7, r[1])
                 str += Lux.TypedControls.Float().create("wavelength", Lux.Property(mat, keyname+".wavelength", 550.0), 380.0, 720.0, "wavelength", "Mean Wavelength in visible spectrum in nm", 2.0, 1)
                 str += Lux.TypedControls.Float().create("width", Lux.Property(mat, keyname+".width", 50.0), 20.0, 300.0, "width", "Width of gaussian distribution in nm", 1.1, 1)
                 str += Lux.TypedControls.Float().create("energy", Lux.Property(mat, keyname+".energy", 1.0), 0.0, 1.0, "energy", "Amount of mean energy", 0.9, 1)
