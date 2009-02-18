@@ -321,8 +321,8 @@ class Lux:
             file = open(filename, 'w')
     
             ##### Write Header ######
-            file.write("# Lux Render CVS Scene File\n")
-            file.write("# Exported by LuxBlend Blender Exporter\n")
+            file.write("# Lux Render Scene File\n")
+            file.write("# Exported by "+Lux.Version+" Blender Exporter\n")
             file.write("\n")
         
             ##### Write camera ######
@@ -5093,7 +5093,7 @@ class Lux:
                     'version': '0.7',
                     'definition': definition,
                     'metadata': [
-                        ['string', 'generator', 'luxblend'],
+                        ['string', 'generator', Lux.Version],
                     ]
                 }
                 
