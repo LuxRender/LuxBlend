@@ -1521,7 +1521,7 @@ class Lux:
             checkluxpath = Lux.Property(Lux.scene, "checkluxpath", True).get()
             if checkluxpath:
                 if Blender_API.sys.exists(ic) != 1:
-                    Blender_API.Draw.PupMenu("Error: Lux renderer not found. Please set path on System page.%t|OK")
+                    Lux.Log("Error: Lux renderer not found. Please set path on System page.", popup=True)
                     return        
             autothreads = Lux.Property(Lux.scene, "autothreads", "true").get()
             threads = Lux.Property(Lux.scene, "threads", 1).get()
@@ -1563,7 +1563,7 @@ class Lux:
             checkluxpath = Lux.Property(Lux.scene, "checkluxpath", True).get()
             if checkluxpath:
                 if sys.exists(ic) != 1:
-                    Blender_API.Draw.PupMenu("Error: Lux renderer not found. Please set path on System page.%t|OK")
+                    Lux.Log("Error: Lux renderer not found. Please set path on System page.", popup=True)
                     return        
             autothreads = Lux.Property(Lux.scene, "autothreads", "true").get()
             threads = Lux.Property(Lux.scene, "threads", 1).get()
@@ -1962,7 +1962,15 @@ class Lux:
             if self.obj:
                 setattr(self.obj, self.name, value)
                 Blender_API.Window.QRedrawAll()
-                
+    
+    class CLI:
+        '''
+        class for CLI "UI"
+        '''
+        
+        CLI     = True
+        Active  = False
+    
     class GUI:
         '''
         class for dynamic gui
@@ -1975,19 +1983,26 @@ class Lux:
         LB_scrollbar        = None
         LB_Event_Handler    = None
         
+        x = 110 # left start position after captions
+        y = 0
+        
+        w = 140 # default element width in pixels
+        h = 18  # default element height in pixels
+        
+        xmax = 110+2*(140+4)
+        hmax = 0
+        xgap = 4
+        ygap = 4
+        
+        resethmax = False
+        
         def handlers(self):
             return self.Draw, self.LB_Event_Handler.keyHandler, self.LB_Event_Handler.buttonHandler
         
         def __init__(self, y=200):
-            self.x = 110 # left start position after captions
-            self.xmax = 110+2*(140+4)
             self.y = y
-            self.w = 140 # default element width in pixels
-            self.h = 18  # default element height in pixels
-            self.hmax = 0
-            self.xgap = 4
-            self.ygap = 4
-            self.resethmax = False
+            
+            
             
             self.LB_scrollbar     = Lux.GUI.scrollbar()
             self.LB_Event_Handler = Lux.Events()
@@ -2220,7 +2235,7 @@ class Lux:
                 menu += "|Load LBT%x3|Save LBT%x4"
             else:
                 menu += "|Load LBM%x3|Save LBM%x4"
-            if  Lux.Web.WEB_Connect:
+            if  Lux.LB_web.WEB_Connect:
                 menu += "|Download from DB%x5" #not(tex) and
                 menu += "|Upload to DB%x6"
         
@@ -2246,7 +2261,7 @@ class Lux:
                     id = Blender_API.Draw.PupStrInput("Material ID:", "", 32)
                 else:
                     id = Blender_API.Draw.PupStrInput("Texture ID:", "", 32)
-                if id: Lux.Converter.putMatTex(mat, Lux.Web.download(mat, id), basekey, tex)
+                if id: Lux.Converter.putMatTex(mat, Lux.LB_web.download(mat, id), basekey, tex)
             elif r==6:
                 if not Lux.LB_web.submit_object(mat, basekey, tex):
                     msg = Lux.LB_web.last_error()
@@ -5193,6 +5208,8 @@ class Lux:
             
     class Web:
         WEB_Connect             = False
+        WEB_host                = 'www.luxrender.net'
+        WEB_url                 = '/lrmdb/en/material/download/'
         
         XMLRPC_Connect          = False
         XMLRPC_CookieTransport  = None
@@ -5203,53 +5220,18 @@ class Lux:
         XMLRPC_SERVER           = None
         XMLRPC_last_error_str   = None
         
-        @staticmethod
-        def download(mat, id):
-            if not Lux.Web.WEB_Connect: return None
-            
-            import socket
-            if id.isalnum():
-                try:
-                    HOST = 'www.luxrender.net'
-                    GET = '/lrmdb/en/material/download/'+id
-                    PORT = 80
-                    Blender_API.Window.DrawProgressBar(0.0,'Getting Material #'+id)
-                    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-                    sock.connect((HOST, PORT))
-                    sock.send("GET %s HTTP/1.0\r\nHost: %s\r\n\r\n" % (GET, HOST))
-                    data = sock.recv(1024)
-                    str = ""
-                    while len(data):
-                        str += data
-                        data = sock.recv(1024)
-                    sock.close()
-                    if str.split("\n", 1)[0].find("200") < 0:
-                        Lux.Log("ERROR: server error: %s"%(str.split("\n",1)[0]), popup = True)
-                        return None
-                    str = (str.split("\r\n\r\n")[1]).strip()
-                    if (str[0]=="{") and (str[-1]=="}"):
-                        return Lux.Converter.str2MatTex(str)
-                    Lux.Log("ERROR: downloaded data is not a material or texture", popup = True)
-                except:
-                    Lux.Log("ERROR: download failed", popup = True)
-                finally:
-                    Blender_API.Window.DrawProgressBar(1.0,'')
-            else:
-                Lux.Log("ERROR: material id is not valid", popup = True)
-                return None
-        
         def __init__(self):
             # try import of libraries
             try:
-                import socket
-                Lux.Web.WEB_Connect = True
+                import httplib
+                self.WEB_Connect = True
                 Lux.Log("INFO: Simple Web support available")
             except:
                 Lux.Log("WARNING: Simple Web support not available")
                 
             try:
                 import cookielib, urllib2, xmlrpclib
-                Lux.Web.XMLRPC_Connect = True
+                self.XMLRPC_Connect = True
                 
                 #---------------------------------------------------------------------------
                 # pilfered from
@@ -5262,7 +5244,7 @@ class Lux:
                     cookiejar = None
                     scheme = 'http'
                     verbose = None
-                
+                    
                     # Cribbed from xmlrpclib.Transport.send_user_agent 
                     def send_cookies(self, connection, cookie_request):
                         '''
@@ -5350,11 +5332,36 @@ class Lux:
                 Lux.Log("INFO: Advanced Web support available")
             except:
                 Lux.Log("WARNING: Advanced Web support not available")
-
+        
+        def download(self, mat, id):
+            if not self.WEB_Connect: return None
+            
+            if id.isalnum():
+                Blender_API.Window.DrawProgressBar(0.0,'Getting Material #'+id)
+                import httplib
+                conn = httplib.HTTPConnection(self.WEB_host)
+                conn.request("GET", self.WEB_url + id)
+                r1 = conn.getresponse()
+                if not r1.status == 200:
+                    Lux.Log('HTTP Error %i: %s' % (r1.status,r1.reason), popup=True)
+                    return None
+                else:
+                   str = r1.read().strip()
+                   if (str[0]=="{") and (str[-1]=="}"):
+                       return Lux.Converter.str2MatTex(str)
+                   else:
+                       Lux.Log("ERROR: downloaded data is not a material or texture", popup = True)
+               
+                conn.close()
+                Blender_API.Window.DrawProgressBar(1.0,'')
+            else:
+                Lux.Log("ERROR: material id is not valid", popup = True)
+                return None
+        
         # XMLRPC Methods
         def last_error(self):
             return self.XMLRPC_last_error_str
-            
+        
         def login(self):
             try:
                 result = self.XMLRPC_SERVER.user.login(
@@ -5370,7 +5377,7 @@ class Lux:
                 self.XMLRPC_last_error_str = 'Login Failed'
                 self.XMLRPC_logged_in = False
                 return False
-                
+        
         def submit_object(self, mat, basekey, tex):
             if not self.check_creds(): return False
             
@@ -5410,10 +5417,10 @@ class Lux:
                 return self.login()
             else:
                 return True
-                
+         
         def request_username(self):
             self.XMLRPC_username = Blender_API.Draw.PupStrInput("Username:", self.XMLRPC_username, 32)
-            
+        
         def request_password(self):
             self.XMLRPC_password = Blender_API.Draw.PupStrInput("Password:", self.XMLRPC_password, 32)
 
@@ -5482,11 +5489,7 @@ class Lux:
         
         def present_short(self, arg):
             return self.args.has_key('-%s' % arg)
-
-    class CLI:
-        CLI     = True
-        Active  = False
-
+    
     def __init__(self):
         
         Lux.LB_Presets  = Lux.Presets()
@@ -5566,12 +5569,12 @@ class Lux:
         else:
             Lux.Log(Lux.Version + " - UI mode")
             
-            # Init web integration
-            Lux.LB_web = Lux.Web()
-            
             # init GUI
             Lux.LB_UI = Lux.GUI()
             Blender_API.Draw.Register(*Lux.LB_UI.handlers())
+            
+            # Init web integration
+            Lux.LB_web = Lux.Web()
             
             luxpathprop = Lux.Property(Lux.scene, "lux", "")
             luxpath = luxpathprop.get()
@@ -5595,7 +5598,7 @@ class Lux:
                             if r == 2:
                                 Lux.Presets.newluxdefaults["checkluxpath"] = False
                                 Lux.Presets.saveluxdefaults()
-            else    :
+            else:
                 Lux.Log("Lux path check disabled")
 
 #------------------------------------------------------------------------------ 
