@@ -37,12 +37,20 @@ Tooltip: 'Export/Render to LuxRender CVS scene format (.lxs)'
 #===============================================================================
 # IMPORT FROM PYTHON
 #===============================================================================
-import math, os, sys as osys, types, subprocess, types, time as otime
+try:
+    import math, os, sys as osys, types, subprocess, types, time as otime
+except ImportError:
+    print "Unable to import required libraries - you may need to install Python"
+    exit()
 
 #===============================================================================
 # IMPORT FROM BLENDER - Aliased in case we need to swap it out in the future
 #===============================================================================
-import Blender as Blender_API
+try:
+    import Blender as Blender_API
+except ImportError:
+    print "Unable to import Blender API - this file needs to be run within Blender"
+    exit()
 
 #===============================================================================
 # Lux Class
