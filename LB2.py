@@ -38,7 +38,7 @@ Tooltip: 'Export/Render to LuxRender CVS scene format (.lxs)'
 # IMPORT FROM PYTHON
 #===============================================================================
 try:
-    import math, os, sys as osys, types, subprocess, types, time as otime
+    import math, os, sys as osys, types, subprocess, types
 except ImportError:
     print "Unable to import required libraries - you may need to install Python"
     exit()
