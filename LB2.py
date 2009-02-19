@@ -38,7 +38,11 @@ Tooltip: 'Export/Render to LuxRender CVS scene format (.lxs)'
 # IMPORT FROM PYTHON
 #===============================================================================
 try:
-    import math, os, sys as osys, types, subprocess, types
+    import math 		# used in realistic camera FOV only: math.tan, math.pi
+    import os			# used: os.sep, os.path, os.system
+    import sys as osys	# used: osys.platform, osys.exit, osys.argv
+    import types		# used all over the place
+    import subprocess	# used in Launch and Preview
 except ImportError:
     print "Unable to import required libraries - you may need to install Python"
     exit()
@@ -1588,8 +1592,6 @@ class Lux:
         
             # call external shell script to start Lux    
             Lux.Log("Running Luxrender: "+cmd)
-        
-            import subprocess
             p = subprocess.Popen(cmd, stdin=subprocess.PIPE)
             
             return p.stdin
@@ -2591,7 +2593,7 @@ class Lux:
                     str += Lux.TypedControls.File().create("specfile", Lux.Property(cam, "camera.realistic.specfile", ""), "spec-file", "", 1.0)
                     #if Lux.LB_UI.Active: Lux.LB_UI.newline()
                     # auto calc
-                    #str += Lux.Types.Float("filmdistance", Lux.Property(cam, "camera.realistic.filmdistance", 70.0), 0.1, 1000.0, "film-dist", "film-distance [mm]")
+                    #str += Lux.TypedControls.Float().create("filmdistance", Lux.Property(cam, "camera.realistic.filmdistance", 70.0), 0.1, 1000.0, "film-dist", "film-distance [mm]")
                     filmdiag = Lux.Property(cam, "camera.realistic.filmdiag", 35.0)
                     str += Lux.TypedControls.Float().create("filmdiag", filmdiag, 0.1, 1000.0, "film-diag", "[mm]")
                     if Lux.LB_UI.Active: Lux.LB_UI.newline()
@@ -2683,7 +2685,7 @@ class Lux:
                 # Flash lamp option for perspective and ortho cams
                 #if camtype.get() in ["perspective", "orthographic"]:
                 #    useflash = Lux.Property(cam, "useflash", "false")
-                #    Lux.Types.Bool("useflash", useflash, "Flash Lamp", "Enable Camera mounted flash lamp options", 2.0)
+                #    Lux.TypedControls.Bool().create("useflash", useflash, "Flash Lamp", "Enable Camera mounted flash lamp options", 2.0)
         
                 # Motion Blur Options (common to all cameras)
                 usemblur = Lux.Property(cam, "usemblur", "false")
@@ -3894,7 +3896,7 @@ class Lux:
         
             if(value.get() == None): value.set(0.002)
         
-            #link = Lux.Types.Float(name, value, min, max, "", hint, 2.0)
+            #link = Lux.Typedcontrols.Float().create(name, value, min, max, "", hint, 2.0)
             if Lux.LB_UI.Active:
                 r = Lux.LB_UI.getRect(2.0, 1)
                 Blender_API.Draw.Number("", Lux.Events.LuxGui, r[0], r[1], r[2], r[3], float(1.0/value.getFloat()), 1.0, 1000000.0, hint, lambda e,v: value.set(1.0/v))
@@ -5252,7 +5254,7 @@ class Lux:
                 import httplib
                 self.WEB_Connect = True
                 Lux.Log("INFO: Simple Web support available")
-            except:
+            except ImportError:
                 Lux.Log("WARNING: Simple Web support not available")
                 
             try:
@@ -5356,7 +5358,7 @@ class Lux:
                 Lux.Web.XMLRPC_CookieTransport = CookieTransport
                 
                 Lux.Log("INFO: Advanced Web support available")
-            except:
+            except ImportError:
                 Lux.Log("WARNING: Advanced Web support not available")
         
         def download(self, mat, id):
@@ -5488,11 +5490,13 @@ class Lux:
                 self.is_cli = True
         
         def validate(self):
-            import getopt
-            try:
+        	try:
+        		import getopt
                 o, a = getopt.getopt(self.raw_args, self.args_short, self.args_long)
             except getopt.GetoptError, er:
                 Lux.Log('CLI Error: %s'%er, fatal = True)
+            except ImportError:
+            	Lux.Log('CLI Error: getopt module not available', fatal = True)
                 
             for k,v in o:
                 self.args[k] = v
