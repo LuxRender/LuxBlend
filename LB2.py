@@ -37,7 +37,7 @@ Tooltip: 'Export/Render to LuxRender CVS scene format (.lxs)'
 #===============================================================================
 # IMPORT FROM PYTHON
 #===============================================================================
-import math, os, sys as osys, types, subprocess, types
+import math, os, sys as osys, types, subprocess, types, time as otime
 
 #===============================================================================
 # IMPORT FROM BLENDER - Aliased in case we need to swap it out in the future
@@ -95,16 +95,13 @@ class Lux:
         SaveMaterial     = 96
         LoadMaterial     = 95
         DeleteMaterial   = 94
-        # what heppened to 93 ?
+        # what happened to 93 ?
         ConvertMaterial  = 92
         SaveMaterial2    = 91
         LoadMaterial2    = 90
         
-        activeObject    = None
-        activeEvent     = None
-        lastEvent		= None
-        lastEventTime   = 0
-        retriggerTime   = 5
+        activeObject     = None
+        lastEvent		 = None
         
         key_tabs = {
             Blender_API.Draw.ONEKEY:     0,
@@ -116,20 +113,21 @@ class Lux:
         
         # function that handles keyboard and mouse events
         def keyHandler(self, evt, val):
-            if evt == Blender_API.Draw.ESCKEY or evt == Blender_API.Draw.QKEY:
-                if Blender_API.Draw.PupMenu("OK?%t|Cancel export %x1") == 1:
-                    Lux.Log('Quitting')
-                    Blender_API.Draw.Exit()
-                    return
-            Lux.scene = Blender_API.Scene.GetCurrent()
+            #Lux.scene = Blender_API.Scene.GetCurrent()
             if Lux.scene:
                 if Lux.scene.objects.active != self.activeObject:
                     self.activeObject = Lux.scene.objects.active
                     Lux.Materials.activemat = None
                     Blender_API.Window.QRedrawAll()
-            if (evt == Blender_API.Draw.MOUSEX) or (evt == Blender_API.Draw.MOUSEY):
-            	Lux.LB_UI.LB_scrollbar.Mouse()
-            	#self.lastEvent = None
+            
+            
+            if evt == Blender_API.Draw.ESCKEY or evt == Blender_API.Draw.QKEY:
+                if Blender_API.Draw.PupMenu("OK?%t|Cancel export %x1") == 1:
+                    Lux.Log('Quitting')
+                    Blender_API.Draw.Exit()
+                    return
+            
+            if evt in [Blender_API.Draw.MOUSEX, Blender_API.Draw.MOUSEY]: Lux.LB_UI.LB_scrollbar.Mouse()
             	
             if  evt == Blender_API.Draw.WHEELUPMOUSE:   Lux.LB_UI.LB_scrollbar.scroll(-16)
             if  evt == Blender_API.Draw.WHEELDOWNMOUSE: Lux.LB_UI.LB_scrollbar.scroll(16)
@@ -137,34 +135,25 @@ class Lux:
             if  evt == Blender_API.Draw.PAGEDOWNKEY:    Lux.LB_UI.LB_scrollbar.scroll(50)
         
             # scroll to [T]op and [B]ottom
-            if evt == Blender_API.Draw.TKEY:
-                Lux.LB_UI.LB_scrollbar.scroll(-Lux.LB_UI.LB_scrollbar.position)
-            if evt == Blender_API.Draw.BKEY:
-                Lux.LB_UI.LB_scrollbar.scroll(100000)   # Some large number should be enough ?!
+            if evt == Blender_API.Draw.TKEY: Lux.LB_UI.LB_scrollbar.scroll(-Lux.LB_UI.LB_scrollbar.position)
+            if evt == Blender_API.Draw.BKEY: Lux.LB_UI.LB_scrollbar.scroll(100000)   # Some large number should be enough ?!
         
             # R key shortcut to launch render
             # E key shortcut to export current scene (not render)
             # P key shortcut to preview current material
-            # These keys need time and process-complete locks
-            if evt in [Blender_API.Draw.RKEY, Blender_API.Draw.EKEY, Blender_API.Draw.PKEY]:
-                if self.activeEvent == None and ((Blender_API.sys.time() - self.lastEventTime) > self.retriggerTime):
-                    self.lastEventTime = Blender_API.sys.time()
-                    if evt == Blender_API.Draw.RKEY and (self.et is None or not self.et.isAlive()):
-                        self.activeEvent = self.LastEvent = 'RKEY'
+            # These keys need re-trigger prevention
+            if evt in [Blender_API.Draw.RKEY, Blender_API.Draw.EKEY, Blender_API.Draw.PKEY] and val:
+                if self.lastEvent is not evt:
+                    if evt == Blender_API.Draw.RKEY:
                         Lux.Launch.ExportStill(Lux.Property(Lux.scene, "default", "true").get() == "true", True)
-                        self.activeEvent = None
                     if evt == Blender_API.Draw.EKEY:
-                        self.activeEvent = self.LastEvent = 'EKEY'
                         Lux.Launch.ExportStill(Lux.Property(Lux.scene, "default", "true").get() == "true", False)
-                        self.activeEvent = None
                     if evt == Blender_API.Draw.PKEY:
-                        self.activeEvent = self.LastEvent = 'PKEY'
                         if Lux.Materials.activemat != None:
                             Lux.Preview.Update(Lux.Materials.activemat, '', True, 0, None, None, None)
-                        self.activeEvent = None
-                
+            
             # Switch GUI tabs with number keys
-            if evt in self.key_tabs.keys():
+            if evt in self.key_tabs.keys() and self.lastEvent is not evt and val:
                 Lux.Property(Lux.scene, "page", 0).set(self.key_tabs[evt])
                 Blender_API.Draw.Redraw()
             
@@ -182,11 +171,14 @@ class Lux:
             #        # Mouse clicked in right button bar
             #        mousey = my - size[1] - Lux.LB_UI.LB_scrollbar.position
             #        Lux.Log("mousey = %i"%mousey)
+            
+            self.lastEvent = evt
                    
 
         # function that handles button events
         def buttonHandler(self, evt):
-            Lux.scene = Blender_API.Scene.GetCurrent()
+            
+            #Lux.scene = Blender_API.Scene.GetCurrent()
             
             if evt == self.LuxGui:
                 Blender_API.Draw.Redraw()
@@ -257,6 +249,8 @@ class Lux:
             if evt == self.SaveMaterial2:
                 if Lux.Materials.activemat:
                     Blender_API.Window.FileSelector(lambda fn:Lux.Converter.saveMatTex(Lux.Materials.activemat, fn), "save material", Lux.Property(Lux.scene, "lux", "").get()+os.sep+".lbm")
+                    
+            self.lastEvent = evt
 
     # Property lists
     usedproperties = {} # variable to collect used properties for storing presets
