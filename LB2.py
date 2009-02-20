@@ -65,7 +65,6 @@ class Lux:
     # Material stuff ?
     dummyMat            = 2394723948
     clayMat             = None
-    MatSaved            = False
     
     # lists
     meshlist            = None
@@ -94,8 +93,6 @@ class Lux:
     usedproperties = {} # variable to collect used properties for storing presets
     usedpropertiesfilterobj = None # assign a object to only collect the properties that are assigned to this object
     
-    runRenderAfterExport    = False
-    
     # variable for copy/paste content
     clipboard = None
     
@@ -106,269 +103,10 @@ class Lux:
         
         if fatal: osys.exit(1)
     
-    # TODO: exportMaterial and exportMaterialGeomTag do not belong here
     
-    @staticmethod
-    def exportMaterial(mat):
-        '''Export Material Section'''
-        str = "# Material '%s'\n" % mat.name
-        return str + Lux.Materials.Material(mat) + "\n"
-    
-    @staticmethod
-    def exportMaterialGeomTag(mat):
-        return "%s\n"%(Lux.Property(mat, "link", "").get())
-    
-    # TODO: save_*() methods do not belong here (see Lux.Launch.Export* too)
-    
-    @staticmethod
-    def save_lux(filename, unindexedname):
-        '''EXPORT'''
-        
-        Lux.scene = Blender_API.Scene.GetCurrent()
-        Lux.LB_UI.Active  = False
-        
-        export_total_steps = 12.0
-        
-        Lux.Log("Lux Render Export started...")
-        time1 = Blender_API.sys.time()
-        Lux.scene = Blender_API.Scene.GetCurrent()
-    
-        filepath = os.path.dirname(filename)
-        filebase = os.path.splitext(os.path.basename(filename))[0]
-    
-        Lux.geom_filename  = os.path.join(filepath, filebase + "-geom.lxo")
-        Lux.geom_pfilename = filebase + "-geom.lxo"
-    
-        Lux.mat_filename  = os.path.join(filepath, filebase + "-mat.lxm")
-        Lux.mat_pfilename = filebase + "-mat.lxm"
-        
-        Lux.vol_filename  = os.path.join(filepath, filebase + "-vol.lxv")
-        Lux.vol_pfilename = filebase + "-vol.lxv"
-    
-        ### Zuegs: initialization for export class
-        export = Lux.Export(Lux.scene)
-    
-        # check if a light is present
-        envtype = Lux.Property(Lux.scene, "env.type", "infinite").get()
-        if envtype == "sunsky":
-            sun = None
-            for obj in Lux.scene.objects:
-                if (obj.getType() == "Lamp") and ((obj.Layers & Lux.scene.Layers) > 0):
-                    if obj.getData(mesh=1).getType() == 1: # sun object # data
-                        sun = obj
-        if not(export.analyseScene()) and not(envtype == "infinite") and not((envtype == "sunsky") and (sun != None)):
-            Lux.Log("ERROR: No light source found", popup = True)
-            return False
-    
-        if Lux.LB_UI.Active: Blender_API.Window.DrawProgressBar(0.0/export_total_steps,'Setting up Scene file')
-        if Lux.Property(Lux.scene, "lxs", "true").get()=="true":
-            ##### Determine/open files
-            Lux.Log("Exporting scene to '" + filename + "'...")
-            file = open(filename, 'w')
-    
-            ##### Write Header ######
-            file.write("# Lux Render Scene File\n")
-            file.write("# Exported by "+Lux.Version+" Blender Exporter\n")
-            file.write("\n")
-        
-            ##### Write camera ######
-            camObj = Lux.scene.objects.camera
-    
-            if Lux.LB_UI.Active: Blender_API.Window.DrawProgressBar(1.0/export_total_steps,'Exporting Camera')
-            if camObj:
-                Lux.Log("processing Camera...")
-                cam = camObj.data
-                cammblur = Lux.Property(cam, "cammblur", "true")
-                usemblur = Lux.Property(cam, "usemblur", "false")
-    
-                matrix = camObj.getMatrix()
-    
-                motion = None
-                if(cammblur.get() == "true" and usemblur.get() == "true"):
-                    # motion blur
-                    frame = Blender_API.Get('curframe')
-                    Blender_API.Set('curframe', frame+1)
-                    m1 = 1.0*matrix # multiply by 1.0 to get a copy of original matrix (will be frame-independant) 
-                    Blender_API.Set('curframe', frame)
-                    if m1 != matrix:
-                        # Motion detected, write endtransform
-                        Lux.Log("  motion blur")
-                        motion = m1
-                        pos = m1[3]
-                        forwards = -m1[2]
-                        target = pos + forwards
-                        up = m1[1]
-                        file.write("TransformBegin\n")
-                        file.write("   LookAt %f %f %f \n       %f %f %f \n       %f %f %f\n" % ( pos[0], pos[1], pos[2], target[0], target[1], target[2], up[0], up[1], up[2] ))
-                        file.write("   CoordinateSystem \"CameraEndTransform\"\n")
-                        file.write("TransformEnd\n\n")
-    
-                # Write original lookat transform
-                pos = matrix[3]
-                forwards = -matrix[2]
-                target = pos + forwards
-                up = matrix[1]
-                file.write("LookAt %f %f %f \n       %f %f %f \n       %f %f %f\n\n" % ( pos[0], pos[1], pos[2], target[0], target[1], target[2], up[0], up[1], up[2] ))
-                file.write(Lux.SceneElements.Camera(camObj.data, Lux.scene.getRenderingContext()))
-                if motion:
-                    file.write("\n   \"string endtransform\" [\"CameraEndTransform\"]")
-                file.write("\n")
-            file.write("\n")
-        
-            if Lux.LB_UI.Active: Blender_API.Window.DrawProgressBar(2.0/export_total_steps,'Exporting Film Settings')
-            ##### Write film ######
-            file.write(Lux.SceneElements.Film())
-            file.write("\n")
-    
-            if Lux.LB_UI.Active: Blender_API.Window.DrawProgressBar(3.0/export_total_steps,'Exporting Pixel Filter')
-            ##### Write Pixel Filter ######
-            file.write(Lux.SceneElements.PixelFilter())
-            file.write("\n")
-        
-            if Lux.LB_UI.Active: Blender_API.Window.DrawProgressBar(4.0/export_total_steps,'Exporting Sampler')
-            ##### Write Sampler ######
-            file.write(Lux.SceneElements.Sampler())
-            file.write("\n")
-        
-            if Lux.LB_UI.Active: Blender_API.Window.DrawProgressBar(5.0/export_total_steps,'Exporting Surface Integrator')
-            ##### Write Surface Integrator ######
-            file.write(Lux.SceneElements.SurfaceIntegrator())
-            file.write("\n")
-            
-            if Lux.LB_UI.Active: Blender_API.Window.DrawProgressBar(6.0/export_total_steps,'Exporting Volume Integrator')
-            ##### Write Volume Integrator ######
-            file.write(Lux.SceneElements.VolumeIntegrator())
-            file.write("\n")
-            
-            if Lux.LB_UI.Active: Blender_API.Window.DrawProgressBar(7.0/export_total_steps,'Exporting Accelerator')
-            ##### Write Acceleration ######
-            file.write(Lux.SceneElements.Accelerator())
-            file.write("\n")    
-        
-            ########## BEGIN World
-            file.write("\n")
-            file.write("WorldBegin\n")
-            file.write("\n")
-    
-            ########## World scale
-            scale = Lux.Property(Lux.scene, "global.scale", 1.0).get()
-            if scale != 1.0:
-                # TODO: not working yet !!!
-                # TODO: propabily scale needs to be applyed on camera coords too 
-                file.write("Transform [%s 0.0 0.0 0.0  0.0 %s 0.0 0.0  0.0 0.0 %s 0.0  0.0 0.0 0 1.0]\n"%(scale, scale, scale))
-                file.write("\n")
-            
-            if Lux.LB_UI.Active: Blender_API.Window.DrawProgressBar(8.0/export_total_steps,'Exporting Environment')
-            ##### Write World Background, Sunsky or Env map ######
-            env = Lux.SceneElements.Environment()
-            if env != "":
-                file.write("AttributeBegin\n")
-                file.write(env)
-                export.Portals(file)
-                file.write("AttributeEnd\n")
-                file.write("\n")    
-    
-            # Note - radiance - this is a work in progress
-            #flash = Lux.ExperimentalFlashBlock(camObj)
-            #if flash != "":
-            #    file.write("# Camera flash lamp\n")
-            #    file.write("AttributeBegin\n")
-            #    #file.write("CoordSysTransform \"camera\"\n")
-            #    file.write(flash)
-            #    file.write("AttributeEnd\n\n")
-    
-            #### Write material & geometry file includes in scene file
-            file.write("Include \"%s\"\n\n" %(Lux.mat_pfilename))
-            file.write("Include \"%s\"\n\n" %(Lux.geom_pfilename))
-            file.write("Include \"%s\"\n\n" %(Lux.vol_pfilename))
-            
-            #### Write End Tag
-            file.write("WorldEnd\n\n")
-            file.close()
-            
-        if Lux.Property(Lux.scene, "lxm", "true").get()=="true":
-            if Lux.LB_UI.Active: Blender_API.Window.DrawProgressBar(9.0/export_total_steps,'Exporting Materials')
-            ##### Write Material file #####
-            Lux.Log("Exporting materials to '" + Lux.mat_filename + "'...")
-            mat_file = open(Lux.mat_filename, 'w')
-            mat_file.write("")
-            export.Materials(mat_file)
-            mat_file.write("")
-            mat_file.close()
-        
-        if Lux.Property(Lux.scene, "lxo", "true").get()=="true":
-            if Lux.LB_UI.Active: Blender_API.Window.DrawProgressBar(10.0/export_total_steps,'Exporting Geometry')
-            ##### Write Geometry file #####
-            Lux.Log("Exporting geometry to '" + Lux.geom_filename + "'...")
-            geom_file = open(Lux.geom_filename, 'w')
-            Lux.meshlist = []
-            geom_file.write("")
-            export.Lights(geom_file)
-            export.Meshes(geom_file)
-            export.Objects(geom_file)
-            geom_file.write("")
-            geom_file.close()
-    
-        if Lux.Property(Lux.scene, "lxv", "true").get()=="true":
-            if Lux.LB_UI.Active: Blender_API.Window.DrawProgressBar(11.0/export_total_steps,'Exporting Volumes')
-            ##### Write Volume file #####
-            Lux.Log("Exporting volumes to '" + Lux.vol_filename + "'...")
-            vol_file = open(Lux.vol_filename, 'w')
-            Lux.meshlist = []
-            vol_file.write("")
-            export.Volumes(vol_file)
-            vol_file.write("")
-            vol_file.close()
-        
-        if Lux.LB_UI.Active: Blender_API.Window.DrawProgressBar(12.0/export_total_steps,'Export Finished')
-        Lux.Log("Finished.")
-        del export
-    
-        time2 = Blender_API.sys.time()
-        Lux.Log("Processing time: %f" %(time2-time1))
-        
-        if Lux.LB_UI.CLI == False:
-            Lux.LB_UI.Active = True
-            Blender_API.Draw.Redraw()
-        return True
-    
-    @staticmethod
-    def save_anim(filename):
-        startF = Blender_API.Get('staframe')
-        endF = Blender_API.Get('endframe')
-        Lux.scene = Blender_API.Scene.GetCurrent()
-        Run = Lux.Property(Lux.scene, "run", "true").get()
-    
-        Lux.Log("Rendering animation (frame %i to %i)"%(startF, endF))
-    
-        for i in range (startF, endF+1):
-            Blender_API.Set('curframe', i)
-            Lux.Log("Rendering frame %i"%(i))
-            Blender_API.Redraw()
-            frameindex = ("-%05d" % (i)) + ".lxs"
-            indexedname = Blender_API.sys.makename(filename, frameindex)
-            unindexedname = filename
-            Lux.Property(Lux.scene, "filename", Blender_API.Get("filename")).set(Blender_API.sys.makename(filename, "-%05d" %  (Blender_API.Get('curframe'))))
-    
-            success = Lux.save_lux(filename, unindexedname) 
-            if Run == "true" and success:
-                Lux.Launch.Wait(filename)
-    
-            Lux.MatSaved = True
-    
-        Lux.Log("Finished Rendering animation")
-        
-    @staticmethod
-    def save_still(filename):
-        Lux.scene = Blender_API.Scene.GetCurrent()
-        Lux.Property(Lux.scene, "filename", Blender_API.Get("filename")).set(Blender_API.sys.makename(filename, ""))
-        Lux.MatSaved = False
-        unindexedname = filename
-        if Lux.save_lux(filename, unindexedname) and Lux.runRenderAfterExport:
-            Lux.Launch.Normal(filename)
-    
-    # Event IDs
     class Events:
+        
+        # Event IDs
         LuxGui           = 99
         SavePreset       = 98
         DeletePreset     = 97
@@ -380,6 +118,7 @@ class Lux:
         SaveMaterial2    = 91
         LoadMaterial2    = 90
         
+        #other class properties
         activeObject     = None
         lastEvent        = None
         
@@ -424,9 +163,9 @@ class Lux:
             if evt in [Blender_API.Draw.RKEY, Blender_API.Draw.EKEY, Blender_API.Draw.PKEY] and val:
                 if self.lastEvent is not evt:
                     if evt == Blender_API.Draw.RKEY:
-                        Lux.Launch.ExportStill(Lux.Property(Lux.scene, "default", "true").get() == "true", True)
+                        Lux.Export.Still(Lux.Property(Lux.scene, "default", "true").get() == "true", True)
                     if evt == Blender_API.Draw.EKEY:
-                        Lux.Launch.ExportStill(Lux.Property(Lux.scene, "default", "true").get() == "true", False)
+                        Lux.Export.Still(Lux.Property(Lux.scene, "default", "true").get() == "true", False)
                     if evt == Blender_API.Draw.PKEY:
                         if Lux.Materials.activemat != None:
                             Lux.Preview.Update(Lux.Materials.activemat, '', True, 0, None, None, None)
@@ -1026,51 +765,11 @@ class Lux:
             else:
                 return 1.0
             
-    class Export:
+    class SceneIterator:
         '''Lux Export functions'''
         
-        @staticmethod
-        def getMaterials(obj, compress=False):
-            '''Helper function to get the material list of an object in respect of obj.colbits'''
-            
-            mats = [None]*16
-            colbits = obj.colbits
-            objMats = obj.getMaterials(1)
-            data = obj.getData(mesh=1)
-            try:
-                dataMats = data.materials
-            except:
-                try:
-                    dataMats = data.getMaterials(1)
-                except:
-                    dataMats = []
-                    colbits = 0xffff
-            m = max(len(objMats), len(dataMats))
-            if m>0:
-                objMats.extend([None]*16)
-                dataMats.extend([None]*16)
-                for i in range(m):
-                    if (colbits & (1<<i) > 0):
-                        mats[i] = objMats[i]
-                    else:
-                        mats[i] = dataMats[i]
-                if compress:
-                    mats = [m for m in mats if m]
-            else:
-                # This gets quite annoying.. can it be logged elsewhere?
-                Lux.Log("Warning: object %s has no material assigned" % obj.getName())
-                mats = []
-            # clay option
-            if Lux.Property(Lux.scene, "clay", "false").get()=="true":
-                if Lux.clayMat==None: Lux.clayMat = Blender_API.Material.New("lux_clayMat")
-                for i in range(len(mats)):
-                    if mats[i]:
-                        mattype = Lux.Property(mats[i], "type", "").get()
-                        if (mattype not in ["portal","light","boundvolume"]): mats[i] = Lux.clayMat
-            return mats
-        
         def __init__(self, scene):
-            '''initializes the exporter object'''
+            '''initializes the scene iterator object'''
             self.scene = scene
             self.camera = scene.objects.camera
             self.objects = []
@@ -1093,7 +792,7 @@ class Lux:
                     for o, m in obj.DupObjects:
                         self.analyseObject(o, m, "%s.%s"%(name, o.getName()))    
                 elif obj_type in ["Mesh", "Surf", "Curve", "Text"]:
-                    mats = self.getMaterials(obj)
+                    mats = Lux.Materials.getMaterials(obj)
                     if (len(mats)>0) and (mats[0]!=None) and ((mats[0].name=="PORTAL") or (Lux.Property(mats[0], "type", "").get()=="portal")):
                         self.portals.append([obj, matrix])
                     elif (len(mats)>0) and (Lux.Property(mats[0], "type", "").get()=="boundvolume"):
@@ -1131,22 +830,22 @@ class Lux:
             if mat == Lux.dummyMat:
                 file.write("\tMaterial \"matte\" # dummy material\n")
             else:
-                file.write("\t%s" % Lux.exportMaterialGeomTag(mat)) # use original methode
+                file.write("\t%s" % Lux.Materials.exportMaterialGeomTag(mat)) # use original methode
     
         def Material(self, file, mat):
             '''exports material. LuxRender "Texture" '''
-            file.write("\t%s" % Lux.exportMaterial(mat)) # use original methode        
+            file.write("\t%s" % Lux.Materials.exportMaterial(mat)) # use original methode        
         
         def Materials(self, file):
             '''exports materials to the file'''
             
-            for mat in self.materials:
-                Lux.Log("material %s"%(mat.getName()))
+            mmax = len(self.materials)
+            for i, mat in enumerate(self.materials):
+                Lux.Log("Material %i/%i: %s"% (i+1, mmax, mat.getName()))
                 self.Material(file, mat)
     
         def getMeshType(self, vertcount, mat):
             '''returns type of mesh as string to use depending on thresholds'''
-            #Lux.scene = Blender_API.Scene.GetCurrent()
             if mat != Lux.dummyMat:
                 usesubdiv = Lux.Property(mat, "subdiv", "false")
                 usedisp = Lux.Property(mat, "dispmap", "false")
@@ -1280,28 +979,27 @@ class Lux:
                                     file.write("\t] \"float uv\" [\n")
                                     file.write("".join(["%f %f\n"%tuple(vertex[1]) for vertex in exportVerts])) 
                             file.write("\t]\n")
-                            Lux.Log("  shape(%s): %d vertices, %d faces"%(shapeText[shape], len(exportVerts), len(exportFaces)))
+                            #Lux.Log("  shape(%s): %d vertices, %d faces"%(shapeText[shape], len(exportVerts), len(exportFaces)))
     
         def Meshes(self, file):
             '''exports meshes that uses instancing (meshes that are used by at least "instancing_threshold" objects)'''
-            #Lux.scene = Blender_API.Scene.GetCurrent()
             instancing_threshold = Lux.Property(self.scene, "instancing_threshold", 2).get()
             mesh_optimizing = Lux.Property(self.scene, "mesh_optimizing", True).get()
             mesh = Blender_API.Mesh.New('')
             for (mesh_name, objs) in self.meshes.items():
                 allow_instancing = True
-                mats = self.getMaterials(objs[0]) # mats = obj.getData().getMaterials()
+                mats = Lux.Materials.getMaterials(objs[0]) # mats = obj.getData().getMaterials()
                 for mat in mats: # don't instance if one of the materials is emissive
                     if (mat!=None) and (Lux.Property(mat, "type", "").get()=="light"):
                         allow_instancing = False
                 for obj in objs: # don't instance if the objects with same mesh uses different materials
-                    ms = self.getMaterials(obj)
+                    ms = Lux.Materials.getMaterials(obj)
                     if ms <> mats:
                         allow_instancing = False
                 if allow_instancing and (len(objs) >= instancing_threshold):
                     del self.meshes[mesh_name]
                     mesh.getFromObject(objs[0], 0, 1)
-                    Lux.Log("blender-mesh: %s (%d vertices, %d faces)"%(mesh_name, len(mesh.verts), len(mesh.faces)))
+                    #Lux.Log("blender-mesh: %s (%d vertices, %d faces)"%(mesh_name, len(mesh.verts), len(mesh.faces)))
                     file.write("ObjectBegin \"%s\"\n"%mesh_name)
                     if (mesh_optimizing):
                         self.MeshOpt(file, mesh, mats, mesh_name)
@@ -1312,14 +1010,14 @@ class Lux:
     
         def Objects(self, file):
             '''exports objects to the file'''
-            #Lux.scene = Blender_API.Scene.GetCurrent()
             cam = self.scene.objects.camera.data
             objectmblur = Lux.Property(cam, "objectmblur", "true")
             usemblur = Lux.Property(cam, "usemblur", "false")
             mesh_optimizing = Lux.Property(self.scene, "mesh_optimizing", True).get()
             mesh = Blender_API.Mesh.New('')
-            for [obj, matrix] in self.objects:
-                Lux.Log("object: %s"%(obj.getName()))
+            mmax = len(self.objects)
+            for i, [obj, matrix] in enumerate(self.objects):
+                Lux.Log("Object %i/%i: %s" % (i+1, mmax, obj.getName()))
                 mesh_name = obj.getData(name_only=True)
     
                 motion = None
@@ -1337,8 +1035,8 @@ class Lux:
                     if mesh_name in self.meshes:
                         del self.meshes[mesh_name]
                         mesh.getFromObject(obj, 0, 1)
-                        mats = self.getMaterials(obj)
-                        Lux.Log("  blender-mesh: %s (%d vertices, %d faces)"%(mesh_name, len(mesh.verts), len(mesh.faces)))
+                        mats = Lux.Materials.getMaterials(obj)
+                        #Lux.Log("  blender-mesh: %s (%d vertices, %d faces)"%(mesh_name, len(mesh.verts), len(mesh.faces)))
                         file.write("ObjectBegin \"%s\"\n"%mesh_name)
                         if (mesh_optimizing):
                             self.MeshOpt(file, mesh, mats, mesh_name)
@@ -1364,8 +1062,8 @@ class Lux:
                     file.write("\tTransformEnd\n")
                 if mesh_name in self.meshes:
                     mesh.getFromObject(obj, 0, 1)
-                    mats = self.getMaterials(obj)
-                    Lux.Log("  blender-mesh: %s (%d vertices, %d faces)"%(mesh_name, len(mesh.verts), len(mesh.faces)))
+                    mats = Lux.Materials.getMaterials(obj)
+                    #Lux.Log("  blender-mesh: %s (%d vertices, %d faces)"%(mesh_name, len(mesh.verts), len(mesh.faces)))
                     if (mesh_optimizing):
                         self.MeshOpt(file, mesh, mats, mesh_name)
                     else:
@@ -1381,11 +1079,11 @@ class Lux:
     
         def Portals(self, file):
             '''exports portals objects to the file'''
-            #Lux.scene = Blender_API.Scene.GetCurrent()
             mesh_optimizing = Lux.Property(self.scene, "mesh_optimizing", True).get()
             mesh = Blender_API.Mesh.New('')
-            for [obj, matrix] in self.portals:
-                Lux.Log("portal: %s"%(obj.getName()))
+            pmax = len(self.portals)
+            for i, [obj, matrix] in enumerate(self.portals):
+                Lux.Log("Portal %i/%i: %s" % (i+1, pmax, obj.getName()))
                 file.write("\tTransform [%s %s %s %s  %s %s %s %s  %s %s %s %s  %s %s %s %s]\n"\
                     %(matrix[0][0], matrix[0][1], matrix[0][2], matrix[0][3],\
                       matrix[1][0], matrix[1][1], matrix[1][2], matrix[1][3],\
@@ -1393,7 +1091,7 @@ class Lux:
                       matrix[3][0], matrix[3][1], matrix[3][2], matrix[3][3]))
                 mesh_name = obj.getData(name_only=True)
                 mesh.getFromObject(obj, 0, 1)
-                mats = getMaterials(obj) # mats = obj.getData().getMaterials()
+                mats = Lux.Materials.getMaterials(obj) # mats = obj.getData().getMaterials()
                 if (mesh_optimizing):
                     self.MeshOpt(file, mesh, mats, mesh_name, True)
                 else:
@@ -1402,10 +1100,12 @@ class Lux:
     
         def Lights(self, file):
             '''exports lights to the file'''
-            for [obj, matrix] in self.lights:
+            
+            lmax = len(self.lights)
+            for i, [obj, matrix] in enumerate(self.lights):
                 ltype = obj.getData(mesh=1).getType() # data
                 if ltype in [Blender_API.Lamp.Types["Lamp"], Blender_API.Lamp.Types["Spot"], Blender_API.Lamp.Types["Area"]]:
-                    Lux.Log("light: %s"%(obj.getName()))
+                    Lux.Log("Light: %i/%i: %s" % (i+1, lmax, obj.getName()))
                     if ltype == Blender_API.Lamp.Types["Area"]:
                         # DH - this had gui = None
                         (str, link) = Lux.Light.Area("", "", obj, 0)
@@ -1457,8 +1157,9 @@ class Lux:
                     
         def Volumes(self, file):
             '''exports volumes to the file'''
-            for [obj, matrix] in self.volumes:
-                Lux.Log("volume: %s"%(obj.getName()))
+            vmax = len(self.volumes)
+            for i, [obj, matrix] in enumerate(self.volumes):
+                Lux.Log("Volume %i/%i: %s" %(i+1, vmax, obj.getName()))
                 file.write("# Volume: %s\n"%(obj.getName()))
     
                 # trickery to obtain objectspace boundingbox AABB
@@ -1481,26 +1182,24 @@ class Lux:
                       matrix[3][0], matrix[3][1], matrix[3][2], matrix[3][3]))
     
                 str_opt = (" \"point p0\" [%f %f %f] \"point p1\" [%f %f %f]"%(minx, miny, minz, maxx, maxy, maxz))
-                mats = self.getMaterials(obj)
+                mats = Lux.Materials.getMaterials(obj)
                 if (len(mats)>0) and (mats[0]!=None) and (Lux.Property(mats[0], "type", "").get()=="boundvolume"):
                     mat = mats[0]
                     (str, link) = Lux.MaterialBlock("", "", "", mat, None, 0, str_opt)
                     file.write("%s"%link)
                     file.write("\n\n")
             
-    class Launch:
+    class Export:
         '''
-        LAUNCH LuxRender AND RENDER CURRENT SCENE
+        Run various types of Export routines
         '''
         
-        # TODO I'm not sure ExportStill and ExportAnim belong in this class,
-        # I think we need anotherr class for these two + Lux.save_lux(),
-        # Lux.save_anim() and Lux.save_still()
-        # Or perhaps some of those methods need to be combined with these ?
+        runRenderAfterExport    = False
+        MatSaved                = False
         
         @staticmethod
-        def ExportStill(default, run):
-            Lux.runRenderAfterExport = run
+        def Still(default, run):
+            Lux.Export.runRenderAfterExport = run
             if default:
                 datadir = Lux.Property(Lux.scene, "datadir", "").get()
                 if datadir=="":
@@ -1509,12 +1208,12 @@ class Lux:
                     Lux.Log('Please set default out dir on the System page', popup=True)
                     return
                 filename = datadir + os.sep + "default.lxs"
-                Lux.save_still(filename)
+                Lux.Export.save_still(filename)
             else:
-                Blender_API.Window.FileSelector(Lux.save_still, "Export", Blender_API.sys.makename(Blender_API.Get("filename"), ".lxs"))
+                Blender_API.Window.FileSelector(Lux.Export.save_still, "Export", Blender_API.sys.makename(Blender_API.Get("filename"), ".lxs"))
         
         @staticmethod
-        def ExportAnim(default, run, fileselect=True):
+        def Anim(default, run, fileselect=True):
             if default:
                 datadir = Lux.Property(Lux.scene, "datadir", "").get()
                 if datadir=="":
@@ -1523,15 +1222,263 @@ class Lux:
                     Lux.Log('Please set default out dir on the System page', popup=True)
                     return
                 filename = datadir + os.sep + "default.lxs"
-                Lux.save_anim(filename)
+                Lux.Export.save_anim(filename)
             else:
                 if fileselect:
-                    Blender_API.Window.FileSelector(Lux.save_anim, "Export", Blender_API.sys.makename(Blender_API.Get("filename"), ".lxs"))
+                    Blender_API.Window.FileSelector(Lux.Export.save_anim, "Export", Blender_API.sys.makename(Blender_API.Get("filename"), ".lxs"))
                 else:
                     datadir = Lux.Property(Lux.scene, "datadir", "").get()
                     if datadir=="": datadir = Blender_API.Get("datadir")
                     filename = Blender_API.sys.makename(Blender_API.Get("filename") , ".lxs")
-                    Lux.save_anim(filename)
+                    Lux.Export.save_anim(filename)
+        
+        @staticmethod
+        def save_lux(filename, unindexedname):
+            '''EXPORT'''
+            
+            Lux.scene = Blender_API.Scene.GetCurrent()
+            Lux.LB_UI.Active  = False
+            
+            export_total_steps = 12.0
+            
+            Lux.Log("Lux Render Export started...")
+            time1 = Blender_API.sys.time()
+            Lux.scene = Blender_API.Scene.GetCurrent()
+        
+            filepath = os.path.dirname(filename)
+            filebase = os.path.splitext(os.path.basename(filename))[0]
+        
+            Lux.geom_filename  = os.path.join(filepath, filebase + "-geom.lxo")
+            Lux.geom_pfilename = filebase + "-geom.lxo"
+        
+            Lux.mat_filename  = os.path.join(filepath, filebase + "-mat.lxm")
+            Lux.mat_pfilename = filebase + "-mat.lxm"
+            
+            Lux.vol_filename  = os.path.join(filepath, filebase + "-vol.lxv")
+            Lux.vol_pfilename = filebase + "-vol.lxv"
+        
+            export = Lux.SceneIterator(Lux.scene)
+        
+            # check if a light is present
+            envtype = Lux.Property(Lux.scene, "env.type", "infinite").get()
+            if envtype == "sunsky":
+                sun = None
+                for obj in Lux.scene.objects:
+                    if (obj.getType() == "Lamp") and ((obj.Layers & Lux.scene.Layers) > 0):
+                        if obj.getData(mesh=1).getType() == 1: # sun object # data
+                            sun = obj
+            if not(export.analyseScene()) and not(envtype == "infinite") and not((envtype == "sunsky") and (sun != None)):
+                Lux.Log("ERROR: No light source found", popup = True)
+                return False
+        
+            if not Lux.LB_UI.CLI: Blender_API.Window.DrawProgressBar(0.0/export_total_steps,'Setting up Scene file')
+            if Lux.Property(Lux.scene, "lxs", "true").get()=="true":
+                ##### Determine/open files
+                Lux.Log("Exporting scene to '" + filename + "'...")
+                file = open(filename, 'w')
+        
+                ##### Write Header ######
+                file.write("# Lux Render Scene File\n")
+                file.write("# Exported by "+Lux.Version+" Blender Exporter\n")
+                file.write("\n")
+            
+                ##### Write camera ######
+                camObj = Lux.scene.objects.camera
+        
+                if not Lux.LB_UI.CLI: Blender_API.Window.DrawProgressBar(1.0/export_total_steps,'Exporting Camera')
+                if camObj:
+                    Lux.Log("processing Camera...")
+                    cam = camObj.data
+                    cammblur = Lux.Property(cam, "cammblur", "true")
+                    usemblur = Lux.Property(cam, "usemblur", "false")
+        
+                    matrix = camObj.getMatrix()
+        
+                    motion = None
+                    if(cammblur.get() == "true" and usemblur.get() == "true"):
+                        # motion blur
+                        frame = Blender_API.Get('curframe')
+                        Blender_API.Set('curframe', frame+1)
+                        m1 = 1.0*matrix # multiply by 1.0 to get a copy of original matrix (will be frame-independant) 
+                        Blender_API.Set('curframe', frame)
+                        if m1 != matrix:
+                            # Motion detected, write endtransform
+                            Lux.Log("  motion blur")
+                            motion = m1
+                            pos = m1[3]
+                            forwards = -m1[2]
+                            target = pos + forwards
+                            up = m1[1]
+                            file.write("TransformBegin\n")
+                            file.write("   LookAt %f %f %f \n       %f %f %f \n       %f %f %f\n" % ( pos[0], pos[1], pos[2], target[0], target[1], target[2], up[0], up[1], up[2] ))
+                            file.write("   CoordinateSystem \"CameraEndTransform\"\n")
+                            file.write("TransformEnd\n\n")
+        
+                    # Write original lookat transform
+                    pos = matrix[3]
+                    forwards = -matrix[2]
+                    target = pos + forwards
+                    up = matrix[1]
+                    file.write("LookAt %f %f %f \n       %f %f %f \n       %f %f %f\n\n" % ( pos[0], pos[1], pos[2], target[0], target[1], target[2], up[0], up[1], up[2] ))
+                    file.write(Lux.SceneElements.Camera(camObj.data, Lux.scene.getRenderingContext()))
+                    if motion:
+                        file.write("\n   \"string endtransform\" [\"CameraEndTransform\"]")
+                    file.write("\n")
+                file.write("\n")
+            
+                if not Lux.LB_UI.CLI: Blender_API.Window.DrawProgressBar(2.0/export_total_steps,'Exporting Film Settings')
+                ##### Write film ######
+                file.write(Lux.SceneElements.Film())
+                file.write("\n")
+        
+                if not Lux.LB_UI.CLI: Blender_API.Window.DrawProgressBar(3.0/export_total_steps,'Exporting Pixel Filter')
+                ##### Write Pixel Filter ######
+                file.write(Lux.SceneElements.PixelFilter())
+                file.write("\n")
+            
+                if not Lux.LB_UI.CLI: Blender_API.Window.DrawProgressBar(4.0/export_total_steps,'Exporting Sampler')
+                ##### Write Sampler ######
+                file.write(Lux.SceneElements.Sampler())
+                file.write("\n")
+            
+                if not Lux.LB_UI.CLI: Blender_API.Window.DrawProgressBar(5.0/export_total_steps,'Exporting Surface Integrator')
+                ##### Write Surface Integrator ######
+                file.write(Lux.SceneElements.SurfaceIntegrator())
+                file.write("\n")
+                
+                if not Lux.LB_UI.CLI: Blender_API.Window.DrawProgressBar(6.0/export_total_steps,'Exporting Volume Integrator')
+                ##### Write Volume Integrator ######
+                file.write(Lux.SceneElements.VolumeIntegrator())
+                file.write("\n")
+                
+                if not Lux.LB_UI.CLI: Blender_API.Window.DrawProgressBar(7.0/export_total_steps,'Exporting Accelerator')
+                ##### Write Acceleration ######
+                file.write(Lux.SceneElements.Accelerator())
+                file.write("\n")    
+            
+                ########## BEGIN World
+                file.write("\n")
+                file.write("WorldBegin\n")
+                file.write("\n")
+        
+                ########## World scale
+                scale = Lux.Property(Lux.scene, "global.scale", 1.0).get()
+                if scale != 1.0:
+                    # TODO: not working yet !!!
+                    # TODO: propabily scale needs to be applyed on camera coords too 
+                    file.write("Transform [%s 0.0 0.0 0.0  0.0 %s 0.0 0.0  0.0 0.0 %s 0.0  0.0 0.0 0 1.0]\n"%(scale, scale, scale))
+                    file.write("\n")
+                
+                if not Lux.LB_UI.CLI: Blender_API.Window.DrawProgressBar(8.0/export_total_steps,'Exporting Environment')
+                ##### Write World Background, Sunsky or Env map ######
+                env = Lux.SceneElements.Environment()
+                if env != "":
+                    file.write("AttributeBegin\n")
+                    file.write(env)
+                    export.Portals(file)
+                    file.write("AttributeEnd\n")
+                    file.write("\n")    
+        
+                # Note - radiance - this is a work in progress
+                #flash = Lux.ExperimentalFlashBlock(camObj)
+                #if flash != "":
+                #    file.write("# Camera flash lamp\n")
+                #    file.write("AttributeBegin\n")
+                #    #file.write("CoordSysTransform \"camera\"\n")
+                #    file.write(flash)
+                #    file.write("AttributeEnd\n\n")
+        
+                #### Write material & geometry file includes in scene file
+                file.write("Include \"%s\"\n\n" %(Lux.mat_pfilename))
+                file.write("Include \"%s\"\n\n" %(Lux.geom_pfilename))
+                file.write("Include \"%s\"\n\n" %(Lux.vol_pfilename))
+                
+                #### Write End Tag
+                file.write("WorldEnd\n\n")
+                file.close()
+                
+            if Lux.Property(Lux.scene, "lxm", "true").get()=="true":
+                if not Lux.LB_UI.CLI: Blender_API.Window.DrawProgressBar(9.0/export_total_steps,'Exporting Materials')
+                ##### Write Material file #####
+                Lux.Log("Exporting materials to '" + Lux.mat_filename + "'...")
+                mat_file = open(Lux.mat_filename, 'w')
+                mat_file.write("")
+                export.Materials(mat_file)
+                mat_file.write("")
+                mat_file.close()
+            
+            if Lux.Property(Lux.scene, "lxo", "true").get()=="true":
+                if not Lux.LB_UI.CLI: Blender_API.Window.DrawProgressBar(10.0/export_total_steps,'Exporting Geometry')
+                ##### Write Geometry file #####
+                Lux.Log("Exporting geometry to '" + Lux.geom_filename + "'...")
+                geom_file = open(Lux.geom_filename, 'w')
+                Lux.meshlist = []
+                geom_file.write("")
+                export.Lights(geom_file)
+                export.Meshes(geom_file)
+                export.Objects(geom_file)
+                geom_file.write("")
+                geom_file.close()
+        
+            if Lux.Property(Lux.scene, "lxv", "true").get()=="true":
+                if not Lux.LB_UI.CLI: Blender_API.Window.DrawProgressBar(11.0/export_total_steps,'Exporting Volumes')
+                ##### Write Volume file #####
+                Lux.Log("Exporting volumes to '" + Lux.vol_filename + "'...")
+                vol_file = open(Lux.vol_filename, 'w')
+                Lux.meshlist = []
+                vol_file.write("")
+                export.Volumes(vol_file)
+                vol_file.write("")
+                vol_file.close()
+            
+            if not Lux.LB_UI.CLI: Blender_API.Window.DrawProgressBar(12.0/export_total_steps,'Export Finished')
+            Lux.Log("Finished.")
+            del export
+        
+            time2 = Blender_API.sys.time()
+            Lux.Log("Processing time: %f" %(time2-time1))
+            
+            if Lux.LB_UI.CLI == False:
+                Lux.LB_UI.Active = True
+                Blender_API.Draw.Redraw()
+            return True
+        
+        @staticmethod
+        def save_anim(filename):
+            startF = Blender_API.Get('staframe')
+            endF = Blender_API.Get('endframe')
+            Lux.scene = Blender_API.Scene.GetCurrent()
+            Run = Lux.Property(Lux.scene, "run", "true").get()
+        
+            Lux.Log("Rendering animation (frame %i to %i)"%(startF, endF))
+        
+            for i in range (startF, endF+1):
+                Blender_API.Set('curframe', i)
+                Lux.Log("Rendering frame %i"%(i))
+                Blender_API.Redraw()
+                frameindex = ("-%05d" % (i)) + ".lxs"
+                indexedname = Blender_API.sys.makename(filename, frameindex)
+                unindexedname = filename
+                Lux.Property(Lux.scene, "filename", Blender_API.Get("filename")).set(Blender_API.sys.makename(filename, "-%05d" %  (Blender_API.Get('curframe'))))
+        
+                success = Lux.Export.save_lux(filename, unindexedname) 
+                if Run == "true" and success:
+                    Lux.Launch.Wait(filename)
+        
+                Lux.Export.MatSaved = True
+        
+            Lux.Log("Finished Rendering animation")
+            
+        @staticmethod
+        def save_still(filename):
+            Lux.scene = Blender_API.Scene.GetCurrent()
+            Lux.Property(Lux.scene, "filename", Blender_API.Get("filename")).set(Blender_API.sys.makename(filename, ""))
+            Lux.Export.MatSaved = False
+            unindexedname = filename
+            if Lux.Export.save_lux(filename, unindexedname) and Lux.Export.runRenderAfterExport:
+                Lux.Launch.Normal(filename)
+    
+    class Launch:
         
         @staticmethod
         def Normal(filename):
@@ -2193,7 +2140,7 @@ class Lux:
                             elif (ltype == Blender_API.Lamp.Types["Lamp"]): Lux.Light.Point("Point LIGHT", "", obj, 0)
                         else:
                             matfilter = Lux.Property(Lux.scene, "matlistfilter", "false")
-                            mats = Lux.Export.getMaterials(obj, True)
+                            mats = Lux.Materials.getMaterials(obj, True)
                             if (Lux.Materials.activemat == None) and (len(mats) > 0):
                                 Lux.Materials.setactivemat(mats[0])
                             if matfilter.get() == "false":
@@ -2261,11 +2208,11 @@ class Lux:
                 net = Lux.Property(Lux.scene, "netrenderctl", "false")
                 donet = Lux.Property(Lux.scene, "donetrender", "true")
                 if (run.get()=="true"):
-                    Blender_API.Draw.Button("Render", 0, 10, y+20, 100, 36, "Render with Lux", lambda e,v: Lux.Launch.ExportStill(dlt.get()=="true", True))
-                    Blender_API.Draw.Button("Render Anim", 0, 110, y+20, 100, 36, "Render animation with Lux", lambda e,v:Lux.Launch.ExportAnim(dlt.get()=="true", True))
+                    Blender_API.Draw.Button("Render", 0, 10, y+20, 100, 36, "Render with Lux", lambda e,v: Lux.Export.Still(dlt.get()=="true", True))
+                    Blender_API.Draw.Button("Render Anim", 0, 110, y+20, 100, 36, "Render animation with Lux", lambda e,v:Lux.Export.Anim(dlt.get()=="true", True))
                 else:
-                    Blender_API.Draw.Button("Export", 0, 10, y+20, 100, 36, "Export", lambda e,v: Lux.Launch.ExportStill(dlt.get()=="true", False))
-                    Blender_API.Draw.Button("Export Anim", 0, 110, y+20, 100, 36, "Export animation", lambda e,v: Lux.Launch.ExportAnim(dlt.get()=="true", False))
+                    Blender_API.Draw.Button("Export", 0, 10, y+20, 100, 36, "Export", lambda e,v: Lux.Export.Still(dlt.get()=="true", False))
+                    Blender_API.Draw.Button("Export Anim", 0, 110, y+20, 100, 36, "Export animation", lambda e,v: Lux.Export.Anim(dlt.get()=="true", False))
         
                 Blender_API.Draw.Toggle("run", Lux.Events.LuxGui, 320, y+40, 30, 16, run.get()=="true", "start Lux after export", lambda e,v: run.set(["false","true"][bool(v)]))
                 Blender_API.Draw.Toggle("def", Lux.Events.LuxGui, 350, y+40, 30, 16, dlt.get()=="true", "save to default.lxs", lambda e,v: dlt.set(["false","true"][bool(v)]))
@@ -4069,6 +4016,56 @@ class Lux:
         activemat = None
         
         @staticmethod
+        def exportMaterial(mat):
+            '''Export Material Section'''
+            str = "# Material '%s'\n" % mat.name
+            return str + Lux.Materials.Material(mat) + "\n"
+        
+        @staticmethod
+        def exportMaterialGeomTag(mat):
+            return "%s\n"%(Lux.Property(mat, "link", "").get())
+            
+        @staticmethod
+        def getMaterials(obj, compress=False):
+            '''Helper function to get the material list of an object in respect of obj.colbits'''
+            
+            mats = [None]*16
+            colbits = obj.colbits
+            objMats = obj.getMaterials(1)
+            data = obj.getData(mesh=1)
+            try:
+                dataMats = data.materials
+            except:
+                try:
+                    dataMats = data.getMaterials(1)
+                except:
+                    dataMats = []
+                    colbits = 0xffff
+            m = max(len(objMats), len(dataMats))
+            if m>0:
+                objMats.extend([None]*16)
+                dataMats.extend([None]*16)
+                for i in range(m):
+                    if (colbits & (1<<i) > 0):
+                        mats[i] = objMats[i]
+                    else:
+                        mats[i] = dataMats[i]
+                if compress:
+                    mats = [m for m in mats if m]
+            else:
+                # This gets quite annoying.. can it be logged elsewhere?
+                Lux.Log("Warning: object %s has no material assigned" % obj.getName())
+                mats = []
+            # clay option
+            if Lux.Property(Lux.scene, "clay", "false").get()=="true":
+                if Lux.clayMat==None: Lux.clayMat = Blender_API.Material.New("lux_clayMat")
+                for i in range(len(mats)):
+                    if mats[i]:
+                        mattype = Lux.Property(mats[i], "type", "").get()
+                        if (mattype not in ["portal","light","boundvolume"]): mats[i] = Lux.clayMat
+            return mats
+        
+        @staticmethod
         def setactivemat(mat):
             Lux.Materials.activemat = mat
         
@@ -5632,7 +5629,7 @@ class Lux:
             
             #------------------------------------------------------------------------------
             # GO! 
-            Lux.Launch.ExportAnim(False, False, False)
+            Lux.Export.Anim(False, False, False)
             osys.exit(0)
         
         else:
