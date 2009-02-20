@@ -6,15 +6,13 @@ Group: 'Render'
 Tooltip: 'Export/Render to LuxRender CVS scene format (.lxs)'
 """
 #===============================================================================
+# LuxBlend CVS exporter
+#-------------------------------------------------------------------------------
+#
+# Authors:
+# radiance, zuegs, ideasman42, luxblender, dougal2
 #
 # ***** BEGIN GPL LICENSE BLOCK *****
-#
-#------------------------------------------------------------------------------ 
-# LuxBlend CVS exporter
-#------------------------------------------------------------------------------ 
-#
-# LuxBlend Authors:
-# radiance, zuegs, ideasman42, luxblender, dougal2
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -108,6 +106,8 @@ class Lux:
         
         if fatal: osys.exit(1)
     
+    # TODO: exportMaterial and exportMaterialGeomTag do not belong here
+    
     @staticmethod
     def exportMaterial(mat):
         '''Export Material Section'''
@@ -117,6 +117,8 @@ class Lux:
     @staticmethod
     def exportMaterialGeomTag(mat):
         return "%s\n"%(Lux.Property(mat, "link", "").get())
+    
+    # TODO: save_*() methods do not belong here (see Lux.Launch.Export* too)
     
     @staticmethod
     def save_lux(filename, unindexedname):
@@ -379,7 +381,7 @@ class Lux:
         LoadMaterial2    = 90
         
         activeObject     = None
-        lastEvent         = None
+        lastEvent        = None
         
         key_tabs = {
             Blender_API.Draw.ONEKEY:     0,
@@ -398,7 +400,7 @@ class Lux:
                     Blender_API.Window.QRedrawAll()
             
             
-            if evt == Blender_API.Draw.ESCKEY or evt == Blender_API.Draw.QKEY:
+            if evt in [Blender_API.Draw.ESCKEY, Blender_API.Draw.QKEY]:
                 if Blender_API.Draw.PupMenu("OK?%t|Cancel export %x1") == 1:
                     Lux.Log('Quitting')
                     Blender_API.Draw.Exit()
@@ -1090,7 +1092,7 @@ class Lux:
                 if (obj.enableDupGroup or obj.enableDupVerts):
                     for o, m in obj.DupObjects:
                         self.analyseObject(o, m, "%s.%s"%(name, o.getName()))    
-                elif (obj_type == "Mesh") or (obj_type == "Surf") or (obj_type == "Curve") or (obj_type == "Text"):
+                elif obj_type in ["Mesh", "Surf", "Curve", "Text"]:
                     mats = self.getMaterials(obj)
                     if (len(mats)>0) and (mats[0]!=None) and ((mats[0].name=="PORTAL") or (Lux.Property(mats[0], "type", "").get()=="portal")):
                         self.portals.append([obj, matrix])
@@ -1110,7 +1112,7 @@ class Lux:
                         self.objects.append([obj, matrix])
                 elif (obj_type == "Lamp"):
                     ltype = obj.getData(mesh=1).getType() # data
-                    if (ltype == Blender_API.Lamp.Types["Lamp"]) or (ltype == Blender_API.Lamp.Types["Spot"]) or (ltype == Blender_API.Lamp.Types["Area"]):
+                    if ltype in [Blender_API.Lamp.Types["Lamp"], Blender_API.Lamp.Types["Spot"], Blender_API.Lamp.Types["Area"]]:
                         self.lights.append([obj, matrix])
                         light = True
             return light
@@ -1402,7 +1404,7 @@ class Lux:
             '''exports lights to the file'''
             for [obj, matrix] in self.lights:
                 ltype = obj.getData(mesh=1).getType() # data
-                if (ltype == Blender_API.Lamp.Types["Lamp"]) or (ltype == Blender_API.Lamp.Types["Spot"]) or (ltype == Blender_API.Lamp.Types["Area"]):
+                if ltype in [Blender_API.Lamp.Types["Lamp"], Blender_API.Lamp.Types["Spot"], Blender_API.Lamp.Types["Area"]]:
                     Lux.Log("light: %s"%(obj.getName()))
                     if ltype == Blender_API.Lamp.Types["Area"]:
                         # DH - this had gui = None
@@ -1491,12 +1493,21 @@ class Lux:
         LAUNCH LuxRender AND RENDER CURRENT SCENE
         '''
         
+        # TODO I'm not sure ExportStill and ExportAnim belong in this class,
+        # I think we need anotherr class for these two + Lux.save_lux(),
+        # Lux.save_anim() and Lux.save_still()
+        # Or perhaps some of those methods need to be combined with these ?
+        
         @staticmethod
         def ExportStill(default, run):
             Lux.runRenderAfterExport = run
             if default:
                 datadir = Lux.Property(Lux.scene, "datadir", "").get()
-                if datadir=="": datadir = Blender_API.Get("datadir")
+                if datadir=="":
+                    datadir = Blender_API.Get("datadir")
+                if not datadir:
+                    Lux.Log('Please set default out dir on the System page', popup=True)
+                    return
                 filename = datadir + os.sep + "default.lxs"
                 Lux.save_still(filename)
             else:
@@ -1506,7 +1517,11 @@ class Lux:
         def ExportAnim(default, run, fileselect=True):
             if default:
                 datadir = Lux.Property(Lux.scene, "datadir", "").get()
-                if datadir=="": datadir = Blender_API.Get("datadir")
+                if datadir=="":
+                    datadir = Blender_API.Get("datadir")
+                if not datadir:
+                    Lux.Log('Please set default out dir on the System page', popup=True)
+                    return
                 filename = datadir + os.sep + "default.lxs"
                 Lux.save_anim(filename)
             else:
@@ -1551,7 +1566,7 @@ class Lux:
                 else:
                     cmd = "start /b %s \"\" \"%s\" \"%s\" --threads=%d" % (prio, ic, filename, threads)        
         
-            if ostype == "linux2" or ostype == "darwin":
+            if ostype in ["linux2", "darwin"]:
                 if(autothreads=="true"):
                     cmd = "(nice -n %d \"%s\" \"%s\")&" % (luxnice, ic, filename)
                 else:
@@ -1587,7 +1602,7 @@ class Lux:
                 else:
                     cmd = "\"%s\" - --threads=%d" % (ic, threads)        
         
-            if ostype == "linux2" or ostype == "darwin":
+            if ostype in ["linux2", "darwin"]:
                 if(autothreads=="true"):
                     cmd = "(\"%s\" \"%s\")&"%(ic, filename)
                 else:
@@ -1629,7 +1644,7 @@ class Lux:
                 #os.spawnv(os.P_WAIT, cmd, 0)
                 os.system(cmd)
         
-            if ostype == "linux2" or ostype == "darwin":
+            if ostype in ["linux2", "darwin"]:
                 if(autothreads=="true"):
                     cmd = "\"%s\" \"%s\""%(ic, filename)
                 else:
@@ -1806,22 +1821,27 @@ class Lux:
         class to access properties (for lux settings)
         '''
         
+        obj = None
+        name = None
+        hashmode = None
+        hashname = None
+        default = None
+        
         def __init__(self, obj, name, default):
             self.obj = obj
             self.name = name
-            #if len(name)>31: Lux.Log("Warning: property-name \"%s\" has more than 31 chars."%(name))
             self.hashmode = len(name)>31   # activate hash mode for keynames longer 31 chars (limited by blenders ID-prop)
-            self.hashname = "__hash:%x"%(name.__hash__())
+            self.hashname = "__hash:%x" % name.__hash__()
             self.default = default
             
         def parseassignment(self, s, name):
-            l = s.split(" = ")
-            if l[0] != name:
-                Lux.Log("Warning: property-name \"%s\" has hash-collide with \"%s\"."%(name, l[0]), popup = True)
-            return l[1]
+            L = s.split(" = ")
+            if L[0] != name:
+                Lux.Log("Warning: property-name \"%s\" has hash-collide with \"%s\"."%(name, L[0]), popup = True)
+            return L[1]
         
         def createassignment(self, name, value):
-            return "%s = %s"%(name, value)
+            return "%s = %s" % (name, value)
         
         def get(self):            
             if self.obj:
@@ -1853,103 +1873,115 @@ class Lux:
             return None
         
         def getobj(self):
-            if self.obj:
-                return self.obj
-            else:
-                return None
+            return self.obj
             
         def getname(self):
-            if self.name:
-                return self.name
-            else:
-                return None
+            return self.name
             
         def set(self, value):
             if self.obj:
-                if self.hashmode: n, v = self.hashname, self.createassignment(self.name, value)
-                else: n, v = self.name, value
+                if self.hashmode:
+                    n, v = self.hashname, self.createassignment(self.name, value)
+                else:
+                    n, v = self.name, value
                 if value is not None:
-                    try: self.obj.properties['luxblend'][n] = v
+                    try:
+                        self.obj.properties['luxblend'][n] = v
                     except (KeyError, TypeError):
                         self.obj.properties['luxblend'] = {}
                         self.obj.properties['luxblend'][n] = v
                 else:
-                    try: del self.obj.properties['luxblend'][n]
-                    except:    pass
+                    try:
+                        del self.obj.properties['luxblend'][n]
+                    except:
+                        pass
                 if self.obj.__class__.__name__ == "Scene": # luxdefaults only for global setting
                     # value has changed, so this are user settings, remove preset reference
-                    if not(self.name in Lux.Presets.defaultsExclude):
+                    if not self.name in Lux.Presets.defaultsExclude:
                         Lux.Presets.newluxdefaults[self.name] = value
-                        try: self.obj.properties['luxblend']['preset']=""
-                        except: pass
+                        try:
+                            self.obj.properties['luxblend']['preset'] = ""
+                        except:
+                            pass
                         
         def delete(self):
             if self.obj:
-                try: del self.obj.properties['luxblend'][self.name]
-                except:    pass
-                try: del self.obj.properties['luxblend'][self.hashname]
-                except:    pass
+                try:
+                    del self.obj.properties['luxblend'][self.name]
+                except:
+                    pass
+                try:
+                    del self.obj.properties['luxblend'][self.hashname]
+                except:
+                    pass
                 
         def getFloat(self):
-            v = self.get()
-            if type(v) == types.FloatType: return float(v)
-            try:
-                if type(v) == types.StringType: return float(v.split(" ")[0])
-            except: pass
-            v = self.default
-            if type(v) == types.FloatType: return float(v)
-            try:
-                if type(v) == types.StringType: return float(v.split(" ")[0])
-            except: pass
+            for v in [self.get(), self.default]:
+                if type(v) == types.FloatType:
+                    return float(v)
+                try:
+                    if type(v) == types.StringType:
+                        return float(v.split(" ")[0])
+                except:
+                    pass
+            
             return 0.0
         
         def getInt(self):
-            try: return int(self.get())
-            except: return int(self.default)
+            for v in [self.get(), self.default]:
+                try:
+                    return int(v)
+                except:
+                    pass
+            return 0
             
         def getRGB(self):
             return self.getVector()
         
         def getVector(self):
             v = self.get()
-            if type(v) in [types.FloatType, types.IntType]: return (float(v), float(v), float(v))
-            l = None
+            if type(v) in [types.FloatType, types.IntType]:
+                return (float(v), float(v), float(v))
+            L = None
             try:
-                if type(v) == types.StringType: l = self.get().split(" ")
-            except: pass
-            if (l==None) or (len(l) != 3): l = self.default.split(" ")
-            return (float(l[0]), float(l[1]), float(l[2]))
+                if type(v) == types.StringType:
+                    L = self.get().split(" ")
+            except:
+                pass
+            if (L==None) or (len(L) != 3):
+                L = self.default.split(" ")
+            return (float(L[0]), float(L[1]), float(L[2]))
         
         def getVectorStr(self):
-            return "%f %f %f"%self.getVector()
+            return "%f %f %f" % self.getVector()
         
         def isFloat(self):
             return type(self.get()) == types.FloatType
         
         def getRGC(self):
             col = self.getRGB()
-            return "%f %f %f"%(Lux.Colour.rg(col[0]), Lux.Colour.rg(col[1]),Lux.Colour.rg(col[2]))
+            return "%f %f %f" % (Lux.Colour.rg(col[0]), Lux.Colour.rg(col[1]), Lux.Colour.rg(col[2]))
         
         def setRGB(self, value):
-            self.set("%f %f %f"%(value[0], value[1], value[2]))
+            self.set("%f %f %f" % (value[0], value[1], value[2]))
             
         def setVector(self, value):
-            self.set("%f %f %f"%(value[0], value[1], value[2]))
+            self.set("%f %f %f" % (value[0], value[1], value[2]))
             
     class Attribute:
         '''
         class to access blender attributes (for lux settings)
         '''
         
+        obj = None
+        name = None
+        
         def __init__(self, obj, name):
             self.obj = obj
             self.name = name
             
         def get(self):
-            if self.obj:
-                return getattr(self.obj, self.name)
-            else:
-                return None
+            return getattr(self.obj, self.name)
             
         def getFloat(self):
             return float(self.get())
@@ -1958,21 +1990,14 @@ class Lux:
             return int(self.get())
         
         def getobj(self):
-            if self.obj:
-                return self.obj
-            else:
-                return None
+             return self.obj
         
         def getname(self):
-            if self.name:
-                return self.name
-            else:
-                return None
+            return self.name
             
         def set(self, value):
-            if self.obj:
-                setattr(self.obj, self.name, value)
-                Blender_API.Window.QRedrawAll()
+            setattr(self.obj, self.name, value)
+            Blender_API.Window.QRedrawAll()
     
     class CLI:
         '''
@@ -2000,7 +2025,7 @@ class Lux:
         w = 140 # default element width in pixels
         h = 18  # default element height in pixels
         
-        xmax = 110+2*(140+4)
+        xmax = 110+2*(140+4) # = 398?
         hmax = 0
         xgap = 4
         ygap = 4
@@ -2012,8 +2037,6 @@ class Lux:
         
         def __init__(self, y=200):
             self.y = y
-            
-            
             
             self.LB_scrollbar     = Lux.GUI.scrollbar()
             self.LB_Event_Handler = Lux.Events()
@@ -2040,12 +2063,19 @@ class Lux:
                 
         # scrollbar
         class scrollbar:
-            def __init__(self):
-                self.position = 0 # current position at top (inside 0..height-viewHeight)
-                self.height = 0 # total height of the content
-                self.viewHeight = 0 # height of window
-                self.x = 0 # horizontal position of the scrollbar
-                self.scrolling = self.over = False # start without scrolling ;)
+            position = 0                # current position at top (inside 0..height-viewHeight)
+            height = 0                  # total height of the content
+            viewHeight = 0              # height of window
+            x = 0                       # horizontal position of the scrollbar
+            scrolling = over = False    # start without scrolling ;)
+            
+            winrect = None
+            rect = None
+            factor = None
+            sliderRect = None
+            
+            lastcoord = None
+            
             def calcRects(self):
                 # Blender doesn't give us direct access to the window size yet, but it does set the
                 # GL scissor box for it, so we can get the size from that. (thx to Daniel Dunbar)
@@ -2056,23 +2086,33 @@ class Lux:
                 self.viewHeight = size[3]
                 size[0], size[1] = size[2]-20, 0 # [scrollx1, scrolly1, scrollx2, scrolly2]
                 self.rect = size[:]
-                if self.position < 0: self.position = 0
-                if self.height < self.viewHeight: self.height = self.viewHeight
-                if self.position > self.height-self.viewHeight: self.position = self.height-self.viewHeight
+                if self.position < 0:
+                    self.position = 0
+                if self.height < self.viewHeight:
+                    self.height = self.viewHeight
+                if self.position > self.height-self.viewHeight:
+                    self.position = self.height-self.viewHeight
                 self.factor = (size[3]-size[1]-4)/self.height
                 self.sliderRect = [size[0]+2, size[3]-2-(self.position+self.viewHeight)*self.factor, size[2]-2, size[3]-2-self.position*self.factor]
+                
             def draw(self):
                 self.calcRects()
-                Blender_API.BGL.glColor3f(0.5,0.5,0.5); Blender_API.BGL.glRectf(self.rect[0],self.rect[1],self.rect[2],self.rect[3])
-                if self.over or self.scrolling: Blender_API.BGL.glColor3f(1.0,1.0,0.7)
-                else: Blender_API.BGL.glColor3f(0.7,0.7,0.7)
+                Blender_API.BGL.glColor3f(0.5,0.5,0.5)
+                Blender_API.BGL.glRectf(self.rect[0],self.rect[1],self.rect[2],self.rect[3])
+                if self.over or self.scrolling:
+                    Blender_API.BGL.glColor3f(1.0,1.0,0.7)
+                else:
+                    Blender_API.BGL.glColor3f(0.7,0.7,0.7)
                 Blender_API.BGL.glRectf(self.sliderRect[0],self.sliderRect[1],self.sliderRect[2],self.sliderRect[3])
+                
             def getTop(self):
                 return self.viewHeight+self.position
+            
             def scroll(self, delta):
                 self.position = self.position + delta
                 self.calcRects()
                 Blender_API.Draw.Redraw()
+                
             def Mouse(self):
                 self.calcRects()
                 coord, buttons = Blender_API.Window.GetMouseCoords(), Blender_API.Window.GetMouseButtons()
@@ -2080,7 +2120,8 @@ class Lux:
                        (coord[1]>=self.winrect[1]+self.rect[1]) and (coord[1]<=self.winrect[1]+self.rect[3])
                 if Blender_API.Window.MButs.L and buttons > 0:
                     if self.scrolling:
-                        if self.factor > 0: self.scroll((self.lastcoord[1]-coord[1])/self.factor)
+                        if self.factor > 0:
+                            self.scroll((self.lastcoord[1]-coord[1])/self.factor)
                         Blender_API.Draw.Redraw()
                     elif self.over:
                         self.scrolling = True
@@ -2088,7 +2129,8 @@ class Lux:
                 elif self.scrolling:
                     self.scrolling = False
                     Blender_API.Draw.Redraw()
-                if self.over != over: Blender_API.Draw.Redraw()
+                if self.over != over:
+                    Blender_API.Draw.Redraw()
                 self.over = over
         
         # gui main draw
@@ -2116,9 +2158,12 @@ class Lux:
                 presetskeys.sort()
                 presetskeys.insert(0, "")
                 presetsstr = "presets: %t"
-                for i, v in enumerate(presetskeys): presetsstr = "%s %%x%d|%s"%(v, i, presetsstr)
-                try: i = presetskeys.index(luxpreset.get())
-                except ValueError: i = 0
+                for i, v in enumerate(presetskeys):
+                    presetsstr = "%s %%x%d|%s" % (v, i, presetsstr)
+                try:
+                    i = presetskeys.index(luxpreset.get())
+                except ValueError:
+                    i = 0
                 Blender_API.Draw.Menu(presetsstr, Lux.Events.LuxGui, 110, y-50, 220, 18, i, "", lambda e,v: luxpreset.set(presetskeys[v]))
                 Blender_API.Draw.Button("save", Lux.Events.SavePreset, 330, y-50, 40, 18, "create a render-settings preset")
                 Blender_API.Draw.Button("del", Lux.Events.DeletePreset, 370, y-50, 40, 18, "delete a render-settings preset")
@@ -2127,14 +2172,16 @@ class Lux:
                 if luxpreset.get() != "":
                     try:
                         d = presets[luxpreset.get()]
-                        for k,v in d.items(): Lux.scene.properties['luxblend'][k] = v
-                    except: pass
+                        for k,v in d.items():
+                            Lux.scene.properties['luxblend'][k] = v
+                    except:
+                        pass
         
-                Blender_API.Draw.Button("Material", Lux.Events.LuxGui, 10, y-70, 80, 16, "", lambda e,v:luxpage.set(0))
-                Blender_API.Draw.Button("Cam/Env", Lux.Events.LuxGui, 90, y-70, 80, 16, "", lambda e,v:luxpage.set(1))
-                Blender_API.Draw.Button("Render", Lux.Events.LuxGui, 170, y-70, 80, 16, "", lambda e,v:luxpage.set(2))
-                Blender_API.Draw.Button("Output", Lux.Events.LuxGui, 250, y-70, 80, 16, "", lambda e,v:luxpage.set(3))
-                Blender_API.Draw.Button("System", Lux.Events.LuxGui, 330, y-70, 80, 16, "", lambda e,v:luxpage.set(4))
+                Blender_API.Draw.Button("Material", Lux.Events.LuxGui, 10, y-70, 80, 16, "",  lambda e,v:luxpage.set(0))
+                Blender_API.Draw.Button("Cam/Env",  Lux.Events.LuxGui, 90, y-70, 80, 16, "",  lambda e,v:luxpage.set(1))
+                Blender_API.Draw.Button("Render",   Lux.Events.LuxGui, 170, y-70, 80, 16, "", lambda e,v:luxpage.set(2))
+                Blender_API.Draw.Button("Output",   Lux.Events.LuxGui, 250, y-70, 80, 16, "", lambda e,v:luxpage.set(3))
+                Blender_API.Draw.Button("System",   Lux.Events.LuxGui, 330, y-70, 80, 16, "", lambda e,v:luxpage.set(4))
                 if luxpage.get() == 0:
                     Blender_API.BGL.glColor3f(1.0,0.5,0.0);Blender_API.BGL.glRectf(10,y-74,90,y-70);Blender_API.BGL.glColor3f(0.9,0.9,0.9)
                     obj = Lux.scene.objects.active
@@ -2499,9 +2546,9 @@ class Lux:
                     r = Lux.LB_UI.getRect(width, 1)
                     Blender_API.Draw.String(caption+": ", Lux.Events.LuxGui, r[0], r[1], r[2], r[3], lux.get(), 250, hint, lambda e,v: lux.set(v))
                 if lux.get()==lux.default:
-                	return ""
+                    return ""
                 else:
-                	return '\n   "string %s" ["%s"]' % (name, Lux.Util.luxstr(lux.get()))
+                    return '\n   "string %s" ["%s"]' % (name, Lux.Util.luxstr(lux.get()))
         
         class File(TypedControl):
             def create(self, name, lux, caption, hint, width=1.0):
@@ -3387,16 +3434,16 @@ class Lux:
                     icon = icon_tex
                     if texture.get() in ["mix", "scale", "checkerboard", "dots"]:
                         if type=="color":
-                        	icon = icon_texmixcol
+                            icon = icon_texmixcol
                         else:
-                        	icon = icon_texmix
+                            icon = icon_texmix
                     elif texture.get() in ["constant", "blackbody", "equalenergy", "frequency", "gaussian", "regulardata", "irregulardata"]:
                         icon = icon_spectex
                     else:
                         if type=="color":
-                        	icon = icon_texcol
+                            icon = icon_texcol
                         else:
-                        	icon = icon_tex
+                            icon = icon_tex
                 if (texlevel > 0): Lux.LB_UI.newline(caption+":", -2, level, icon, Lux.Util.scalelist([0.5,0.5,0.5],2.0/(level+2)))
                 else: Lux.LB_UI.newline("texture:", -2, level, icon, Lux.Util.scalelist([0.5,0.5,0.5],2.0/(level+2)))
             Lux.TypedControls.Option().create("texture", texture, textures, "texture", "", 0.9)
@@ -3460,7 +3507,7 @@ class Lux:
                 filttypes = ["mipmap_ewa","mipmap_trilinear","bilinear","nearest"]
                 str += Lux.TypedControls.Option().create("filtertype", filttype, filttypes, "filtertype", "Choose the filtering method to use for the image texture", 0.75)
         
-                if filttype.get() == "mipmap_ewa" or filttype.get() == "mipmap_trilinear":    
+                if filttype.get() in ["mipmap_ewa", "mipmap_trilinear"]:    
                     str += Lux.TypedControls.Float().create("maxanisotropy", Lux.Property(mat, keyname+".maxanisotropy", 8.0), 1.0, 512.0, "maxaniso", "", 1.0)
                     str += Lux.TypedControls.Int().create("discardmipmaps", Lux.Property(mat, keyname+".discardmipmaps", 0), 0, 1, "discardmips", "", 1.0)
         
@@ -4068,7 +4115,7 @@ class Lux:
             if mat:
                 mattype = Lux.Property(mat, kn+"type", "matte")
                 # Set backwards compatibility of glossy material from plastic and substrate
-                if(mattype.get() == "substrate" or mattype.get() == "plastic"):
+                if mattype.get() in ["substrate", "plastic"]:
                     mattype.set("glossy")
         
                 materials = ["carpaint","glass","matte","mattetranslucent","metal","mirror","roughglass","shinymetal","glossy","mix","null"]
@@ -4076,11 +4123,11 @@ class Lux:
                 if Lux.LB_UI.Active:
                     icon = icon_mat
                     if mattype.get() == "mix":
-                    	icon = icon_matmix
+                        icon = icon_matmix
                     if level == 0:
-                    	Lux.LB_UI.newline("Material type:", 12, level, icon, [0.75,0.5,0.25])
+                        Lux.LB_UI.newline("Material type:", 12, level, icon, [0.75,0.5,0.25])
                     else:
-                    	Lux.LB_UI.newline(name+":", 12, level, icon, Lux.Util.scalelist([0.75,0.6,0.25],2.0/(level+2)))
+                        Lux.LB_UI.newline(name+":", 12, level, icon, Lux.Util.scalelist([0.75,0.6,0.25],2.0/(level+2)))
         
                 link = Lux.TypedControls.Option().create("type", mattype, materials, "  TYPE", "select material type")
                 showadvanced = Lux.Property(mat, kn+"showadvanced", "false")
@@ -5183,7 +5230,7 @@ class Lux:
                             test_str = 'MATERIAL'
                             
                         if   ('LUX_DATA' in d.keys() and d['LUX_DATA'] == test_str) \
-                        and  ('LUX_VERSION' in d.keys() and (d['LUX_VERSION'] == '0.6' or d['LUX_VERSION'] == 0.6)):
+                        and  ('LUX_VERSION' in d.keys() and d['LUX_VERSION'] == '0.6'):
                             return d
                         else:
                             reason = 'Missing/incorrect metadata'
