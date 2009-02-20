@@ -62,22 +62,6 @@ class Lux:
     
     Version             = 'LuxBlend CVS'
     
-    # Material stuff ?
-    dummyMat            = 2394723948
-    clayMat             = None
-    
-    # lists
-    meshlist            = None
-    matnames            = None
-    
-    # filenames
-    geom_filename       = None
-    geom_pfilename      = None
-    mat_filename        = None
-    mat_pfilename       = None
-    vol_filename        = None
-    vol_pfilename       = None
-    
     # enabled features ('instances')
     LB_UI               = False
     LB_web              = False
@@ -86,15 +70,11 @@ class Lux:
     # current scene
     scene               = None
     
-    # dictionary that will hold all preview images
-    previewCache        = {}
-    
-    # Property lists
-    usedproperties = {} # variable to collect used properties for storing presets
-    usedpropertiesfilterobj = None # assign a object to only collect the properties that are assigned to this object
-    
-    # variable for copy/paste content
-    clipboard = None
+    # Property lists - TODO: can these live elsewhere ?
+    # variable to collect used properties for storing presets
+    usedproperties = {}
+    # assign a object to only collect the properties that are assigned to this object
+    usedpropertiesfilterobj = None
     
     @staticmethod
     def Log(msg = '', popup = False, fatal = False):
@@ -742,7 +722,6 @@ class Lux:
         @staticmethod
         def rg(col):
             '''Reverse Gamma Correction'''
-            #Lux.scene = Blender_API.Scene.GetCurrent()
             if Lux.Property(Lux.scene, "RGC", "true").get()=="true":
                 gamma = Lux.Property(Lux.scene, "film.gamma", 2.2).get()
             else:
@@ -759,7 +738,6 @@ class Lux:
         @staticmethod
         def texturegamma():
             '''Apply Gamma Value'''
-            #Lux.scene = Blender_API.Scene.GetCurrent()
             if Lux.Property(Lux.scene, "RGC", "true").get()=="true":
                 return Lux.Property(Lux.scene, "film.gamma", 2.2).get()
             else:
@@ -767,6 +745,8 @@ class Lux:
             
     class SceneIterator:
         '''Lux Export functions'''
+        
+        dummyMat = 2394723948
         
         def __init__(self, scene):
             '''initializes the scene iterator object'''
@@ -827,7 +807,7 @@ class Lux:
     
         def MaterialLink(self, file, mat):
             '''exports material link. LuxRender "Material"'''
-            if mat == Lux.dummyMat:
+            if mat == self.dummyMat:
                 file.write("\tMaterial \"matte\" # dummy material\n")
             else:
                 file.write("\t%s" % Lux.Materials.exportMaterialGeomTag(mat)) # use original methode
@@ -846,7 +826,7 @@ class Lux:
     
         def getMeshType(self, vertcount, mat):
             '''returns type of mesh as string to use depending on thresholds'''
-            if mat != Lux.dummyMat:
+            if mat != self.dummyMat:
                 usesubdiv = Lux.Property(mat, "subdiv", "false")
                 usedisp = Lux.Property(mat, "dispmap", "false")
                 sharpbound = Lux.Property(mat, "sharpbound", "false")
@@ -868,7 +848,7 @@ class Lux:
             '''exports mesh to the file without any optimization'''
             
             if mats == []:
-                mats = [Lux.dummyMat]
+                mats = [self.dummyMat]
             for matIndex in range(len(mats)):
                 if (mats[matIndex] != None):
                     mesh_str = getMeshType(len(mesh.verts), mats[matIndex])
@@ -916,7 +896,7 @@ class Lux:
                 if optNormals: # one pass for flat faces without normals and another pass for smoothed faces with normals, all with UVs
                     shapeList, smoothFltr, normalFltr, uvFltr, shapeText = [0,1], [[0],[1]], [0,1], [1,1], ["flat w/o normals", "smoothed with normals"]
             if mats == []:
-                mats = [Lux.dummyMat]
+                mats = [self.dummyMat]
             for matIndex in range(len(mats)):
                 if (mats[matIndex] != None):
                     if not(portal):
@@ -1197,6 +1177,14 @@ class Lux:
         runRenderAfterExport    = False
         MatSaved                = False
         
+        # filenames
+        geom_filename       = None
+        geom_pfilename      = None
+        mat_filename        = None
+        mat_pfilename       = None
+        vol_filename        = None
+        vol_pfilename       = None
+
         @staticmethod
         def Still(default, run):
             Lux.Export.runRenderAfterExport = run
@@ -1248,14 +1236,14 @@ class Lux:
             filepath = os.path.dirname(filename)
             filebase = os.path.splitext(os.path.basename(filename))[0]
         
-            Lux.geom_filename  = os.path.join(filepath, filebase + "-geom.lxo")
-            Lux.geom_pfilename = filebase + "-geom.lxo"
+            Lux.Export.geom_filename  = os.path.join(filepath, filebase + "-geom.lxo")
+            Lux.Export.geom_pfilename = filebase + "-geom.lxo"
         
-            Lux.mat_filename  = os.path.join(filepath, filebase + "-mat.lxm")
-            Lux.mat_pfilename = filebase + "-mat.lxm"
+            Lux.Export.mat_filename  = os.path.join(filepath, filebase + "-mat.lxm")
+            Lux.Export.mat_pfilename = filebase + "-mat.lxm"
             
-            Lux.vol_filename  = os.path.join(filepath, filebase + "-vol.lxv")
-            Lux.vol_pfilename = filebase + "-vol.lxv"
+            Lux.Export.vol_filename  = os.path.join(filepath, filebase + "-vol.lxv")
+            Lux.Export.vol_pfilename = filebase + "-vol.lxv"
         
             export = Lux.SceneIterator(Lux.scene)
         
@@ -1389,9 +1377,9 @@ class Lux:
                 #    file.write("AttributeEnd\n\n")
         
                 #### Write material & geometry file includes in scene file
-                file.write("Include \"%s\"\n\n" %(Lux.mat_pfilename))
-                file.write("Include \"%s\"\n\n" %(Lux.geom_pfilename))
-                file.write("Include \"%s\"\n\n" %(Lux.vol_pfilename))
+                file.write("Include \"%s\"\n\n" %(Lux.Export.mat_pfilename))
+                file.write("Include \"%s\"\n\n" %(Lux.Export.geom_pfilename))
+                file.write("Include \"%s\"\n\n" %(Lux.Export.vol_pfilename))
                 
                 #### Write End Tag
                 file.write("WorldEnd\n\n")
@@ -1400,8 +1388,8 @@ class Lux:
             if Lux.Property(Lux.scene, "lxm", "true").get()=="true":
                 if not Lux.LB_UI.CLI: Blender_API.Window.DrawProgressBar(9.0/export_total_steps,'Exporting Materials')
                 ##### Write Material file #####
-                Lux.Log("Exporting materials to '" + Lux.mat_filename + "'...")
-                mat_file = open(Lux.mat_filename, 'w')
+                Lux.Log("Exporting materials to '" + Lux.Export.mat_filename + "'...")
+                mat_file = open(Lux.Export.mat_filename, 'w')
                 mat_file.write("")
                 export.Materials(mat_file)
                 mat_file.write("")
@@ -1410,9 +1398,8 @@ class Lux:
             if Lux.Property(Lux.scene, "lxo", "true").get()=="true":
                 if not Lux.LB_UI.CLI: Blender_API.Window.DrawProgressBar(10.0/export_total_steps,'Exporting Geometry')
                 ##### Write Geometry file #####
-                Lux.Log("Exporting geometry to '" + Lux.geom_filename + "'...")
-                geom_file = open(Lux.geom_filename, 'w')
-                Lux.meshlist = []
+                Lux.Log("Exporting geometry to '" + Lux.Export.geom_filename + "'...")
+                geom_file = open(Lux.Export.geom_filename, 'w')
                 geom_file.write("")
                 export.Lights(geom_file)
                 export.Meshes(geom_file)
@@ -1423,9 +1410,8 @@ class Lux:
             if Lux.Property(Lux.scene, "lxv", "true").get()=="true":
                 if not Lux.LB_UI.CLI: Blender_API.Window.DrawProgressBar(11.0/export_total_steps,'Exporting Volumes')
                 ##### Write Volume file #####
-                Lux.Log("Exporting volumes to '" + Lux.vol_filename + "'...")
-                vol_file = open(Lux.vol_filename, 'w')
-                Lux.meshlist = []
+                Lux.Log("Exporting volumes to '" + Lux.Export.vol_filename + "'...")
+                vol_file = open(Lux.Export.vol_filename, 'w')
                 vol_file.write("")
                 export.Volumes(vol_file)
                 vol_file.write("")
@@ -1979,6 +1965,9 @@ class Lux:
         
         resethmax = False
         
+        # variable for copy/paste content
+        clipboard = None
+        
         def handlers(self):
             return self.Draw, self.LB_Event_Handler.keyHandler, self.LB_Event_Handler.buttonHandler
         
@@ -2229,13 +2218,13 @@ class Lux:
         #mouse_xr=1 
         #mouse_yr=1 
         
-        @staticmethod
-        def showMatTexMenu(mat, basekey='', tex=False):
+        #@staticmethod
+        def showMatTexMenu(self, mat, basekey='', tex=False):
             if tex: menu="Texture menu:%t"
             else: menu="Material menu:%t"
             menu += "|Copy%x1"
             try:
-                if Lux.clipboard and (not(tex) ^ (Lux.clipboard["__type__"]=="texture")): menu +="|Paste%x2"
+                if self.clipboard and (not(tex) ^ (self.clipboard["__type__"]=="texture")): menu +="|Paste%x2"
             except: pass
             if (tex):
                 menu += "|Load LBT%x3|Save LBT%x4"
@@ -2248,8 +2237,8 @@ class Lux:
             #menu += "|%l|dump material%x99|dump clipboard%x98"
             r = Blender_API.Draw.PupMenu(menu)
             if r==1:
-                Lux.clipboard = Lux.Converter.getMatTex(mat, basekey, tex)
-            elif r==2: Lux.Converter.putMatTex(mat, Lux.clipboard, basekey, tex)
+                self.clipboard = Lux.Converter.getMatTex(mat, basekey, tex)
+            elif r==2: Lux.Converter.putMatTex(mat, self.clipboard, basekey, tex)
             elif r==3: 
                 if (tex):
                     Blender_API.Window.FileSelector(lambda fn:Lux.Converter.loadMatTex(mat, fn, basekey, tex), "load texture", Lux.Property(Lux.scene, "lux", "").get()+os.sep+".lbt")
@@ -2276,7 +2265,7 @@ class Lux:
             #elif r==99:
             #    for k,v in mat.properties['luxblend'].convert_to_pyobject().items(): Lux.Log(k+"="+repr(v))
             #elif r==98:
-            #    for k,v in Lux.clipboard.items(): Lux.Log(k+"="+repr(v))
+            #    for k,v in self.clipboard.items(): Lux.Log(k+"="+repr(v))
             #Lux.Log("")
             Blender_API.Draw.Redraw()
     
@@ -3396,7 +3385,7 @@ class Lux:
             Lux.TypedControls.Option().create("texture", texture, textures, "texture", "", 0.9)
             str = "Texture \"%s\" \"%s\" \"%s\""%(texname, type, texture.get())
         
-            if Lux.LB_UI.Active: Blender_API.Draw.PushButton(">", Lux.Events.LuxGui, Lux.LB_UI.xmax+Lux.LB_UI.h, Lux.LB_UI.y-Lux.LB_UI.h, Lux.LB_UI.h, Lux.LB_UI.h, "Menu", lambda e,v: Lux.GUI.showMatTexMenu(mat,keyname,True))
+            if Lux.LB_UI.Active: Blender_API.Draw.PushButton(">", Lux.Events.LuxGui, Lux.LB_UI.xmax+Lux.LB_UI.h, Lux.LB_UI.y-Lux.LB_UI.h, Lux.LB_UI.h, Lux.LB_UI.h, "Menu", lambda e,v: Lux.LB_UI.showMatTexMenu(mat,keyname,True))
             if Lux.LB_UI.Active: # Draw Texture level Material preview
                 Lux.Preview.Preview(mat, parentkey, 1, False, False, name, texlevel, [0.5, 0.5, 0.5])
                 # Add an offset for next controls
@@ -4014,6 +4003,7 @@ class Lux:
     class Materials:
         
         activemat = None
+        clayMat = None
         
         @staticmethod
         def exportMaterial(mat):
@@ -4058,11 +4048,11 @@ class Lux:
                 mats = []
             # clay option
             if Lux.Property(Lux.scene, "clay", "false").get()=="true":
-                if Lux.clayMat==None: Lux.clayMat = Blender_API.Material.New("lux_clayMat")
+                if Lux.Materials.clayMat==None: Lux.Materials.clayMat = Blender_API.Material.New("lux_clayMat")
                 for i in range(len(mats)):
                     if mats[i]:
                         mattype = Lux.Property(mats[i], "type", "").get()
-                        if (mattype not in ["portal","light","boundvolume"]): mats[i] = Lux.clayMat
+                        if (mattype not in ["portal","light","boundvolume"]): mats[i] = Lux.Materials.clayMat
             return mats
         
         @staticmethod
@@ -4133,7 +4123,7 @@ class Lux:
                 Lux.TypedControls.Help().create("help", showhelp, "Help", "Show Help Information",  0.4)
         
                 # show copy/paste menu button
-                if Lux.LB_UI.Active: Blender_API.Draw.PushButton(">", Lux.Events.LuxGui, Lux.LB_UI.xmax+Lux.LB_UI.h, Lux.LB_UI.y-Lux.LB_UI.h, Lux.LB_UI.h, Lux.LB_UI.h, "Menu", lambda e,v: Lux.GUI.showMatTexMenu(mat,keyname,False))
+                if Lux.LB_UI.Active: Blender_API.Draw.PushButton(">", Lux.Events.LuxGui, Lux.LB_UI.xmax+Lux.LB_UI.h, Lux.LB_UI.y-Lux.LB_UI.h, Lux.LB_UI.h, Lux.LB_UI.h, "Menu", lambda e,v: Lux.LB_UI.showMatTexMenu(mat,keyname,False))
         
                 # Draw Material preview option
                 showmatprev = False
@@ -4568,6 +4558,9 @@ class Lux:
             return (str, link)
         
     class Preview:
+        
+        cache = {}
+        
         @staticmethod
         def Sphereset(mat, kn, state):
             if state=="true":
@@ -4727,7 +4720,7 @@ class Lux:
                 return
             image = Lux.Image()
             image.decodeLuxConsole(thumbres, thumbres, data)
-            Lux.previewCache[(mat.name+":"+kn).__hash__()] = image
+            Lux.Preview.cache[(mat.name+":"+kn).__hash__()] = image
             Blender_API.Draw.Redraw()
             Blender_API.Window.WaitCursor(False)
         
@@ -4757,7 +4750,7 @@ class Lux:
                     r = Lux.LB_UI.getRect(1.1, rr)
                     if(color != None):
                         Blender_API.BGL.glColor3f(color[0],color[1],color[2]); Blender_API.BGL.glRectf(r[0]-110, r[1], 418, r[1]+128+voffset); Blender_API.BGL.glColor3f(0.9, 0.9, 0.9)
-                    try: Lux.previewCache[(mat.name+":"+kn).__hash__()].draw(r[0]-82, r[1]+4)
+                    try: Lux.Preview.cache[(mat.name+":"+kn).__hash__()].draw(r[0]-82, r[1]+4)
                     except: pass
         
                     prev_sphere = Lux.Property(mat, kn+"prev_sphere", "true")
@@ -4793,7 +4786,6 @@ class Lux:
         
                     # Preview Quality
                     qs = ["low","medium","high","very high"]
-                    #Lux.scene = Blender_API.Scene.GetCurrent()
                     defprevmat = Lux.Property(Lux.scene, "defprevmat", "high")
                     quality = Lux.Property(mat, kn+"prev_quality", defprevmat.get())
                     Lux.TypedControls.OptionRect().create("quality", quality, qs, "  Quality", "select preview quality", r[0]+200, r[1]+100+voffset, 88, 18)
