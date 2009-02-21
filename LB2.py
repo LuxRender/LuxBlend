@@ -1592,14 +1592,14 @@ class Lux:
             
             def __init__(self, name):
                 self.name = name
-                self.init_buf()
             
-            def decode(self, d):
+            def decode(self):
+                self.init_buf()
                 offset = 0
                 for y in range(self.height):
                     for x in range(self.width):
                         for c in range(self.depth):
-                            self.buf[y][x][c] = int(Lux.Util.base64value(d[offset])*4.048)
+                            self.buf[y][x][c] = int(Lux.Util.base64value(self.gfx[self.name][offset])*4.048)
                             offset += 1
             
             def init_buf(self):
@@ -1607,9 +1607,10 @@ class Lux:
             
             def get(self):
                 if self.name not in Lux.Graphic.cache.keys():
-                    self.decode(self.gfx[self.name])
+                    self.decode()
                     self.cache()
                 
+                #Lux.Log('Get cache: %s'%self.name)
                 return Lux.Graphic.cache[self.name]
             
             def draw(self, x, y):
@@ -1618,9 +1619,10 @@ class Lux:
                 Blender_API.BGL.glRasterPos2f(int(x)+0.5, int(y)+0.5)
                 Blender_API.BGL.glDrawPixels(self.width, self.height, Blender_API.BGL.GL_RGBA, Blender_API.BGL.GL_UNSIGNED_BYTE, self.get())
                 Blender_API.BGL.glDisable(Blender_API.BGL.GL_BLEND)
-                
+            
             def cache(self):
                 Lux.Graphic.cache[self.name] = self.buf
+                #Lux.Log('Set cache: %s/%s'%(self.name,Lux.Graphic.cache.keys()))
         
         class PreviewImage(Base):
             
@@ -1629,16 +1631,25 @@ class Lux:
                 self.width = width
                 self.height = height
                 self.depth = depth
-                self.init_buf()
             
-            def decode(self, d):
-                offset = 0
-                for y in range(self.height-1,-1,-1):
-                    for x in range(self.width):
-                        for c in range(self.depth):
-                            self.buf[y][x][c] = ord(d[offset])
-                            offset += 1
-                        self.buf[y][x][3] = 255
+            def decode(self, d = None):
+                
+                
+                if d is None:
+                    #Lux.Log('Trying to get image buffer of non-cached image: %s'%self.name)
+                    return
+                else:
+                    self.init_buf()
+                    #Lux.Log('Decoding image: %s' % self.name)
+                    
+                    offset = 0
+                    for y in range(self.height-1,-1,-1):
+                        for x in range(self.width):
+                            for c in range(self.depth):
+                                self.buf[y][x][c] = ord(d[offset])
+                                offset += 1
+                            self.buf[y][x][3] = 255
+                    self.cache()
         
         class Icon(Base):
             height = 16
@@ -4082,7 +4093,8 @@ class Lux:
                 showmatprev = False
                 if level == 0:
                     showmatprev = True
-                if Lux.LB_UI.Active: Lux.Preview.Preview(mat, keyname, 0, showmatprev, True, None, level, [0.746, 0.625, 0.5])
+                if Lux.LB_UI.Active:
+                    Lux.Preview.Preview(mat, keyname, 0, showmatprev, True, None, level, [0.746, 0.625, 0.5])
         
                 if Lux.LB_UI.Active: Lux.LB_UI.newline()
                 has_object_options   = 0 # disable object options by default
@@ -4512,6 +4524,8 @@ class Lux:
         
     class Preview:
         
+        PreviewCache = {}
+        
         @staticmethod
         def Sphereset(mat, kn, state):
             if state=="true":
@@ -4614,8 +4628,11 @@ class Lux:
             obw = obwidth.get()
             p.stdin.write('TransformBegin\n')
             p.stdin.write('Scale %f %f %f\n'%(obw,obw,obw))
+            
+            Lux.LB_UI.Active = False
+            
             if texName:
-                Lux.Log("texture "+texName+"  "+name)
+                #Lux.Log("texture :"+texName+" : "+name)
                 # DH - this had gui = None
                 (str, link) = Lux.Textures.Texture(texName, name, "color", "1.0 1.0 1.0", None, None, "", "", mat, 0, level)
                 link = link.replace(" "+texName+'"', ' Kd"') # swap texture name to "Kd"
@@ -4627,6 +4644,9 @@ class Lux:
                 link = Lux.Property(mat,"link","").get()
                 if kn!="": link = link.rstrip('"')+":"+kn.strip(".:")+'"'
                 p.stdin.write(link+'\n')
+                
+            Lux.LB_UI.Active = True
+            
             p.stdin.write('TransformEnd\n')
             # Shape
             if(prev_sphere.get()=="true"):
@@ -4669,11 +4689,15 @@ class Lux:
             if(len(data) < thumbbuf): 
                 Lux.Log("Error: Preview data corrupt", popup = True)
                 return
-            image = Lux.Graphic.PreviewImage((mat.name+":"+kn).__hash__(), thumbres, thumbres)
-            image.decode(data)
-            image.cache()
+            
+            im = Lux.Graphic.PreviewImage(mat.name+":"+kn, thumbres, thumbres)
+            im.decode(data)
+            
+            Lux.Preview.PreviewCache[mat.name+":"+kn] = im
+            
             Blender_API.Draw.Redraw()
             Blender_API.Window.WaitCursor(False)
+            
         
         # was luxPreview
         @staticmethod
@@ -4701,8 +4725,12 @@ class Lux:
                     r = Lux.LB_UI.getRect(1.1, rr)
                     if(color != None):
                         Blender_API.BGL.glColor3f(color[0],color[1],color[2]); Blender_API.BGL.glRectf(r[0]-110, r[1], 418, r[1]+128+voffset); Blender_API.BGL.glColor3f(0.9, 0.9, 0.9)
-                    try: Lux.Graphic.PreviewImage((mat.name+":"+kn).__hash__()).draw(r[0]-82, r[1]+4)
-                    except: pass
+                    try:
+                        #Lux.Graphic.PreviewImage(mat.name+":"+kn).draw(r[0]-82, r[1]+4)
+                        Lux.Preview.PreviewCache[mat.name+":"+kn].draw(r[0]-82, r[1]+4)
+                    except Exception, err:
+                        #Lux.Log('Preview draw error: %s'%err)
+                        pass
         
                     prev_sphere = Lux.Property(mat, kn+"prev_sphere", "true")
                     prev_plane = Lux.Property(mat, kn+"prev_plane", "false")
