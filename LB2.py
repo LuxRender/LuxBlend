@@ -1,12 +1,12 @@
 #!BPY
 """Registration info for Blender menus:
-Name: 'LuxBlend CVS Exporter - 2nd Generation'
+Name: 'LuxBlend Exporter - 2nd Generation'
 Blender: 248
 Group: 'Render'
-Tooltip: 'Export/Render to LuxRender CVS scene format (.lxs)'
+Tooltip: 'Export/Render to LuxRender scene format (.lxs)'
 """
 #===============================================================================
-# LuxBlend CVS exporter
+# LuxBlend Exporter
 #-------------------------------------------------------------------------------
 #
 # Authors:
@@ -60,7 +60,7 @@ except ImportError:
 class Lux:
     '''Lux Export Class'''
     
-    Version             = 'LuxBlend CVS'
+    Version             = 'LB2 CVS'
     
     # enabled features ('instances')
     LB_UI               = False
@@ -1224,8 +1224,7 @@ class Lux:
             
             Lux.Log("Lux Render Export started...")
             time1 = Blender_API.sys.time()
-            Lux.scene = Blender_API.Scene.GetCurrent()
-        
+            
             filepath = os.path.dirname(filename)
             filebase = os.path.splitext(os.path.basename(filename))[0]
         
@@ -1260,7 +1259,7 @@ class Lux:
         
                 ##### Write Header ######
                 file.write("# Lux Render Scene File\n")
-                file.write("# Exported by "+Lux.Version+" Blender Exporter\n")
+                file.write("# Exported by LuxBlend "+Lux.Version+" Exporter\n")
                 file.write("\n")
             
                 ##### Write camera ######
@@ -1516,7 +1515,7 @@ class Lux:
             if ostype == "darwin": ic = ic + ".app/Contents/MacOS/luxrender"
             checkluxpath = Lux.Property(Lux.scene, "checkluxpath", True).get()
             if checkluxpath:
-                if sys.exists(ic) != 1:
+                if Blender_API.sys.exists(ic) != 1:
                     Lux.Log("Error: Lux renderer not found. Please set path on System page.", popup=True)
                     return        
             autothreads = Lux.Property(Lux.scene, "autothreads", "true").get()
@@ -2041,7 +2040,7 @@ class Lux:
                 
                 Blender_API.BGL.glClear(Blender_API.BGL.GL_COLOR_BUFFER_BIT)
                 Blender_API.BGL.glColor3f(0.1,0.1,0.1); Blender_API.BGL.glRectf(0,0,440,y)
-                Blender_API.BGL.glColor3f(1.0,0.5,0.0); Blender_API.BGL.glRasterPos2i(130,y-21); Blender_API.Draw.Text("CVS")
+                Blender_API.BGL.glColor3f(1.0,0.5,0.0); Blender_API.BGL.glRasterPos2i(130,y-21); Blender_API.Draw.Text(Lux.Version)
                 Blender_API.BGL.glColor3f(0.9,0.9,0.9);
                 #Lux.Graphic.drawLogo(Lux.Graphic.Logo('luxblend').get(), 6, y-25)
                 Lux.Graphic.Logo('luxblend').draw(6, y-25)
@@ -3202,7 +3201,7 @@ class Lux:
                                     sun = obj
                         if sun:
                             str += Lux.TypedControl.Float().create("relsize", Lux.Property(Lux.scene, "env.sunsky.relisze", 1.0), 0.0, 100.0, "rel.size", "relative sun size")
-                            invmatrix = Mathutils.Matrix(sun.getInverseMatrix())
+                            invmatrix = Blender_API.Mathutils.Matrix(sun.getInverseMatrix())
                             str += '\n   "vector sundir" [%f %f %f]\n' %(invmatrix[0][2], invmatrix[1][2], invmatrix[2][2])
                             str += Lux.TypedControl.Float().create("gain", Lux.Property(Lux.scene, "env.sunsky.gain", 1.0), 0.0, 1000.0, "gain", "Sky gain")
                             str += Lux.TypedControl.Float().create("turbidity", Lux.Property(Lux.scene, "env.sunsky.turbidity", 2.2), 2.0, 50.0, "turbidity", "Sky turbidity")
@@ -4795,20 +4794,20 @@ class Lux:
                 return default
         
             def convertMapping(name, tex):
-                if tex.texco == Texture.TexCo["UV"]:
+                if tex.texco == Blender_API.Texture.TexCo["UV"]:
                     Lux.Property(mat, dot(name)+"mapping","").set("uv")
                     Lux.Property(mat, dot(name)+"uscale", 1.0).set(tex.size[0])
                     Lux.Property(mat, dot(name)+"vscale", 1.0).set(-tex.size[1])
                     Lux.Property(mat, dot(name)+"udelta", 0.0).set(tex.ofs[0]+0.5*(1.0-tex.size[0]))
                     Lux.Property(mat, dot(name)+"vdelta", 0.0).set(-tex.ofs[1]-0.5*(1.0-tex.size[1]))
-                    if tex.mapping != Texture.Mappings["FLAT"]:
+                    if tex.mapping != Blender_API.Texture.Mappings["FLAT"]:
                         Lux.Log("Material Conversion Warning: for UV-texture-input only FLAT mapping is supported", popup = True)
                 else:
-                    if tex.mapping == Texture.Mappings["FLAT"]:
+                    if tex.mapping == Blender_API.Texture.Mappings["FLAT"]:
                         Lux.Property(mat, dot(name)+"mapping","").set("planar")
-                    elif tex.mapping == Texture.Mappings["TUBE"]:
+                    elif tex.mapping == Blender_API.Texture.Mappings["TUBE"]:
                         Lux.Property(mat, dot(name)+"mapping","").set("cylindrical")
-                    elif tex.mapping == Texture.Mappings["SPHERE"]:
+                    elif tex.mapping == Blender_API.Texture.Mappings["SPHERE"]:
                         Lux.Property(mat, dot(name)+"mapping","").set("spherical")
                     else: Lux.Property(mat, dot(name)+"mapping","").set("planar")
                 Lux.Property(mat, dot(name)+"3dscale", "1.0 1.0 1.0").setVector((1.0/tex.size[0], 1.0/tex.size[1], 1.0/tex.size[2]))
@@ -4828,35 +4827,35 @@ class Lux:
             def createLuxTexture(name, tex):
                 texture = tex.tex
                 convertMapping(name, tex)
-                if (texture.type == Texture.Types["IMAGE"]) and (texture.image) and (texture.image.filename!=""):
+                if (texture.type == Blender_API.Texture.Types["IMAGE"]) and (texture.image) and (texture.image.filename!=""):
                     Lux.Property(mat, dot(name)+"texture", "").set("imagemap")
                     Lux.Property(mat, dot(name)+"filename", "").set(texture.image.filename)
-                    Lux.Property(mat, dot(name)+"wrap", "").set(mapConstDict(texture.extend, Texture.ExtendModes, {"REPEAT":"repeat", "EXTEND":"clamp", "CLIP":"black"}, ""))
+                    Lux.Property(mat, dot(name)+"wrap", "").set(mapConstDict(texture.extend, Blender_API.Texture.ExtendModes, {"REPEAT":"repeat", "EXTEND":"clamp", "CLIP":"black"}, ""))
                 else:
-                    if tex.texco != Texture.TexCo["GLOB"]:
+                    if tex.texco != Blender_API.Texture.TexCo["GLOB"]:
                         Lux.Log("Material Conversion Warning: procedural textures supports global mapping only", popup = True)
                     noiseDict = {"BLENDER":"blender_original", "CELLNOISE":"cell_noise", "IMPROVEDPERLIN":"improved_perlin", "PERLIN":"original_perlin", "VORONOICRACKLE":"voronoi_crackle", "VORONOIF1":"voronoi_f1", "VORONOIF2":"voronoi_f2", "VORONOIF2F1":"voronoi_f2f1", "VORONOIF3":"voronoi_f3", "VORONOIF4":"voronoi_f4"}
                     Lux.Property(mat, dot(name)+"bright", 1.0).set(texture.brightness)
                     Lux.Property(mat, dot(name)+"contrast", 1.0).set(texture.contrast)
-                    if texture.type == Texture.Types["CLOUDS"]:
+                    if texture.type == Blender_API.Texture.Types["CLOUDS"]:
                         Lux.Property(mat, dot(name)+"texture", "").set("blender_clouds")
-                        Lux.Property(mat, dot(name)+"mtype", "").set(mapConstDict(texture.stype, Texture.STypes, {"CLD_DEFAULT":"default", "CLD_COLOR":"color"}, ""))
+                        Lux.Property(mat, dot(name)+"mtype", "").set(mapConstDict(texture.stype, Blender_API.Texture.STypes, {"CLD_DEFAULT":"default", "CLD_COLOR":"color"}, ""))
                         Lux.Property(mat, dot(name)+"noisetype", "").set({"soft":"soft_noise", "hard":"hard_noise"}[texture.noiseType])
                         Lux.Property(mat, dot(name)+"noisesize", 0.25).set(texture.noiseSize)
                         Lux.Property(mat, dot(name)+"noisedepth", 2).set(texture.noiseDepth)
-                        Lux.Property(mat, dot(name)+"noisebasis", "").set(mapConstDict(texture.noiseBasis, Texture.Noise, noiseDict, ""))
-                    elif texture.type == Texture.Types["WOOD"]:
+                        Lux.Property(mat, dot(name)+"noisebasis", "").set(mapConstDict(texture.noiseBasis, Blender_API.Texture.Noise, noiseDict, ""))
+                    elif texture.type == Blender_API.Texture.Types["WOOD"]:
                         Lux.Property(mat, dot(name)+"texture", "").set("blender_wood")
-                        Lux.Property(mat, dot(name)+"mtype", "").set(mapConstDict(texture.stype, Texture.STypes, {"WOD_BANDS":"bands", "WOD_RINGS":"rings", "WOD_BANDNOISE":"bandnoise", "WOD_RINGNOISE":"ringnoise"}, ""))
-                        Lux.Property(mat, dot(name)+"noisebasis2", "").set(mapConstDict(texture.noiseBasis2, Texture.Noise, {"SINE":"sin", "SAW":"saw", "TRI":"tri"}, ""))
-                        Lux.Property(mat, dot(name)+"noisebasis", "").set(mapConstDict(texture.noiseBasis, Texture.Noise, noiseDict, ""))
+                        Lux.Property(mat, dot(name)+"mtype", "").set(mapConstDict(texture.stype, Blender_API.Texture.STypes, {"WOD_BANDS":"bands", "WOD_RINGS":"rings", "WOD_BANDNOISE":"bandnoise", "WOD_RINGNOISE":"ringnoise"}, ""))
+                        Lux.Property(mat, dot(name)+"noisebasis2", "").set(mapConstDict(texture.noiseBasis2, Blender_API.Texture.Noise, {"SINE":"sin", "SAW":"saw", "TRI":"tri"}, ""))
+                        Lux.Property(mat, dot(name)+"noisebasis", "").set(mapConstDict(texture.noiseBasis, Blender_API.Texture.Noise, noiseDict, ""))
                         Lux.Property(mat, dot(name)+"noisetype", "").set({"soft":"soft_noise", "hard":"hard_noise"}[texture.noiseType])
                         Lux.Property(mat, dot(name)+"noisesize", 0.25).set(texture.noiseSize)
                         Lux.Property(mat, dot(name)+"turbulance", 0.25).set(texture.turbulence)
-                    elif texture.type == Texture.Types["MUSGRAVE"]:
+                    elif texture.type == Blender_API.Texture.Types["MUSGRAVE"]:
                         Lux.Property(mat, dot(name)+"texture", "").set("blender_musgrave")
-                        Lux.Property(mat, dot(name)+"mtype", "").set(mapConstDict(texture.stype, Texture.STypes, {"MUS_MFRACTAL":"multifractal", "MUS_RIDGEDMF":"ridged_multifractal", "MUS_HYBRIDMF":"hybrid_multifractal", "MUS_HTERRAIN":"hetero_terrain", "MUS_FBM":"fbm"}, ""))
-                        Lux.Property(mat, dot(name)+"noisebasis", "").set(mapConstDict(texture.noiseBasis, Texture.Noise, noiseDict, ""))
+                        Lux.Property(mat, dot(name)+"mtype", "").set(mapConstDict(texture.stype, Blender_API.Texture.STypes, {"MUS_MFRACTAL":"multifractal", "MUS_RIDGEDMF":"ridged_multifractal", "MUS_HYBRIDMF":"hybrid_multifractal", "MUS_HTERRAIN":"hetero_terrain", "MUS_FBM":"fbm"}, ""))
+                        Lux.Property(mat, dot(name)+"noisebasis", "").set(mapConstDict(texture.noiseBasis, Blender_API.Texture.Noise, noiseDict, ""))
                         Lux.Property(mat, dot(name)+"noisesize", 0.25).set(texture.noiseSize)
                         # bug in blender python API: value of "hFracDim" is casted to Integer instead of Float (reported to Ideasman42 - will be fixed after Blender 2.47)
                         if texture.hFracDim != 0.0: Lux.Property(mat, dot(name)+"h", 1.0).set(texture.hFracDim) # bug in blender API, "texture.hFracDim" returns a Int instead of a Float
@@ -4869,16 +4868,16 @@ class Lux:
                         Lux.Property(mat, dot(name)+"lacu", 2.0).set(texture.lacunarity)
                         Lux.Property(mat, dot(name)+"octs", 2.0).set(texture.octs)
                         Lux.Property(mat, dot(name)+"outscale", 1.0).set(texture.iScale)
-                    elif texture.type == Texture.Types["MARBLE"]:
+                    elif texture.type == Blender_API.Texture.Types["MARBLE"]:
                         Lux.Property(mat, dot(name)+"texture", "").set("blender_marble")
-                        Lux.Property(mat, dot(name)+"mtype", "").set(mapConstDict(texture.stype, Texture.STypes, {"MBL_SOFT":"soft", "MBL_SHARP":"sharp", "MBL_SHARPER":"sharper"}, ""))
+                        Lux.Property(mat, dot(name)+"mtype", "").set(mapConstDict(texture.stype, Blender_API.Texture.STypes, {"MBL_SOFT":"soft", "MBL_SHARP":"sharp", "MBL_SHARPER":"sharper"}, ""))
                         Lux.Property(mat, dot(name)+"noisetype", "").set({"soft":"soft_noise", "hard":"hard_noise"}[texture.noiseType])
                         Lux.Property(mat, dot(name)+"turbulance", 0.25).set(texture.turbulence)
                         Lux.Property(mat, dot(name)+"noisedepth", 2).set(texture.noiseDepth)
-                        Lux.Property(mat, dot(name)+"noisebasis", "").set(mapConstDict(texture.noiseBasis, Texture.Noise, noiseDict, ""))
-                        Lux.Property(mat, dot(name)+"noisebasis2", "").set(mapConstDict(texture.noiseBasis2, Texture.Noise, {"SINE":"sin", "SAW":"saw", "TRI":"tri"}, ""))
+                        Lux.Property(mat, dot(name)+"noisebasis", "").set(mapConstDict(texture.noiseBasis, Blender_API.Texture.Noise, noiseDict, ""))
+                        Lux.Property(mat, dot(name)+"noisebasis2", "").set(mapConstDict(texture.noiseBasis2, Blender_API.Texture.Noise, {"SINE":"sin", "SAW":"saw", "TRI":"tri"}, ""))
                         Lux.Property(mat, dot(name)+"noisesize", 0.25).set(texture.noiseSize)
-                    elif texture.type == Texture.Types["VORONOI"]:
+                    elif texture.type == Blender_API.Texture.Types["VORONOI"]:
                         Lux.Property(mat, dot(name)+"texture", "").set("blender_voronoi")
                         Lux.Property(mat, dot(name)+"distmetric", "").set({0:"actual_distance", 1:"distance_squared", 2:"manhattan", 3:"chebychev", 4:"minkovsky_half", 5:"minkovsky_four", 6:"minkovsky"}[texture.distMetric])
                         Lux.Property(mat, dot(name)+"outscale", 1.0).set(texture.iScale)
@@ -4888,28 +4887,28 @@ class Lux:
                         Lux.Property(mat, dot(name)+"w2", 0.0).set(texture.weight2)
                         Lux.Property(mat, dot(name)+"w3", 0.0).set(texture.weight3)
                         Lux.Property(mat, dot(name)+"w4", 0.0).set(texture.weight4)
-                    elif texture.type == Texture.Types["NOISE"]:
+                    elif texture.type == Blender_API.Texture.Types["NOISE"]:
                         Lux.Property(mat, dot(name)+"texture", "").set("blender_noise")
-                    elif texture.type == Texture.Types["DISTNOISE"]:
+                    elif texture.type == Blender_API.Texture.Types["DISTNOISE"]:
                         Lux.Property(mat, dot(name)+"texture", "").set("blender_distortednoise")
                         Lux.Property(mat, dot(name)+"distamount", 1.0).set(texture.distAmnt)
                         Lux.Property(mat, dot(name)+"noisesize", 0.25).set(texture.noiseSize)
-                        Lux.Property(mat, dot(name)+"noisebasis", "").set(mapConstDict(texture.noiseBasis, Texture.Noise, noiseDict, ""))
-                        Lux.Property(mat, dot(name)+"noisebasis2", "").set(mapConstDict(texture.noiseBasis2, Texture.Noise, noiseDict, ""))
-                    elif texture.type == Texture.Types["MAGIC"]:
+                        Lux.Property(mat, dot(name)+"noisebasis", "").set(mapConstDict(texture.noiseBasis, Blender_API.Texture.Noise, noiseDict, ""))
+                        Lux.Property(mat, dot(name)+"noisebasis2", "").set(mapConstDict(texture.noiseBasis2, Blender_API.Texture.Noise, noiseDict, ""))
+                    elif texture.type == Blender_API.Texture.Types["MAGIC"]:
                         Lux.Property(mat, dot(name)+"texture", "").set("blender_magic")
                         Lux.Property(mat, dot(name)+"turbulance", 0.25).set(texture.turbulence)
                         Lux.Property(mat, dot(name)+"noisedepth", 2).set(texture.noiseDepth)
-                    elif texture.type == Texture.Types["STUCCI"]:
+                    elif texture.type == Blender_API.Texture.Types["STUCCI"]:
                         Lux.Property(mat, dot(name)+"texture", "").set("blender_stucci")
-                        Lux.Property(mat, dot(name)+"mtype", "").set(mapConstDict(texture.stype, Texture.STypes, {"STC_PLASTIC":"Plastic", "MSTC_WALLIN":"Wall In", "STC_WALLOUT":"Wall Out"}, ""))
+                        Lux.Property(mat, dot(name)+"mtype", "").set(mapConstDict(texture.stype, Blender_API.Texture.STypes, {"STC_PLASTIC":"Plastic", "MSTC_WALLIN":"Wall In", "STC_WALLOUT":"Wall Out"}, ""))
                         Lux.Property(mat, dot(name)+"noisetype", "").set({"soft":"soft_noise", "hard":"hard_noise"}[texture.noiseType])
                         Lux.Property(mat, dot(name)+"noisesize", 0.25).set(texture.noiseSize)
                         Lux.Property(mat, dot(name)+"turbulance", 0.25).set(texture.turbulence)
-                        Lux.Property(mat, dot(name)+"noisebasis", "").set(mapConstDict(texture.noiseBasis, Texture.Noise, noiseDict, ""))
-                    elif texture.type == Texture.Types["BLEND"]:
+                        Lux.Property(mat, dot(name)+"noisebasis", "").set(mapConstDict(texture.noiseBasis, Blender_API.Texture.Noise, noiseDict, ""))
+                    elif texture.type == Blender_API.Texture.Types["BLEND"]:
                         Lux.Property(mat, dot(name)+"texture", "").set("blender_blend")
-                        Lux.Property(mat, dot(name)+"type", "").set(mapConstDict(texture.stype, Texture.STypes, {"BLN_LIN":"lin", "BLN_QUAD":"quad", "BLN_EASE":"ease", "BLN_DIAG":"diag", "BLN_SPHERE":"sphere", "BLN_HALO":"halo", "BLN_RADIAL":"radial"}, ""))
+                        Lux.Property(mat, dot(name)+"type", "").set(mapConstDict(texture.stype, Blender_API.Texture.STypes, {"BLN_LIN":"lin", "BLN_QUAD":"quad", "BLN_EASE":"ease", "BLN_DIAG":"diag", "BLN_SPHERE":"sphere", "BLN_HALO":"halo", "BLN_RADIAL":"radial"}, ""))
                         Lux.Property(mat, dot(name)+"flipXY", "false").set({0:"false", 1:"true"}[texture.rot90])
                     else:
                         Lux.Log("Material Conversion Warning: SORRY, procedural texture '%s' isn't implemented in conversion" % texture.type, popup = True)
@@ -4917,9 +4916,9 @@ class Lux:
             def convertTextures(basename, texs, type="float", channel="col", val=1.0):
                 tex = texs.pop()
                 texture = tex.tex
-                isImagemap = (texture.type == Texture.Types["IMAGE"]) and (texture.image) and (texture.image.filename!="")
+                isImagemap = (texture.type == Blender_API.Texture.Types["IMAGE"]) and (texture.image) and (texture.image.filename!="")
                 if channel == "col":
-                    if texture.flags & Texture.Flags["COLORBAND"] > 0:
+                    if texture.flags & Blender_API.Texture.Flags["COLORBAND"] > 0:
                         cbLow, cbHigh = convertColorband(texture.colorband)
                         val1, alpha1, val2, alpha2 = (cbLow[0],cbLow[1],cbLow[2]), cbLow[3]*tex.colfac, (cbHigh[0], cbHigh[1], cbHigh[2]), cbHigh[3]*tex.colfac
                         if tex.noRGB:
@@ -4962,28 +4961,28 @@ class Lux:
             def convertDiffuseTexture(name):
                 texs = []
                 for tex in mat.getTextures():
-                    if tex and (tex.mapto & Texture.MapTo["COL"] > 0) and (tex.tex) and (tex.tex.type != Texture.Types["NONE"]): texs.append(tex)
+                    if tex and (tex.mapto & Blender_API.Texture.MapTo["COL"] > 0) and (tex.tex) and (tex.tex.type != Blender_API.Texture.Types["NONE"]): texs.append(tex)
                 if len(texs) > 0:
                     Lux.Property(mat, name, "").setRGB((mat.ref, mat.ref, mat.ref))
                     convertTextures(name, texs, "col", "col", (mat.R, mat.G, mat.B))
             def convertSpecularTexture(name):
                 texs = []
                 for tex in mat.getTextures():
-                    if tex and (tex.mapto & Texture.MapTo["CSP"] > 0) and (tex.tex) and (tex.tex.type != Texture.Types["NONE"]): texs.append(tex)
+                    if tex and (tex.mapto & Blender_API.Texture.MapTo["CSP"] > 0) and (tex.tex) and (tex.tex.type != Blender_API.Texture.Types["NONE"]): texs.append(tex)
                 if len(texs) > 0:
                     Lux.Property(mat, name, "").setRGB((mat.ref*mat.spec, mat.ref*mat.spec, mat.ref*mat.spec))
                     convertTextures(name, texs, "col", "col", (mat.specR, mat.specG, mat.specB))
             def convertMirrorTexture(name):
                 texs = []
                 for tex in mat.getTextures():
-                    if tex and (tex.mapto & Texture.MapTo["CMIR"] > 0) and (tex.tex) and (tex.tex.type != Texture.Types["NONE"]): texs.append(tex)
+                    if tex and (tex.mapto & Blender_API.Texture.MapTo["CMIR"] > 0) and (tex.tex) and (tex.tex.type != Blender_API.Texture.Types["NONE"]): texs.append(tex)
                 if len(texs) > 0:
                     Lux.Property(mat, name, "").setRGB((mat.ref, mat.ref, mat.ref))
                     convertTextures(name, texs, "col", "col", (mat.mirR, mat.mirG, mat.mirB))
             def convertBumpTexture(basename):
                 texs = []
                 for tex in mat.getTextures():
-                    if tex and (tex.mapto & Texture.MapTo["NOR"] > 0) and (tex.tex) and (tex.tex.type != Texture.Types["NONE"]): texs.append(tex)
+                    if tex and (tex.mapto & Blender_API.Texture.MapTo["NOR"] > 0) and (tex.tex) and (tex.tex.type != Blender_API.Texture.Types["NONE"]): texs.append(tex)
                 if len(texs) > 0:
                     name = basename+":bumpmap"
                     Lux.Property(mat, basename+".usebump", "").set("true")
@@ -5064,7 +5063,7 @@ class Lux:
         
         @staticmethod
         def convertAllMaterials():
-            for mat in Material.Get(): Lux.Converter.convertMaterial(mat)
+            for mat in Blender_API.Material.Get(): Lux.Converter.convertMaterial(mat)
         
         @staticmethod
         def getMatTex(mat, basekey='', tex=False):
@@ -5150,7 +5149,7 @@ class Lux:
                     'version': '0.7',
                     'definition': definition,
                     'metadata': [
-                        ['string', 'generator', Lux.Version],
+                        ['string', 'generator', 'LuxBlend %s'%Lux.Version],
                     ]
                 }
                 
@@ -5535,7 +5534,7 @@ class Lux:
         args            = Lux.CLI_Args()
         
         if args.is_cli:
-            Lux.Log(Lux.Version + " - BATCH mode")
+            Lux.Log('LuxBlend ' + Lux.Version + " - BATCH mode")
             
             Lux.LB_UI = Lux.CLI()
             
@@ -5562,7 +5561,7 @@ class Lux:
             
             if args.present_long('lbm'):
                 Lux.Log("Load material: %s" % args.get_long('lbm'))
-                mat = Material.Get("Material")
+                mat = Blender_API.Material.Get("Material")
                 if mat:
                     Lux.Converter.loadMatTex(mat, args.get_long('lbm'))
                 else:
@@ -5570,7 +5569,7 @@ class Lux:
                     
             if args.present_long('lbt'):
                 Lux.Log("Load material: %s" % args.get_long('lbt'))
-                mat = Material.Get("Material")
+                mat = Blender_API.Material.Get("Material")
                 if mat:
                     Lux.Converter.loadMatTex(mat, args.get_long('lbt'), ':Kd')
                 else:
@@ -5604,7 +5603,7 @@ class Lux:
             osys.exit(0)
         
         else:
-            Lux.Log(Lux.Version + " - UI mode")
+            Lux.Log('LuxBlend ' + Lux.Version + " - UI mode")
             
             # init GUI
             Lux.LB_UI = Lux.GUI()
