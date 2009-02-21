@@ -1248,6 +1248,7 @@ class Lux:
                         if obj.getData(mesh=1).getType() == 1: # sun object # data
                             sun = obj
             if not(export.analyseScene()) and not(envtype == "infinite") and not((envtype == "sunsky") and (sun != None)):
+                Lux.LB_UI.Active = True
                 Lux.Log("ERROR: No light source found", popup = True)
                 return False
         
