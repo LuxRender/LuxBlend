@@ -1595,13 +1595,10 @@ class Lux:
                 self.init_buf()
             
             def decode(self, d):
-                
-                lll =  len(d)
                 offset = 0
                 for y in range(self.height):
                     for x in range(self.width):
                         for c in range(self.depth):
-                            print '%i:%i'%(offset,lll)
                             self.buf[y][x][c] = int(Lux.Util.base64value(d[offset])*4.048)
                             offset += 1
             
