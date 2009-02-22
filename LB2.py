@@ -1220,7 +1220,8 @@ class Lux:
             Lux.scene = Blender_API.Scene.GetCurrent()
             Lux.LB_UI.Active  = False
             
-            export_total_steps = 12.0
+            #export_total_steps = 12.0
+            if not Lux.LB_UI.CLI: Lux.LB_UI.startStatus(12)
             
             Lux.Log("Lux Render Export started...")
             time1 = Blender_API.sys.time()
@@ -1252,7 +1253,7 @@ class Lux:
                 Lux.Log("ERROR: No light source found", popup = True)
                 return False
         
-            if not Lux.LB_UI.CLI: Blender_API.Window.DrawProgressBar(0.0/export_total_steps,'Setting up Scene file')
+            if not Lux.LB_UI.CLI: Lux.LB_UI.updateStatus('Setting up Scene file')
             if Lux.Property(Lux.scene, "lxs", "true").get()=="true":
                 ##### Determine/open files
                 Lux.Log("Exporting scene to '" + filename + "'...")
@@ -1266,7 +1267,7 @@ class Lux:
                 ##### Write camera ######
                 camObj = Lux.scene.objects.camera
         
-                if not Lux.LB_UI.CLI: Blender_API.Window.DrawProgressBar(1.0/export_total_steps,'Exporting Camera')
+                if not Lux.LB_UI.CLI: Lux.LB_UI.updateStatus('Exporting Camera')
                 if camObj:
                     Lux.Log("processing Camera...")
                     cam = camObj.data
@@ -1307,32 +1308,32 @@ class Lux:
                     file.write("\n")
                 file.write("\n")
             
-                if not Lux.LB_UI.CLI: Blender_API.Window.DrawProgressBar(2.0/export_total_steps,'Exporting Film Settings')
+                if not Lux.LB_UI.CLI: Lux.LB_UI.updateStatus('Exporting Film Settings')
                 ##### Write film ######
                 file.write(Lux.SceneElements.Film())
                 file.write("\n")
         
-                if not Lux.LB_UI.CLI: Blender_API.Window.DrawProgressBar(3.0/export_total_steps,'Exporting Pixel Filter')
+                if not Lux.LB_UI.CLI: Lux.LB_UI.updateStatus('Exporting Pixel Filter')
                 ##### Write Pixel Filter ######
                 file.write(Lux.SceneElements.PixelFilter())
                 file.write("\n")
             
-                if not Lux.LB_UI.CLI: Blender_API.Window.DrawProgressBar(4.0/export_total_steps,'Exporting Sampler')
+                if not Lux.LB_UI.CLI: Lux.LB_UI.updateStatus('Exporting Sampler')
                 ##### Write Sampler ######
                 file.write(Lux.SceneElements.Sampler())
                 file.write("\n")
             
-                if not Lux.LB_UI.CLI: Blender_API.Window.DrawProgressBar(5.0/export_total_steps,'Exporting Surface Integrator')
+                if not Lux.LB_UI.CLI: Lux.LB_UI.updateStatus('Exporting Surface Integrator')
                 ##### Write Surface Integrator ######
                 file.write(Lux.SceneElements.SurfaceIntegrator())
                 file.write("\n")
                 
-                if not Lux.LB_UI.CLI: Blender_API.Window.DrawProgressBar(6.0/export_total_steps,'Exporting Volume Integrator')
+                if not Lux.LB_UI.CLI: Lux.LB_UI.updateStatus('Exporting Volume Integrator')
                 ##### Write Volume Integrator ######
                 file.write(Lux.SceneElements.VolumeIntegrator())
                 file.write("\n")
                 
-                if not Lux.LB_UI.CLI: Blender_API.Window.DrawProgressBar(7.0/export_total_steps,'Exporting Accelerator')
+                if not Lux.LB_UI.CLI: Lux.LB_UI.updateStatus('Exporting Accelerator')
                 ##### Write Acceleration ######
                 file.write(Lux.SceneElements.Accelerator())
                 file.write("\n")    
@@ -1350,7 +1351,7 @@ class Lux:
                     file.write("Transform [%s 0.0 0.0 0.0  0.0 %s 0.0 0.0  0.0 0.0 %s 0.0  0.0 0.0 0 1.0]\n"%(scale, scale, scale))
                     file.write("\n")
                 
-                if not Lux.LB_UI.CLI: Blender_API.Window.DrawProgressBar(8.0/export_total_steps,'Exporting Environment')
+                if not Lux.LB_UI.CLI: Lux.LB_UI.updateStatus('Exporting Environment')
                 ##### Write World Background, Sunsky or Env map ######
                 env = Lux.SceneElements.Environment()
                 if env != "":
@@ -1379,7 +1380,7 @@ class Lux:
                 file.close()
                 
             if Lux.Property(Lux.scene, "lxm", "true").get()=="true":
-                if not Lux.LB_UI.CLI: Blender_API.Window.DrawProgressBar(9.0/export_total_steps,'Exporting Materials')
+                if not Lux.LB_UI.CLI: Lux.LB_UI.updateStatus('Exporting Materials')
                 ##### Write Material file #####
                 Lux.Log("Exporting materials to '" + Lux.Export.mat_filename + "'...")
                 mat_file = open(Lux.Export.mat_filename, 'w')
@@ -1389,7 +1390,7 @@ class Lux:
                 mat_file.close()
             
             if Lux.Property(Lux.scene, "lxo", "true").get()=="true":
-                if not Lux.LB_UI.CLI: Blender_API.Window.DrawProgressBar(10.0/export_total_steps,'Exporting Geometry')
+                if not Lux.LB_UI.CLI: Lux.LB_UI.updateStatus('Exporting Geometry')
                 ##### Write Geometry file #####
                 Lux.Log("Exporting geometry to '" + Lux.Export.geom_filename + "'...")
                 geom_file = open(Lux.Export.geom_filename, 'w')
@@ -1401,7 +1402,7 @@ class Lux:
                 geom_file.close()
         
             if Lux.Property(Lux.scene, "lxv", "true").get()=="true":
-                if not Lux.LB_UI.CLI: Blender_API.Window.DrawProgressBar(11.0/export_total_steps,'Exporting Volumes')
+                if not Lux.LB_UI.CLI: Lux.LB_UI.updateStatus('Exporting Volumes')
                 ##### Write Volume file #####
                 Lux.Log("Exporting volumes to '" + Lux.Export.vol_filename + "'...")
                 vol_file = open(Lux.Export.vol_filename, 'w')
@@ -1410,7 +1411,7 @@ class Lux:
                 vol_file.write("")
                 vol_file.close()
             
-            if not Lux.LB_UI.CLI: Blender_API.Window.DrawProgressBar(12.0/export_total_steps,'Export Finished')
+            if not Lux.LB_UI.CLI: Lux.LB_UI.updateStatus('Export Finished')
             Lux.Log("Finished.")
             del export
         
@@ -2028,9 +2029,25 @@ class Lux:
                     Blender_API.Draw.Redraw()
                 self.over = over
         
+        status = ''
+        status_steps = 0.0
+        status_step  = 0.0
+        
+        def startStatus(self, steps):
+            self.status_steps = steps
+            self.status_step  = 0.0
+        
+        def updateStatus(self, msg = ''):
+            frac = float(self.status_step)/float(self.status_steps)
+            self.status_step += 1.0
+            self.status = '%i/%i: %s' % (self.status_step, self.status_steps, msg)
+            self.Draw()
+            Blender_API.Window.DrawProgressBar(frac, self.status)
+        
         # gui main draw
         def Draw(self):
             Lux.scene = Blender_API.Scene.GetCurrent()
+            Blender_API.BGL.glClear(Blender_API.BGL.GL_COLOR_BUFFER_BIT)
             
             if Lux.scene and self.Active:
                 
@@ -2039,7 +2056,6 @@ class Lux:
                 y = int(self.LB_scrollbar.getTop()) # 420
                 Lux.LB_UI.y = y-70
                 
-                Blender_API.BGL.glClear(Blender_API.BGL.GL_COLOR_BUFFER_BIT)
                 Blender_API.BGL.glColor3f(0.1,0.1,0.1); Blender_API.BGL.glRectf(0,0,440,y)
                 Blender_API.BGL.glColor3f(1.0,0.5,0.0); Blender_API.BGL.glRasterPos2i(130,y-21); Blender_API.Draw.Text(Lux.Version)
                 Blender_API.BGL.glColor3f(0.9,0.9,0.9);
@@ -2174,6 +2190,10 @@ class Lux:
                 Blender_API.BGL.glColor3f(0.9, 0.9, 0.9) ; Blender_API.BGL.glRasterPos2i(340,y+5) ; Blender_API.Draw.Text("Press Q or ESC to quit.", "tiny")
                 self.LB_scrollbar.height = self.LB_scrollbar.getTop() - y
                 self.LB_scrollbar.draw()
+            else:
+                Blender_API.BGL.glColor3f(0.2,0.2,0.2)
+                Blender_API.BGL.glRasterPos2i(20,20)
+                Blender_API.Draw.Text('Busy... %s'%self.status,'large')
         
         #mouse_xr=1 
         #mouse_yr=1 
