@@ -2766,17 +2766,17 @@ class Lux:
                         autoywa = Lux.Property(Lux.scene, "film.reinhard.autoywa", "true")
                         str += Lux.TypedControl.Bool().create("reinhard_autoywa", autoywa, "auto Ywa", "Automatically determine World Adaption Luminance")
                         if autoywa.get() == "false":
-                            str += Lux.TypedControl.Float().create("reinhard_ywa", Lux.Property(Lux.scene, "film.reinhard.ywa", 100.0), 0.0, 1000.0, "Ywa", "Display/World Adaption Luminance")
+                            str += Lux.TypedControl.Float().create("reinhard_ywa", Lux.Property(Lux.scene, "film.reinhard.ywa", 0.1), 0.001, 1.0, "Ywa", "Display/World Adaption Luminance")
                         str += Lux.TypedControl.Float().create("reinhard_prescale", Lux.Property(Lux.scene, "film.reinhard.prescale", 1.0), 0.0, 10.0, "preScale", "Image scale before tonemap operator")
                         str += Lux.TypedControl.Float().create("reinhard_postscale", Lux.Property(Lux.scene, "film.reinhard.postscale", 1.2), 0.0, 10.0, "postScale", "Image scale after tonemap operator")
                         str += Lux.TypedControl.Float().create("reinhard_burn", Lux.Property(Lux.scene, "film.reinhard.burn", 6.0), 0.1, 12.0, "burn", "12.0: no burn out, 0.1 lot of burn out")
                     elif tonemapkernel.get() == "linear":
-                        str += Lux.TypedControl.Float().create("linear_sensitivity", Lux.Property(Lux.scene, "film.linear.sensitivity", 100.0), 0.0, 1000.0, "sensitivity", "Adaption/Sensitivity")
-                        str += Lux.TypedControl.Float().create("linear_exposure", Lux.Property(Lux.scene, "film.linear.exposure", 0.001), 0.001, 1.0, "exposure", "Exposure duration in seconds")
+                        str += Lux.TypedControl.Float().create("linear_sensitivity", Lux.Property(Lux.scene, "film.linear.sensitivity", 50.0), 0.0, 100.0, "sensitivity", "Adaption/Sensitivity")
+                        str += Lux.TypedControl.Float().create("linear_exposure", Lux.Property(Lux.scene, "film.linear.exposure", 1.0), 0.001, 1.0, "exposure", "Exposure duration in seconds")
                         str += Lux.TypedControl.Float().create("linear_fstop", Lux.Property(Lux.scene, "film.linear.fstop", 2.8), 0.1, 64.0, "Fstop", "F-Stop")
                         str += Lux.TypedControl.Float().create("linear_gamma", Lux.Property(Lux.scene, "film.linear.gamma", 1.0), 0.0, 8.0, "gamma", "Tonemap operator gamma correction")
                     elif tonemapkernel.get() == "contrast":
-                        str += Lux.TypedControl.Float().create("contrast_ywa", Lux.Property(Lux.scene, "film.contrast.ywa", 100.0), 0.0, 1000.0, "Ywa", "Display/World Adaption Luminance")
+                        str += Lux.TypedControl.Float().create("contrast_ywa", Lux.Property(Lux.scene, "film.contrast.ywa", 0.1), 0.001, 1.0, "Ywa", "Display/World Adaption Luminance")
         
                     if Lux.LB_UI.Active: Lux.LB_UI.newline("  Display:")
                     str += Lux.TypedControl.Int().create("displayinterval", Lux.Property(Lux.scene, "film.displayinterval", 12), 4, 3600, "interval", "Set display Interval (seconds)")
