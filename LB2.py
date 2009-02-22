@@ -654,7 +654,7 @@ class Lux:
         def saveScenePreset(self, name, d):
             try:
                 for n in self.presetsExclude:
-                    try: del d[n];
+                    try: del d[n]
                     except: pass
                 self.savePreset('luxblend_presets', name, d)
             except: pass
@@ -662,7 +662,7 @@ class Lux:
         def saveMaterialPreset(self, name, d):
             try:
                 for n in self.presetsExclude:
-                    try: del d[n];
+                    try: del d[n]
                     except: pass
                 self.savePreset('luxblend_materials', name, d)
             except: pass
@@ -857,7 +857,7 @@ class Lux:
                         if (len(face)==4):
                             file.write("%d %d %d\n"%(index, index+2, index+3))
                         index += len(face.verts)
-                    file.write('\t] "point P" [\n');
+                    file.write('\t] "point P" [\n')
                     for face in ffaces:
                         for vertex in face:
                             file.write("%f %f %f\n"% tuple(vertex.co))
@@ -939,7 +939,7 @@ class Lux:
                                 file.write("%d %d %d\n"%(face[0], face[1], face[2]))
                                 if (len(face)==4):
                                     file.write("%d %d %d\n"%(face[0], face[2], face[3]))
-                            file.write('\t] "point P" [\n');
+                            file.write('\t] "point P" [\n')
                             file.write("".join(["%f %f %f\n"%tuple(vertex[0]) for vertex in exportVerts]))
                             if normalFltr[shape]:
                                 file.write('\t] "normal N" [\n')
@@ -1220,9 +1220,6 @@ class Lux:
             Lux.scene = Blender_API.Scene.GetCurrent()
             Lux.LB_UI.Active  = False
             
-            #export_total_steps = 12.0
-            if not Lux.LB_UI.CLI: Lux.LB_UI.startStatus(12)
-            
             Lux.Log("Lux Render Export started...")
             time1 = Blender_API.sys.time()
             
@@ -1253,7 +1250,7 @@ class Lux:
                 Lux.Log("ERROR: No light source found", popup = True)
                 return False
         
-            if not Lux.LB_UI.CLI: Lux.LB_UI.updateStatus('Setting up Scene file')
+            if not Lux.LB_UI.CLI: Lux.LB_UI.startStatus(12, 'Setting up Scene file')
             if Lux.Property(Lux.scene, "lxs", "true").get()=="true":
                 ##### Determine/open files
                 Lux.Log("Exporting scene to '" + filename + "'...")
@@ -1362,7 +1359,7 @@ class Lux:
                     file.write("\n")    
         
                 # Note - radiance - this is a work in progress
-                #flash = Lux.ExperimentalFlashBlock(camObj)
+                #flash = Lux.Experimental.FlashBlock(camObj)
                 #if flash != "":
                 #    file.write("# Camera flash lamp\n")
                 #    file.write("AttributeBegin\n")
@@ -1941,7 +1938,9 @@ class Lux:
             w = int(self.w * wu + self.xgap * (wu-1))
             h = int(self.h * hu + self.ygap * (hu-1))
             if self.x + w > self.xmax: self.newline()
-            if self.resethmax: self.hmax = 0; self.resethmax = False
+            if self.resethmax:
+                self.hmax = 0
+                self.resethmax = False
             rect = [int(self.x), int(self.y-h), int(w), int(h)]
             self.x += int(w + self.xgap)
             if h+self.ygap > self.hmax: self.hmax = int(h+self.ygap)
@@ -1950,12 +1949,17 @@ class Lux:
         def newline(self, title="", distance=0, level=0, icon=None, color=None):
             self.x = 110
             if not(self.resethmax): self.y -= int(self.hmax + distance)
-            if color!=None: Blender_API.BGL.glColor3f(color[0],color[1],color[2]); Blender_API.BGL.glRectf(0,self.y-self.hmax,self.xmax,self.y+distance); Blender_API.BGL.glColor3f(0.9, 0.9, 0.9)
+            if color!=None:
+                Blender_API.BGL.glColor3f(color[0],color[1],color[2])
+                Blender_API.BGL.glRectf(0,self.y-self.hmax,self.xmax,self.y+distance)
+                Blender_API.BGL.glColor3f(0.9, 0.9, 0.9)
             if icon!=None:  icon.draw(2+level*10, self.y-16)
             self.resethmax = True
             if title!="":
                 self.getRect(0, 1)
-                Blender_API.BGL.glColor3f(0.9,0.9,0.9); Blender_API.BGL.glRasterPos2i(20+level*10,self.y-self.h+5); Blender_API.Draw.Text(title)
+                Blender_API.BGL.glColor3f(0.9,0.9,0.9)
+                Blender_API.BGL.glRasterPos2i(20+level*10,self.y-self.h+5)
+                Blender_API.Draw.Text(title)
                 
         # scrollbar
         class scrollbar:
@@ -2033,9 +2037,10 @@ class Lux:
         status_steps = 0.0
         status_step  = 0.0
         
-        def startStatus(self, steps):
+        def startStatus(self, steps, msg):
             self.status_steps = steps
             self.status_step  = 0.0
+            self.updateStatus(msg)
         
         def updateStatus(self, msg = ''):
             frac = float(self.status_step)/float(self.status_steps)
@@ -2048,22 +2053,26 @@ class Lux:
         def Draw(self):
             Lux.scene = Blender_API.Scene.GetCurrent()
             Blender_API.BGL.glClear(Blender_API.BGL.GL_COLOR_BUFFER_BIT)
+            y = int(self.LB_scrollbar.getTop()) # 420
+            Lux.LB_UI.y = y-70
+            
+            Blender_API.BGL.glColor3f(0.1,0.1,0.1)
+            Blender_API.BGL.glRectf(0,0,440,y)
             
             if Lux.scene and self.Active:
                 
                 luxpage = Lux.Property(Lux.scene, "page", 0)
                 
-                y = int(self.LB_scrollbar.getTop()) # 420
-                Lux.LB_UI.y = y-70
-                
-                Blender_API.BGL.glColor3f(0.1,0.1,0.1); Blender_API.BGL.glRectf(0,0,440,y)
-                Blender_API.BGL.glColor3f(1.0,0.5,0.0); Blender_API.BGL.glRasterPos2i(130,y-21); Blender_API.Draw.Text(Lux.Version)
-                Blender_API.BGL.glColor3f(0.9,0.9,0.9);
+                Blender_API.BGL.glColor3f(1.0,0.5,0.0)
+                Blender_API.BGL.glRasterPos2i(130,y-21)
+                Blender_API.Draw.Text(Lux.Version)
+                Blender_API.BGL.glColor3f(0.9,0.9,0.9)
                 #Lux.Graphic.drawLogo(Lux.Graphic.Logo('luxblend').get(), 6, y-25)
                 Lux.Graphic.Logo('luxblend').draw(6, y-25)
         
                 # render presets
-                Blender_API.BGL.glRasterPos2i(10,y-45); Blender_API.Draw.Text("Render presets:")
+                Blender_API.BGL.glRasterPos2i(10,y-45)
+                Blender_API.Draw.Text("Render presets:")
                 luxpreset = Lux.Property(Lux.scene, "preset", "1C - Final - medium MLT/Path Tracing (indoor) (recommended)")
                 presets = Lux.LB_Presets.getScenePresets()
                 presetskeys = presets.keys()
@@ -2095,7 +2104,9 @@ class Lux:
                 Blender_API.Draw.Button("Output",   Lux.Events.LuxGui, 250, y-70, 80, 16, "", lambda e,v:luxpage.set(3))
                 Blender_API.Draw.Button("System",   Lux.Events.LuxGui, 330, y-70, 80, 16, "", lambda e,v:luxpage.set(4))
                 if luxpage.get() == 0:
-                    Blender_API.BGL.glColor3f(1.0,0.5,0.0);Blender_API.BGL.glRectf(10,y-74,90,y-70);Blender_API.BGL.glColor3f(0.9,0.9,0.9)
+                    Blender_API.BGL.glColor3f(1.0,0.5,0.0)
+                    Blender_API.BGL.glRectf(10,y-74,90,y-70)
+                    Blender_API.BGL.glColor3f(0.9,0.9,0.9)
                     obj = Lux.scene.objects.active
                     if obj:
                         if (obj.getType() == "Lamp"):
@@ -2129,7 +2140,9 @@ class Lux:
                                 Lux.Materials.setactivemat(mats[matindex])
                                 Lux.Materials.Material(Lux.Materials.activemat)
                 if luxpage.get() == 1:
-                    Blender_API.BGL.glColor3f(1.0,0.5,0.0);Blender_API.BGL.glRectf(90,y-74,170,y-70);Blender_API.BGL.glColor3f(0.9,0.9,0.9)
+                    Blender_API.BGL.glColor3f(1.0,0.5,0.0)
+                    Blender_API.BGL.glRectf(90,y-74,170,y-70)
+                    Blender_API.BGL.glColor3f(0.9,0.9,0.9)
                     cam = Lux.scene.objects.camera
                     if cam:
                         r = Lux.LB_UI.getRect(1.1, 1)
@@ -2137,7 +2150,9 @@ class Lux:
                     Lux.LB_UI.newline("", 10)
                     Lux.SceneElements.Environment()
                 if luxpage.get() == 2:
-                    Blender_API.BGL.glColor3f(1.0,0.5,0.0);Blender_API.BGL.glRectf(170,y-74,250,y-70);Blender_API.BGL.glColor3f(0.9,0.9,0.9)
+                    Blender_API.BGL.glColor3f(1.0,0.5,0.0)
+                    Blender_API.BGL.glRectf(170,y-74,250,y-70)
+                    Blender_API.BGL.glColor3f(0.9,0.9,0.9)
                     r = Lux.LB_UI.getRect(1.1, 1)
                     Lux.SceneElements.Sampler()
                     Lux.LB_UI.newline("", 10)
@@ -2147,11 +2162,15 @@ class Lux:
                     Lux.LB_UI.newline("", 10)
                     Lux.SceneElements.PixelFilter()
                 if luxpage.get() == 3:
-                    Blender_API.BGL.glColor3f(1.0,0.5,0.0);Blender_API.BGL.glRectf(250,y-74,330,y-70);Blender_API.BGL.glColor3f(0.9,0.9,0.9)
+                    Blender_API.BGL.glColor3f(1.0,0.5,0.0)
+                    Blender_API.BGL.glRectf(250,y-74,330,y-70)
+                    Blender_API.BGL.glColor3f(0.9,0.9,0.9)
                     r = Lux.LB_UI.getRect(1.1, 1)
                     Lux.SceneElements.Film()
                 if luxpage.get() == 4:
-                    Blender_API.BGL.glColor3f(1.0,0.5,0.0);Blender_API.BGL.glRectf(330,y-74,410,y-70);Blender_API.BGL.glColor3f(0.9,0.9,0.9)
+                    Blender_API.BGL.glColor3f(1.0,0.5,0.0)
+                    Blender_API.BGL.glRectf(330,y-74,410,y-70)
+                    Blender_API.BGL.glColor3f(0.9,0.9,0.9)
                     Lux.SceneElements.System()
                     Lux.LB_UI.newline("", 10)
                     Lux.SceneElements.Accelerator()
@@ -2187,11 +2206,13 @@ class Lux:
                 Blender_API.Draw.Toggle(".lxm", 0, 350, y+20, 30, 16, lxm.get()=="true", "export .lxm material file", lambda e,v: lxm.set(["false","true"][bool(v)]))
                 Blender_API.Draw.Toggle(".lxv", 0, 380, y+20, 30, 16, lxm.get()=="true", "export .lxv volume file", lambda e,v: lxm.set(["false","true"][bool(v)]))
                 
-                Blender_API.BGL.glColor3f(0.9, 0.9, 0.9) ; Blender_API.BGL.glRasterPos2i(340,y+5) ; Blender_API.Draw.Text("Press Q or ESC to quit.", "tiny")
+                Blender_API.BGL.glColor3f(0.9, 0.9, 0.9)
+                Blender_API.BGL.glRasterPos2i(340,y+5)
+                Blender_API.Draw.Text("Press Q or ESC to quit.", "tiny")
                 self.LB_scrollbar.height = self.LB_scrollbar.getTop() - y
                 self.LB_scrollbar.draw()
             else:
-                Blender_API.BGL.glColor3f(0.2,0.2,0.2)
+                Blender_API.BGL.glColor3f(1.0,0.5,0.0)
                 Blender_API.BGL.glRasterPos2i(20,20)
                 Blender_API.Draw.Text('Busy... %s'%self.status,'large')
         
@@ -2493,9 +2514,11 @@ class Lux:
                             if rgb[i] > scale: scale = rgb[i]
                         rgb = (rgb[0]/scale, rgb[1]/scale, rgb[2]/scale)
                     Blender_API.Draw.ColorPicker(Lux.Events.LuxGui, r[0], r[1], r[3], r[3], rgb, "click to select color", lambda e,v: lux.setRGB((v[0]*scale,v[1]*scale,v[2]*scale)))
-                    w = int((r[2]-r[3])/3); m = max
+                    w = int((r[2]-r[3])/3)
+                    m = max
                     if max > 1.0:
-                        w = int((r[2]-r[3])/4); m = 1.0
+                        w = int((r[2]-r[3])/4)
+                        m = 1.0
                     drawR, drawG, drawB, drawS = Blender_API.Draw.Create(rgb[0]), Blender_API.Draw.Create(rgb[1]), Blender_API.Draw.Create(rgb[2]), Blender_API.Draw.Create(scale)
                     drawR = Blender_API.Draw.Number("R:", Lux.Events.LuxGui, r[0]+r[3], r[1], w, r[3], drawR.val, 0.0, m, "red", lambda e,v: lux.setRGB((v*scale,drawG.val*scale,drawB.val*scale)))
                     drawG = Blender_API.Draw.Number("G:", Lux.Events.LuxGui, r[0]+r[3]+w, r[1], w, r[3], drawG.val, 0.0, m, "green", lambda e,v: lux.setRGB((drawR.val*scale,v*scale,drawB.val*scale)))
@@ -2810,7 +2833,10 @@ class Lux:
                     cspaceblueX = Lux.Property(Lux.scene, "film.cspaceblueX", 0.155)
                     cspaceblueY = Lux.Property(Lux.scene, "film.cspaceblueY", 0.07)
                     gamma = Lux.Property(Lux.scene, "film.gamma", 2.2)
-        
+                    def setwhite(x, y):
+                        cspacewhiteX.set(x)
+                        cspacewhiteY.set(y)
+                        
                     if(cspaceusepreset.get() == "true"):
                         # preset controls
                         cspace = Lux.Property(Lux.scene, "film.colorspace", "sRGB - HDTV (ITU-R BT.709-5)")
@@ -2818,40 +2844,61 @@ class Lux:
                         Lux.TypedControl.Option().create("colorspace", cspace, cspaces, "Colorspace", "select output working colorspace", 1.6)
         
                         if cspace.get()=="ROMM RGB":
-                            cspacewhiteX.set(0.346); cspacewhiteY.set(0.359) # D50
-                            cspaceredX.set(0.7347); cspaceredY.set(0.2653)
-                            cspacegreenX.set(0.1596); cspacegreenY.set(0.8404)
-                            cspaceblueX.set(0.0366); cspaceblueY.set(0.0001)
+                            setwhite(0.346,0.359) # D50
+                            cspaceredX.set(0.7347)
+                            cspaceredY.set(0.2653)
+                            cspacegreenX.set(0.1596)
+                            cspacegreenY.set(0.8404)
+                            cspaceblueX.set(0.0366)
+                            cspaceblueY.set(0.0001)
                         elif cspace.get()=="Adobe RGB 98":
-                            cspacewhiteX.set(0.313); cspacewhiteY.set(0.329) # D65
-                            cspaceredX.set(0.64); cspaceredY.set(0.34)
-                            cspacegreenX.set(0.21); cspacegreenY.set(0.71)
-                            cspaceblueX.set(0.15); cspaceblueY.set(0.06)
+                            setwhite(0.313,0.329) # D65
+                            cspaceredX.set(0.64)
+                            cspaceredY.set(0.34)
+                            cspacegreenX.set(0.21)
+                            cspacegreenY.set(0.71)
+                            cspaceblueX.set(0.15)
+                            cspaceblueY.set(0.06)
                         elif cspace.get()=="Apple RGB":
-                            cspacewhiteX.set(0.313); cspacewhiteY.set(0.329) # D65
-                            cspaceredX.set(0.625); cspaceredY.set(0.34)
-                            cspacegreenX.set(0.28); cspacegreenY.set(0.595)
-                            cspaceblueX.set(0.155); cspaceblueY.set(0.07)
+                            setwhite(0.313,0.329) # D65
+                            cspaceredX.set(0.625)
+                            cspaceredY.set(0.34)
+                            cspacegreenX.set(0.28)
+                            cspacegreenY.set(0.595)
+                            cspaceblueX.set(0.155)
+                            cspaceblueY.set(0.07)
                         elif cspace.get()=="NTSC (FCC 1953, ITU-R BT.470-2 System M)":
-                            cspacewhiteX.set(0.310); cspacewhiteY.set(0.316) # C
-                            cspaceredX.set(0.67); cspaceredY.set(0.33)
-                            cspacegreenX.set(0.21); cspacegreenY.set(0.71)
-                            cspaceblueX.set(0.14); cspaceblueY.set(0.08)
+                            setwhite(0.310,0.316) # C
+                            cspaceredX.set(0.67)
+                            cspaceredY.set(0.33)
+                            cspacegreenX.set(0.21)
+                            cspacegreenY.set(0.71)
+                            cspaceblueX.set(0.14)
+                            cspaceblueY.set(0.08)
                         elif cspace.get()=="NTSC (1979) (SMPTE C, SMPTE-RP 145)":
-                            cspacewhiteX.set(0.313); cspacewhiteY.set(0.329) # D65
-                            cspaceredX.set(0.63); cspaceredY.set(0.34)
-                            cspacegreenX.set(0.31); cspacegreenY.set(0.595)
-                            cspaceblueX.set(0.155); cspaceblueY.set(0.07)
+                            setwhite(0.313,0.329) # D65
+                            cspaceredX.set(0.63)
+                            cspaceredY.set(0.34)
+                            cspacegreenX.set(0.31)
+                            cspacegreenY.set(0.595)
+                            cspaceblueX.set(0.155)
+                            cspaceblueY.set(0.07)
                         elif cspace.get()=="PAL/SECAM (EBU 3213, ITU-R BT.470-6)":
-                            cspacewhiteX.set(0.313); cspacewhiteY.set(0.329) # D65
-                            cspaceredX.set(0.64); cspaceredY.set(0.33)
-                            cspacegreenX.set(0.29); cspacegreenY.set(0.60)
-                            cspaceblueX.set(0.15); cspaceblueY.set(0.06)
+                            setwhite(0.313,0.329) # D65
+                            cspaceredX.set(0.64)
+                            cspaceredY.set(0.33)
+                            cspacegreenX.set(0.29)
+                            cspacegreenY.set(0.60)
+                            cspaceblueX.set(0.15)
+                            cspaceblueY.set(0.06)
                         elif cspace.get()=="CIE (1931) E":
-                            cspacewhiteX.set(0.333); cspacewhiteY.set(0.333) # E
-                            cspaceredX.set(0.7347); cspaceredY.set(0.2653)
-                            cspacegreenX.set(0.2738); cspacegreenY.set(0.7174)
-                            cspaceblueX.set(0.1666); cspaceblueY.set(0.0089)
+                            setwhite(0.333,0.333) # E
+                            cspaceredX.set(0.7347)
+                            cspaceredY.set(0.2653)
+                            cspacegreenX.set(0.2738)
+                            cspacegreenY.set(0.7174)
+                            cspaceblueX.set(0.1666)
+                            cspaceblueY.set(0.0089)
         
                         whitepointusecspace = Lux.Property(Lux.scene, "film.whitepointusecolorspace", "true")
                         Lux.TypedControl.Bool().create("whitepointusecolorspace", whitepointusecspace, "Colorspace Whitepoint", "Use default whitepoint for selected colorspace", 1.0)
@@ -2868,18 +2915,18 @@ class Lux:
                                 whitepointpreset = Lux.Property(Lux.scene, "film.whitepointpreset", "D65")
                                 Lux.TypedControl.Option().create("whitepointpreset", whitepointpreset, whitepointpresets, "  PRESET", "select Whitepoint preset", 1.6)
         
-                                if whitepointpreset.get()=="E": cspacewhiteX.set(0.333); cspacewhiteY.set(0.333)
-                                elif whitepointpreset.get()=="D50": cspacewhiteX.set(0.346); cspacewhiteY.set(0.359)
-                                elif whitepointpreset.get()=="D55": cspacewhiteX.set(0.332); cspacewhiteY.set(0.347)
-                                elif whitepointpreset.get()=="D65": cspacewhiteX.set(0.313); cspacewhiteY.set(0.329)
-                                elif whitepointpreset.get()=="D75": cspacewhiteX.set(0.299); cspacewhiteY.set(0.315)
-                                elif whitepointpreset.get()=="A": cspacewhiteX.set(0.448); cspacewhiteY.set(0.407)
-                                elif whitepointpreset.get()=="B": cspacewhiteX.set(0.348); cspacewhiteY.set(0.352)
-                                elif whitepointpreset.get()=="C": cspacewhiteX.set(0.310); cspacewhiteY.set(0.316)
-                                elif whitepointpreset.get()=="9300": cspacewhiteX.set(0.285); cspacewhiteY.set(0.293)
-                                elif whitepointpreset.get()=="F2": cspacewhiteX.set(0.372); cspacewhiteY.set(0.375)
-                                elif whitepointpreset.get()=="F7": cspacewhiteX.set(0.313); cspacewhiteY.set(0.329)
-                                elif whitepointpreset.get()=="F11": cspacewhiteX.set(0.381); cspacewhiteY.set(0.377)
+                                if whitepointpreset.get()=="E":         setwhite(0.333,0.333)
+                                elif whitepointpreset.get()=="D50":     setwhite(0.346,0.359)
+                                elif whitepointpreset.get()=="D55":     setwhite(0.332,0.347)
+                                elif whitepointpreset.get()=="D65":     setwhite(0.313,0.329)
+                                elif whitepointpreset.get()=="D75":     setwhite(0.299,0.315)
+                                elif whitepointpreset.get()=="A":       setwhite(0.448,0.407)
+                                elif whitepointpreset.get()=="B":       setwhite(0.348,0.352)
+                                elif whitepointpreset.get()=="C":       setwhite(0.310,0.316)
+                                elif whitepointpreset.get()=="9300":    setwhite(0.285,0.293)
+                                elif whitepointpreset.get()=="F2":      setwhite(0.372,0.375)
+                                elif whitepointpreset.get()=="F7":      setwhite(0.313,0.329)
+                                elif whitepointpreset.get()=="F11":     setwhite(0.381,0.377)
                             else:
                                 Lux.TypedControl.Float().create("white X", cspacewhiteX, 0.0, 1.0, "white X", "Whitepoint X weight", 0.8)
                                 Lux.TypedControl.Float().create("white Y", cspacewhiteY, 0.0, 1.0, "white Y", "Whitepoint Y weight", 0.8)
@@ -3024,7 +3071,8 @@ class Lux:
         
                     if showhelp.get()=="true":
                         if Lux.LB_UI.Active: Lux.LB_UI.newline("  Description:", 8, 0, Lux.Graphic.Icon('help'), [0.4,0.5,0.56])
-                        r = Lux.LB_UI.getRect(2,1); Blender_API.BGL.glRasterPos2i(r[0],r[1]+5) 
+                        r = Lux.LB_UI.getRect(2,1)
+                        Blender_API.BGL.glRasterPos2i(r[0],r[1]+5) 
                         Blender_API.Draw.Text("A Metropolis-Hastings mutating sampler which implements MLT", 'small')    
         
                 if samplertype.get() == "erpt":
@@ -3228,7 +3276,9 @@ class Lux:
                             str += Lux.TypedControl.Float().create("turbidity", Lux.Property(Lux.scene, "env.sunsky.turbidity", 2.2), 2.0, 50.0, "turbidity", "Sky turbidity")
                         else:
                             if Lux.LB_UI.Active:
-                                Lux.LB_UI.newline(); r = Lux.LB_UI.getRect(2,1); Blender_API.BGL.glRasterPos2i(r[0],r[1]+5) 
+                                Lux.LB_UI.newline()
+                                r = Lux.LB_UI.getRect(2,1)
+                                Blender_API.BGL.glRasterPos2i(r[0],r[1]+5) 
                                 Blender_API.Draw.Text("create a blender Sun Lamp")
                     
                     str += "\n"
@@ -4397,7 +4447,7 @@ class Lux:
                     if usedisp.get() == "true":
                         (str,ll) = c((str,link), Lux.Textures.DispFloatTexture("dispmap", keyname, 0.1, -10, 10.0, "dispmap", "Displacement Mapping amount", mat, level+1))
                         Lux.TypedControl.Float().create("sdoffset",  Lux.Property(mat, "sdoffset", 0.0), 0.0, 1.0, "Offset", "Offset for displacement map", 2.0)
-                        usesubdiv.set("true");
+                        usesubdiv.set("true")
         
                 if mattype.get() == "light":
                     return (str, link)
@@ -4744,7 +4794,9 @@ class Lux:
                     Lux.LB_UI.newline()
                     r = Lux.LB_UI.getRect(1.1, rr)
                     if(color != None):
-                        Blender_API.BGL.glColor3f(color[0],color[1],color[2]); Blender_API.BGL.glRectf(r[0]-110, r[1], 418, r[1]+128+voffset); Blender_API.BGL.glColor3f(0.9, 0.9, 0.9)
+                        Blender_API.BGL.glColor3f(color[0],color[1],color[2])
+                        Blender_API.BGL.glRectf(r[0]-110, r[1], 418, r[1]+128+voffset)
+                        Blender_API.BGL.glColor3f(0.9, 0.9, 0.9)
                     try:
                         #Lux.Graphic.PreviewImage(mat.name+":"+kn).draw(r[0]-82, r[1]+4)
                         Lux.Preview.PreviewCache[mat.name+":"+kn].draw(r[0]-82, r[1]+4)
@@ -4966,7 +5018,7 @@ class Lux:
                     if len(texs) > 0:
                         convertTextures(ddot(basename)+"tex1", texs, type, channel, val)
                     else:
-                        if type=="float": Lux.Property(mat, ddot(basename)+"tex1.value", 1.0).set(val);
+                        if type=="float": Lux.Property(mat, ddot(basename)+"tex1.value", 1.0).set(val)
                         else: Lux.Property(mat, ddot(basename)+"tex1.value", "1.0 1.0 1.0").setRGB((val[0], val[1], val[2]))
                     name = ddot(basename)+"tex2"
                 if val1 == val2: # texture with different colors / value
