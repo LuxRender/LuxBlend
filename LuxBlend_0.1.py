@@ -2089,12 +2089,10 @@ def luxCamera(cam, context, gui=None):
 					
 					def lr_2_fs(fl, lr):
 						lr += 0.00000001
-						lr = fl / ( 2.0 * lr )
-						return lr
+						return fl / ( 2.0 * lr )
 					
 					def fs_2_lr(fl, fs):
-						fs =  fl / ( 2.0 * fs )
-						return fs
+						return fl / ( 2.0 * fs )
 					
 					if usefstop.get() == 'true':
 						lr.set(fs_2_lr(fl.get() * FL_SCALE, fs.get()) / LR_SCALE)
