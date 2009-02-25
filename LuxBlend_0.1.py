@@ -2019,8 +2019,8 @@ def luxCamera(cam, context, gui=None):
 		if camtype.get() == "perspective":
 			if gui: gui.newline("  View:")
 			str += luxFloat("fov", luxAttr(cam, "angle"), 8.0, 170.0, "fov", "camera field-of-view angle", gui)
+			fl = luxAttr(cam, "lens")
 			if gui:
-				fl = luxAttr(cam, "lens")
 				luxFloat("lens", fl, 1.0, 250.0, "focallength", "camera focal length", gui)
 			
 		if camtype.get() == "orthographic" :
