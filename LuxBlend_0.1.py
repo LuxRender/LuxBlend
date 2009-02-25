@@ -2097,6 +2097,7 @@ def luxCamera(cam, context, gui=None):
 					if usefstop.get() == 'true':
 						lr.set(fs_2_lr(fl.get() * FL_SCALE, fs.get()) / LR_SCALE)
 						luxFloat("fstop", fs, 0.9, 64.0, "fstop", "Defines the lens aperture.", gui)
+						str += luxFloat("lensradius", lr, 0.0, 1.0, "", "", None)
 					else:
 						fs.set(lr_2_fs(fl.get() * FL_SCALE, lr.get() * LR_SCALE))
 						str += luxFloat("lensradius", lr, 0.0, 1.0, "lens-radius", "Defines the lens radius. Values higher than 0. enable DOF and control the amount", gui)
