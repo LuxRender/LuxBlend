@@ -13,10 +13,7 @@ Tooltip: 'Export/Render to LuxRender CVS scene format (.lxs)'
 # --------------------------------------------------------------------------
 #
 # Authors:
-# radiance, zuegs, ideasman42, luxblender
-#
-# Additions/tweaks:
-# dougal2
+# radiance, zuegs, ideasman42, luxblender, dougal2
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -2020,13 +2017,23 @@ def luxCamera(cam, context, gui=None):
 		str = luxIdentifier("Camera", camtype, ["perspective","orthographic","environment","realistic"], "CAMERA", "select camera type", gui, icon_c_camera)
 		scale = 1.0
 		if camtype.get() == "perspective":
+			if gui: gui.newline("  View:")
 			str += luxFloat("fov", luxAttr(cam, "angle"), 8.0, 170.0, "fov", "camera field-of-view angle", gui)
+			if gui:
+				fl = luxAttr(cam, "lens")
+				luxFloat("lens", fl, 1.0, 250.0, "focallength", "camera focal length", gui)
+			
 		if camtype.get() == "orthographic" :
 			str += luxFloat("scale", luxAttr(cam, "scale"), 0.01, 1000.0, "scale", "orthographic camera scale", gui)
 			scale = cam.scale / 2
 		if camtype.get() == "realistic":
+			
+			if gui: gui.newline("  View:")
 			fov = luxAttr(cam, "angle")
-			luxFloat("fov", fov, 8.0, 170.0, "fov", "camera field-of-view angle", gui)
+			str += luxFloat("fov", fov, 8.0, 170.0, "fov", "camera field-of-view angle", gui)
+			if gui: luxFloat("lens", luxAttr(cam, "lens"), 1.0, 250.0, "focallength", "camera focal length", gui)
+			
+			
 			if gui: gui.newline()
 			str += luxFile("specfile", luxProp(cam, "camera.realistic.specfile", ""), "spec-file", "", gui, 1.0)
 #			if gui: gui.newline()
@@ -2060,28 +2067,63 @@ def luxCamera(cam, context, gui=None):
 
 		# Depth of Field
 		usedof = luxProp(cam, "usedof", "false")
-		luxBool("usedof", usedof, "Depth of Field & Bokeh", "Enable Depth of Field & Aperture options", gui, 2.0)
-		if camtype.get() in ["perspective", "orthographic"] and usedof.get() == "true":
-			if gui: gui.newline("  DOF:")
-			focustype = luxProp(cam, "camera.focustype", "autofocus")
-			luxOption("focustype", focustype, ["autofocus", "manual", "object"], "Focus Type", "Choose the focus behaviour", gui)
-			str += luxFloat("lensradius", luxProp(cam, "camera.lensradius", 0.01), 0.0, 1.0, "lens-radius", "Defines the lens radius. Values higher than 0. enable DOF and control the amount", gui)
-
-			if focustype.get() == "autofocus":
-				str += luxBool("autofocus",luxProp(cam, "camera.autofocus", "true"), "autofocus", "Enable automatic focus", gui)
-			if focustype.get() == "object":
-				objectfocus = luxProp(cam, "camera.objectfocus", "")
-				luxString("objectfocus", objectfocus, "object", "Always focus camera on named object", gui, 1.0)
-				dofdist = luxAttr(cam, "dofDist")
-				str += luxFloat("focaldistance", dofdist, 0.0, 100.0, "distance", "Distance from the camera at which objects will be in focus. Has no effect if Lens Radius is 0", gui)
-				if objectfocus.get() != "":
-					setFocus(objectfocus.get())
-			if focustype.get() == "manual":
-				dofdist = luxAttr(cam, "dofDist")
-				str += luxFloat("focaldistance", dofdist, 0.0, 100.0, "distance", "Distance from the camera at which objects will be in focus. Has no effect if Lens Radius is 0", gui)
-				if gui:
-					Draw.Button("S", evtLuxGui, gui.x, gui.y-gui.h, gui.h, gui.h, "focus selected object", lambda e,v:setFocus("S"))
-					Draw.Button("C", evtLuxGui, gui.x+gui.h, gui.y-gui.h, gui.h, gui.h, "focus cursor", lambda e,v:setFocus("C"))
+		
+		if camtype.get() in ["perspective", "orthographic"]:
+			luxBool("usedof", usedof, "Depth of Field & Bokeh", "Enable Depth of Field & Aperture options", gui, 2.0)
+			
+			
+			if usedof.get() == "true":
+				
+				if gui: gui.newline("  DOF:")
+				
+				lr = luxProp(cam, "camera.lensradius", 0.01)
+				fs = luxProp(cam, "camera.fstop", 2.8)
+				
+				if camtype.get() == "perspective":
+					
+					usefstop = luxProp(cam, "usefstop", "false")
+					luxBool("usefstop", usefstop, "Use f/stop", "Use f/stop to define DOF effect", gui, 1.0)
+					
+					LR_SCALE = 1000.0       # lr in metres -> mm
+					FL_SCALE = 1.0          # fl in mm -> mm
+					
+					def lr_2_fs(fl, lr):
+						lr += 0.00000001
+						lr = fl / ( 2.0 * lr )
+						return lr
+					
+					def fs_2_lr(fl, fs):
+						fs =  fl / ( 2.0 * fs )
+						return fs
+					
+					if usefstop.get() == 'true':
+						lr.set(fs_2_lr(fl.get() * FL_SCALE, fs.get()) / LR_SCALE)
+						luxFloat("fstop", fs, 0.9, 64.0, "fstop", "Defines the lens aperture.", gui)
+					else:
+						fs.set(lr_2_fs(fl.get() * FL_SCALE, lr.get() * LR_SCALE))
+						str += luxFloat("lensradius", lr, 0.0, 1.0, "lens-radius", "Defines the lens radius. Values higher than 0. enable DOF and control the amount", gui)
+				else:
+					str += luxFloat("lensradius", lr, 0.0, 1.0, "lens-radius", "Defines the lens radius. Values higher than 0. enable DOF and control the amount", gui)
+				
+				focustype = luxProp(cam, "camera.focustype", "autofocus")
+				luxOption("focustype", focustype, ["autofocus", "manual", "object"], "Focus Type", "Choose the focus behaviour", gui)
+				
+	
+				if focustype.get() == "autofocus":
+					str += luxBool("autofocus",luxProp(cam, "camera.autofocus", "true"), "autofocus", "Enable automatic focus", gui)
+				if focustype.get() == "object":
+					objectfocus = luxProp(cam, "camera.objectfocus", "")
+					luxString("objectfocus", objectfocus, "object", "Always focus camera on named object", gui, 1.0)
+					dofdist = luxAttr(cam, "dofDist")
+					str += luxFloat("focaldistance", dofdist, 0.0, 100.0, "distance", "Distance from the camera at which objects will be in focus. Has no effect if Lens Radius is 0", gui)
+					if objectfocus.get() != "":
+						setFocus(objectfocus.get())
+				if focustype.get() == "manual":
+					dofdist = luxAttr(cam, "dofDist")
+					str += luxFloat("focaldistance", dofdist, 0.0, 100.0, "distance", "Distance from the camera at which objects will be in focus. Has no effect if Lens Radius is 0", gui)
+					if gui:
+						Draw.Button("S", evtLuxGui, gui.x, gui.y-gui.h, gui.h, gui.h, "focus selected object", lambda e,v:setFocus("S"))
+						Draw.Button("C", evtLuxGui, gui.x+gui.h, gui.y-gui.h, gui.h, gui.h, "focus cursor", lambda e,v:setFocus("C"))
 
 		if camtype.get() == "perspective" and usedof.get() == "true":
 			str += luxInt("blades", luxProp(cam, "camera.blades", 6), 0, 16, "aperture blades", "Number of blade edges of the aperture, values 0 to 2 defaults to a circle", gui)
