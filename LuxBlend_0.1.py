@@ -4783,15 +4783,41 @@ def MatTex2dict(d, tex = None):
 		}
 		
 		return lbx
-	
+
+def format_dictStr(dictStr):
+    result = ''
+    pos = 0
+    indentStr = '  '
+    newLine = '\r\n'
+    
+    for char in dictStr:
+        if char in ['}', ']']:
+            result += newLine
+            pos -= 1
+            for j in range(0,pos):
+                result += indentStr
+                
+        result += char
+        
+        if char in [',', '{', '[']:
+            result += newLine
+            if char in ['{', '[']:
+                pos += 1
+            for j in range(0,pos):
+                result += indentStr
+            
+    return result
+
+
 def MatTex2str(d, tex = None):
 	global LBX_VERSION
 	
 	if LBX_VERSION == '0.6':
-		return str( MatTex2dict(d, tex) ).replace(", \'", ",\n\'")
+		return format_dictStr(str( MatTex2dict(d, tex) )) #.replace(", \'", ",\n\'")
 	
 	elif LBX_VERSION == '0.7':
-		return str( MatTex2dict(d, tex) ).replace("], \'", "],\n\'").replace("[","\n\t[")
+		return format_dictStr(str( MatTex2dict(d, tex) )) #.replace("], \'", "],\r\n\'").replace("[","\r\n\t[")
+        
 
 def str2MatTex(s, tex = None):	# todo: this is not absolutely save from attacks!!!
 	global LBX_VERSION
