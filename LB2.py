@@ -2570,13 +2570,22 @@ class Lux:
                 str = Lux.TypedControl.Identifier(icon='c_camera').create("Camera", camtype, ["perspective","orthographic","environment","realistic"], "CAMERA", "select camera type")
                 scale = 1.0
                 if camtype.get() == "perspective":
+                    if Lux.LB_UI.Active: Lux.LB_UI.newline("  View:")
                     str += Lux.TypedControl.Float().create("fov", Lux.Attribute(cam, "angle"), 8.0, 170.0, "fov", "camera field-of-view angle")
+                    fl = Lux.Attribute(cam, "lens")
+                    if Lux.LB_UI.Active:
+                        Lux.TypedControl.Float().create("lens", fl, 1.0, 250.0, "focallength", "camera focal length")
+                    
+                    
                 if camtype.get() == "orthographic" :
                     str += Lux.TypedControl.Float().create("scale", Lux.Attribute(cam, "scale"), 0.01, 1000.0, "scale", "orthographic camera scale")
                     scale = cam.scale / 2
                 if camtype.get() == "realistic":
+                    if Lux.LB_UI.Active: Lux.LB_UI.newline("  View:")
                     fov = Lux.Attribute(cam, "angle")
                     Lux.TypedControl.Float().create("fov", fov, 8.0, 170.0, "fov", "camera field-of-view angle")
+                    if Lux.LB_UI.Active:  Lux.TypedControl.Float().create("lens", Lux.Attribute(cam, "lens"), 1.0, 250.0, "focallength", "camera focal length")
+                    
                     if Lux.LB_UI.Active: Lux.LB_UI.newline()
                     str += Lux.TypedControl.File().create("specfile", Lux.Property(cam, "camera.realistic.specfile", ""), "spec-file", "", 1.0)
                     #if Lux.LB_UI.Active: Lux.LB_UI.newline()
@@ -2611,12 +2620,39 @@ class Lux:
         
                 # Depth of Field
                 usedof = Lux.Property(cam, "usedof", "false")
-                Lux.TypedControl.Bool().create("usedof", usedof, "Depth of Field & Bokeh", "Enable Depth of Field & Aperture options", 2.0)
-                if camtype.get() in ["perspective", "orthographic"] and usedof.get() == "true":
-                    if Lux.LB_UI.Active: Lux.LB_UI.newline("  DOF:")
+                
+                if camtype.get() in ["perspective", "orthographic"]:
+                    Lux.TypedControl.Bool().create("usedof", usedof, "Depth of Field & Bokeh", "Enable Depth of Field & Aperture options", 2.0)
+                    
+                    if usedof.get() == "true":
+                        if Lux.LB_UI.Active: Lux.LB_UI.newline("  DOF:")
+                        lr = Lux.Property(cam, "camera.lensradius", 0.01)
+                        fs = Lux.Property(cam, "camera.fstop", 2.8)
+                        if camtype.get() == "perspective":
+                            usefstop = Lux.Property(cam, "camera.usefstop", "false")
+                            Lux.TypedControl.Bool().create("usefstop", usefstop, "Use f/stop", "Use f/stop to define DOF effect")
+                            
+                            LR_SCALE = 1000.0 # convert m to mm
+                            FL_SCALE = 1.0 # convert m to m
+                            
+                            def lr_2_fs(fl, lr):
+                                lr += 0.00000001
+                                return fl / (2.0*lr)
+                            def fs_2_lr(fl, fs):
+                                return fl / (2.0*fs)
+                            
+                            if usefstop.get() == 'true':
+                                lr.set(fs_2_lr(fl.get()*FL_SCALE, fs.get())/LR_SCALE)
+                                Lux.TypedControl.Float().create("fstop", fs, 0.9, 64.0, "fstop", "Defines the lens aperture")
+                                str += Lux.TypedControl.Float(hidden=True).create("lensradius", lr, 0.0, 1.0, "", "")
+                            else:
+                                fs.set(lr_2_fs(fl.get()*FL_SCALE, lr.get()*LR_SCALE))
+                                str += Lux.TypedControl.Float().create("lensradius", lr, 0.0, 1.0, "lens-radius", "Defines the lens radius. Values higher than 0. enable DOF and control the amount")
+                        else:
+                            str += Lux.TypedControl.Float().create("lensradius", lr, 0.0, 1.0, "lens-radius", "Defines the lens radius. Values higher than 0. enable DOF and control the amount")                        
+                        
                     focustype = Lux.Property(cam, "camera.focustype", "autofocus")
                     Lux.TypedControl.Option().create("focustype", focustype, ["autofocus", "manual", "object"], "Focus Type", "Choose the focus behaviour")
-                    str += Lux.TypedControl.Float().create("lensradius", Lux.Property(cam, "camera.lensradius", 0.01), 0.0, 1.0, "lens-radius", "Defines the lens radius. Values higher than 0. enable DOF and control the amount")
         
                     if focustype.get() == "autofocus":
                         str += Lux.TypedControl.Bool().create("autofocus",Lux.Property(cam, "camera.autofocus", "true"), "autofocus", "Enable automatic focus")
