@@ -3059,7 +3059,7 @@ def luxTexture(name, parentkey, type, default, min, max, caption, hint, mat, gui
 	else:
 		texture = luxProp(mat, keyname+".texture", "blackbody")
 
-	textures = ["constant","blackbody","equalenergy", "frequency", "gaussian", "regulardata", "irregulardata", "imagemap","mix","scale","bilerp","uv", "checkerboard","dots","fbm","marble","wrinkled", "windy", "blender_marble", "blender_musgrave", "blender_wood", "blender_clouds", "blender_blend", "blender_distortednoise", "blender_noise", "blender_magic", "blender_stucci", "blender_voronoi", "harlequin"]
+	textures = ["constant","blackbody","equalenergy", "frequency", "gaussian", "regulardata", "irregulardata", "imagemap","mix","scale","bilerp","uv", "checkerboard","brick","dots","fbm","marble","wrinkled", "windy", "blender_marble", "blender_musgrave", "blender_wood", "blender_clouds", "blender_blend", "blender_distortednoise", "blender_noise", "blender_magic", "blender_stucci", "blender_voronoi", "harlequin"]
 
 	if gui:
 		if(overrideicon != ""):
@@ -3215,6 +3215,23 @@ def luxTexture(name, parentkey, type, default, min, max, caption, hint, mat, gui
 		if gui: gui.newline("", -2)
 		str += luxFloat("roughness", luxProp(mat, keyname+".roughness", 0.5), 0.0, 1.0, "roughness", "", gui, 2.0, 1)
 		if gui: gui.newline("", -2)
+		str += lux3DMapping(keyname, mat, gui, level+1)
+
+	if texture.get() == "brick":
+		if gui: gui.newline("brick:", -2, level+1, icon_texparam)
+
+		str += luxFloat("brickwidth", luxProp(mat, keyname+".brickwidth", 0.3), 0.0, 10.0, "brickwidth (X)", "", gui, 1.0)
+		str += luxFloat("brickheight", luxProp(mat, keyname+".brickheight", 0.1), 0.0, 10.0, "brickheight (Z)", "", gui, 1.0)
+		str += luxFloat("brickdepth", luxProp(mat, keyname+".brickdepth", 0.15), 0.0, 10.0, "brickdepth (Y)", "", gui, 1.0)
+
+		if gui: gui.newline("mortar:", -2, level+1, icon_texparam)
+
+		str += luxFloat("mortarsize", luxProp(mat, keyname+".mortarsize", 0.01), 0.0, 1.0, "mortarsize", "", gui, 1.0)
+
+		(s, l) = c(("", ""), luxTexture("bricktex", keyname, type, default, min, max, "bricktex", "", mat, gui, matlevel, texlevel+1, lightsource))
+		(s, l) = c((s, l), luxTexture("mortartex", keyname, type, alternativedefault(type, default), min, max, "mortartex", "", mat, gui, matlevel, texlevel+1, lightsource))
+		str = s + str + l
+
 		str += lux3DMapping(keyname, mat, gui, level+1)
 
 	if texture.get() == "blender_marble":
