@@ -40,6 +40,7 @@ Tooltip: 'Export/Render to LuxRender CVS scene format (.lxs)'
 ######################################################
 
 import math
+import time
 import os
 import sys as osys
 import types
@@ -2694,6 +2695,7 @@ def luxEnvironment(scn, gui=None):
 		if gui: gui.newline()
 		str = ""
 		if envtype.get() != "none":
+			
 			if envtype.get() in ["infinite", "sunsky"]:
 				rot = luxProp(scn, "env.rotation", 0.0)
 				luxFloat("rotation", rot, 0.0, 360.0, "rotation", "environment rotation", gui)
@@ -2734,11 +2736,37 @@ def luxEnvironment(scn, gui=None):
 						if obj.getData(mesh=1).getType() == 1: # sun object # data
 							sun = obj
 				if sun:
-					str += luxFloat("relsize", luxProp(scn, "env.sunsky.relisze", 1.0), 0.0, 100.0, "rel.size", "relative sun size", gui)
+					str += luxFloat("relsize", luxProp(scn, "env.sunsky.relsize", 1.0), 0.0, 100.0, "rel.size", "relative sun size", gui)
 					invmatrix = Mathutils.Matrix(sun.getInverseMatrix())
 					str += "\n   \"vector sundir\" [%f %f %f]\n" %(invmatrix[0][2], invmatrix[1][2], invmatrix[2][2])
 					str += luxFloat("gain", luxProp(scn, "env.sunsky.gain", 1.0), 0.0, 1000.0, "gain", "Sky gain", gui)
 					str += luxFloat("turbidity", luxProp(scn, "env.sunsky.turbidity", 2.2), 2.0, 50.0, "turbidity", "Sky turbidity", gui)
+					
+					if gui:
+						gui.newline("Geographic:")
+						sc = sun_calculator()
+						
+						luxInt("sc.day", luxProp(sun, "sc.day", 1), 1, 31, "day", "Local date: day", gui, 0.66)
+						luxInt("sc.month", luxProp(sun, "sc.month", 1), 1, 12, "month", "Local date: month", gui, 0.66)
+						luxInt("sc.year", luxProp(sun, "sc.year", 2009), 1800, 2100, "year", "Local date: year", gui, 0.66)
+						
+						luxInt("sc.hour", luxProp(sun, "sc.hour", 0), 0, 23, "hour", "Local time: hour", gui, 0.52)
+						luxInt("sc.minute", luxProp(sun, "sc.minute", 0), 0, 59, "minute", "Local time: minute", gui, 0.52)
+						luxInt("sc.tz", luxProp(sun, "sc.tz", 0), -12, 12, "timezone", "Local time: timezone offset from GMT", gui, 0.66)
+						luxBool("sc.dst", luxProp(sun, "sc.dst", 'false'), "DST", "DST", gui, 0.28)
+						
+						preset_location  = luxProp(sun, "sc.presetlocation", 'true')
+						luxBool("sc.presetlocation", preset_location, "Preset Location", "Choose a preset location", gui, 2.0)
+						
+						if preset_location.get() == 'true':
+							luxOption("sc.location", luxProp(sun, "sc.location", 0), sc.get_locations(), "Location", "Preset Location", gui, 2.0)
+						else:
+							luxFloat("sc.lat", luxProp(sun, "sc.lat", 0.0), -90.0, 90.0, "latitude", "Location: latitude", gui)
+							luxFloat("sc.long", luxProp(sun, "sc.long", 0.0), -180.0, 180.0, "longitude", "Location: longitude", gui)
+						
+						r = gui.getRect(2,1)
+						Draw.Button("Calculate", 0, r[0], r[1], r[2], r[3], "Calculate sun's position", lambda e,v:sc.compute(sun))   
+					
 				else:
 					if gui:
 						gui.newline(); r = gui.getRect(2,1); BGL.glRasterPos2i(r[0],r[1]+5) 
@@ -2750,6 +2778,154 @@ def luxEnvironment(scn, gui=None):
 		luxFloat("scale", luxProp(scn, "global.scale", 1.0), 0.0, 10.0, "scale", "global world scale", gui)
 		
 	return str
+
+class sun_calculator:
+	
+	preset = 'true'
+	location = 0
+	lat = 0
+	long = 0
+	
+	hour = 0
+	min = 0
+	tz = 0
+	dst = 'false'
+	
+	day = 0
+	month = 0
+	year = 0
+	
+	rot = []
+	
+	def get_locations(self):
+		return ['here','there']
+	
+	def compute(self, sun):
+		
+		self.preset   = luxProp(sun, "sc.presetlocation", 'true').get()
+		self.location = luxProp(sun, "sc.location", 0).get()
+		self.lat      = luxProp(sun, "sc.lat", 0).get()
+		self.long     = luxProp(sun, "sc.long", 0).get()
+		
+		self.hour = luxProp(sun, "sc.hour", 0).get()
+		self.min  = luxProp(sun, "sc.minute", 0).get()
+		self.tz   = luxProp(sun, "sc.tz", 0).get()
+		self.dst  = luxProp(sun, "sc.dst", 'false').get()
+		
+		self.day   = luxProp(sun, "sc.day", 0).get()
+		self.month = luxProp(sun, "sc.month", 0).get()
+		self.year  = luxProp(sun, "sc.year", 0).get()
+		
+		
+		self.rot = self.SunPos()
+		self.rot.append(0) 
+		sun.rot = self.rot
+		
+		Window.Redraw()
+		
+		
+	# --- THE FOLLOWING METHODS ARE ADAPTED FROM GNUDO's FIAT LUX SCRIPT ---
+	
+	def SunPos(self): # Lat, Long, Day, Month, Year, Hour, Minute, Second, TZ, DST):
+		'''Returns the Sun position from the latitude and longitude given in decimal grades
+		   in the date and GMT time given, with polar coordinates
+		   azimuth and elevation
+		'''
+		# Greenwich time
+		self.hour -= self.tz
+		if self.dst == 'true':
+		  self.hour -= 1
+		  
+		# Julian day
+		JD = self.Greg2J(self.day, self.month, self.year, self.hour, self.min, 0)
+		#JD2000 = Greg2J(1, 1, 2000, 0, 0, 0)
+		JD2000 = 2451545
+		# Earth mean anomaly
+		M = 357.5291 + 0.98560028 * (JD - JD2000)
+		M = self.AngleNorm(M)
+		# Earth equation of center
+		C = 1.9148 * self.sin(M) + 0.0200 * self.sin(2 * M) + 0.0003 * self.sin(3 * M)
+		v = M +C
+		# Sun's ecliptic coordinates
+		ELong = M + 102.9372 + C + 180		# ecliptic longitude
+		ELong = self.AngleNorm(ELong)		# ecliptic latitude
+		ELat = 0
+		# Sun's equatorial coordinates
+		RA =  self.atan2(self.sin(ELong) * self.cos(23.45), self.cos(ELong))			# right ascension
+		Decl = self.arcsin(self.sin(ELong) * self.sin(23.45))		# declination
+		# Sidereal time at location
+		ST = 280.1600 + 360.9856235 * (JD - JD2000) + self.long
+		ST = self.AngleNorm(ST)
+		H = ST - RA
+		# Sun's Azimuth
+		azimuth = self.atan2(self.sin(H), self.cos(H) * self.sin(self.lat) - self.tan(Decl) * self.cos(self.lat)) + 180
+		# Sun's Altitude
+		altitude = self.arcsin(self.sin(self.lat) * self.sin(Decl) + self.cos(self.lat) * self.cos(Decl) * self.cos(H))
+		#~ print
+		#~ print "Julian day", JD
+		#~ print "Earth mean anomaly", M, "g."
+		#~ print "Earth equation of center", C, "g."
+		#~ print "Sun ecliptic coordinates", ELong, "g.", ELat, "g."
+		#~ print "Sun right ascension", RA, "g."
+		#~ print "Sun declination", Decl, "g."
+		#~ print "Sidereal time", ST, "h."
+		#~ print
+		#~ print "Azimuth", azimuth, "g."
+		#~ print "Altitude", altitude, "g."
+		return [azimuth-90, altitude]
+	
+	@staticmethod
+	def Greg2J(Day, Month, Year, Hour, Minute, Second):
+		'''Converts from Gregorian dates to Julian dates
+		'''
+		time_dec = sun_calculator.B60toB10(Hour, Minute, Second) / 24.0
+		day_dec = Day + time_dec
+		if Month < 3:
+			Month += 12
+			Year -= 1
+		c = 2 - math.floor(Year / 100) + math.floor(Year / 400)
+		JD = math.floor(1461 * (Year + 4716) / 4) + math.floor(153 * (Month + 1) / 5) + day_dec + c - 1524.5
+		return JD
+	
+	@staticmethod
+	def B60toB10(pris, mins, secs):
+		'''Converts from base 60 to base 10
+		'''
+		return pris + mins / 60.0 + secs / 3600.0
+	
+	@staticmethod
+	def AngleNorm(angle):
+		'''Normalizes an angle between 0 and 360 degrees
+		'''
+		return angle % 360.0
+	
+	@staticmethod
+	def rad(x):
+		return math.radians(x)
+	@staticmethod
+	def deg(x):
+		return math.degrees(x)
+	@staticmethod
+	def sqrt(x):
+		return math.sqrt(x)
+	@staticmethod
+	def cos(x):
+		return math.cos(sun_calculator.rad(x))
+	@staticmethod
+	def sin(x):
+		return math.sin(sun_calculator.rad(x))
+	@staticmethod
+	def arcsin(x):
+		return sun_calculator.deg(math.asin(x))
+	@staticmethod
+	def tan(x):
+		return math.tan(sun_calculator.rad(x))
+	@staticmethod
+	def atan(x):
+		return sun_calculator.deg(math.atan(x))
+	@staticmethod
+	def atan2(x, y):
+		return sun_calculator.deg(math.atan2(x, y))
 
 def luxAccelerator(scn, gui=None):
 	str = ""
