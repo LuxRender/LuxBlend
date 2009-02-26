@@ -2780,6 +2780,10 @@ def luxEnvironment(scn, gui=None):
     return str
 
 class sun_calculator:
+    #Based on SunLight v1.0 by Miguel Kabantsov (miguelkab@gmail.com)
+    #Replaces the faulty sun position calculation algorythm with a precise calculation (Source for algorythm: http://de.wikipedia.org/wiki/Sonnenstand),
+    #Co-Ordinates: http://www.bcca.org/misc/qiblih/latlong.html
+    #Author: Nils-Peter Fischer (Nils-Peter.Fischer@web.de)
     
     preset = 'true'
     location = 0
@@ -2884,7 +2888,7 @@ class sun_calculator:
         
         self.preset   = luxProp(sun, "sc.presetlocation", 'true').get()
         
-        if self.preset:
+        if self.preset == 'true':
             self.location = luxProp(sun, "sc.location", 0).get()
             self.get_locations()
             location_id = self.city_names.index(self.location)
@@ -2900,121 +2904,120 @@ class sun_calculator:
         self.hour = luxProp(sun, "sc.hour", 0).get()
         self.min  = luxProp(sun, "sc.minute", 0).get()
         self.dst  = luxProp(sun, "sc.dst", 'false').get()
+        if self.dst == 'true':
+            self.dst = 1
+        else:
+            self.dst = 0
         
         self.day   = luxProp(sun, "sc.day", 0).get()
         self.month = luxProp(sun, "sc.month", 0).get()
         self.year  = luxProp(sun, "sc.year", 0).get()
         
         
-        self.rot = self.SunPos()
-        self.rot.append(0) 
-        sun.rot = self.rot
+        az,el = self.geoSunData(
+            self.lat,
+            self.long,
+            self.year,
+            self.month,
+            self.day,
+            self.hour + self.min/60.0,
+            self.tz + self.dst
+        )
+        
+        sun.rot = math.radians(90-el), 0, math.radians(-az)
         
         Window.Redraw()
         
         
-    # --- THE FOLLOWING METHODS ARE ADAPTED FROM GNUDO's FIAT LUX SCRIPT ---
+    # --- THE FOLLOWING METHODS ARE ADAPTED FROM LUXMAYA ---
     
-    def SunPos(self): # Lat, Long, Day, Month, Year, Hour, Minute, Second, TZ, DST):
-        '''Returns the Sun position from the latitude and longitude given in decimal grades
-           in the date and GMT time given, with polar coordinates
-           azimuth and elevation
-        '''
-        # Greenwich time
-        self.hour -= self.tz
-        if self.dst == 'true':
-          self.hour -= 1
-          
-        # Julian day
-        JD = self.Greg2J(self.day, self.month, self.year, self.hour, self.min, 0)
-        #JD2000 = Greg2J(1, 1, 2000, 0, 0, 0)
-        JD2000 = 2451545
-        # Earth mean anomaly
-        M = 357.5291 + 0.98560028 * (JD - JD2000)
-        M = self.AngleNorm(M)
-        # Earth equation of center
-        C = 1.9148 * self.sin(M) + 0.0200 * self.sin(2 * M) + 0.0003 * self.sin(3 * M)
-        v = M +C
-        # Sun's ecliptic coordinates
-        ELong = M + 102.9372 + C + 180        # ecliptic longitude
-        ELong = self.AngleNorm(ELong)        # ecliptic latitude
-        ELat = 0
-        # Sun's equatorial coordinates
-        RA =  self.atan2(self.sin(ELong) * self.cos(23.45), self.cos(ELong))            # right ascension
-        Decl = self.arcsin(self.sin(ELong) * self.sin(23.45))        # declination
-        # Sidereal time at location
-        ST = 280.1600 + 360.9856235 * (JD - JD2000) + self.long
-        ST = self.AngleNorm(ST)
-        H = ST - RA
-        # Sun's Azimuth
-        azimuth = math.atan2(self.sin(H), self.cos(H) * self.sin(self.lat) - self.tan(Decl) * self.cos(self.lat)) + math.pi
-        # Sun's Altitude
-        elevation = math.asin(self.sin(self.lat) * self.sin(Decl) + self.cos(self.lat) * self.cos(Decl) * self.cos(H))
-        #~ print
-        #~ print "Julian day", JD
-        #~ print "Earth mean anomaly", M, "g."
-        #~ print "Earth equation of center", C, "g."
-        #~ print "Sun ecliptic coordinates", ELong, "g.", ELat, "g."
-        #~ print "Sun right ascension", RA, "g."
-        #~ print "Sun declination", Decl, "g."
-        #~ print "Sidereal time", ST, "h."
-        #~ print
-        #~ print "Azimuth", azimuth, "g."
-        #~ print "Altitude", altitude, "g."
-        return [azimuth - (math.pi/2), elevation]
+    # mathematical helpers
+    def sind(self, deg):
+        return math.sin(math.radians(deg))
     
-    @staticmethod
-    def Greg2J(Day, Month, Year, Hour, Minute, Second):
-        '''Converts from Gregorian dates to Julian dates
-        '''
-        time_dec = sun_calculator.B60toB10(Hour, Minute, Second) / 24.0
-        day_dec = Day + time_dec
-        if Month < 3:
-            Month += 12
-            Year -= 1
-        c = 2 - math.floor(Year / 100) + math.floor(Year / 400)
-        JD = math.floor(1461 * (Year + 4716) / 4) + math.floor(153 * (Month + 1) / 5) + day_dec + c - 1524.5
+    def cosd(self, deg):
+        return math.cos(math.radians(deg))
+    
+    def tand(self, deg):
+        return math.tan(math.radians(deg))
+    
+    def asind(self, deg):
+        return math.degrees(math.asin(deg))
+    
+    def atand(self, deg):
+        return math.degrees(math.atan(deg))
+    
+    
+    def geo_sun_astronomicJulianDate(self, Year, Month, Day, LocalTime, Timezone):
+        """
+        See quoted source in class header for explanation
+        """
+        
+        if Month > 2.0:
+            Y = Year
+            M = Month
+        else:
+            Y = Year - 1.0
+            M = Month + 12.0
+            
+        UT = LocalTime - Timezone
+        hour = UT / 24.0
+        A = int(Y/100.0)
+        B = 2.0 - A+int(A/4.0)
+        
+        JD = math.floor(365.25*(Y+4716.0)) + math.floor(30.6001*(M+1.0)) + Day + hour + B - 1524.4
+        
         return JD
     
-    @staticmethod
-    def B60toB10(pris, mins, secs):
-        '''Converts from base 60 to base 10
-        '''
-        return pris + mins / 60.0 + secs / 3600.0
-    
-    @staticmethod
-    def AngleNorm(angle):
-        '''Normalizes an angle between 0 and 360 degrees
-        '''
-        return angle #% 360.0
-    
-    @staticmethod
-    def rad(x):
-        return math.radians(x)
-    @staticmethod
-    def deg(x):
-        return math.degrees(x)
-    @staticmethod
-    def sqrt(x):
-        return math.sqrt(x)
-    @staticmethod
-    def cos(x):
-        return math.cos(sun_calculator.rad(x))
-    @staticmethod
-    def sin(x):
-        return math.sin(sun_calculator.rad(x))
-    @staticmethod
-    def arcsin(x):
-        return sun_calculator.deg(math.asin(x))
-    @staticmethod
-    def tan(x):
-        return math.tan(sun_calculator.rad(x))
-    @staticmethod
-    def atan(x):
-        return sun_calculator.deg(math.atan(x))
-    @staticmethod
-    def atan2(x, y):
-        return sun_calculator.deg(math.atan2(x, y))
+    def geoSunData(self, Latitude, Longitude, Year, Month, Day, LocalTime, Timezone):
+        """
+        See quoted source in class header for explanation
+        """
+        
+        JD = self.geo_sun_astronomicJulianDate(Year, Month, Day, LocalTime, Timezone)
+        
+        phi = Latitude
+        llambda = Longitude
+                
+        n = JD - 2451545.0
+        LDeg = (280.460 + 0.9856474*n) - (math.floor((280.460 + 0.9856474*n)/360.0) * 360.0)
+        gDeg = (357.528 + 0.9856003*n) - (math.floor((357.528 + 0.9856003*n)/360.0) * 360.0)
+        LambdaDeg = LDeg + 1.915 * self.sind(gDeg) + 0.02 * self.sind(2.0*gDeg)
+        
+        epsilonDeg = 23.439 - 0.0000004*n
+        
+        alphaDeg = self.atand( (self.cosd(epsilonDeg) * self.sind(LambdaDeg)) / self.cosd(LambdaDeg) )
+        if self.cosd(LambdaDeg) < 0.0:
+            alphaDeg += 180.0
+            
+        deltaDeg = self.asind( self.sind(epsilonDeg) * self.sind(LambdaDeg) )
+        
+        JDNull = self.geo_sun_astronomicJulianDate(Year, Month, Day, 0.0, 0.0)
+        
+        TNull = (JDNull - 2451545.0) / 36525.0
+        T = LocalTime - Timezone
+        
+        thetaGh = 6.697376 + 2400.05134*TNull + 1.002738*T
+        thetaGh -= math.floor(thetaGh/24.0) * 24.0
+        
+        thetaG = thetaGh * 15.0
+        theta = thetaG + llambda
+        
+        tau = theta - alphaDeg
+        
+        a = self.atand( self.sind(tau) / ( self.cosd(tau)*self.sind(phi) - self.tand(deltaDeg)*self.cosd(phi)) )
+        if self.cosd(tau)*self.sind(phi) - self.tand(deltaDeg)*self.cosd(phi) < 0.0:
+            a += 180.0
+        
+        h = self.asind( self.cosd(deltaDeg)*self.cosd(tau)*self.cosd(phi) + self.sind(deltaDeg)*self.sind(phi) )
+        
+        R = 1.02 / (self.tand (h+(10.3/(h+5.11))))
+        hR = h + R/60.0
+        
+        azimuth = a
+        elevation = hR
+        
+        return azimuth, elevation
 
 def luxAccelerator(scn, gui=None):
     str = ""
