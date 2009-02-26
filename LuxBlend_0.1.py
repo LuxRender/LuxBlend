@@ -2742,7 +2742,10 @@ def luxEnvironment(scn, gui=None):
                     str += luxFloat("gain", luxProp(scn, "env.sunsky.gain", 1.0), 0.0, 1000.0, "gain", "Sky gain", gui)
                     str += luxFloat("turbidity", luxProp(scn, "env.sunsky.turbidity", 2.2), 2.0, 50.0, "turbidity", "Sky turbidity", gui)
                     
+                    showGeo = luxProp(sun, 'sc.show', 'false')
                     if gui:
+                        luxBool("sc.show", showGeo, "Geographic Sun", "Set sun position by world location, date and time", gui, 2.0)
+                    if gui and showGeo.get() == 'true':
                         gui.newline("Geographic:")
                         sc = sun_calculator()
                         
