@@ -415,7 +415,9 @@ class luxExport:
                 ms = getMaterials(obj)
                 if ms <> mats:
                     allow_instancing = False
-            if allow_instancing and (len(objs) >= instancing_threshold):
+                if obj.modifiers.__len__() > 0:
+		    allow_instancing = False
+            if allow_instancing and (len(objs) > instancing_threshold):
                 del self.meshes[mesh_name]
                 mesh.getFromObject(objs[0], 0, 1)
                 print "blender-mesh: %s (%d vertices, %d faces)"%(mesh_name, len(mesh.verts), len(mesh.faces))
