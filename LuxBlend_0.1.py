@@ -5128,7 +5128,7 @@ def format_dictStr(dictStr):
     result = ''
     pos = 0
     indentStr = '  '
-    newLine = '\r\n'
+    newLine = '\n'
     
     for char in dictStr:
         if char in ['}', ']']:
