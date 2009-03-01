@@ -2722,7 +2722,7 @@ def luxEnvironment(scn, gui=None):
                         str += "\n   \"color L\" [%g %g %g]" %(worldcolor[0], worldcolor[1], worldcolor[2])
                     except: pass
 
-                str += luxFloat("gain", luxProp(scn, "env.infinite.gain", 1000.0), 0.0, 1000.0, "gain", "", gui, 1.0)
+                str += luxFloat("gain", luxProp(scn, "env.infinite.gain", 1.0), 0.0, 1000.0, "gain", "", gui, 1.0)
 
                 infinitesun = luxProp(scn, "env.infinite.hassun", "false")
                 luxBool("infinitesun", infinitesun, "Sun Component", "Add Sunlight Component", gui, 2.0)
@@ -2751,26 +2751,32 @@ def luxEnvironment(scn, gui=None):
                         gui.newline("Geographic:")
                         sc = sun_calculator()
                         
-                        luxInt("sc.day", luxProp(sun, "sc.day", 1), 1, 31, "day", "Local date: day", gui, 0.66)
-                        luxInt("sc.month", luxProp(sun, "sc.month", 1), 1, 12, "month", "Local date: month", gui, 0.66)
-                        luxInt("sc.year", luxProp(sun, "sc.year", 2009), 1800, 2100, "year", "Local date: year", gui, 0.66)
+                        ct = time.localtime()
                         
-                        luxInt("sc.hour", luxProp(sun, "sc.hour", 0), 0, 23, "hour", "Local time: hour", gui, 0.86)
-                        luxInt("sc.minute", luxProp(sun, "sc.minute", 0), 0, 59, "minute", "Local time: minute", gui, 0.86)
-                        luxBool("sc.dst", luxProp(sun, "sc.dst", 'false'), "DST", "DST", gui, 0.28)
+                        luxInt("sc.day", luxProp(sun, "sc.day", ct[2]), 1, 31, "day", "Local date: day", gui, 0.66)
+                        luxInt("sc.month", luxProp(sun, "sc.month", ct[1]), 1, 12, "month", "Local date: month", gui, 0.66)
+                        luxInt("sc.year", luxProp(sun, "sc.year", ct[0]), 1800, 2100, "year", "Local date: year", gui, 0.66)
                         
-                        preset_location  = luxProp(sun, "sc.presetlocation", 'true')
+                        luxInt("sc.hour", luxProp(sun, "sc.hour", ct[3]), 0, 23, "hour", "Local time: hour", gui, 0.86)
+                        luxInt("sc.minute", luxProp(sun, "sc.minute", ct[4]), 0, 59, "minute", "Local time: minute", gui, 0.86)
+                        if ct[8] == 0:
+                            default_dst = 'false'
+                        else:
+                            default_dst = 'true'
+                        luxBool("sc.dst", luxProp(sun, "sc.dst", default_dst), "DST", "DST", gui, 0.28)
+                        
+                        preset_location  = luxProp(sun, "sc.presetlocation", 'false')
                         luxBool("sc.presetlocation", preset_location, "Preset Location", "Choose a preset location", gui, 0.3)
                         
                         if preset_location.get() == 'true':
-                            luxOption("sc.location", luxProp(sun, "sc.location", 0), sc.get_locations(), "Location", "Preset Location", gui, 1.7)
+                            luxOption("sc.location", luxProp(sun, "sc.location", ""), sc.get_locations(), "Location", "Preset Location", gui, 1.7)
                         else:
                             luxFloat("sc.lat", luxProp(sun, "sc.lat", 0.0), -90.0, 90.0, "latitude", "Location: latitude", gui, 0.56)
                             luxFloat("sc.long", luxProp(sun, "sc.long", 0.0), -180.0, 180.0, "longitude", "Location: longitude", gui, 0.56)
                             luxInt("sc.tz", luxProp(sun, "sc.tz", 0), -12, 12, "timezone", "Local time: timezone offset from GMT", gui, 0.56)
                         
                         r = gui.getRect(2,1)
-                        Draw.Button("Calculate", 0, r[0], r[1], r[2], r[3], "Calculate sun's position", lambda e,v: sc.compute(sun))   
+                        Draw.Button("Calculate", 0, r[0], r[1], r[2], r[3], "Calculate sun's position", lambda e,v: sc.compute(sun))
                     
                 else:
                     if gui:
@@ -2791,7 +2797,7 @@ class sun_calculator:
     #Author: Nils-Peter Fischer (Nils-Peter.Fischer@web.de)
     
     preset = 'true'
-    location = 0
+    location = ""
     lat = 0
     long = 0
     
@@ -2894,7 +2900,7 @@ class sun_calculator:
         self.preset   = luxProp(sun, "sc.presetlocation", 'true').get()
         
         if self.preset == 'true':
-            self.location = luxProp(sun, "sc.location", 0).get()
+            self.location = luxProp(sun, "sc.location", "").get()
             self.get_locations()
             location_id = self.city_names.index(self.location)
             self.lat  = self.city_lats[location_id]
