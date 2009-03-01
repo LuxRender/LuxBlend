@@ -4460,6 +4460,9 @@ def luxMaterial(mat, gui=None):
         # export emission options (no gui)
         useemission = luxProp(mat, "emission", "false")
         if useemission.get() == "true":
+            lightgroup = luxProp(mat, "light.lightgroup", "default")
+            link += "\n\tLightGroup \"%s\"\n"%lightgroup.get()
+            
             (estr, elink) = luxLight("", "", mat, None, 0)
             str += estr
             link += "\n\tAreaLightSource \"area\" "+elink 
