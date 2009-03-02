@@ -2693,9 +2693,11 @@ def luxEnvironment(scn, gui=None):
     str = ""
     if scn:
         envtype = luxProp(scn, "env.type", "infinite")
-        lsstr = luxIdentifier("LightSource", envtype, ["none", "infinite", "sunsky"], "ENVIRONMENT", "select environment light type", gui, icon_c_environment)
+        lsstr  = '\nLightGroup "environment"'
+        lsstr += luxIdentifier("LightSource", envtype, ["none", "infinite", "sunsky"], "ENVIRONMENT", "select environment light type", gui, icon_c_environment)
         if gui: gui.newline()
         str = ""
+        
         if envtype.get() != "none":
             
             if envtype.get() in ["infinite", "sunsky"]:
@@ -2727,11 +2729,14 @@ def luxEnvironment(scn, gui=None):
                 infinitesun = luxProp(scn, "env.infinite.hassun", "false")
                 luxBool("infinitesun", infinitesun, "Sun Component", "Add Sunlight Component", gui, 2.0)
                 if(infinitesun.get() == "true"):
-                    str += "\n\tLightSource \"sun\" "
+                    str += '\nLightGroup "sun_component"'
+                    str += "\nLightSource \"sun\" "
                     infinitehassun = 1
 
 
             if envtype.get() == "sunsky" or infinitehassun == 1:
+                
+                
                 sun = None
                 for obj in scn.objects:
                     if (obj.getType() == "Lamp") and ((obj.Layers & scn.Layers) > 0):
@@ -2751,19 +2756,15 @@ def luxEnvironment(scn, gui=None):
                         gui.newline("Geographic:")
                         sc = sun_calculator()
                         
-                        ct = time.localtime()
+                        luxInt("sc.day", luxProp(sun, "sc.day", 1), 1, 31, "day", "Local date: day", gui, 0.66)
+                        luxInt("sc.month", luxProp(sun, "sc.month", 1), 1, 12, "month", "Local date: month", gui, 0.66)
+                        luxInt("sc.year", luxProp(sun, "sc.year", 2009), 1800, 2100, "year", "Local date: year", gui, 0.66)
                         
-                        luxInt("sc.day", luxProp(sun, "sc.day", ct[2]), 1, 31, "day", "Local date: day", gui, 0.66)
-                        luxInt("sc.month", luxProp(sun, "sc.month", ct[1]), 1, 12, "month", "Local date: month", gui, 0.66)
-                        luxInt("sc.year", luxProp(sun, "sc.year", ct[0]), 1800, 2100, "year", "Local date: year", gui, 0.66)
-                        
-                        luxInt("sc.hour", luxProp(sun, "sc.hour", ct[3]), 0, 23, "hour", "Local time: hour", gui, 0.86)
-                        luxInt("sc.minute", luxProp(sun, "sc.minute", ct[4]), 0, 59, "minute", "Local time: minute", gui, 0.86)
-                        if ct[8] == 0:
-                            default_dst = 'false'
-                        else:
-                            default_dst = 'true'
-                        luxBool("sc.dst", luxProp(sun, "sc.dst", default_dst), "DST", "DST", gui, 0.28)
+                        luxInt("sc.hour", luxProp(sun, "sc.hour", 0), 0, 23, "hour", "Local time: hour", gui, 0.72)
+                        luxInt("sc.minute", luxProp(sun, "sc.minute", 0), 0, 59, "minute", "Local time: minute", gui, 0.72)
+                        luxBool("sc.dst", luxProp(sun, "sc.dst", 'false'), "DST", "DST", gui, 0.28)
+                        r = gui.getRect(0.28,1)
+                        Draw.Button("NOW", 0, r[0], r[1], r[2], r[3], "Set to current time", lambda e,v: sc.now(sun))
                         
                         preset_location  = luxProp(sun, "sc.presetlocation", 'false')
                         luxBool("sc.presetlocation", preset_location, "Preset Location", "Choose a preset location", gui, 0.3)
@@ -2811,6 +2812,24 @@ class sun_calculator:
     year = 0
     
     rot = []
+    
+    def now(self, sun):
+        ct = time.localtime()
+        
+        if ct[8] == 0:
+            dst = 'false'
+        else:
+            dst = 'true'
+        
+        luxProp(sun, 'sc.day', 0).set(ct[2])
+        luxProp(sun, 'sc.month', 0).set(ct[1])
+        luxProp(sun, 'sc.year', 0).set(ct[0])
+        luxProp(sun, 'sc.hour', 0).set(ct[3])
+        luxProp(sun, 'sc.minute', 0).set(ct[4])
+        luxProp(sun, 'sc.dst', 0).set(dst)
+        
+        self.compute(sun)
+        
     
     def clear_lists(self):
 	    self.city_names = []
@@ -4809,11 +4828,11 @@ try:
     ConnectLrmdb = True
     def downloadLRMDB(mat, id):
         if id.isalnum():
+            DrawProgressBar(0.0,'Getting Material #'+id)
             try:
                 HOST = 'www.luxrender.net'
                 GET = '/lrmdb/en/material/download/'+id
                 PORT = 80
-                DrawProgressBar(0.0,'Getting Material #'+id)
                 sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
                 sock.connect((HOST, PORT))
                 sock.send("GET %s HTTP/1.0\r\nHost: %s\r\n\r\n" % (GET, HOST))
@@ -4832,8 +4851,8 @@ try:
                 print "ERROR: downloaded data is not a material or texture"
             except:
                 print "ERROR: download failed"
-            finally:
-                DrawProgressBar(1.0,'')
+                
+            DrawProgressBar(1.0,'')
         else:
             print "ERROR: material id is not valid"
         return None
