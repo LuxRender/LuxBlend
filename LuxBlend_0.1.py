@@ -2693,14 +2693,16 @@ def luxEnvironment(scn, gui=None):
     str = ""
     if scn:
         envtype = luxProp(scn, "env.type", "infinite")
-        lsstr  = '\nLightGroup "environment"'
-        lsstr += luxIdentifier("LightSource", envtype, ["none", "infinite", "sunsky"], "ENVIRONMENT", "select environment light type", gui, icon_c_environment)
+        lsstr = luxIdentifier("LightSource", envtype, ["none", "infinite", "sunsky"], "ENVIRONMENT", "select environment light type", gui, icon_c_environment)
         if gui: gui.newline()
         str = ""
         
         if envtype.get() != "none":
             
             if envtype.get() in ["infinite", "sunsky"]:
+                env_lg = luxProp(scn, "env.lightgroup", "default")
+                luxString("env.lightgroup", env_lg, "lightgroup", "Environment light group", gui)
+                lsstr = '\nLightGroup "' + env_lg.get() + '"' + lsstr
                 rot = luxProp(scn, "env.rotation", 0.0)
                 luxFloat("rotation", rot, 0.0, 360.0, "rotation", "environment rotation", gui)
                 if rot.get() != 0:
@@ -2711,9 +2713,9 @@ def luxEnvironment(scn, gui=None):
             if envtype.get() == "infinite":
                 mapping = luxProp(scn, "env.infinite.mapping", "latlong")
                 mappings = ["latlong","angular","vcross"]
-                mapstr = luxOption("mapping", mapping, mappings, "mapping", "Select mapping type", gui, 1.0)
+                mapstr = luxOption("mapping", mapping, mappings, "mapping", "Select mapping type", gui, 0.5)
                 map = luxProp(scn, "env.infinite.mapname", "")
-                mapstr += luxFile("mapname", map, "map-file", "filename of the environment map", gui, 2.0)
+                mapstr += luxFile("mapname", map, "map-file", "filename of the environment map", gui, 1.5)
                 mapstr += luxFloat("gamma", luxProp(scn, "env.infinite.gamma", 1.0), 0.0, 6.0, "gamma", "", gui, 1.0)
                 
                 if map.get() != "":
@@ -2729,7 +2731,9 @@ def luxEnvironment(scn, gui=None):
                 infinitesun = luxProp(scn, "env.infinite.hassun", "false")
                 luxBool("infinitesun", infinitesun, "Sun Component", "Add Sunlight Component", gui, 2.0)
                 if(infinitesun.get() == "true"):
-                    str += '\nLightGroup "sun_component"'
+                    sun_lg = luxProp(scn, "env.sun_lightgroup", "default")
+                    luxString("env.lightgroup", sun_lg, "lightgroup", "Sun component light group", gui)
+                    str += '\nLightGroup "' + sun_lg.get() + '"'
                     str += "\nLightSource \"sun\" "
                     infinitehassun = 1
 
@@ -2743,10 +2747,11 @@ def luxEnvironment(scn, gui=None):
                         if obj.getData(mesh=1).getType() == 1: # sun object # data
                             sun = obj
                 if sun:
-                    str += luxFloat("relsize", luxProp(scn, "env.sunsky.relsize", 1.0), 0.0, 100.0, "rel.size", "relative sun size", gui)
+                    str += luxFloat("gain", luxProp(scn, "env.sunsky.gain", 1.0), 0.0, 1000.0, "gain", "Sky gain", gui)
+                    
                     invmatrix = Mathutils.Matrix(sun.getInverseMatrix())
                     str += "\n   \"vector sundir\" [%f %f %f]\n" %(invmatrix[0][2], invmatrix[1][2], invmatrix[2][2])
-                    str += luxFloat("gain", luxProp(scn, "env.sunsky.gain", 1.0), 0.0, 1000.0, "gain", "Sky gain", gui)
+                    str += luxFloat("relsize", luxProp(scn, "env.sunsky.relsize", 1.0), 0.0, 100.0, "rel.size", "relative sun size", gui)
                     str += luxFloat("turbidity", luxProp(scn, "env.sunsky.turbidity", 2.2), 2.0, 50.0, "turbidity", "Sky turbidity", gui)
                     
                     showGeo = luxProp(sun, 'sc.show', 'false')
@@ -2757,7 +2762,7 @@ def luxEnvironment(scn, gui=None):
                         sc = sun_calculator()
                         
                         luxInt("sc.day", luxProp(sun, "sc.day", 1), 1, 31, "day", "Local date: day", gui, 0.66)
-                        luxInt("sc.month", luxProp(sun, "sc.month", 1), 1, 12, "month", "Local date: month", gui, 0.66)
+                        luxInt("sc.month", luxProp(sun, "sc.month", 1), 1, 12, "month", "Local date: month", gui, 0.67)
                         luxInt("sc.year", luxProp(sun, "sc.year", 2009), 1800, 2100, "year", "Local date: year", gui, 0.66)
                         
                         luxInt("sc.hour", luxProp(sun, "sc.hour", 0), 0, 23, "hour", "Local time: hour", gui, 0.72)
