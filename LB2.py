@@ -1083,7 +1083,6 @@ class Lux:
                 if ltype in [Blender_API.Lamp.Types["Lamp"], Blender_API.Lamp.Types["Spot"], Blender_API.Lamp.Types["Area"]]:
                     Lux.Log("Light: %i/%i: %s" % (i+1, lmax, obj.getName()))
                     if ltype == Blender_API.Lamp.Types["Area"]:
-                        # DH - this had gui = None
                         (str, link) = Lux.Light.Area("", "", obj, 0)
                         file.write(str)
                     if ltype == Blender_API.Lamp.Types["Area"]: file.write("AttributeBegin # %s\n"%obj.getName())
@@ -1098,11 +1097,9 @@ class Lux:
                     if ltype == Blender_API.Lamp.Types["Lamp"]:
                         lightgroup = Lux.Property(obj, "light.lightgroup", "default")
                         file.write('LightGroup "%s"\n'%lightgroup.get())
-                        # DH - this had gui = None
                         (str, link) = Lux.Light.Point("", "", obj, 0)
                         file.write(str+'LightSource "point"'+link+"\n")
                     if ltype == Blender_API.Lamp.Types["Spot"]:
-                        # DH - this had gui = None
                         (str, link) = Lux.Light.Spot("", "", obj, 0)
                         file.write(str)
                         proj = Lux.Property(obj, "light.usetexproj", "false")
@@ -4466,7 +4463,7 @@ class Lux:
                 if useemission.get() == "true":
                     lightgroup = Lux.Property(mat, "light.lightgroup", "default")
                     link += '\n\tLightGroup "' + lightgroup.get() + '"\n'
-                    # DH - this had gui = None
+                    # DH - this had gui = None - worked around with Lux.LB_UI.Active
                     pre_active = Lux.LB_UI.Active
                     Lux.LB_UI.Active=False
                     (estr, elink) = Lux.Light.Area("", "", mat, 0)
@@ -5063,7 +5060,6 @@ class Lux:
             
             if texName:
                 #Lux.Log("texture :"+texName+" : "+name)
-                # DH - this had gui = None
                 (str, link) = Lux.Textures.Texture(texName, name, "color", "1.0 1.0 1.0", None, None, "", "", mat, 0, level)
                 link = link.replace(" "+texName+'"', ' Kd"') # swap texture name to "Kd"
                 p.stdin.write(str+"\n")
@@ -5213,28 +5209,28 @@ class Lux:
         
         @staticmethod
         def format_dictStr(dictStr):
-		    result = ''
-		    pos = 0
-		    indentStr = '  '
-		    newLine = '\n'
-		    
-		    for char in dictStr:
-		        if char in ['}', ']']:
-		            result += newLine
-		            pos -= 1
-		            for j in range(0,pos):
-		                result += indentStr
-		                
-		        result += char
-		        
-		        if char in [',', '{', '[']:
-		            result += newLine
-		            if char in ['{', '[']:
-		                pos += 1
-		            for j in range(0,pos):
-		                result += indentStr
-		            
-		    return result
+            result = ''
+            pos = 0
+            indentStr = '  '
+            newLine = '\n'
+            
+            for char in dictStr:
+                if char in ['}', ']']:
+                    result += newLine
+                    pos -= 1
+                    for j in range(0,pos):
+                        result += indentStr
+                        
+                result += char
+                
+                if char in [',', '{', '[']:
+                    result += newLine
+                    if char in ['{', '[']:
+                        pos += 1
+                    for j in range(0,pos):
+                        result += indentStr
+                    
+            return result
         
         
         # convert a Blender material to lux material
