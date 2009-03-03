@@ -41,6 +41,7 @@ try:
     import sys as osys # used: osys.platform, osys.exit, osys.argv
     import types       # used all over the place
     import subprocess  # used in Launch and Preview
+    import time        # used in sun_calculator
 except ImportError:
     print "Unable to import required libraries - you may need to install Python"
     exit()
@@ -969,7 +970,9 @@ class Lux:
                     ms = Lux.Materials.getMaterials(obj)
                     if ms <> mats:
                         allow_instancing = False
-                if allow_instancing and (len(objs) >= instancing_threshold):
+                if len(obj.modifiers) > 0:          # BUG - Which modifiers !?!
+                    allow_instancing = False
+                if allow_instancing and (len(objs) > instancing_threshold):
                     del self.meshes[mesh_name]
                     mesh.getFromObject(objs[0], 0, 1)
                     #Lux.Log("blender-mesh: %s (%d vertices, %d faces)"%(mesh_name, len(mesh.verts), len(mesh.faces)))
@@ -2576,14 +2579,14 @@ class Lux:
                     if Lux.LB_UI.Active:
                         Lux.TypedControl.Float().create("lens", fl, 1.0, 250.0, "focallength", "camera focal length")
                     
-                    
                 if camtype.get() == "orthographic" :
                     str += Lux.TypedControl.Float().create("scale", Lux.Attribute(cam, "scale"), 0.01, 1000.0, "scale", "orthographic camera scale")
                     scale = cam.scale / 2
+                    
                 if camtype.get() == "realistic":
                     if Lux.LB_UI.Active: Lux.LB_UI.newline("  View:")
                     fov = Lux.Attribute(cam, "angle")
-                    Lux.TypedControl.Float().create("fov", fov, 8.0, 170.0, "fov", "camera field-of-view angle")
+                    str += Lux.TypedControl.Float().create("fov", fov, 8.0, 170.0, "fov", "camera field-of-view angle")
                     if Lux.LB_UI.Active:  Lux.TypedControl.Float().create("lens", Lux.Attribute(cam, "lens"), 1.0, 250.0, "focallength", "camera focal length")
                     
                     if Lux.LB_UI.Active: Lux.LB_UI.newline()
@@ -3266,6 +3269,9 @@ class Lux:
                 str = ""
                 if envtype.get() != "none":
                     if envtype.get() in ["infinite", "sunsky"]:
+                        env_lg = Lux.Property(Lux.scene, "env.lightgroup", "default")
+                        Lux.TypedControl.String().create("env.lightgroup", env_lg, "lightgroup", "Environment light group")
+                        lsstre = '\nLightGroup "' + env_lg.get() + '"' + lsstr
                         rot = Lux.Property(Lux.scene, "env.rotation", 0.0)
                         Lux.TypedControl.Float().create("rotation", rot, 0.0, 360.0, "rotation", "environment rotation")
                         if rot.get() != 0:
@@ -3276,9 +3282,9 @@ class Lux:
                     if envtype.get() == "infinite":
                         mapping = Lux.Property(Lux.scene, "env.infinite.mapping", "latlong")
                         mappings = ["latlong","angular","vcross"]
-                        mapstr = Lux.TypedControl.Option().create("mapping", mapping, mappings, "mapping", "Select mapping type", 1.0)
+                        mapstr = Lux.TypedControl.Option().create("mapping", mapping, mappings, "mapping", "Select mapping type", 0.5)
                         map = Lux.Property(Lux.scene, "env.infinite.mapname", "")
-                        mapstr += Lux.TypedControl.File().create("mapname", map, "map-file", "filename of the environment map", 2.0)
+                        mapstr += Lux.TypedControl.File().create("mapname", map, "map-file", "filename of the environment map", 1.5)
                         mapstr += Lux.TypedControl.Float().create("gamma", Lux.Property(Lux.scene, "env.infinite.gamma", 1.0), 0.0, 6.0, "gamma", "", 1.0)
                         
                         if map.get() != "":
@@ -3289,11 +3295,14 @@ class Lux:
                                 str += '\n   "color L" [%g %g %g]' %(worldcolor[0], worldcolor[1], worldcolor[2])
                             except: pass
         
-                        str += Lux.TypedControl.Float().create("gain", Lux.Property(Lux.scene, "env.infinite.gain", 1000.0), 0.0, 1000.0, "gain", "", 1.0)
+                        str += Lux.TypedControl.Float().create("gain", Lux.Property(Lux.scene, "env.infinite.gain", 1.0), 0.0, 1000.0, "gain", "", 1.0)
         
                         infinitesun = Lux.Property(Lux.scene, "env.infinite.hassun", "false")
                         Lux.TypedControl.Bool().create("infinitesun", infinitesun, "Sun Component", "Add Sunlight Component", 2.0)
                         if(infinitesun.get() == "true"):
+                            sun_lg = Lux.Property(Lux.scene, "env.sun_lightgroup", "default")
+                            Lux.TypedControl.String().create("env.lightgroup", sun_lg, "lightgroup", "Sun component light group")
+                            str += '\nLightGroup "' + sun_lg.get() + '"'
                             str += '\n\tLightSource "sun" '
                             infinitehassun = 1
         
@@ -3305,11 +3314,42 @@ class Lux:
                                 if obj.getData(mesh=1).getType() == 1: # sun object # data
                                     sun = obj
                         if sun:
-                            str += Lux.TypedControl.Float().create("relsize", Lux.Property(Lux.scene, "env.sunsky.relisze", 1.0), 0.0, 100.0, "rel.size", "relative sun size")
+                            str += Lux.TypedControl.Float().create("gain", Lux.Property(Lux.scene, "env.sunsky.gain", 1.0), 0.0, 1000.0, "gain", "Sky gain")
                             invmatrix = Blender_API.Mathutils.Matrix(sun.getInverseMatrix())
                             str += '\n   "vector sundir" [%f %f %f]\n' %(invmatrix[0][2], invmatrix[1][2], invmatrix[2][2])
-                            str += Lux.TypedControl.Float().create("gain", Lux.Property(Lux.scene, "env.sunsky.gain", 1.0), 0.0, 1000.0, "gain", "Sky gain")
+                            str += Lux.TypedControl.Float().create("relsize", Lux.Property(Lux.scene, "env.sunsky.relsize", 1.0), 0.0, 100.0, "rel.size", "relative sun size")
                             str += Lux.TypedControl.Float().create("turbidity", Lux.Property(Lux.scene, "env.sunsky.turbidity", 2.2), 2.0, 50.0, "turbidity", "Sky turbidity")
+                            
+                            showGeo = Lux.Property(sun, 'sc.show', 'false')
+                            if Lux.LB_UI.Active:
+                                Lux.TypedControl.Bool().create("sc.show", showGeo, "Geographic Sun", "Set sun position by world location, date and time", 2.0)
+                            if Lux.LB_UI.Active and showGeo.get() == 'true':
+                                Lux.LB_UI.newline("Geographic:")
+                                sc = Lux.sun_calculator()
+        
+                                Lux.TypedControl.Int().create("sc.day", Lux.Property(sun, "sc.day", 1), 1, 31, "day", "Local date: day", 0.66)
+                                Lux.TypedControl.Int().create("sc.month", Lux.Property(sun, "sc.month", 1), 1, 12, "month", "Local date: month", 0.67)
+                                Lux.TypedControl.Int().create("sc.year", Lux.Property(sun, "sc.year", 2009), 1800, 2100, "year", "Local date: year", 0.66)
+        
+                                Lux.TypedControl.Int().create("sc.hour", Lux.Property(sun, "sc.hour", 0), 0, 23, "hour", "Local time: hour", 0.72)
+                                Lux.TypedControl.Int().create("sc.minute", Lux.Property(sun, "sc.minute", 0), 0, 59, "minute", "Local time: minute", 0.72)
+                                Lux.TypedControl.Bool().create("sc.dst", Lux.Property(sun, "sc.dst", 'false'), "DST", "DST", 0.28)
+                                r = Lux.LB_UI.getRect(0.28,1)
+                                Blender_API.Draw.Button("NOW", 0, r[0], r[1], r[2], r[3], "Set to current time", lambda e,v: sc.now(sun))
+        
+                                preset_location  = Lux.Property(sun, "sc.presetlocation", 'false')
+                                Lux.TypedControl.Bool().create("sc.presetlocation", preset_location, "Preset Location", "Choose a preset location", 0.3)
+        
+                                if preset_location.get() == 'true':
+                                    Lux.TypedControl.Option().create("sc.location", Lux.Property(sun, "sc.location", ""), sc.get_locations(), "Location", "Preset Location", 1.7)
+                                else:
+                                    Lux.TypedControl.Float().create("sc.lat", Lux.Property(sun, "sc.lat", 0.0), -90.0, 90.0, "latitude", "Location: latitude", 0.56)
+                                    Lux.TypedControl.Float().create("sc.long", Lux.Property(sun, "sc.long", 0.0), -180.0, 180.0, "longitude", "Location: longitude", 0.56)
+                                    Lux.TypedControl.Int().create("sc.tz", Lux.Property(sun, "sc.tz", 0), -12, 12, "timezone", "Local time: timezone offset from GMT", 0.56)
+        
+                                r = Lux.LB_UI.getRect(2,1)
+                                Blender_API.Draw.Button("Calculate", 0, r[0], r[1], r[2], r[3], "Calculate sun's position", lambda e,v: sc.compute(sun))
+                        
                         else:
                             if Lux.LB_UI.Active:
                                 Lux.LB_UI.newline()
@@ -3401,6 +3441,265 @@ class Lux:
                 if Lux.LB_UI.Active: Lux.LB_UI.newline("INSTANCING:", 10)
                 Lux.TypedControl.Int().create("instancing_threshold", Lux.Property(Lux.scene, "instancing_threshold", 2), 0, 1000000, "object instanding threshold", "Threshold to created instanced objects", 2.0)
     
+    class sun_calculator:
+        #Based on SunLight v1.0 by Miguel Kabantsov (miguelkab@gmail.com)
+        #Replaces the faulty sun position calculation algorythm with a precise calculation (Source for algorythm: http://de.wikipedia.org/wiki/Sonnenstand),
+        #Co-Ordinates: http://www.bcca.org/misc/qiblih/latlong.html
+        #Author: Nils-Peter Fischer (Nils-Peter.Fischer@web.de)
+        
+        preset = 'true'
+        location = ""
+        lat = 0
+        long = 0
+        
+        hour = 0
+        min = 0
+        tz = 0
+        dst = 'false'
+        
+        day = 0
+        month = 0
+        year = 0
+        
+        rot = []
+        
+        def now(self, sun):
+            ct = time.localtime()
+            
+            if ct[8] == 0:
+                dst = 'false'
+            else:
+                dst = 'true'
+            
+            Lux.Property(sun, 'sc.day', 0).set(ct[2])
+            Lux.Property(sun, 'sc.month', 0).set(ct[1])
+            Lux.Property(sun, 'sc.year', 0).set(ct[0])
+            Lux.Property(sun, 'sc.hour', 0).set(ct[3])
+            Lux.Property(sun, 'sc.minute', 0).set(ct[4])
+            Lux.Property(sun, 'sc.dst', 0).set(dst)
+            
+            self.compute(sun)
+            
+        
+        def clear_lists(self):
+            self.city_names = []
+            self.city_lats = []
+            self.city_longs = []
+            self.city_tzs = []
+        
+        def get_locations(self):
+            
+            master_list = [
+                ("WORLD CITIES",0,0,0),
+                ("Beijing, China",39.9167, -116.4167,-8),
+                ("Berlin, Germany",52.33, -13.30, -1),
+                ("Bombay, India", 18.9333, -72.8333, -5.5),
+                ("Buenos Aires, Argentina", -34.60,58.45,3),
+                ("Cairo, Egypt", 30.10,-31.3667,-2),
+                ("Cape Town, South Africa",-33.9167,-18.3667,-2),
+                ("Caracas, Venezuela", 10.50,66.9333,4),
+                ("Helsinki, Finland", 60.1667, -24.9667,-2),
+                ("Hong Kong, China", 22.25,-114.1667, -8),
+                ("Jerusalem, Israel", 31.7833, -35.2333, -2),
+                ("London, England", 51.50, 0.1667,0),
+                ("Mexico City, Mexico", 19.4,99.15,6),
+                ("Moscow, Russia", 55.75, -37.5833, -3),
+                ("New Delhi, India",28.6, -77.2, -5.5),
+                ("Ottawa, Canada", 45.41667,75.7,5),
+                ("Paris, France", 48.8667, -2.667, -1),
+                ("Rio de Janeiro, Brazil",-22.90,43.2333,3),
+                ("Riyadh, Saudi Arabia", 24.633, -46.71667, -3),
+                ("Rome, Italy",41.90, -12.4833,-1),
+                ("Sydney, Australia",-33.8667,-151.2167,-10),
+                ("Tokyo, Japan", 35.70, -139.7667, -9), 
+                ("Zurich, Switzerland", 47.3833, -8.5333,-1),
+                ("",0,0,0),
+                ("US CITIES",0,0,0),
+                ("Albuquerque, NM", 35.0833,106.65,7),
+                ("Anchorage, AK", 61.217, 149.90,9),
+                ("Atlanta, GA", 33.733, 84.383, 5),
+                ("Austin, TX", 30.283, 97.733, 6),
+                ("Birmingham, AL", 33.521, 86.8025, 6),
+                ("Bismarck, ND", 46.817, 100.783, 6),
+                ("Boston, MA", 42.35, 71.05, 5),
+                ("Boulder, CO", 40.125, 105.237, 7),
+                ("Chicago, IL", 41.85,87.65,6),
+                ("Dallas, TX", 32.46, 96.47,6),
+                ("Denver, CO", 39.733, 104.983, 7),
+                ("Detroit, MI", 42.333, 83.05, 5),
+                ("Honolulu, HI", 21.30, 157.85, 10),
+                ("Houston, TX", 29.75, 95.35, 6),
+                ("Indianapolis, IN", 39.767, 86.15, 5),
+                ("Jackson, MS", 32.283, 90.183, 6),
+                ("Kansas City, MO", 39.083, 94.567,6),
+                ("Los Angeles, CA",34.05,118.233,8),
+                ("Menomonee Falls, WI",43.11,88.10,6),
+                ("Miami, FL", 25.767, 80.183,5),
+                ("Minneapolis, MN", 44.967, 93.25, 6),
+                ("New Orleans, LA", 29.95, 90.067, 6),
+                ("New York City, NY", 40.7167, 74.0167, 5),
+                ("Oklahoma City, OK", 35.483, 97.533,6),
+                ("Philadelphia, PA", 39.95, 75.15, 5),
+                ("Phoenix, AZ",33.433,112.067,7),
+                ("Pittsburgh, PA",40.433,79.9833,5),
+                ("Portland, ME", 43.666, 70.283, 5),
+                ("Portland, OR", 45.517, 122.65, 8),
+                ("Raleigh, NC", 35.783, 78.65, 5),
+                ("Richmond, VA", 37.5667, 77.450, 5),
+                ("Saint Louis, MO", 38.6167,90.1833,6),
+                ("San Diego, CA", 32.7667, 117.2167, 8),
+                ("San Francisco, CA",37.7667,122.4167,8),
+                ("Seattle, WA",47.60,122.3167,8),
+                ("Washington DC", 38.8833, 77.0333,5),
+                ("",0,0,0),
+            ]
+            
+            self.clear_lists()
+            
+            for name,lat,long,tz in master_list:
+               self.city_names.append(name)
+               self.city_lats.append(lat)
+               self.city_longs.append(long)
+               self.city_tzs.append(tz)
+            
+            return self.city_names
+        
+        def compute(self, sun):
+            
+            self.preset   = Lux.Property(sun, "sc.presetlocation", 'true').get()
+            
+            if self.preset == 'true':
+                self.location = Lux.Property(sun, "sc.location", "").get()
+                self.get_locations()
+                location_id = self.city_names.index(self.location)
+                self.lat  = self.city_lats[location_id]
+                self.long = self.city_longs[location_id]
+                self.tz   = self.city_tzs[location_id]
+                
+            else:
+                self.lat  = Lux.Property(sun, "sc.lat", 0).get()
+                self.long = Lux.Property(sun, "sc.long", 0).get()
+                self.tz   = Lux.Property(sun, "sc.tz", 0).get()
+            
+            self.hour = Lux.Property(sun, "sc.hour", 0).get()
+            self.min  = Lux.Property(sun, "sc.minute", 0).get()
+            self.dst  = Lux.Property(sun, "sc.dst", 'false').get()
+            if self.dst == 'true':
+                self.dst = 1
+            else:
+                self.dst = 0
+            
+            self.day   = Lux.Property(sun, "sc.day", 0).get()
+            self.month = Lux.Property(sun, "sc.month", 0).get()
+            self.year  = Lux.Property(sun, "sc.year", 0).get()
+            
+            
+            az,el = self.geoSunData(
+                self.lat,
+                self.long,
+                self.year,
+                self.month,
+                self.day,
+                self.hour + self.min/60.0,
+                self.tz + self.dst
+            )
+            
+            sun.rot = math.radians(90-el), 0, math.radians(-az)
+            
+            Blender_API.Window.Redraw()
+            
+            
+        # --- THE FOLLOWING METHODS ARE ADAPTED FROM LUXMAYA ---
+        
+        # mathematical helpers
+        def sind(self, deg):
+            return math.sin(math.radians(deg))
+        
+        def cosd(self, deg):
+            return math.cos(math.radians(deg))
+        
+        def tand(self, deg):
+            return math.tan(math.radians(deg))
+        
+        def asind(self, deg):
+            return math.degrees(math.asin(deg))
+        
+        def atand(self, deg):
+            return math.degrees(math.atan(deg))
+        
+        
+        def geo_sun_astronomicJulianDate(self, Year, Month, Day, LocalTime, Timezone):
+            """
+            See quoted source in class header for explanation
+            """
+            
+            if Month > 2.0:
+                Y = Year
+                M = Month
+            else:
+                Y = Year - 1.0
+                M = Month + 12.0
+                
+            UT = LocalTime - Timezone
+            hour = UT / 24.0
+            A = int(Y/100.0)
+            B = 2.0 - A+int(A/4.0)
+            
+            JD = math.floor(365.25*(Y+4716.0)) + math.floor(30.6001*(M+1.0)) + Day + hour + B - 1524.4
+            
+            return JD
+        
+        def geoSunData(self, Latitude, Longitude, Year, Month, Day, LocalTime, Timezone):
+            """
+            See quoted source in class header for explanation
+            """
+            
+            JD = self.geo_sun_astronomicJulianDate(Year, Month, Day, LocalTime, Timezone)
+            
+            phi = Latitude
+            llambda = Longitude
+                    
+            n = JD - 2451545.0
+            LDeg = (280.460 + 0.9856474*n) - (math.floor((280.460 + 0.9856474*n)/360.0) * 360.0)
+            gDeg = (357.528 + 0.9856003*n) - (math.floor((357.528 + 0.9856003*n)/360.0) * 360.0)
+            LambdaDeg = LDeg + 1.915 * self.sind(gDeg) + 0.02 * self.sind(2.0*gDeg)
+            
+            epsilonDeg = 23.439 - 0.0000004*n
+            
+            alphaDeg = self.atand( (self.cosd(epsilonDeg) * self.sind(LambdaDeg)) / self.cosd(LambdaDeg) )
+            if self.cosd(LambdaDeg) < 0.0:
+                alphaDeg += 180.0
+                
+            deltaDeg = self.asind( self.sind(epsilonDeg) * self.sind(LambdaDeg) )
+            
+            JDNull = self.geo_sun_astronomicJulianDate(Year, Month, Day, 0.0, 0.0)
+            
+            TNull = (JDNull - 2451545.0) / 36525.0
+            T = LocalTime - Timezone
+            
+            thetaGh = 6.697376 + 2400.05134*TNull + 1.002738*T
+            thetaGh -= math.floor(thetaGh/24.0) * 24.0
+            
+            thetaG = thetaGh * 15.0
+            theta = thetaG + llambda
+            
+            tau = theta - alphaDeg
+            
+            a = self.atand( self.sind(tau) / ( self.cosd(tau)*self.sind(phi) - self.tand(deltaDeg)*self.cosd(phi)) )
+            if self.cosd(tau)*self.sind(phi) - self.tand(deltaDeg)*self.cosd(phi) < 0.0:
+                a += 180.0
+            
+            h = self.asind( self.cosd(deltaDeg)*self.cosd(tau)*self.cosd(phi) + self.sind(deltaDeg)*self.sind(phi) )
+            
+            R = 1.02 / (self.tand (h+(10.3/(h+5.11))))
+            hR = h + R/60.0
+            
+            azimuth = a
+            elevation = hR
+            
+            return azimuth, elevation
+    
+    
     class Textures:
         # was luxTexture
         @staticmethod
@@ -3427,7 +3726,7 @@ class Lux:
             else:
                 texture = Lux.Property(mat, keyname+".texture", "blackbody")
         
-            textures = ["constant","blackbody","equalenergy", "frequency", "gaussian", "regulardata", "irregulardata", "imagemap","mix","scale","bilerp","uv", "checkerboard","dots","fbm","marble","wrinkled", "windy", "blender_marble", "blender_musgrave", "blender_wood", "blender_clouds", "blender_blend", "blender_distortednoise", "blender_noise", "blender_magic", "blender_stucci", "blender_voronoi", "harlequin"]
+            textures = ["constant","blackbody","equalenergy", "frequency", "gaussian", "regulardata", "irregulardata", "imagemap","mix","scale","bilerp","uv", "checkerboard","brick","dots","fbm","marble","wrinkled", "windy", "blender_marble", "blender_musgrave", "blender_wood", "blender_clouds", "blender_blend", "blender_distortednoise", "blender_noise", "blender_magic", "blender_stucci", "blender_voronoi", "harlequin"]
         
             if Lux.LB_UI.Active:
                 if(overrideicon != ""):
@@ -3589,6 +3888,26 @@ class Lux:
                 str += Lux.TypedControl.Float().create("roughness", Lux.Property(mat, keyname+".roughness", 0.5), 0.0, 1.0, "roughness", "", 2.0, 1)
                 if Lux.LB_UI.Active: Lux.LB_UI.newline("", -2)
                 str += Lux.Mapping.Mapping3D(keyname, mat, level+1)
+                
+
+            if texture.get() == "brick":
+                if Lux.LB_UI.Active: Lux.LB_UI.newline("brick:", -2, level+1, icon_texparam)
+        
+                str += Lux.TypedControl.Float().create("brickwidth", Lux.Property(mat, keyname+".brickwidth", 0.3), 0.0, 10.0, "brickwidth (X)", "", 1.0)
+                str += Lux.TypedControl.Float().create("brickheight", Lux.Property(mat, keyname+".brickheight", 0.1), 0.0, 10.0, "brickheight (Z)", "", 1.0)
+                str += Lux.TypedControl.Float().create("brickdepth", Lux.Property(mat, keyname+".brickdepth", 0.15), 0.0, 10.0, "brickdepth (Y)", "", 1.0)
+        
+                if Lux.LB_UI.Active: Lux.LB_UI.newline("mortar:", -2, level+1, icon_texparam)
+        
+                str += Lux.TypedControl.Float().create("mortarsize", Lux.Property(mat, keyname+".mortarsize", 0.01), 0.0, 1.0, "mortarsize", "", 1.0)
+        
+                (s, l) = c(("", ""), Lux.Textures.Texture("bricktex", keyname, type, default, min, max, "bricktex", "", mat, matlevel, texlevel+1, lightsource))
+                (s, l) = c((s, l),   Lux.Textures.Texture("mortartex", keyname, type, alternativedefault(type, default), min, max, "mortartex", "", mat, matlevel, texlevel+1, lightsource))
+                str = s + str + l
+        
+                str += Lux.Mapping.Mapping3D(keyname, mat, level+1)
+
+
         
             if texture.get() == "blender_marble":
                 if Lux.LB_UI.Active: Lux.LB_UI.newline("noise:", -2, level+1, icon_texparam)
@@ -4145,8 +4464,13 @@ class Lux:
                 # export emission options (no gui)
                 useemission = Lux.Property(mat, "emission", "false")
                 if useemission.get() == "true":
+                    lightgroup = Lux.Property(mat, "light.lightgroup", "default")
+                    link += '\n\tLightGroup "' + lightgroup.get() + '"\n'
                     # DH - this had gui = None
+                    pre_active = Lux.LB_UI.Active
+                    Lux.LB_UI.Active=False
                     (estr, elink) = Lux.Light.Area("", "", mat, 0)
+                    Lux.LB_UI.Active=pre_active
                     str += estr
                     link += '\n\tAreaLightSource "area" '+elink 
                     
@@ -4769,7 +5093,7 @@ class Lux:
                 p.stdin.write('"integer dimension" [2] "string aamode" ["supersample"] "color tex1" [0.9 0.9 0.9] "color tex2" [0.0 0.0 0.0]')
                 p.stdin.write('"string mapping" ["uv"] "float uscale" [36.8] "float vscale" [36.0]\n')
                 p.stdin.write('Material "matte" "texture Kd" ["checks"]\n')
-                p.stdin.write('Shape "loopsubdiv" "integer nlevels" [3] "bool dmnormalsmooth" ["true"] "bool dmsharpboundary" ["true"] ')
+                p.stdin.write('Shape "loopsubdiv" "integer nlevels" [3] "bool dmnormalsmooth" ["true"] "bool dmsharpboundary" ["false"] ')
                 p.stdin.write('"integer indices" [ 0 1 2 0 2 3 1 0 4 1 4 5 5 4 6 5 6 7 ]')
                 p.stdin.write('"point P" [ 1.000000 1.000000 0.000000 -1.000000 1.000000 0.000000 -1.000000 -1.000000 0.000000 1.000000 -1.000000 0.000000 1.000000 3.000000 0.000000 -1.000000 3.000000 0.000000 1.000000 3.000000 2.000000 -1.000000 3.000000 2.000000')
                 p.stdin.write('] "normal N" [ 0.000000 0.000000 1.000000 0.000000 0.000000 1.000000 0.000000 0.000000 1.000000 0.000000 0.000000 1.000000 0.000000 -0.707083 0.707083 0.000000 -0.707083 0.707083 0.000000 -1.000000 0.000000 0.000000 -1.000000 0.000000')
@@ -4886,6 +5210,32 @@ class Lux:
                     Lux.LB_UI.hmax = 18 + 4
         
     class Converter:
+        
+        @staticmethod
+        def format_dictStr(dictStr):
+		    result = ''
+		    pos = 0
+		    indentStr = '  '
+		    newLine = '\n'
+		    
+		    for char in dictStr:
+		        if char in ['}', ']']:
+		            result += newLine
+		            pos -= 1
+		            for j in range(0,pos):
+		                result += indentStr
+		                
+		        result += char
+		        
+		        if char in [',', '{', '[']:
+		            result += newLine
+		            if char in ['{', '[']:
+		                pos += 1
+		            for j in range(0,pos):
+		                result += indentStr
+		            
+		    return result
+        
         
         # convert a Blender material to lux material
         @staticmethod
@@ -5266,11 +5616,7 @@ class Lux:
         
         @staticmethod
         def MatTex2str(d, tex = None):
-            if   Lux.Converter.LBX_VERSION == '0.6':
-                return str( Lux.Converter.MatTex2dict(d, tex) ).replace(", \'", ",\n\'")
-            
-            elif Lux.Converter.LBX_VERSION == '0.7':
-                return str( Lux.Converter.MatTex2dict(d, tex) ).replace("], \'", "],\n\'").replace("[","\n\t[")        
+            return Lux.Converter.format_dictStr( str( Lux.Converter.MatTex2dict(d, tex) ) )
         
         @staticmethod
         def saveMatTex(mat, fn, basekey='', tex=False):
