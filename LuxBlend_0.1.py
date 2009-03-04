@@ -767,12 +767,12 @@ def save_lux(filename, unindexedname):
         file.write("\n")
 
         ########## World scale
-        scale = luxProp(scn, "global.scale", 1.0).get()
-        if scale != 1.0:
-            # TODO: not working yet !!!
-            # TODO: propabily scale needs to be applyed on camera coords too 
-            file.write("Transform [%s 0.0 0.0 0.0  0.0 %s 0.0 0.0  0.0 0.0 %s 0.0  0.0 0.0 0 1.0]\n"%(scale, scale, scale))
-            file.write("\n")
+        #scale = luxProp(scn, "global.scale", 1.0).get()
+        #if scale != 1.0:
+        #    # TODO: not working yet !!!
+        #    # TODO: propabily scale needs to be applyed on camera coords too 
+        #    file.write("Transform [%s 0.0 0.0 0.0  0.0 %s 0.0 0.0  0.0 0.0 %s 0.0  0.0 0.0 0 1.0]\n"%(scale, scale, scale))
+        #    file.write("\n")
         
         if LuxIsGUI: DrawProgressBar(8.0/export_total_steps,'Exporting Environment')
         ##### Write World Background, Sunsky or Env map ######
@@ -2795,8 +2795,8 @@ def luxEnvironment(scn, gui=None):
 
 
             str += "\n"
-        if gui: gui.newline("GLOBAL:", 8, 0, None, [0.75,0.5,0.25])
-        luxFloat("scale", luxProp(scn, "global.scale", 1.0), 0.0, 10.0, "scale", "global world scale", gui)
+        #if gui: gui.newline("GLOBAL:", 8, 0, None, [0.75,0.5,0.25])
+        #luxFloat("scale", luxProp(scn, "global.scale", 1.0), 0.0, 10.0, "scale", "global world scale", gui)
         
     return str
 
