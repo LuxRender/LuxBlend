@@ -1839,8 +1839,12 @@ class Lux:
             try:
                 if type(v) == types.StringType: l = self.get().split(" ")
             except: pass
-            if (l==None) or (len(l) != 3): l = self.default.split(" ")
-            return (float(l[0]), float(l[1]), float(l[2]))
+            try:
+                if (l==None) or (len(l) != 3): l = self.default.split(" ")
+                return (float(l[0]), float(l[1]), float(l[2]))
+            except AttributeError:
+                return (float(l[0]), float(l[0]), float(l[0]))
+            
         
         def getVectorStr(self):
             return "%f %f %f" % self.getVector()
