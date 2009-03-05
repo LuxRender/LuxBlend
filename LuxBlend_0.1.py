@@ -415,8 +415,8 @@ class luxExport:
                 ms = getMaterials(obj)
                 if ms <> mats:
                     allow_instancing = False
-                if obj.modifiers.__len__() > 0:
-		    allow_instancing = False
+            if obj.modifiers.__len__() > 0:
+                allow_instancing = False
             if allow_instancing and (len(objs) > instancing_threshold):
                 del self.meshes[mesh_name]
                 mesh.getFromObject(objs[0], 0, 1)
@@ -2763,7 +2763,7 @@ def luxEnvironment(scn, gui=None):
                         luxBool("sc.show", showGeo, "Geographic Sun", "Set sun position by world location, date and time", gui, 2.0)
                     if gui and showGeo.get() == 'true':
                         gui.newline("Geographic:")
-                        sc = sun_calculator()
+                        sc = sun_calculator(sun)
                         
                         luxInt("sc.day", luxProp(sun, "sc.day", 1), 1, 31, "day", "Local date: day", gui, 0.66)
                         luxInt("sc.month", luxProp(sun, "sc.month", 1), 1, 12, "month", "Local date: month", gui, 0.67)
@@ -2773,20 +2773,19 @@ def luxEnvironment(scn, gui=None):
                         luxInt("sc.minute", luxProp(sun, "sc.minute", 0), 0, 59, "minute", "Local time: minute", gui, 0.72)
                         luxBool("sc.dst", luxProp(sun, "sc.dst", 'false'), "DST", "DST", gui, 0.28)
                         r = gui.getRect(0.28,1)
-                        Draw.Button("NOW", 0, r[0], r[1], r[2], r[3], "Set to current time", lambda e,v: sc.now(sun))
+                        Draw.Button("NOW", 0, r[0], r[1], r[2], r[3], "Set to current time", lambda e,v: sc.now())
                         
-                        preset_location  = luxProp(sun, "sc.presetlocation", 'false')
-                        luxBool("sc.presetlocation", preset_location, "Preset Location", "Choose a preset location", gui, 0.3)
+                        r = gui.getRect(0.3,1)
+                        Draw.Button("Preset", 0, r[0], r[1], r[2], r[3], "Choose a preset location", lambda e,v: sc.set_location(
+                            Draw.PupTreeMenu(sun_calculator.location_list)
+                        ))
                         
-                        if preset_location.get() == 'true':
-                            luxOption("sc.location", luxProp(sun, "sc.location", ""), sc.get_locations(), "Location", "Preset Location", gui, 1.7)
-                        else:
-                            luxFloat("sc.lat", luxProp(sun, "sc.lat", 0.0), -90.0, 90.0, "latitude", "Location: latitude", gui, 0.56)
-                            luxFloat("sc.long", luxProp(sun, "sc.long", 0.0), -180.0, 180.0, "longitude", "Location: longitude", gui, 0.56)
-                            luxInt("sc.tz", luxProp(sun, "sc.tz", 0), -12, 12, "timezone", "Local time: timezone offset from GMT", gui, 0.56)
+                        luxFloat("sc.lat", luxProp(sun, "sc.lat", 0.0), -90.0, 90.0, "lat", "Location: latitude", gui, 0.56)
+                        luxFloat("sc.long", luxProp(sun, "sc.long", 0.0), -180.0, 180.0, "long", "Location: longitude", gui, 0.56)
+                        luxInt("sc.tz", luxProp(sun, "sc.tz", 0), -12, 12, "timezone", "Local time: timezone offset from GMT", gui, 0.56)
                         
                         r = gui.getRect(2,1)
-                        Draw.Button("Calculate", 0, r[0], r[1], r[2], r[3], "Calculate sun's position", lambda e,v: sc.compute(sun))
+                        Draw.Button("Calculate", 0, r[0], r[1], r[2], r[3], "Calculate sun's position", lambda e,v: sc.compute())
                     
                 else:
                     if gui:
@@ -2806,8 +2805,8 @@ class sun_calculator:
     #Co-Ordinates: http://www.bcca.org/misc/qiblih/latlong.html
     #Author: Nils-Peter Fischer (Nils-Peter.Fischer@web.de)
     
-    preset = 'true'
-    location = ""
+    sun = None
+    
     lat = 0
     long = 0
     
@@ -2820,9 +2819,145 @@ class sun_calculator:
     month = 0
     year = 0
     
-    rot = []
+    location_list = [
+        ("EUROPE",[
+            ("Berlin, Germany",            1),
+            ("Helsinki, Finland",          7),
+            ("London, England",           10),
+            ("Paris, France",             15),
+            ("Rome, Italy",               18),
+            ("Zurich, Switzerland",       21),
+        ]),
     
-    def now(self, sun):
+        ("WORLD CITIES", [
+            ("Beijing, China",             0),
+            ("Bombay, India",              2),
+            ("Buenos Aires, Argentina",    3),
+            ("Cairo, Egypt",               4),
+            ("Cape Town, South Africa",    5),
+            ("Caracas, Venezuela",         6),
+            ("Hong Kong, China",           8),
+            ("Jerusalem, Israel",          9),
+            ("Mexico City, Mexico",       11),
+            ("Moscow, Russia",            12),
+            ("New Delhi, India",          13),
+            ("Ottawa, Canada",            14),
+            ("Rio de Janeiro, Brazil",    16),
+            ("Riyadh, Saudi Arabia",      17),
+            ("Sydney, Australia",         19),
+            ("Tokyo, Japan",              20), 
+        ]),
+        
+        ("US CITIES", [
+            ("Albuquerque, NM",           22),
+            ("Anchorage, AK",             23),
+            ("Atlanta, GA",               24),
+            ("Austin, TX",                25),
+            ("Birmingham, AL",            26),
+            ("Bismarck, ND",              27),
+            ("Boston, MA",                28),
+            ("Boulder, CO",               29),
+            ("Chicago, IL",               30),
+            ("Dallas, TX",                31),
+            ("Denver, CO",                32),
+            ("Detroit, MI",               33),
+            ("Honolulu, HI",              34),
+            ("Houston, TX",               35),
+            ("Indianapolis, IN",          36),
+            ("Jackson, MS",               37),
+            ("Kansas City, MO",           38),
+            ("Los Angeles, CA",           39),
+            ("Menomonee Falls, WI",       40),
+            ("Miami, FL",                 41),
+            ("Minneapolis, MN",           42),
+            ("New Orleans, LA",           43),
+            ("New York City, NY",         44),
+            ("Oklahoma City, OK",         45),
+            ("Philadelphia, PA",          46),
+            ("Phoenix, AZ",               47),
+            ("Pittsburgh, PA",            48),
+            ("Portland, ME",              49),
+            ("Portland, OR",              50),
+            ("Raleigh, NC",               51),
+            ("Richmond, VA",              52),
+            ("Saint Louis, MO",           53),
+            ("San Diego, CA",             54),
+            ("San Francisco, CA",         55),
+            ("Seattle, WA",               56),
+            ("Washington DC",             57),
+        ])
+    ]
+
+    location_data = {
+        # Europe
+        1:    (52.33, -13.30, -1),
+        7:    ( 60.1667, -24.9667,-2),
+        10:   ( 51.50, 0.1667,0),
+        15:   ( 48.8667, -2.667, -1),
+        18:   (41.90, -12.4833,-1),
+        21:   ( 47.3833, -8.5333,-1),
+    
+        # World Cities
+        0:    (39.9167, -116.4167,-8),
+        2:    ( 18.9333, -72.8333, -5.5),
+        3:    ( -34.60,58.45,3),
+        4:    ( 30.10,-31.3667,-2),
+        5:    (-33.9167,-18.3667,-2),
+        6:    ( 10.50,66.9333,4),
+        8:    ( 22.25,-114.1667, -8),
+        9:    ( 31.7833, -35.2333, -2),
+        11:   ( 19.4,99.15,6),
+        12:   ( 55.75, -37.5833, -3),
+        13:   (28.6, -77.2, -5.5),
+        14:   ( 45.41667,75.7,5),
+        16:   (-22.90,43.2333,3),
+        17:   ( 24.633, -46.71667, -3),
+        19:   (-33.8667,-151.2167,-10),
+        20:   ( 35.70, -139.7667, -9), 
+    
+        # US Cities
+        22:   ( 35.0833,106.65,7),
+        23:   ( 61.217, 149.90,9),
+        24:   ( 33.733, 84.383, 5),
+        25:   ( 30.283, 97.733, 6),
+        26:   ( 33.521, 86.8025, 6),
+        27:   ( 46.817, 100.783, 6),
+        28:   ( 42.35, 71.05, 5),
+        29:   ( 40.125, 105.237, 7),
+        30:   ( 41.85,87.65,6),
+        31:   ( 32.46, 96.47,6),
+        32:   ( 39.733, 104.983, 7),
+        33:   ( 42.333, 83.05, 5),
+        34:   ( 21.30, 157.85, 10),
+        35:   ( 29.75, 95.35, 6),
+        36:   ( 39.767, 86.15, 5),
+        37:   ( 32.283, 90.183, 6),
+        38:   ( 39.083, 94.567,6),
+        39:   (34.05,118.233,8),
+        40:   (43.11,88.10,6),
+        41:   ( 25.767, 80.183,5),
+        42:   ( 44.967, 93.25, 6),
+        43:   ( 29.95, 90.067, 6),
+        44:   ( 40.7167, 74.0167, 5),
+        45:   ( 35.483, 97.533,6),
+        46:   ( 39.95, 75.15, 5),
+        47:   (33.433,112.067,7),
+        48:   (40.433,79.9833,5),
+        49:   ( 43.666, 70.283, 5),
+        50:   ( 45.517, 122.65, 8),
+        51:   ( 35.783, 78.65, 5),
+        52:   ( 37.5667, 77.450, 5),
+        53:   ( 38.6167,90.1833,6),
+        54:   ( 32.7667, 117.2167, 8),
+        55:   (37.7667,122.4167,8),
+        56:   (47.60,122.3167,8),
+        57:   ( 38.8833, 77.0333,5),
+    }
+
+    def __init__(self, sun):
+        self.sun = sun
+    
+    def now(self):
         ct = time.localtime()
         
         if ct[8] == 0:
@@ -2830,127 +2965,42 @@ class sun_calculator:
         else:
             dst = 'true'
         
-        luxProp(sun, 'sc.day', 0).set(ct[2])
-        luxProp(sun, 'sc.month', 0).set(ct[1])
-        luxProp(sun, 'sc.year', 0).set(ct[0])
-        luxProp(sun, 'sc.hour', 0).set(ct[3])
-        luxProp(sun, 'sc.minute', 0).set(ct[4])
-        luxProp(sun, 'sc.dst', 0).set(dst)
+        luxProp(self.sun, 'sc.day', 0).set(ct[2])
+        luxProp(self.sun, 'sc.month', 0).set(ct[1])
+        luxProp(self.sun, 'sc.year', 0).set(ct[0])
+        luxProp(self.sun, 'sc.hour', 0).set(ct[3])
+        luxProp(self.sun, 'sc.minute', 0).set(ct[4])
+        luxProp(self.sun, 'sc.dst', 0).set(dst)
         
-        self.compute(sun)
+        self.compute()
         
+    def set_location(self, location):
+        if location < 0: return
+        
+        lat, long, tz = self.location_data[location]
+        luxProp(self.sun, "sc.lat", 0).set(lat)
+        luxProp(self.sun, "sc.long", 0).set(long)
+        luxProp(self.sun, "sc.tz", 0).set(tz)
+        
+        self.compute()
     
-    def clear_lists(self):
-	    self.city_names = []
-	    self.city_lats = []
-	    self.city_longs = []
-	    self.city_tzs = []
-    
-    def get_locations(self):
+    def compute(self):
         
-        master_list = [
-            ("WORLD CITIES",0,0,0),
-            ("Beijing, China",39.9167, -116.4167,-8),
-            ("Berlin, Germany",52.33, -13.30, -1),
-            ("Bombay, India", 18.9333, -72.8333, -5.5),
-            ("Buenos Aires, Argentina", -34.60,58.45,3),
-            ("Cairo, Egypt", 30.10,-31.3667,-2),
-            ("Cape Town, South Africa",-33.9167,-18.3667,-2),
-            ("Caracas, Venezuela", 10.50,66.9333,4),
-            ("Helsinki, Finland", 60.1667, -24.9667,-2),
-            ("Hong Kong, China", 22.25,-114.1667, -8),
-            ("Jerusalem, Israel", 31.7833, -35.2333, -2),
-            ("London, England", 51.50, 0.1667,0),
-            ("Mexico City, Mexico", 19.4,99.15,6),
-            ("Moscow, Russia", 55.75, -37.5833, -3),
-            ("New Delhi, India",28.6, -77.2, -5.5),
-            ("Ottawa, Canada", 45.41667,75.7,5),
-            ("Paris, France", 48.8667, -2.667, -1),
-            ("Rio de Janeiro, Brazil",-22.90,43.2333,3),
-            ("Riyadh, Saudi Arabia", 24.633, -46.71667, -3),
-            ("Rome, Italy",41.90, -12.4833,-1),
-            ("Sydney, Australia",-33.8667,-151.2167,-10),
-            ("Tokyo, Japan", 35.70, -139.7667, -9), 
-            ("Zurich, Switzerland", 47.3833, -8.5333,-1),
-            ("",0,0,0),
-            ("US CITIES",0,0,0),
-            ("Albuquerque, NM", 35.0833,106.65,7),
-            ("Anchorage, AK", 61.217, 149.90,9),
-            ("Atlanta, GA", 33.733, 84.383, 5),
-            ("Austin, TX", 30.283, 97.733, 6),
-            ("Birmingham, AL", 33.521, 86.8025, 6),
-            ("Bismarck, ND", 46.817, 100.783, 6),
-            ("Boston, MA", 42.35, 71.05, 5),
-            ("Boulder, CO", 40.125, 105.237, 7),
-            ("Chicago, IL", 41.85,87.65,6),
-            ("Dallas, TX", 32.46, 96.47,6),
-            ("Denver, CO", 39.733, 104.983, 7),
-            ("Detroit, MI", 42.333, 83.05, 5),
-            ("Honolulu, HI", 21.30, 157.85, 10),
-            ("Houston, TX", 29.75, 95.35, 6),
-            ("Indianapolis, IN", 39.767, 86.15, 5),
-            ("Jackson, MS", 32.283, 90.183, 6),
-            ("Kansas City, MO", 39.083, 94.567,6),
-            ("Los Angeles, CA",34.05,118.233,8),
-            ("Menomonee Falls, WI",43.11,88.10,6),
-            ("Miami, FL", 25.767, 80.183,5),
-            ("Minneapolis, MN", 44.967, 93.25, 6),
-            ("New Orleans, LA", 29.95, 90.067, 6),
-            ("New York City, NY", 40.7167, 74.0167, 5),
-            ("Oklahoma City, OK", 35.483, 97.533,6),
-            ("Philadelphia, PA", 39.95, 75.15, 5),
-            ("Phoenix, AZ",33.433,112.067,7),
-            ("Pittsburgh, PA",40.433,79.9833,5),
-            ("Portland, ME", 43.666, 70.283, 5),
-            ("Portland, OR", 45.517, 122.65, 8),
-            ("Raleigh, NC", 35.783, 78.65, 5),
-            ("Richmond, VA", 37.5667, 77.450, 5),
-            ("Saint Louis, MO", 38.6167,90.1833,6),
-            ("San Diego, CA", 32.7667, 117.2167, 8),
-            ("San Francisco, CA",37.7667,122.4167,8),
-            ("Seattle, WA",47.60,122.3167,8),
-            ("Washington DC", 38.8833, 77.0333,5),
-            ("",0,0,0),
-        ]
+        self.lat  = luxProp(self.sun, "sc.lat", 0).get()
+        self.long = luxProp(self.sun, "sc.long", 0).get()
+        self.tz   = luxProp(self.sun, "sc.tz", 0).get()
         
-        self.clear_lists()
-        
-        for name,lat,long,tz in master_list:
-           self.city_names.append(name)
-           self.city_lats.append(lat)
-           self.city_longs.append(long)
-           self.city_tzs.append(tz)
-        
-        return self.city_names
-    
-    def compute(self, sun):
-        
-        self.preset   = luxProp(sun, "sc.presetlocation", 'true').get()
-        
-        if self.preset == 'true':
-            self.location = luxProp(sun, "sc.location", "").get()
-            self.get_locations()
-            location_id = self.city_names.index(self.location)
-            self.lat  = self.city_lats[location_id]
-            self.long = self.city_longs[location_id]
-            self.tz   = self.city_tzs[location_id]
-            
-        else:
-            self.lat  = luxProp(sun, "sc.lat", 0).get()
-            self.long = luxProp(sun, "sc.long", 0).get()
-            self.tz   = luxProp(sun, "sc.tz", 0).get()
-        
-        self.hour = luxProp(sun, "sc.hour", 0).get()
-        self.min  = luxProp(sun, "sc.minute", 0).get()
-        self.dst  = luxProp(sun, "sc.dst", 'false').get()
+        self.hour = luxProp(self.sun, "sc.hour", 0).get()
+        self.min  = luxProp(self.sun, "sc.minute", 0).get()
+        self.dst  = luxProp(self.sun, "sc.dst", 'false').get()
         if self.dst == 'true':
             self.dst = 1
         else:
             self.dst = 0
         
-        self.day   = luxProp(sun, "sc.day", 0).get()
-        self.month = luxProp(sun, "sc.month", 0).get()
-        self.year  = luxProp(sun, "sc.year", 0).get()
+        self.day   = luxProp(self.sun, "sc.day", 0).get()
+        self.month = luxProp(self.sun, "sc.month", 0).get()
+        self.year  = luxProp(self.sun, "sc.year", 0).get()
         
         
         az,el = self.geoSunData(
@@ -2963,7 +3013,7 @@ class sun_calculator:
             self.tz + self.dst
         )
         
-        sun.rot = math.radians(90-el), 0, math.radians(-az)
+        self.sun.rot = math.radians(90-el), 0, math.radians(-az)
         
         Window.Redraw()
         
