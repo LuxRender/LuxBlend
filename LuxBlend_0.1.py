@@ -2599,7 +2599,9 @@ def luxSurfaceIntegrator(scn, gui=None):
             if showadvanced.get()=="false":
                 # Default parameters
                 if gui: gui.newline("  Depth:", 8, 0, None, [0.4,0.4,0.4])
-                str += luxInt("maxdepth", luxProp(scn, "sintegrator.path.maxdepth", 10), 0, 2048, "bounces", "The maximum recursion depth for ray casting", gui, 2.0)
+                str += luxInt("maxdepth", luxProp(scn, "sintegrator.path.maxdepth", 10), 0, 2048, "bounces", "The maximum recursion depth for ray casting", gui, 1.0)
+		ienv = luxProp(scn, "sintegrator.path.ienvironment", "true")
+            	str += luxBool("includeenvironment", ienv, "Include Environment", "Enable/Disable rendering of environment lightsources", gui)
 
             if showadvanced.get()=="true":
                 # Advanced parameters
