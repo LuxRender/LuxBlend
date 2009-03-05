@@ -2613,6 +2613,8 @@ def luxSurfaceIntegrator(scn, gui=None):
                 str += luxOption("rrstrategy", rrstrat, ["efficiency", "probability", "none"], "RR strategy", "select Russian Roulette path termination strategy", gui)
                 if rrstrat.get() == "probability":
                     str += luxFloat("rrcontinueprob", luxProp(scn, "sintegrator.path.rrcontinueprob", 0.65), 0.0, 1.0, "rrprob", "Russian roulette continue probability", gui)
+		ienv = luxProp(scn, "sintegrator.path.ienvironment", "true")
+            	str += luxBool("includeenvironment", ienv, "Include Environment", "Enable/Disable rendering of environment lightsources", gui)
 
         if integratortype.get() == "bidirectional":
             if showadvanced.get()=="false":
