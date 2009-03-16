@@ -2600,8 +2600,8 @@ def luxSurfaceIntegrator(scn, gui=None):
                 # Default parameters
                 if gui: gui.newline("  Depth:", 8, 0, None, [0.4,0.4,0.4])
                 str += luxInt("maxdepth", luxProp(scn, "sintegrator.path.maxdepth", 10), 0, 2048, "bounces", "The maximum recursion depth for ray casting", gui, 1.0)
-		ienv = luxProp(scn, "sintegrator.path.ienvironment", "true")
-            	str += luxBool("includeenvironment", ienv, "Include Environment", "Enable/Disable rendering of environment lightsources", gui)
+                ienv = luxProp(scn, "sintegrator.path.ienvironment", "true")
+                str += luxBool("includeenvironment", ienv, "Include Environment", "Enable/Disable rendering of environment lightsources", gui)
 
             if showadvanced.get()=="true":
                 # Advanced parameters
@@ -2613,8 +2613,8 @@ def luxSurfaceIntegrator(scn, gui=None):
                 str += luxOption("rrstrategy", rrstrat, ["efficiency", "probability", "none"], "RR strategy", "select Russian Roulette path termination strategy", gui)
                 if rrstrat.get() == "probability":
                     str += luxFloat("rrcontinueprob", luxProp(scn, "sintegrator.path.rrcontinueprob", 0.65), 0.0, 1.0, "rrprob", "Russian roulette continue probability", gui)
-		ienv = luxProp(scn, "sintegrator.path.ienvironment", "true")
-            	str += luxBool("includeenvironment", ienv, "Include Environment", "Enable/Disable rendering of environment lightsources", gui)
+                ienv = luxProp(scn, "sintegrator.path.ienvironment", "true")
+                str += luxBool("includeenvironment", ienv, "Include Environment", "Enable/Disable rendering of environment lightsources", gui)
 
         if integratortype.get() == "bidirectional":
             if showadvanced.get()=="false":
@@ -2825,12 +2825,25 @@ class sun_calculator:
     
     location_list = [
         ("EUROPE",[
+            ("Antwerp, Belgium",          67),
             ("Berlin, Germany",            1),
+            ("Bratislava, Slovak Republic", 70),
+            ("Brno, Czech Republic",      72),
+            ("Brussles, Belgium",         68),
+            ("Geneva, Switzerland",       65),
             ("Helsinki, Finland",          7),
+            ("Innsbruck, Austria",        62),
+            ("Kyiv, Ukraine",             64),
             ("London, England",           10),
+            ("Lyon, France",              66),
+            ("Nitra, Slovak Republic",    69),
             ("Oslo, Norway",              58),
             ("Paris, France",             15),
+            ("Praha, Czech Republic",     71),
             ("Rome, Italy",               18),
+            ("Telfs, Austria",            63),
+            ("Warsaw, Poland",            74),
+            ("Wroclaw, Poland",           73),
             ("Zurich, Switzerland",       21),
         ]),
     
@@ -2841,14 +2854,17 @@ class sun_calculator:
             ("Cairo, Egypt",               4),
             ("Cape Town, South Africa",    5),
             ("Caracas, Venezuela",         6),
+            ("Curitiba, Brazil",          60),
             ("Hong Kong, China",           8),
             ("Jerusalem, Israel",          9),
+            ("Joinville, Brazil",         61),
             ("Mexico City, Mexico",       11),
             ("Moscow, Russia",            12),
             ("New Delhi, India",          13),
             ("Ottawa, Canada",            14),
             ("Rio de Janeiro, Brazil",    16),
             ("Riyadh, Saudi Arabia",      17),
+            ("Sao Paulo, Brazil",         59),
             ("Sydney, Australia",         19),
             ("Tokyo, Japan",              20), 
         ]),
@@ -2895,12 +2911,25 @@ class sun_calculator:
 
     location_data = {
         # Europe
+        67:   ( 51.2167, 4.4, 1),
         1:    ( 52.33, 13.30, 1),
+        70:   ( 48.17, 17.17, 1),
+        72:   ( 49.2, 16.63, 1),
+        68:   ( 58.8467, 4.3525, 1),
+        65:   ( 46.217, 6.150, 1),
         7:    ( 60.1667, 24.9667,2),
+        62:   ( 47.2672, 11.3928, 1),
+        64:   ( 50.75, 30.0833, 2),
         10:   ( 51.50, 0.0, 0),
+        66:   ( 45.767, 4.833, 1),
+        69:   ( 48.32, 18.07, 1),
         58:   ( 59.56, 10.41, 1),
         15:   ( 48.8667, 2.667, 1),
+        71:   ( 50.08, 14.46, 1),
         18:   ( 41.90, 12.4833, 1),
+        63:   ( 47.3, 11.0667, 1),
+        74:   ( 52.232, 21.008, 1),
+        73:   ( 51.108, 17.038, 1),
         21:   ( 47.3833, 8.5333, 1),
     
         # World Cities
@@ -2910,14 +2939,17 @@ class sun_calculator:
         4:    ( 30.10, 31.3667, 2),
         5:    (-33.9167, 18.3667, 2),
         6:    ( 10.50, -66.9333, -4),
+        60:   (-25.4278, -49.2731, -3),
         8:    ( 22.25, 114.1667, 8),
         9:    ( 31.7833, 35.2333, 2),
+        61:   (-29.3044, -48.8456, -3),
         11:   ( 19.4, -99.15, -6),
         12:   ( 55.75, 37.5833, 3),
         13:   ( 28.6, 77.2, 5.5),
         14:   ( 45.41667, -75.7, -5),
         16:   (-22.90, -43.2333, -3),
         17:   ( 24.633, 46.71667, 3),
+        59:   ( -23.5475, -46.6361, -3),
         19:   (-33.8667,151.2167,10),
         20:   ( 35.70, 139.7667, 9), 
     
@@ -3227,7 +3259,14 @@ def lux3DMapping(key, mat, gui, level=0):
     str += luxVector("translate", luxProp(mat, key+".3dtranslate", "0 0 0"), -1000.0, 1000.0, "move", "translate-vector", gui, 2.0)
     return str
     
-    
+def getTreeNameById(tree, i): # helper function to retrive name of the selected treemenu-item
+    for t in tree:
+        if type(t)==types.TupleType:
+            if type(t[1])==types.ListType: 
+                n=getTreeNameById(t[1], i)
+                if n: return n
+            elif t[1]==i: return t[0]
+    return None    
 
 def luxTexture(name, parentkey, type, default, min, max, caption, hint, mat, gui, matlevel, texlevel=0, lightsource=0, overrideicon=""):
     global icon_tex, icon_texcol, icon_texmix, icon_texmixcol, icon_texparam, icon_spectex
@@ -3246,7 +3285,7 @@ def luxTexture(name, parentkey, type, default, min, max, caption, hint, mat, gui
     else:
         texture = luxProp(mat, keyname+".texture", "blackbody")
 
-    textures = ["constant","blackbody","equalenergy", "frequency", "gaussian", "regulardata", "irregulardata", "imagemap","mix","scale","bilerp","uv", "checkerboard","brick","dots","fbm","marble","wrinkled", "windy", "blender_marble", "blender_musgrave", "blender_wood", "blender_clouds", "blender_blend", "blender_distortednoise", "blender_noise", "blender_magic", "blender_stucci", "blender_voronoi", "harlequin"]
+    textures = ["constant","blackbody", "lampspectrum", "equalenergy", "frequency", "gaussian", "regulardata", "irregulardata", "imagemap","mix","scale","bilerp","uv", "checkerboard","brick","dots","fbm","marble","wrinkled", "windy", "blender_marble", "blender_musgrave", "blender_wood", "blender_clouds", "blender_blend", "blender_distortednoise", "blender_noise", "blender_magic", "blender_stucci", "blender_voronoi", "harlequin"]
 
     if gui:
         if(overrideicon != ""):
@@ -3291,6 +3330,23 @@ def luxTexture(name, parentkey, type, default, min, max, caption, hint, mat, gui
             gui.newline()
             drawBar(bar_blackbody, gui.xmax-gui.w-7, r[1])
         str += luxFloat("temperature", luxProp(mat, keyname+".bbtemp", 6500.0), 1000.0, 10000.0, "temperature", "Black Body temperature in degrees Kelvin", gui, 2.0, 1)
+
+    if texture.get() == "lampspectrum":
+        lampstring = luxProp(mat, keyname+".lampstring", "Incandescent2")
+        lamppreset = luxProp(mat, keyname+".lampspectrum", "PHILIPS [Argenta] 200W Incandescent Lamp")
+        if gui:
+            def setLamp(i, value, preset, tree, dict): # callback function to set ior value after selection
+                if i >= 0:
+                    value.set(dict[i])
+                    preset.set(getTreeNameById(tree, i))
+
+            measuredtree = [ 	("Natural Daylight", 	[ ("Natural Daylight", 1) ] ), ("Incadescent", 	[ ("Paraffin Candle Flame", 2), ("Generic 7W Incandescent Lamp", 3), ("PHILIPS [Argenta] 200W Incandescent Lamp", 4), ("Welsbach Gas Mantle (modern, without Thorium)", 5), ("Incandescent Anti-Insect Lamp", 6) ] ), ("Fluorescent/Compact Fluorescent",	[ ("PHILIPS [TL-D 30W/55] Regular Daylight Fluorescent", 7), ("Sylvania [F4T5 4W] Regular Warm White Fluorescent", 8), ("OSRAM [DULUXSTAR 21W/827] Regular Compact Triphosphor Fluorescent", 9), ("Cold Cathode Warm White CFL Triphosphor Fluorescent.", 10), ("NARVA [COLOURLUX plus daylight 20W/860] Daylight CFL Triphosphor Fluorescent", 11), ("Sylvania [GroLux] Fluorescent Aquarium/Plant Lamp", 12), ("Laptop LCD Screen", 13), ("PHILIPS [ActiViva] \"Natural\" Triphosphor Fluorescent", 14), ("PHILIPS [ActiViva] \"Active\" Triphosphor Fluorescent", 16) ] ), ("High Pressure Mercury",		[ ("OSRAM [HQA 80W] Clear HPM Lamp", 17), ("PHILIPS [HPL 125W] HPM Lamp with improved color", 18), ("OSRAM [HQL 80W] HPM Lamp with improved warm deluxe color", 19), ("PHILIPS [ML 160W] Self-Ballasted HPM Vapor Lamp", 20), ("NARVA [160W] Self-ballasted HPM Vapor Lamp", 21) ] ), ("Low/High Pressure Sodium",		[ ("Regular High Pressure Sodium Lamp, warmup after 5-7 sec", 22), ("Regular High Pressure Sodium Lamp, warmup after 10-12 sec", 23), ("SOX-E 131W Low Pressure Sodium Discharge Lamp", 24), ("Medium Pressure Sodium Discharge Lamp, warmup after ~35 sec", 25), ("GE [Lucalox 35W] High Pressure Sodium Lamp", 26), ("PHILIPS [SDW-T 100W] Super High Pressure White Sodium Lamp", 27) ] ), ("Metal Halide",		[ ("PHILIPS [HPI-T 400W] MH Lamp with Mercury, Sodium, Thallium and Indium iodides", 28), ("OSRAM [HQI-TS 75W/WDL] Metal Halide lamp with Mercury, sodium, thallium, indium and tin iodides, from ", 29), ("GE [MVR325IUWM 325 Watt I-Line Multi-Vapor® Metal Halide - Clear Watt Miser®] MH Lamp with Mercury, Sodium and Scandium iodides", 30), ("OSRAM [HQI-T 400W/D] MH Lamp with Mercury, Thallium, Dysprosium, Holmium, Thulium and Caesium iodides", 31), ("PHILIPS Diazo MH Lamp with Mercury, iron and cobalt iodides", 32), ("Sylvania Diazo MH Lamp with Mercury, gallium and lead iodides", 33), ("OSRAM [HQI-T 400W/Blau] Blue colored MH Lamp with Mercury and indium iodides", 34), ("RADIUM [HRI-T 400W/Planta] Plant growing MH Lamp with Mercury, indium and sodium iodides", 35), ("OSRAM [HQI-T 400W/Grun] Green colored MH Lamp with Mercury and thallium iodides", 36) ] ), ("Diode",		[ ("Regular High Brightness Blue LED", 37), ("Monochromatic emission from a Red Laser diode", 38), ("Monochromatic emission from a Green Laser diode.", 39) ] ), ("Spectral",		[ ("PHILIPS Spectral Xenon Lamp - Continuous Xenon low pressure thermionic discharge", 40), ("PHILIPS spectral Rubidium Lamp - Continuous Rubidium low pressure thermionic discharge", 41), ("PHILIPS spectral Cadmium Lamp - Continuous Cadmium low pressure thermionic discharge", 42), ("PHILIPS spectral zinc Lamp - Continuous Zinc low pressure thermionic discharge", 43) ] ), ("Glow Discharge",		[ ("Neon glow discharge", 44), ("Neon and Krypton glow discharge and green phosphor (night-lights/indicators)", 45), ("Neon and Xenon glow discharge and green phosphor (night-lights/indicators)", 46), ("Neon and Xenon glow discharge and blue phosphor (night-lights/indicators)", 48), ("Argon glow discharge", 49), ("Self-ballasted High Pressure Mercury Vapor Lamp, with yttrium vanadate phosphate fluorescent phosphors, in glow discharge mode", 50) ] ), ("Molecular",		[ ("Butane Gas Flame", 51), ("Alcohol Flame", 52) ] ), ("General Fluorescence",		[ ("Print quality A4 Xerox paper wrapped around a blacklight Lamp", 53), ("Neon green dye, bombarded with black light", 54), ("Regular Modern Color TV CRT", 55) ] ), ("Various",		[ ("Stroboscopic flash. Xenon I, likely II and perhaps III", 56), ("Carbon Arc Spectrum", 57), ("OSRAM [XBO 75W/2] Short Arc Xenon Lamp", 58) ] ), ("Blacklight/Ultraviolet",		[ ("Sylvania [G8T5 8W] Germicidal lamp", 59), ("Sylvania [F6T5/BLB 8W] Black light blue fluorescent", 60), ("PHILIPS [HPW 125W] High Pressure Mercury Black Light", 61), ("Sylvania [Blacklite 350 F8W/BL350] Black Light fluorescent", 62) ] ), ("Mercury UV Spectrum",		[ ("The near visible UVA emissions from a high pressure Mercury clear lamp", 63) ] ), ("Absorption/Mixed Spectra",		[ ("High Pressure Mercury Warm Deluxe light ([1.4.3]) absorbed through blue Cobalt glass", 64), ("Incandescent light ([1.2.3]) absorbed through blue Cobalt glass", 65), ("High Pressure Mercury Warm Deluxe light ([1.4.3]) absorbed through ciel dye #42053", 66), ("Incandescent light ([1.2.3]) absorbed through ciel dye #42053", 67), ("High Pressure Mercury Warm Deluxe light ([1.4.3]) absorbed through red glass", 68), ("Incandescent light ([1.2.3]) absorbed through red glass.m", 69), ("Incandescent light ([1.2.3]) absorbed through olive oil. ", 70) ] ) ] 
+
+            measureddict  = {1:"Daylight", 2:"Candle", 3:"Incandescent1", 4:"Incandescent2", 5:"Welsbach", 6:"AntiInsect", 7:"FLD2", 8:"FL37K", 9:"CFL27K", 10:"CFL4K", 11:"CFL6K", 12:"GroLux", 13:"LCDS", 14:"FLAV8K", 15:"none", 16:"FLAV17K", 17:"HPM2", 18:"HPMFL1", 19:"HPMFL2", 20:"HPMSB", 21:"HPMSBFL", 22:"SS1", 23:"SS2", 24:"LPS", 25:"MPS", 26:"HPS", 27:"SHPS", 28:"MHN", 29:"MHWWD", 30:"MHSc", 31:"MHD", 32:"FeCo", 33:"GaPb", 34:"BLAU", 35:"PLANTA", 36:"GRUN", 37:"LEDB", 38:"RedLaser", 39:"GreenLaser", 40:"XeI", 41:"Rb", 42:"Cd", 43:"Zn", 44:"Ne", 45:"NeKrFL", 46:"NeXeFL1", 47:"none", 48:"NeXeFL2", 49:"Ar", 50:"HPMFL2Glow", 51:"Butane", 52:"Alcohol", 53:"BLP", 54:"BLNG", 55:"TV", 56:"Xe", 57:"CarbonArc", 58:"HPX", 59:"LPM2", 60:"FLBLB", 61:"HPMBL", 62:"FLBL", 63:"UVA", 64:"HPMFLCobaltGlass", 65:"CobaltGlass", 66:"HPMFLCL42053", 67:"CL42053", 68:"HPMFLRedGlass", 69:"RedGlass", 70:"OliveOil" }
+
+            r = gui.getRect(2.0, 1)
+            Draw.Button(lamppreset.get(), evtLuxGui, r[0], r[1], r[2], r[3], "select lamp spectrum", lambda e,v: setLamp(Draw.PupTreeMenu(measuredtree), lampstring, lamppreset, measuredtree, measureddict))
+        str += luxString("name", lampstring, "Lamp", "Choose measured Lamp Spectrum", None, 2.0)
 
     if texture.get() == "equalenergy":
         if gui:
@@ -3827,18 +3883,10 @@ def luxIORFloatTexture(name, key, default, min, max, caption, hint, mat, gui, le
     if(iorusepreset.get() == "true"):
         iorpreset = luxProp(mat, keyname+".iorpreset", "24 - Fused silica glass")
         if gui:
-            def setIor(i, value, preset, tree, dict): # callback function to set ior value after selection
-                def getTreeNameById(tree, i): # helper function to retrive name of the selected treemenu-item
-                    for t in tree:
-                        if type(t)==types.TupleType:
-                            if type(t[1])==types.ListType: 
-                                n=getTreeNameById(t[1], i)
-                                if n: return n
-                            elif t[1]==i: return t[0]
-                    return None                
+            def setIor(i, value, preset, tree, dict): # callback function to set ior value after selection                
                 if i >= 0:
                     value.set(dict[i])
-                    preset.set(getTreeNameById(tree, i))            
+                    preset.set(getTreeNameById(tree, i))
             iortree = [ ("LIQUIDS", [("Acetone", 1), ("Alcohol, Ethyl (grain)", 2), ("Alcohol, Methyl (wood)", 3), ("Beer", 4), ("Benzene", 5), ("Carbon tetrachloride", 6), ("Carbon disulfide", 7), ("Carbonated Beverages", 8), ("Chlorine (liq)", 9), ("Cranberry Juice (25%)", 10), ("Glycerin", 11), ("Honey, 13% water content", 12), ("Honey, 17% water content", 13), ("Honey, 21% water content", 14), ("Ice", 15), ("Milk", 16), ("Oil, Clove", 17), ("Oil, Lemon", 18), ("Oil, Neroli", 19), ("Oil, Orange", 20), ("Oil, Safflower", 21), ("Oil, vegetable (50 C)", 22), ("Oil of Wintergreen", 23), ("Rum, White", 24), ("Shampoo", 25), ("Sugar Solution 30%", 26), ("Sugar Solution 80%", 27), ("Turpentine", 28), ("Vodka", 29), ("Water (0 C)", 30), ("Water (100 C)", 31), ("Water (20 C)", 32), ("Whisky", 33) ] ), ("GASES(0C)", [("Vacuum", 101), ("Air @ STP", 102), ("Air", 103), ("Helium", 104), ("Hydrogen", 105), ("Carbon dioxide", 106) ]), ("TRANSPARENT", [("Eye, Aqueous humor", 201), ("Eye, Cornea", 202), ("Eye, Lens", 203), ("Eye, Vitreous humor", 204), ("Glass, Arsenic Trisulfide", 205), ("Glass, Crown (common)", 206), ("Glass, Flint, 29% lead", 207), ("Glass, Flint, 55% lead", 208), ("Glass, Flint, 71% lead", 209), ("Glass, Fused Silica", 210), ("Glass, Pyrex", 211), ("Lucite", 212), ("Nylon", 213), ("Obsidian", 214), ("Plastic", 215), ("Plexiglas", 216), ("Salt", 217)  ]), ("GEMSTONES", [("Agate", 301), ("Alexandrite", 302), ("Almandine", 303), ("Amber", 304), ("Amethyst", 305), ("Ammolite", 306), ("Andalusite", 307), ("Apatite", 308), ("Aquamarine", 309), ("Axenite", 310), ("Beryl", 311), ("Beryl, Red", 312), ("Chalcedony", 313), ("Chrome Tourmaline", 314), ("Citrine", 315), ("Clinohumite", 316), ("Coral", 317), ("Crystal", 318), ("Crysoberyl, Catseye", 319), ("Danburite", 320), ("Diamond", 321), ("Emerald", 322), ("Emerald Catseye", 323), ("Flourite", 324), ("Garnet, Grossular", 325), ("Garnet, Andradite", 326), ("Garnet, Demantiod", 327), ("Garnet, Mandarin", 328), ("Garnet, Pyrope", 329), ("Garnet, Rhodolite", 330), ("Garnet, Tsavorite", 331), ("Garnet, Uvarovite", 332), ("Hauyn", 333), ("Iolite", 334), ("Jade, Jadeite", 335), ("Jade, Nephrite", 336), ("Jet", 337), ("Kunzite", 338), ("Labradorite", 339), ("Lapis Lazuli", 340), ("Moonstone", 341), ("Morganite", 342), ("Obsidian", 343), ("Opal, Black", 344), ("Opal, Fire", 345), ("Opal, White", 346), ("Oregon Sunstone", 347), ("Padparadja", 348), ("Pearl", 349), ("Peridot", 350), ("Quartz", 351), ("Ruby", 352), ("Sapphire", 353), ("Sapphire, Star", 354), ("Spessarite", 355), ("Spinel", 356), ("Spinel, Blue", 357), ("Spinel, Red", 358), ("Star Ruby", 359), ("Tanzanite", 360), ("Topaz", 361), ("Topaz, Imperial", 362), ("Tourmaline", 363), ("Tourmaline, Blue", 364), ("Tourmaline, Catseye", 365), ("Tourmaline, Green", 366), ("Tourmaline, Paraiba", 367), ("Tourmaline, Red", 368), ("Zircon", 369), ("Zirconia, Cubic", 370) ] ), ("OTHER", [("Pyrex (Borosilicate glass)", 401), ("Ruby", 402), ("Water ice", 403), ("Cryolite", 404), ("Acetone", 405), ("Ethanol", 406), ("Teflon", 407), ("Glycerol", 408), ("Acrylic glass", 409), ("Rock salt", 410), ("Crown glass (pure)", 411), ("Salt (NaCl)", 412), ("Polycarbonate", 413), ("PMMA", 414), ("PETg", 415), ("PET", 416), ("Flint glass (pure)", 417), ("Crown glass (impure)", 418), ("Fused Quartz", 419), ("Bromine", 420), ("Flint glass (impure)", 421), ("Cubic zirconia", 422), ("Moissanite", 423), ("Cinnabar (Mercury sulfide)", 424), ("Gallium(III) prosphide", 425), ("Gallium(III) arsenide", 426), ("Silicon", 427) ] ) ]
             iordict = {1:1.36, 2:1.36, 3:1.329, 4:1.345, 5:1.501, 6:1.000132, 7:1.00045, 8:1.34, 9:1.385, 10:1.351, 11:1.473, 12:1.504, 13:1.494, 14:1.484, 15:1.309, 16:1.35, 17:1.535, 18:1.481, 19:1.482, 20:1.473, 21:1.466, 22:1.47, 23:1.536, 24:1.361, 25:1.362, 26:1.38, 27:1.49, 28:1.472, 29:1.363, 30:1.33346, 31:1.31766, 32:1.33283, 33:1.356, 101:1.0, 102:1.0002926, 103:1.000293, 104:1.000036, 105:1.000132, 106:1.00045, 201:1.33, 202:1.38, 203:1.41, 204:1.34, 205:2.04, 206:1.52, 207:1.569, 208:1.669, 209:1.805, 210:1.459, 211:1.474, 212:1.495, 213:1.53, 214:1.50, 215:1.460, 216:1.488, 217:1.516, 301:1.544, 302:1.746, 303:1.75, 304:1.539, 305:1.532, 306:1.52, 307:1.629, 308:1.632, 309:1.567, 310:1.674, 311:1.57, 312:1.570, 313:1.544, 314:1.61, 315:1.532, 316:1.625, 317:1.486, 318:2.000, 319:1.746, 320:1.627, 321:2.417, 322:1.560, 323:1.560, 324:1.434, 325:1.72, 326:1.88, 327:1.880, 328:1.790, 329:1.73, 330:1.740, 331:1.739, 332:1.74, 333:1.490, 334:1.522, 335:1.64, 336:1.600, 337:1.660, 338:1.660, 339:1.560, 340:1.50, 341:1.518, 342:1.585, 343:1.50, 344:1.440, 345:1.430, 346:1.440, 347:1.560, 348:1.760, 349:1.53, 350:1.635, 351:1.544, 352:1.757, 353:1.757, 354:1.760, 355:1.79, 356:1.712, 357:1.712, 358:1.708, 359:1.76, 360:1.690, 361:1.607, 362:1.605, 363:1.603, 364:1.61, 365:1.61, 366:1.61, 367:1.61, 368:1.61, 369:1.777, 370:2.173, 401:1.47, 402:1.76, 403:1.31, 404:1.388, 405:1.36, 406:1.36, 407:1.35, 408:1.4729, 409:1.49, 410:1.516, 411:1.5, 412:1.544, 413:1.584, 414:1.4893, 415:1.57, 416:1.575, 417:1.6, 418:1.485, 419:1.46, 420:1.661, 421:1.523, 422:2.15, 423:2.419, 424:2.65, 425:3.02, 426:3.5, 427:3.927}
             r = gui.getRect(1.6, 1)
