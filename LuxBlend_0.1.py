@@ -1,4 +1,5 @@
 #!BPY
+# coding=utf-8
 """Registration info for Blender menus:
 Name: 'LuxBlend CVS Exporter'
 Blender: 248
