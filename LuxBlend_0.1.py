@@ -1,16 +1,16 @@
 #!BPY
 # coding=utf-8
 """Registration info for Blender menus:
-Name: 'LuxBlend CVS Exporter'
+Name: 'LuxBlend v0.6RC1 Exporter'
 Blender: 248
 Group: 'Render'
-Tooltip: 'Export/Render to LuxRender CVS scene format (.lxs)'
+Tooltip: 'Export/Render to LuxRender v0.6RC1 scene format (.lxs)'
 """
 #
 # ***** BEGIN GPL LICENSE BLOCK *****
 #
 # --------------------------------------------------------------------------
-# LuxBlend CVS exporter
+# LuxBlend v0.6RC1 exporter
 # --------------------------------------------------------------------------
 #
 # Authors:
@@ -684,7 +684,7 @@ def save_lux(filename, unindexedname):
         file = open(filename, 'w')
 
         ##### Write Header ######
-        file.write("# Lux Render CVS Scene File\n")
+        file.write("# Lux Render v0.6RC1 Scene File\n")
         file.write("# Exported by LuxBlend Blender Exporter\n")
         file.write("\n")
     
@@ -5498,7 +5498,7 @@ def luxDraw():
 
     y = int(scrollbar.getTop()) # 420
     BGL.glColor3f(0.1,0.1,0.1); BGL.glRectf(0,0,440,y)
-    BGL.glColor3f(1.0,0.5,0.0); BGL.glRasterPos2i(130,y-21); Draw.Text("CVS")
+    BGL.glColor3f(1.0,0.5,0.0); BGL.glRasterPos2i(130,y-21); Draw.Text("v0.6RC1")
     BGL.glColor3f(0.9,0.9,0.9);
 
     drawLogo(icon_luxblend, 6, y-25);
@@ -5814,7 +5814,7 @@ try:
 except: pyargs = []
 
 if (pyargs != []) and (batchindex != 0):
-    print "\n\nLuxBlend CVS - BATCH mode\n"
+    print "\n\nLuxBlend v0.6RC1 - BATCH mode\n"
     LuxIsGUI = False
 
     scene = Scene.GetCurrent()
@@ -5888,7 +5888,7 @@ if (pyargs != []) and (batchindex != 0):
     osys.exit(0)
 
 else:
-    print "\n\nLuxBlend CVS - UI mode\n"
+    print "\n\nLuxBlend v0.6RC1 - UI mode\n"
     from Blender.Window import DrawProgressBar
     LuxIsGUI = True
     
