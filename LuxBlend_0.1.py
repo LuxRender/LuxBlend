@@ -2022,7 +2022,9 @@ def luxCamera(cam, context, gui=None):
     str = ""
     if cam:
         camtype = luxProp(cam, "camera.type", "perspective")
-        str = luxIdentifier("Camera", camtype, ["perspective","orthographic","environment","realistic"], "CAMERA", "select camera type", gui, icon_c_camera)
+	# Radiance - remarked 'realistic' for v0.6 release
+        #str = luxIdentifier("Camera", camtype, ["perspective","orthographic","environment","realistic"], "CAMERA", "select camera type", gui, icon_c_camera)
+        str = luxIdentifier("Camera", camtype, ["perspective","orthographic","environment"], "CAMERA", "select camera type", gui, icon_c_camera)
         scale = 1.0
         if camtype.get() == "perspective":
             if gui: gui.newline("  View:")
@@ -2573,7 +2575,9 @@ def luxSurfaceIntegrator(scn, gui=None):
     str = ""
     if scn:
         integratortype = luxProp(scn, "sintegrator.type", "bidirectional")
-        str = luxIdentifier("SurfaceIntegrator", integratortype, ["directlighting", "path", "bidirectional", "exphotonmap", "distributedpath" ], "INTEGRATOR", "select surface integrator type", gui, icon_c_integrator)
+	# Radiance - remarked 'exphotonmap' for 0.6 release
+        #str = luxIdentifier("SurfaceIntegrator", integratortype, ["directlighting", "path", "bidirectional", "exphotonmap", "distributedpath" ], "INTEGRATOR", "select surface integrator type", gui, icon_c_integrator)
+        str = luxIdentifier("SurfaceIntegrator", integratortype, ["directlighting", "path", "bidirectional", "distributedpath" ], "INTEGRATOR", "select surface integrator type", gui, icon_c_integrator)
 
         # Advanced toggle
         parammodeadvanced = luxProp(scn, "parammodeadvanced", "false")
@@ -3347,7 +3351,7 @@ def luxTexture(name, parentkey, type, default, min, max, caption, hint, mat, gui
 
             r = gui.getRect(2.0, 1)
             Draw.Button(lamppreset.get(), evtLuxGui, r[0], r[1], r[2], r[3], "select lamp spectrum", lambda e,v: setLamp(Draw.PupTreeMenu(measuredtree), lampstring, lamppreset, measuredtree, measureddict))
-        str += luxString("name", lampstring, "Lamp", "Choose measured Lamp Spectrum", None, 2.0)
+    	str += luxString("name", lampstring, "Lamp", "Choose measured Lamp Spectrum", None, 2.0)
 
     if texture.get() == "equalenergy":
         if gui:
