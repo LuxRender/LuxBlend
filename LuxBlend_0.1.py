@@ -5196,16 +5196,19 @@ def putMatTex(mat, dict, basekey='', tex=None):
             d = mat.properties['luxblend']
             for k,v in d.convert_to_pyobject().items():
                 kn = k
-                if k[:1]=="__hash:":    # decode if entry is hashed (cause of 32chars limit)
+                if k[:7]=="__hash:":    # decode if entry is hashed (cause of 32chars limit)
                     l = v.split(" = ")
                     kn = l[0]
                 if kn[:len(basekey)]==basekey:
                     del mat.properties['luxblend'][k]
-        except: pass
+        except: print "error" # pass
         # assign loaded properties
         for k,v in dict.items():
             try:
                 if (basekey!="") and (k=="type"): k = ".type"
+                # zuegs: following two lines should fix issue http://www.luxrender.net/forum/viewtopic.php?f=16&t=1618&p=14512#p14512
+                if (basekey!="") and ((k[0]!=".") and (k[0]!=":")): k = ":"+k
+                if (basekey=="") and (k[0:4]==":mat"): k = k[1:]
                 luxProp(mat, basekey+k, None).set(v)
                 if k[-8:] == '.texture':
                     luxProp(mat, basekey+k[:-8]+'.textured', 'false').set('true')
