@@ -936,10 +936,13 @@ def launchLuxWait(filename):
     ostype = osys.platform
     #get blenders 'bpydata' directory
     datadir=Blender.Get("datadir")
-    
+
     scn = Scene.GetCurrent()
+    luxbatchconsolemode = luxProp(scn, "luxbatchc", "false")
+
     ic = luxProp(scn, "lux", "").get()
-    ic = Blender.sys.dirname(ic) + os.sep + "luxrender"
+    if luxbatchconsolemode.get() == "false":
+    	ic = Blender.sys.dirname(ic) + os.sep + "luxrender"
     if ostype == "win32": ic = ic + ".exe"
     if ostype == "darwin": ic = ic + ".app/Contents/MacOS/luxrender"
     checkluxpath = luxProp(scn, "checkluxpath", True).get()
@@ -952,9 +955,9 @@ def launchLuxWait(filename):
 
     if ostype == "win32":
         if(autothreads=="true"):
-            cmd = "start /b /WAIT \"\" \"%s\" \"%s\" "%(ic, filename)        
+            cmd = "start /b /WAIT \"\" \"%s\"  -f \"%s\" "%(ic, filename)        
         else:
-            cmd = "start /b /WAIT \"\" \"%s\" \"%s\" --threads=%d"%(ic, filename, threads)        
+            cmd = "start /b /WAIT \"\" \"%s\"  -f \"%s\" --threads=%d"%(ic, filename, threads)        
         # call external shell script to start Lux    
         #print("Running Luxrender:\n"+cmd)
         #os.spawnv(os.P_WAIT, cmd, 0)
@@ -962,9 +965,9 @@ def launchLuxWait(filename):
 
     if ostype == "linux2" or ostype == "darwin":
         if(autothreads=="true"):
-            cmd = "\"%s\" \"%s\""%(ic, filename)
+            cmd = "\"%s\" -f \"%s\""%(ic, filename)
         else:
-            cmd = "\"%s\" --threads=%d \"%s\""%(ic, threads, filename)
+            cmd = "\"%s\" -f --threads=%d \"%s\""%(ic, threads, filename)
         subprocess.call(cmd,shell=True)
 
 #### SAVE ANIMATION ####    
@@ -1042,6 +1045,16 @@ def decodeLogoStr(s):
                 offset += 1
     return buf
 
+def decodeArrowStr(s):
+    buf = BGL.Buffer(BGL.GL_BYTE, [22,22,4])
+    offset = 0
+    for y in range(22):
+        for x in range(22):
+            for c in range(4):
+                buf[y][x][c] = int(base64value(s[offset])*4.048)
+                offset += 1
+    return buf
+
 def decodeBarStr(s):
     buf = BGL.Buffer(BGL.GL_BYTE, [17,138,4])
     offset = 0
@@ -1051,6 +1064,10 @@ def decodeBarStr(s):
                 buf[y][x][c] = int(base64value(s[offset])*4.048)
                 offset += 1
     return buf
+
+arrow_down = decodeArrowStr("///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///Q///G///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///3///e///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///V///////7///D///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///1///////////e///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///a///////////////7///C///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///B///5///////////////////c///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///f///////////////////////7///C///A///A///A///A///A///A///A///A///A///A///A///A///A///C///6///////////////////////////c///A///A///A///A///A///A///A///A///A///A///A///A///A///i///////////////////////////////6///C///A///A///A///A///A///A///A///A///A///A///A///G///9///////////////////////////////////e///A///A///A///A///A///A///A///A///A///A///I///n///////////////////////////////////////6///N///A///A///A///A///A///A///A///A///A///L///b///e///e///e///e///e///e///e///e///e///g///O///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A")
+
+arrow_right = decodeArrowStr("///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///L///I///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///b///n///G///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///e///////9///i///C///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///e///////////////6///f///B///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///e///////////////////////5///a///A///A///A///A///A///A///A///A///A///A///A///A///A///A///e///////////////////////////////1///V///A///A///A///A///A///A///A///A///A///A///A///A///e///////////////////////////////////////3///Q///A///A///A///A///A///A///A///A///A///A///e///////////////////////////////////7///e///G///A///A///A///A///A///A///A///A///A///A///e///////////////////////////7///e///D///A///A///A///A///A///A///A///A///A///A///A///A///e///////////////////7///c///C///A///A///A///A///A///A///A///A///A///A///A///A///A///A///e///////////6///c///C///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///g///6///e///C///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///O///N///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A")
 
 icon_luxblend = decodeLogoStr("///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A/gAA/gAA/gAA/gAA/gAA/gAA/gAa/gA5/gAZ/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A/gAA/gAA/gAA/gAA/gAA/gAA/gAj/gA//gAh/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A/gAA/gAA/gAA/gAA/gAA/gAA/gAC/gAO/gAC/gAB/gAS/gAQ/gAA/gAA/gAA/gAA/gAA///A///A///A/gAA/gAZ/gAu/gA7/gA//gA//gA//gA//gA//gA//gA//gAd/gAA/gAZ/gAu/gA//gA//gA//gA//gA//gA//gA3/gAm/gAI/gAE/gAz/gA//gA//gAZ/gAA/gAA/gAA/gAZ/gA//gA//gAm/gAR/gA//gA//gA//gA//gA//gA//gA//gA//gA//gA//gAz/gAd/gAE/gAA/gA//gA//gAd/gAA/gAI/gAm/gA3/gA//gA//gA//gAR/gAA/gAA/gAA/gAA/gAA/gAu/gA//gAu/gAA/gAA/gAA/gAA/gAA/gAA/gAd/gA//gA//gAA/gAE/gAd/gAz/gA//gA//gA//gA//gA//gA7/gAq/gAV/gAA///A///A///A///A///A///A/gAA/gAA/gAA/gAI/gAK/gAA/gAA/gAA/gAA/gAn/gA//gA//gAc/gAA/gAA/gAA/gAA///A///A///A/gAi/gA//gA//gA//gA//gA//gA//gA//gA//gA//gA//gAd/gAZ/gA//gA//gA//gA//gA//gA//gA//gA//gA//gA//gA7/gAE/gAE/gAz/gA//gA//gAR/gAA/gAZ/gA//gA//gAm/gAA/gAR/gA//gA//gA//gA//gA//gA//gA//gA//gA//gA//gA//gA//gAz/gAA/gA//gA//gAd/gAI/gA7/gA//gA//gA//gA//gA//gAR/gAA/gAA/gAA/gAA/gAA/gAu/gA//gAu/gAA/gAA/gAA/gAA/gAA/gAA/gAd/gA//gA//gAA/gAu/gA//gA//gA//gA//gA//gA//gA//gA//gA//gA//gAi///A///A///A///A///A///A/gAA/gAA/gAA/gAv/gA4/gAA/gAA/gAA/gAD/gA9/gA//gA//gAz/gAA/gAA/gAA/gAA///A///A///A/gA//gA//gAq/gAI/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAu/gA//gA3/gAI/gAA/gAA/gAA/gAA/gAA/gAd/gA//gA//gAR/gAA/gAM/gA7/gA//gA7/gAZ/gA//gA//gAz/gAA/gAA/gAR/gA//gA//gAR/gAA/gAA/gAA/gAA/gAA/gAA/gAE/gAd/gA//gA//gAM/gA//gA//gAd/gAd/gA//gA//gAd/gAI/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAu/gA//gAu/gAA/gAA/gAA/gAA/gAA/gAA/gAd/gA//gA//gAA/gA//gA//gAq/gAA/gAA/gAA/gAA/gAA/gAE/gAq/gA//gA////A///A///A///A///A///A/gAA/gAA/gAA/gAN/gAQ/gAA/gAA/gAA/gAA/gAs/gA//gA//gA+/gAs/gAp/gAZ/gAA///A///A///A/gA//gA//gAd/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAu/gA//gAu/gAA/gAA/gAA/gAA/gAA/gAA/gAR/gA//gA//gAR/gAA/gAA/gAM/gA7/gA//gA//gA//gAz/gAE/gAA/gAA/gAR/gA//gA//gAR/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAR/gA//gA//gAR/gA//gA//gAd/gAd/gA//gA//gAu/gAu/gAu/gAu/gAu/gAu/gAu/gAu/gAu/gAM/gAu/gA//gAu/gAA/gAA/gAA/gAA/gAA/gAA/gAd/gA//gA//gAA/gA//gA//gAd/gAA/gAA/gAA/gAA/gAA/gAA/gAd/gA//gA////A///A///A///A///A///A/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAI/gAA/gAE/gAZ/gAw/gA//gA//gA//gA//gAh///A///A///A/gA//gA//gAd/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAu/gA//gAu/gAA/gAA/gAA/gAA/gAA/gAA/gAR/gA//gA//gAR/gAA/gAA/gAA/gAR/gA//gA//gA//gAI/gAA/gAA/gAA/gAR/gA//gA//gAm/gAd/gAd/gAd/gAd/gAd/gAd/gAd/gA3/gA//gA3/gAA/gA//gA//gAd/gAd/gA//gA//gA//gA//gA//gA//gA//gA//gA//gA//gA//gAR/gAu/gA//gAu/gAA/gAA/gAA/gAA/gAA/gAA/gAd/gA//gA//gAA/gA//gA//gAd/gAA/gAA/gAA/gAA/gAA/gAA/gAd/gA//gA////A///A///A///A///A///A/gAl/gAL/gAA/gAA/gAA/gAA/gAf/gA+/gAd/gAA/gAA/gAT/gA//gA//gA//gA//gA6///A///A///A/gA//gA//gAd/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAu/gA//gAu/gAA/gAA/gAA/gAA/gAA/gAA/gAR/gA//gA//gAR/gAA/gAA/gAE/gAz/gA//gA//gA//gAz/gAE/gAA/gAA/gAR/gA//gA//gA//gA//gA//gA//gA//gA//gA//gA//gA//gA//gAd/gAA/gA//gA//gAd/gAd/gA//gA//gAR/gAR/gAR/gAR/gAR/gAR/gAd/gA//gA//gAR/gAu/gA//gAu/gAA/gAA/gAA/gAA/gAA/gAA/gAd/gA//gA//gAA/gA//gA//gAd/gAA/gAA/gAA/gAA/gAA/gAA/gAd/gA//gA////A///A///A///A///A///A/gAl/gAK/gAA/gAA/gAA/gAA/gAf/gA+/gAd/gAA/gAA/gAT/gA//gA//gA//gA//gA6///A///A///A/gA//gA//gAd/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAu/gA//gAu/gAA/gAA/gAA/gAA/gAA/gAA/gAR/gA//gA//gAR/gAA/gAA/gAz/gA//gA7/gAd/gA//gA//gAm/gAA/gAA/gAR/gA//gA//gAm/gAd/gAd/gAd/gAd/gAd/gAd/gAd/gAu/gA//gA//gAI/gA//gA//gAd/gAd/gA//gA//gAd/gAR/gAR/gAR/gAR/gAR/gAq/gA//gA//gAR/gAu/gA//gA7/gAZ/gAR/gAR/gAR/gAR/gAV/gAz/gA//gA//gAA/gA3/gA//gA7/gAi/gAd/gAd/gAd/gAd/gAd/gAu/gA//gA////A///A///A///A///A///A/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAI/gAA/gAE/gAa/gAw/gA//gA//gA//gA//gAg///A///A///A/gA//gA//gAd/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAu/gA//gAu/gAA/gAA/gAA/gAA/gAA/gAA/gAR/gA//gA//gAR/gAA/gAm/gA//gA7/gAM/gAA/gAZ/gA//gA//gAm/gAA/gAR/gA//gA//gAR/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAR/gA//gA//gAR/gA//gA//gAd/gAE/gAz/gA//gA//gA//gA//gA//gA//gA//gA//gA//gAz/gAA/gAV/gA//gA//gA//gA//gA//gA//gA//gA//gA//gA//gAi/gAA/gAV/gA7/gA//gA//gA//gA//gA//gA//gA//gA//gA//gA////A///A///A///A///A///A/gAA/gAA/gAA/gAO/gAR/gAA/gAA/gAA/gAA/gAt/gA//gA//gA+/gAs/gAq/gAZ/gAA///A///A///A/gA//gA//gAd/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAi/gAu/gAi/gAA/gAA/gAA/gAA/gAA/gAA/gAM/gAu/gAu/gAM/gAm/gA//gA7/gAM/gAA/gAA/gAA/gAm/gA//gA//gAd/gAR/gA//gA//gAd/gAR/gAR/gAR/gAR/gAR/gAR/gAR/gAq/gA//gA//gAM/gA//gA//gAd/gAA/gAA/gAZ/gAm/gAu/gAu/gAu/gAu/gAu/gAq/gAZ/gAA/gAA/gAA/gAI/gAd/gAu/gAu/gAu/gAu/gAu/gAu/gAi/gAV/gAA/gAA/gAA/gAE/gAV/gAd/gAd/gAd/gAd/gAd/gAd/gAu/gA//gA////A///A///A///A///A///A/gAA/gAA/gAA/gAv/gA4/gAA/gAA/gAA/gAD/gA9/gA//gA//gAz/gAA/gAA/gAA/gAA///A///A///A/gA//gA//gAd/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAR/gA//gA//gA//gA//gA//gA//gA//gA//gA//gA//gA//gA//gAm/gAA/gA//gA//gAd/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAd/gA//gA////A///A///A///A///A///A/gAA/gAA/gAA/gAI/gAK/gAA/gAA/gAA/gAA/gAn/gA//gA//gAc/gAA/gAA/gAA/gAA///A///A///A/gA//gA//gAd/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAM/gAu/gAu/gAu/gAu/gAu/gAu/gAu/gAu/gAu/gAu/gAm/gAR/gAA/gAA/gA//gA//gAd/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAd/gA//gA////A///A///A///A///A///A/gAA/gAA/gAA/gAA/gAA/gAA/gAC/gAO/gAC/gAB/gAS/gAP/gAA/gAA/gAA/gAA/gAA///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A/gAA/gAA/gAA/gAA/gAA/gAA/gAj/gA//gAh/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A/gAA/gAA/gAA/gAA/gAA/gAA/gAa/gA5/gAY/gAA/gAA/gAA/gAA/gAA/gAA/gAA/gAA///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A///A")
 
@@ -1099,6 +1116,13 @@ def drawIcon(icon, x, y):
     BGL.glBlendFunc(BGL.GL_SRC_ALPHA, BGL.GL_ONE_MINUS_SRC_ALPHA) 
     BGL.glRasterPos2f(int(x)+0.5, int(y)+0.5)
     BGL.glDrawPixels(16, 16, BGL.GL_RGBA, BGL.GL_UNSIGNED_BYTE, icon)
+    BGL.glDisable(BGL.GL_BLEND)
+
+def drawArrow(icon, x, y):
+    BGL.glEnable(BGL.GL_BLEND)
+    BGL.glBlendFunc(BGL.GL_SRC_ALPHA, BGL.GL_ONE_MINUS_SRC_ALPHA) 
+    BGL.glRasterPos2f(int(x)+0.5, int(y)+0.5)
+    BGL.glDrawPixels(22, 22, BGL.GL_RGBA, BGL.GL_UNSIGNED_BYTE, icon)
     BGL.glDisable(BGL.GL_BLEND)
 
 def drawLogo(icon, x, y):
@@ -1942,6 +1966,16 @@ def luxBool(name, lux, caption, hint, gui, width=1.0):
         Draw.Toggle(caption, evtLuxGui, r[0], r[1], r[2], r[3], lux.get()=="true", hint, lambda e,v: lux.set(["false","true"][bool(v)]))
     return "\n   \"bool %s\" [\"%s\"]"%(name, lux.get())
 
+def luxCollapse(name, lux, caption, hint, gui, width=1.0):
+    if gui:
+       	r = gui.getRect(width, 1)
+	if lux.get() == "true":
+		drawArrow(arrow_down, r[0]-22, r[1]-2)
+	else:
+		drawArrow(arrow_right, r[0]-22, r[1]-2)
+       	Draw.Toggle(caption, evtLuxGui, r[0], r[1], r[2], r[3], lux.get()=="true", hint, lambda e,v: lux.set(["false","true"][bool(v)]))
+    return "\n   \"bool %s\" [\"%s\"]"%(name, lux.get())
+
 def luxString(name, lux, caption, hint, gui, width=1.0):
     if gui:
         r = gui.getRect(width, 1)
@@ -2069,7 +2103,7 @@ def luxCamera(cam, context, gui=None):
 
         # Clipping
         useclip = luxProp(cam, "useclip", "false")
-        luxBool("useclip", useclip, "Near & Far Clipping", "Enable Camera near and far clipping options", gui, 2.0)
+        luxCollapse("useclip", useclip, "Near & Far Clipping", "Enable Camera near and far clipping options", gui, 2.0)
         if(useclip.get() == "true"):
             if gui: gui.newline("  Clipping:")
             str += luxFloat("hither", luxAttr(cam, "clipStart"), 0.0, 100.0, "start", "near clip distance", gui)
@@ -2079,7 +2113,7 @@ def luxCamera(cam, context, gui=None):
         usedof = luxProp(cam, "usedof", "false")
         
         if camtype.get() in ["perspective", "orthographic"]:
-            luxBool("usedof", usedof, "Depth of Field & Bokeh", "Enable Depth of Field & Aperture options", gui, 2.0)
+            luxCollapse("usedof", usedof, "Depth of Field & Bokeh", "Enable Depth of Field & Aperture options", gui, 2.0)
             
             
             if usedof.get() == "true":
@@ -2143,7 +2177,7 @@ def luxCamera(cam, context, gui=None):
         aspectratio = luxProp(cam, "ratio", 1.3333)
         if camtype.get() in ["perspective", "orthographic"]:
             useshift = luxProp(cam, "camera.useshift", "false")
-            luxBool("useshift", useshift, "Architectural (Lens Shift) & Aspect Ratio", "Enable Lens Shift and Aspect Ratio options", gui, 2.0)
+            luxCollapse("useshift", useshift, "Architectural (Lens Shift) & Aspect Ratio", "Enable Lens Shift and Aspect Ratio options", gui, 2.0)
             if(useshift.get() == "true"):
                 if gui: gui.newline("  Shift:")
                 luxFloat("X", luxAttr(cam, "shiftX"), -2.0, 2.0, "X", "horizontal lens shift", gui)
@@ -2177,7 +2211,7 @@ def luxCamera(cam, context, gui=None):
 
         # Motion Blur Options (common to all cameras)
         usemblur = luxProp(cam, "usemblur", "false")
-        luxBool("usemblur", usemblur, "Motion Blur", "Enable Motion Blur", gui, 2.0)
+        luxCollapse("usemblur", usemblur, "Motion Blur", "Enable Motion Blur", gui, 2.0)
         if(usemblur.get() == "true"):    
             if gui: gui.newline("  Shutter:")
             mblurpreset = luxProp(cam, "mblurpreset", "true")
@@ -2243,7 +2277,7 @@ def luxFilm(scn, gui=None):
                 luxInt("xresolution", luxAttr(context, "sizeX"), 0, 8192, "X", "width of the render", gui, 0.666)
                 luxInt("yresolution", luxAttr(context, "sizeY"), 0, 8192, "Y", "height of the render", gui, 0.666)
                 scale = luxProp(scn, "film.scale", "100 %")
-                luxOption("", scale, ["100 %", "75 %", "50 %", "25 %"], "scale", "scale resolution", gui, 0.666)
+                luxOption("", scale, ["400 %", "200 %", "100 %", "75 %", "50 %", "25 %"], "scale", "scale resolution", gui, 0.666)
                 scale = int(scale.get()[:-1])
                 # render region option
                 if context.borderRender:
@@ -2255,7 +2289,7 @@ def luxFilm(scn, gui=None):
 
             if gui: gui.newline("  Halt:")
             str += luxInt("haltspp", luxProp(scn, "haltspp", 0), 0, 32768, "haltspp", "Stop rendering after specified amount of samples per pixel / 0 = never halt", gui)
-            palpha = luxProp(scn, "film.premultiplyalpha", "true")
+            palpha = luxProp(scn, "film.premultiplyalpha", "false")
             str += luxBool("premultiplyalpha", palpha, "premultiplyalpha", "Pre multiply film alpha channel during normalization", gui)
     
             if gui: gui.newline("  Tonemap:")
@@ -2283,6 +2317,77 @@ def luxFilm(scn, gui=None):
             if gui: gui.newline("  Write:")
             str += luxInt("writeinterval", luxProp(scn, "film.writeinterval", 120), 12, 3600, "interval", "Set display Interval (seconds)", gui)
 
+	    # Image File Outputs
+
+	    # OpenEXR Output
+            saveexr = luxProp(scn, "film.write_exr", "false")
+            str += luxCollapse("write_exr", saveexr, "OpenEXR Output", "Enable OpenEXR output", gui, 2.0)
+
+	    if saveexr.get() == "true":
+            	if gui: gui.newline("  OpenEXR:")
+
+            	exrchannels = luxProp(scn, "film.write_exr_channels", "RGBA")
+            	str += luxOption("write_exr_channels", exrchannels, ["Y", "YA", "RGB", "RGBA"], "Channels", "Select channels type to write", gui, 0.5)
+            	exrres = luxProp(scn, "film.write_exr_halftype", "true")
+            	str += luxBool("write_exr_halftype", exrres, "16bit Half", "Enable 16bit Half resolution output, otherwise 32bit float", gui, 0.5)
+            	exrcompression = luxProp(scn, "film.write_exr_compression", "PIZ (lossless)")
+            	str += luxOption("write_exr_compressiontype", exrcompression, ["RLE (lossless)", "PIZ (lossless)", "ZIP (lossless)", "Pxr24 (lossy)", "None"], "Compression", "Select OpenEXR Compression algorithm to use", gui, 1.0)
+
+            	exrimaging = luxProp(scn, "film.write_exr_imaging", "true")
+            	str += luxBool("write_exr_applyimaging", exrimaging, "Apply Imaging/Tonemapping", "Apply Imaging and Tonemapping pipeline", gui, 1.2)
+	
+		if exrimaging.get()=="true":
+            		exrgamutclamp = luxProp(scn, "film.write_exr_gamutclamp", "true")
+            		str += luxBool("write_exr_gamutclamp", exrgamutclamp, "Gamut Clamp", "Clamp out of gamut (bright) pixel values", gui, 0.8)
+
+		if gui: gui.newline()
+		# Zbuf output
+            	exrZ = luxProp(scn, "film.write_exr_Z", "true")
+            	str += luxBool("write_exr_ZBuf", exrZ, "ZBuf", "Enable Z Depth Buffer channel", gui, 0.8)
+		if exrZ.get() == "true":
+            		exrZNormalize = luxProp(scn, "film.write_exr_ZNorm", "None")
+            		str += luxOption("write_exr_zbuf_normalizationtype", exrZNormalize, ["Camera Start/End clip", "Min/Max", "None"], "ZBuf Normalization", "Select type of normalization to use for Zbuf Depth Map", gui, 1.2)
+
+	    # PNG Output
+            savepng = luxProp(scn, "film.write_png", "true")
+            str += luxCollapse("write_png", savepng, "PNG Output", "Enable PNG (Portable Network Graphics) output", gui, 2.0)
+
+	    if savepng.get() == "true":
+            	if gui: gui.newline("  PNG:")
+            	pngchannels = luxProp(scn, "film.write_png_channels", "RGB")
+            	str += luxOption("write_png_channels", pngchannels, ["Y", "YA", "RGB", "RGBA"], "Channels", "Select channels type to write", gui, 0.5)
+            	png16bit = luxProp(scn, "film.write_png_16bit", "false")
+            	str += luxBool("write_png_16bit", png16bit, "16bit", "Enable 16bits per channel resolution PNG output", gui, 0.5)
+
+            	pnggamutclamp = luxProp(scn, "film.write_png_gamutclamp", "true")
+            	str += luxBool("write_png_gamutclamp", pnggamutclamp, "Gamut Clamp", "Clamp out of gamut (bright) pixel values", gui, 1.0)
+
+		# Zbuf output
+            	pngZ = luxProp(scn, "film.write_png_ZBuf", "false")
+            	str += luxBool("write_png_ZBuf", pngZ, "ZBuf (Separate)", "Enable Z Depth Buffer channel", gui, 0.8)
+		if pngZ.get() == "true":
+            		pngZNormalize = luxProp(scn, "film.write_png_ZNorm", "Min/Max")
+            		str += luxOption("write_png_zbuf_normalizationtype", pngZNormalize, ["Camera Start/End clip", "Min/Max", "None"], "ZBuf Normalization", "Select type of normalization to use for Zbuf Depth Map", gui, 1.2)
+
+	    # TGA Output
+            savetga = luxProp(scn, "film.write_tga", "false")
+            str += luxCollapse("write_tga", savetga, "TGA Output", "Enable TGA output", gui, 2.0)
+
+	    if savetga.get() == "true":
+            	if gui: gui.newline("  TGA:")
+            	tgachannels = luxProp(scn, "film.write_tga_channels", "RGB")
+            	str += luxOption("write_tga_channels", tgachannels, ["Y", "RGB", "RGBA"], "Channels", "Select channels type to write", gui, 0.5)
+            	tgagamutclamp = luxProp(scn, "film.write_tga_gamutclamp", "true")
+            	str += luxBool("write_tga_gamutclamp", tgagamutclamp, "Gamut Clamp", "Clamp out of gamut (bright) pixel values", gui, 1.5)
+
+		# Zbuf output
+            	tgaZ = luxProp(scn, "film.write_tga_ZBuf", "false")
+            	str += luxBool("write_tga_ZBuf", tgaZ, "ZBuf (Separate)", "Enable Z Depth Buffer channel", gui, 0.8)
+		if tgaZ.get() == "true":
+            		tgaZNormalize = luxProp(scn, "film.write_tga_ZNorm", "Min/Max")
+            		str += luxOption("write_tga_zbuf_normalizationtype", tgaZNormalize, ["Camera Start/End clip", "Min/Max", "None"], "ZBuf Normalization", "Select type of normalization to use for Zbuf Depth Map", gui, 1.2)
+
+
             # override output image dir in case of command line batch mode 
             overrideop = luxProp(scn, "overrideoutputpath", "")
             if overrideop.get() != "":
@@ -2293,23 +2398,10 @@ def luxFilm(scn, gui=None):
                 fn = luxProp(scn, "filename", "default-%05d" %  (Blender.Get('curframe')))
                 str += luxString("filename", fn, "File name", "save file name", None)
 
-            if gui: gui.newline("  Formats:")
-            savetga = luxProp(scn, "film.write_tonemapped_tga", "true")
-            str += luxBool("write_tonemapped_tga", savetga, "Tonemapped TGA", "save tonemapped TGA file", gui)
-            if gui: gui.newline("")
-            savetmexr = luxProp(scn, "film.write_tonemapped_exr", "false")
-            saveexr = luxProp(scn, "film.write_untonemapped_exr", "false")
-            str += luxBool("write_tonemapped_exr", savetmexr, "Tonemapped EXR", "save tonemapped EXR file", gui)
-            str += luxBool("write_untonemapped_exr", saveexr, "Untonemapped EXR", "save untonemapped EXR file", gui)
-            if gui: gui.newline("")
-            savetmigi = luxProp(scn, "film.write_tonemapped_igi", "false")
-            saveigi = luxProp(scn, "film.write_untonemapped_igi", "false")
-            str += luxBool("write_tonemapped_igi", savetmigi, "Tonemapped IGI", "save tonemapped IGI file", gui)
-            str += luxBool("write_untonemapped_igi", saveigi, "Untonemapped IGI", "save untonemapped IGI file", gui)
             if gui: gui.newline("  Resume:")
             resumeflm = luxProp(scn, "film.write_resume_flm", "false")
             str += luxBool("write_resume_flm", resumeflm, "Write/Use FLM", "Write a resume fleximage .flm file, or resume rendering if it already exists", gui)
-            restartflm = luxProp(scn, "film.restart_resume_flm", "false")
+            restartflm = luxProp(scn, "film.restart_resume_flm", "true")
             str += luxBool("restart_resume_flm", restartflm, "Restart/Erase", "Restart with a black flm, even it a previous flm exists", gui)
             if gui: gui.newline("  Reject:")
             str += luxInt("reject_warmup", luxProp(scn, "film.reject_warmup", 128), 0, 32768, "warmup_spp", "Specify amount of samples per pixel for high intensity rejection", gui)
@@ -2683,9 +2775,36 @@ def luxSurfaceIntegrator(scn, gui=None):
             if gui: gui.newline("  Specular:")
             str += luxInt("specularreflectdepth", luxProp(scn, "sintegrator.distributedpath.specularreflectdepth", 3), 0, 2048, "Reflect", "The maximum recursion depth for specular reflection ray casting", gui, 1.0)
             str += luxInt("specularrefractdepth", luxProp(scn, "sintegrator.distributedpath.specularrefractdepth", 5), 0, 2048, "Refract", "The maximum recursion depth for specular refraction ray casting", gui, 1.0)
-            if gui: gui.newline("  Caustics:")
-            str += luxBool("causticsondiffuse",luxProp(scn, "sintegrator.distributedpath.causticsondiffuse", "false"), "Caustics on Diffuse", "Enable caustics on diffuse surfaces (warning: might generate bright pixels)", gui, 1.0)
-            str += luxBool("causticsonglossy",luxProp(scn, "sintegrator.distributedpath.causticsonglossy", "true"), "Caustics on Glossy", "Enable caustics on glossy surfaces (warning: might generate bright pixels)", gui, 1.0)
+            #if gui: gui.newline("  Caustics:")
+            #str += luxBool("causticsondiffuse",luxProp(scn, "sintegrator.distributedpath.causticsondiffuse", "false"), "Caustics on Diffuse", "Enable caustics on diffuse surfaces (warning: might generate bright pixels)", gui, 1.0)
+            #str += luxBool("causticsonglossy",luxProp(scn, "sintegrator.distributedpath.causticsonglossy", "true"), "Caustics on Glossy", "Enable caustics on glossy surfaces (warning: might generate bright pixels)", gui, 1.0)
+
+            usereject = luxProp(scn, "sintegrator.distributedpath.usereject", "false")
+            luxCollapse("usereject", usereject, "Rejection", "Enable Rejection system to eliminate bright contributions", gui, 2.0)
+
+	    if usereject.get()=="true":
+            	if gui: gui.newline("  Diffuse:")
+		diffusereflectreject = luxProp(scn, "sintegrator.distributedpath.difreflreject", "false")
+            	str += luxBool("diffusereflectreject", diffusereflectreject, "Reflect", "Enable Rejection for Diffuse Reflection", gui, 0.4)
+		if diffusereflectreject.get()=="true":
+            		str += luxFloat("diffusereflectreject_threshold", luxProp(scn, "sintegrator.distributedpath.difreflrejectthr", 5.0), 0.01, 10.0, "Thr", "The Average Threshold to reject", gui, 0.6)
+		    
+		diffuserefractreject = luxProp(scn, "sintegrator.distributedpath.difrefrreject", "false")
+            	str += luxBool("diffuserefractreject", diffuserefractreject, "Refract", "Enable Rejection for Diffuse Refraction", gui, 0.4)
+		if diffuserefractreject.get()=="true":
+            		str += luxFloat("diffuserefractreject_threshold", luxProp(scn, "sintegrator.distributedpath.difrefrrejectthr", 5.0), 0.01, 10.0, "Thr", "The Average Threshold to reject", gui, 0.6)
+
+            	if gui: gui.newline("  Glossy:")
+		glossyreflectreject = luxProp(scn, "sintegrator.distributedpath.glosreflreject", "false")
+            	str += luxBool("glossyreflectreject", glossyreflectreject, "Reflect", "Enable Rejection for Glossy Reflection", gui, 0.4)
+		if glossyreflectreject.get()=="true":
+            		str += luxFloat("glossyreflectreject_threshold", luxProp(scn, "sintegrator.distributedpath.glosreflrejectthr", 5.0), 0.01, 10.0, "Thr", "The Average Threshold to reject", gui, 0.6)
+		    
+		glossyrefractreject = luxProp(scn, "sintegrator.distributedpath.glosrefrreject", "false")
+            	str += luxBool("glossyrefractreject", glossyrefractreject, "Refract", "Enable Rejection for Glossy Refraction", gui, 0.4)
+		if glossyrefractreject.get()=="true":
+            		str += luxFloat("glossyrefractreject_threshold", luxProp(scn, "sintegrator.distributedpath.glosrefrrejectthr", 5.0), 0.01, 10.0, "Thr", "The Average Threshold to reject", gui, 0.6)
+
 
     return str
 
@@ -2739,10 +2858,10 @@ def luxEnvironment(scn, gui=None):
                         str += "\n   \"color L\" [%g %g %g]" %(worldcolor[0], worldcolor[1], worldcolor[2])
                     except: pass
 
-                str += luxFloat("gain", luxProp(scn, "env.infinite.gain", 1.0), 0.0, 1000.0, "gain", "", gui, 1.0)
+                str += luxFloat("gain", luxProp(scn, "env.infinite.gain", 1.0), 0.0001, 100.0, "gain", "", gui, 1.0)
 
                 infinitesun = luxProp(scn, "env.infinite.hassun", "false")
-                luxBool("infinitesun", infinitesun, "Sun Component", "Add Sunlight Component", gui, 2.0)
+                luxCollapse("infinitesun", infinitesun, "Sun Component", "Add Sunlight Component", gui, 2.0)
                 if(infinitesun.get() == "true"):
                     sun_lg = luxProp(scn, "env.sun_lightgroup", "default")
                     luxString("env.lightgroup", sun_lg, "lightgroup", "Sun component light group", gui)
@@ -2769,7 +2888,7 @@ def luxEnvironment(scn, gui=None):
                     
                     showGeo = luxProp(sun, 'sc.show', 'false')
                     if gui:
-                        luxBool("sc.show", showGeo, "Geographic Sun", "Set sun position by world location, date and time", gui, 2.0)
+                        luxCollapse("sc.show", showGeo, "Geographic Sun", "Set sun position by world location, date and time", gui, 2.0)
                     if gui and showGeo.get() == 'true':
                         gui.newline("Geographic:")
                         sc = sun_calculator(sun)
@@ -3378,7 +3497,56 @@ def luxTexture(name, parentkey, type, default, min, max, caption, hint, mat, gui
 
     if texture.get() == "imagemap":
         str += luxOption("wrap", luxProp(mat, keyname+".wrap", "repeat"), ["repeat","black","clamp"], "repeat", "", gui, 1.1)
-        str += luxFile("filename", luxProp(mat, keyname+".filename", ""), "file", "texture file path", gui, 2.0)
+
+	# ZANQDO
+	texturefilename = luxProp(mat, keyname+".filename", "")
+        str += luxFile("filename", texturefilename, "file", "texture file path", gui, 2.0)
+	
+        useseq = luxProp(mat, keyname+".useseq", "false")
+        luxCollapse("usesew", useseq, "Sequence", "", gui, 2.0)
+
+	if useseq.get() == "true":
+		seqframes = luxProp(mat, keyname+".seqframes", 100)
+		luxInt("frames", seqframes, 1, 100000, "Frames", "", gui, 0.5)
+		seqoffset = luxProp(mat, keyname+".seqoffset", 0)
+		luxInt("offset", seqoffset, 0, 100000, "Offset", "", gui, 0.5)
+		seqstartframe = luxProp(mat, keyname+".seqsframe", 1)
+		luxInt("startframe", seqstartframe, 1, 100000, "StartFr", "", gui, 0.5)
+		seqcyclic = luxProp(mat, keyname+".seqcycl", "false")
+        	luxBool("cyclic", seqcyclic, "Cyclic", "", gui, 0.5)
+
+		
+		totalframes = seqframes.get()
+                currentframe = Blender.Get('curframe')
+
+		if(currentframe < seqstartframe.get()):
+			fnumber = 1 + seqoffset.get()
+		else:
+			fnumber = (currentframe - (seqstartframe.get()-1)) + seqoffset.get()
+
+		if(fnumber > seqframes.get()):
+			if(seqcyclic.get() == "false"):
+				fnumber = seqframes.get()
+			else:
+				fnumber = currentframe % seqframes.get()
+
+		import re
+		def get_seq_filename(number, filename):
+			m = re.findall(r'(\d+)', filename)
+			if len(m) == 0:
+				return "ERR: Can't find pattern"
+
+			rightmost_number = m[len(m)-1]
+			seq_length = len(rightmost_number)
+
+			nstr = "%i" %number
+ 			new_seq_number = nstr.zfill(seq_length)
+ 
+			return filename.replace(rightmost_number, new_seq_number)
+ 
+		texturefilename.set(get_seq_filename(fnumber, texturefilename.get()))
+		if gui: gui.newline()
+
         str += luxFloat("gamma", luxProp(mat, keyname+".gamma", texturegamma()), 0.0, 6.0, "gamma", "", gui, 0.75)
         str += luxFloat("gain", luxProp(mat, keyname+".gain", 1.0), 0.0, 10.0, "gain", "", gui, 0.5)
         filttype = luxProp(mat, keyname+".filtertype", "bilinear")
@@ -3959,7 +4127,7 @@ def luxLight(name, kn, mat, gui, level):
 
     if gui: gui.newline("Photometric")
     pm = luxProp(mat, kn+"light.usepm", "false")
-    luxBool("photometric", pm, "Photometric Diagram", "Enable Photometric Diagram options", gui, 2.0)
+    luxCollapse("photometric", pm, "Photometric Diagram", "Enable Photometric Diagram options", gui, 2.0)
 
     if(pm.get()=="true"):
         pmtype = luxProp(mat, kn+"light.pmtype", "IESna")
@@ -4303,6 +4471,8 @@ def luxMaterialBlock(name, luxname, key, mat, gui=None, level=0, str_opt=""):
         has_object_options   = 0 # disable object options by default
         has_bump_options     = 0 # disable bump mapping options by default
         has_emission_options = 0 # disable emission options by default
+	has_compositing_options = 0 # disable compositing options by default
+
         if mattype.get() == "mix":
             (str,link) = c((str,link), luxFloatTexture("amount", keyname, 0.5, 0.0, 1.0, "amount", "The degree of mix between the two materials", mat, gui, level+1))
             (str,link) = c((str,link), luxMaterialBlock("mat1", "namedmaterial1", keyname, mat, gui, level+1))
@@ -4310,6 +4480,7 @@ def luxMaterialBlock(name, luxname, key, mat, gui=None, level=0, str_opt=""):
             has_bump_options = 0
             has_object_options = 1
             has_emission_options = 1
+	    has_compositing_options = 0
 
         if mattype.get() == "light":
             lightgroup = luxProp(mat, kn+"light.lightgroup", "default")
@@ -4319,6 +4490,7 @@ def luxMaterialBlock(name, luxname, key, mat, gui=None, level=0, str_opt=""):
             has_bump_options = 0
             has_object_options = 1
             has_emission_options = 0
+	    has_compositing_options = 1
 
         if mattype.get() == "boundvolume":
             link = ""
@@ -4374,6 +4546,7 @@ def luxMaterialBlock(name, luxname, key, mat, gui=None, level=0, str_opt=""):
             has_bump_options = 1
             has_object_options = 1
             has_emission_options = 1
+	    has_compositing_options = 1
         if mattype.get() == "glass":
             (str,link) = c((str,link), luxSpectrumTexture("Kr", keyname, "1.0 1.0 1.0", 1.0, "reflection", "", mat, gui, level+1))
             (str,link) = c((str,link), luxSpectrumTexture("Kt", keyname, "1.0 1.0 1.0", 1.0, "transmission", "", mat, gui, level+1))
@@ -4382,36 +4555,39 @@ def luxMaterialBlock(name, luxname, key, mat, gui=None, level=0, str_opt=""):
             link += luxBool("architectural", architectural, "architectural", "Enable architectural glass", gui, 2.0)
             if architectural.get() == "false":
                 chromadisp = luxProp(mat, keyname+".chromadisp", "false")
-                luxBool("chromadisp", chromadisp, "Dispersive Refraction", "Enable Chromatic Dispersion", gui, 2.0)
+                luxCollapse("chromadisp", chromadisp, "Dispersive Refraction", "Enable Chromatic Dispersion", gui, 2.0)
                 if chromadisp.get() == "true":
                     (str,link) = c((str,link), luxCauchyBFloatTexture("cauchyb", keyname, 0.0, 0.0, 1.0, "cauchyb", "", mat, gui, level+1))
                 thinfilm = luxProp(mat, keyname+".thinfilm", "false")
-                luxBool("thinfilm", thinfilm, "Thin Film Coating", "Enable Thin Film Coating", gui, 2.0)
+                luxCollapse("thinfilm", thinfilm, "Thin Film Coating", "Enable Thin Film Coating", gui, 2.0)
                 if thinfilm.get() == "true":
                     (str,link) = c((str,link), luxFloatSliderTexture("film", keyname, 200.0, 1.0, 1500.0, "film", "thickness of film coating in nanometers", mat, gui, level+1))
                     (str,link) = c((str,link), luxIORFloatTexture("filmindex", keyname, 1.5, 1.0, 6.0, "film IOR", "film coating index of refraction", mat, gui, level+1))
             has_bump_options = 1
             has_object_options = 1
             has_emission_options = 1
+	    has_compositing_options = 1
         if mattype.get() == "matte":
             orennayar = luxProp(mat, keyname+".orennayar", "false")
             (str,link) = c((str,link), luxSpectrumTexture("Kd", keyname, "1.0 1.0 1.0", 1.0, "diffuse", "", mat, gui, level+1))
-            luxBool("orennayar", orennayar, "Oren-Nayar", "Enable Oren-Nayar BRDF", gui, 2.0)
+            luxCollapse("orennayar", orennayar, "Oren-Nayar", "Enable Oren-Nayar BRDF", gui, 2.0)
             if orennayar.get() == "true":
                 (str,link) = c((str,link), luxFloatTexture("sigma", keyname, 0.0, 0.0, 100.0, "sigma", "sigma value for Oren-Nayar BRDF", mat, gui, level+1))
             has_bump_options = 1
             has_object_options = 1
             has_emission_options = 1
+	    has_compositing_options = 1
         if mattype.get() == "mattetranslucent":
             orennayar = luxProp(mat, keyname+".orennayar", "false")
             (str,link) = c((str,link), luxSpectrumTexture("Kr", keyname, "1.0 1.0 1.0", 1.0, "reflection", "", mat, gui, level+1))
             (str,link) = c((str,link), luxSpectrumTexture("Kt", keyname, "1.0 1.0 1.0", 1.0, "transmission", "", mat, gui, level+1))
-            luxBool("orennayar", orennayar, "Oren-Nayar", "Enable Oren-Nayar BRDF", gui, 2.0)
+            luxCollapse("orennayar", orennayar, "Oren-Nayar", "Enable Oren-Nayar BRDF", gui, 2.0)
             if orennayar.get() == "true":
                 (str,link) = c((str,link), luxFloatTexture("sigma", keyname, 0.0, 0.0, 100.0, "sigma", "", mat, gui, level+1))
             has_bump_options = 1
             has_object_options = 1
             has_emission_options = 1
+	    has_compositing_options = 1
         if mattype.get() == "metal":
             if gui: gui.newline("name:", 0, level+1)
             metalname = luxProp(mat, kn+"metal.name", "")
@@ -4437,10 +4613,11 @@ def luxMaterialBlock(name, luxname, key, mat, gui=None, level=0, str_opt=""):
             has_bump_options = 1
             has_object_options = 1
             has_emission_options = 1
+	    has_compositing_options = 1
         if mattype.get() == "mirror":
             (str,link) = c((str,link), luxSpectrumTexture("Kr", keyname, "1.0 1.0 1.0", 1.0, "reflection", "", mat, gui, level+1))
             thinfilm = luxProp(mat, keyname+".thinfilm", "false")
-            luxBool("thinfilm", thinfilm, "Thin Film Coating", "Enable Thin Film Coating", gui, 2.0)
+            luxCollapse("thinfilm", thinfilm, "Thin Film Coating", "Enable Thin Film Coating", gui, 2.0)
             if thinfilm.get() == "true":
                 (str,link) = c((str,link), luxFloatSliderTexture("film", keyname, 200.0, 1.0, 1500.0, "film", "thickness of film coating in nanometers", mat, gui, level+1))
                 (str,link) = c((str,link), luxIORFloatTexture("filmindex", keyname, 1.5, 1.0, 6.0, "film IOR", "film coating index of refraction", mat, gui, level+1))
@@ -4448,6 +4625,7 @@ def luxMaterialBlock(name, luxname, key, mat, gui=None, level=0, str_opt=""):
             has_bump_options = 1
             has_object_options = 1
             has_emission_options = 1
+	    has_compositing_options = 1
         if mattype.get() == "roughglass":
             (str,link) = c((str,link), luxSpectrumTexture("Kr", keyname, "1.0 1.0 1.0", 1.0, "reflection", "", mat, gui, level+1))
             (str,link) = c((str,link), luxSpectrumTexture("Kt", keyname, "1.0 1.0 1.0", 1.0, "transmission", "", mat, gui, level+1))
@@ -4464,12 +4642,13 @@ def luxMaterialBlock(name, luxname, key, mat, gui=None, level=0, str_opt=""):
                 link += l.replace("uroughness", "vroughness", 1)
             (str,link) = c((str,link), luxIORFloatTexture("index", keyname, 1.5, 1.0, 6.0, "IOR", "", mat, gui, level+1))
             chromadisp = luxProp(mat, keyname+".chromadisp", "false")
-            luxBool("chromadisp", chromadisp, "Dispersive Refraction", "Enable Chromatic Dispersion", gui, 2.0)
+            luxCollapse("chromadisp", chromadisp, "Dispersive Refraction", "Enable Chromatic Dispersion", gui, 2.0)
             if chromadisp.get() == "true":
                 (str,link) = c((str,link), luxCauchyBFloatTexture("cauchyb", keyname, 0.0, 0.0, 1.0, "cauchyb", "", mat, gui, level+1))
             has_bump_options = 1
             has_object_options = 1
             has_emission_options = 1
+	    has_compositing_options = 1
         if mattype.get() == "shinymetal":
             (str,link) = c((str,link), luxSpectrumTexture("Kr", keyname, "1.0 1.0 1.0", 1.0, "reflection", "", mat, gui, level+1))
             (str,link) = c((str,link), luxSpectrumTexture("Ks", keyname, "1.0 1.0 1.0", 1.0, "specular", "", mat, gui, level+1))
@@ -4486,7 +4665,7 @@ def luxMaterialBlock(name, luxname, key, mat, gui=None, level=0, str_opt=""):
                 link += l.replace("uroughness", "vroughness", 1)
 
             thinfilm = luxProp(mat, keyname+".thinfilm", "false")
-            luxBool("thinfilm", thinfilm, "Thin Film Coating", "Enable Thin Film Coating", gui, 2.0)
+            luxCollapse("thinfilm", thinfilm, "Thin Film Coating", "Enable Thin Film Coating", gui, 2.0)
             if thinfilm.get() == "true":
                 (str,link) = c((str,link), luxFloatSliderTexture("film", keyname, 200.0, 1.0, 1500.0, "film", "thickness of film coating in nanometers", mat, gui, level+1))
                 (str,link) = c((str,link), luxIORFloatTexture("filmindex", keyname, 1.5, 1.0, 6.0, "film IOR", "film coating index of refraction", mat, gui, level+1))
@@ -4494,6 +4673,7 @@ def luxMaterialBlock(name, luxname, key, mat, gui=None, level=0, str_opt=""):
             has_bump_options = 1
             has_object_options = 1
             has_emission_options = 1
+	    has_compositing_options = 1
         if mattype.get() == "glossy":
             (str,link) = c((str,link), luxSpectrumTexture("Kd", keyname, "1.0 1.0 1.0", 1.0, "diffuse", "", mat, gui, level+1))
             useior = luxProp(mat, keyname+".useior", "false")
@@ -4519,19 +4699,20 @@ def luxMaterialBlock(name, luxname, key, mat, gui=None, level=0, str_opt=""):
                 link += l.replace("uroughness", "vroughness", 1)
 
             absorption = luxProp(mat, keyname+".useabsorption", "false")
-            luxBool("absorption", absorption, "Absorption", "Enable Coating Absorption", gui, 2.0)
+            luxCollapse("absorption", absorption, "Absorption", "Enable Coating Absorption", gui, 2.0)
             if absorption.get() == "true":
                 (str,link) = c((str,link), luxSpectrumTexture("Ka", keyname, "1.0 1.0 1.0", 1.0, "absorption", "", mat, gui, level+1))
                 (str,link) = c((str,link), luxFloatTexture("d", keyname, 0.15, 0.0, 1.0, "depth", "", mat, gui, level+1))
             has_bump_options = 1
             has_object_options = 1
             has_emission_options = 1
+	    has_compositing_options = 1
 
 
         # Bump mapping options (common)
         if (has_bump_options == 1):
             usebump = luxProp(mat, keyname+".usebump", "false")
-            luxBool("usebump", usebump, "Bump Map", "Enable Bump Mapping options", gui, 2.0)
+            luxCollapse("usebump", usebump, "Bump Map", "Enable Bump Mapping options", gui, 2.0)
             if usebump.get() == "true":
                 (str,link) = c((str,link), luxFloatTexture("bumpmap", keyname, 0.0, 0.0, 1.0, "bumpmap", "", mat, gui, level+1))
 
@@ -4540,17 +4721,54 @@ def luxMaterialBlock(name, luxname, key, mat, gui=None, level=0, str_opt=""):
             if (has_emission_options == 1):
                 if gui: gui.newline("", 2, level, None, [0.6,0.6,0.4])
                 useemission = luxProp(mat, "emission", "false")
-                luxBool("useemission", useemission, "Emission", "Enable emission options", gui, 2.0)
+                luxCollapse("useemission", useemission, "Emission", "Enable emission options", gui, 2.0)
                 if useemission.get() == "true":
                     # emission GUI is here but lux export will be done later 
                     luxLight("", "", mat, gui, level)
             else: luxProp(mat, "emission", "false").set("false") # prevent from exporting later
 
+
+	# Compositing options (common)
+	# Note - currently only display options when using distributedpath integrator
+	integratortype = luxProp(Scene.GetCurrent(), "sintegrator.type", "bidirectional")
+	if (integratortype.get() == "distributedpath" and level == 0):
+	    if (has_compositing_options == 1):
+		    if gui: gui.newline("", 2, level, None, [0.4,0.4,0.6])
+		    usecompo = luxProp(mat, "compo", "false")
+		    luxCollapse("compo", usecompo, "Compositing", "Enable Compositing options", gui, 2.0)
+		    if usecompo.get() == "true":
+		    	if gui: gui.newline("", 2, level, None, [0.35,0.35,0.55])
+		    	usecompoviz = luxProp(mat, "compo_viz", "false")
+		    	luxCollapse("compo_viz", usecompoviz, "Visibility", "Enable Visibility Compositing options", gui, 2.0)
+		    	if usecompoviz.get() == "true":
+				if gui: gui.newline("View", 2, level, None, [0.35,0.35,0.55])
+            			compovizmat = luxProp(mat, "compo_viz_mat", "true")
+            			link += luxBool("compo_visible_material", compovizmat, "Material", "Enable View Visibility of Material", gui, 1.0)
+            			compovizemi = luxProp(mat, "compo_viz_emi", "true")
+            			link += luxBool("compo_visible_emission", compovizemi, "Emission", "Enable View Visibility of Emission", gui, 1.0)
+				if gui: gui.newline("Indirect", 2, level, None, [0.35,0.35,0.55])
+            			compovizmati = luxProp(mat, "compo_viz_mati", "true")
+            			link += luxBool("compo_visible_indirect_material", compovizmati, "Material", "Enable InDirect Visibility of Material", gui, 1.0)
+            			compovizemii = luxProp(mat, "compo_viz_emii", "true")
+            			link += luxBool("compo_visible_indirect_emission", compovizemii, "Emission", "Enable InDirect Visibility of Emission", gui, 1.0)
+			if gui: gui.newline("", 2, level, None, [0.4,0.4,0.6])
+            		overridealpha = luxProp(mat, "compo_o_alpha", "false")
+            		link += luxCollapse("compo_override_alpha", overridealpha, "Override Alpha", "Enable Manual control of alpha value", gui, 2.0)
+			if overridealpha.get() == "true":
+				if gui: gui.newline("Alpha", 2, level, None, [0.4,0.4,0.6])
+               			link += luxFloat("compo_override_alpha_value", luxProp(mat, "compo_o_alpha_v", 0.0), 0.0, 1.0, "Alpha", "Alpha Value", gui, 2.0, 1)
+            		usecolorkey = luxProp(mat, "compo_usekey", "false")
+			if gui: gui.newline("", 2, level, None, [0.35,0.35,0.55])
+            		link += luxCollapse("compo_use_key", usecolorkey, "Chroma Key", "Enable Chroma Object key", gui, 2.0)
+			if usecolorkey.get() == "true":
+				if gui: gui.newline("Key", 2, level, None, [0.35,0.35,0.55])
+				link += luxRGB("compo_key_color", luxProp(mat, "compo_key_color", "0.0 0.0 1.0"), 1.0, "key", "", gui, 2.0)
+
         # transformation options (common)
         if (level == 0):
             if gui: gui.newline("", 2, level, None, [0.6,0.6,0.4])
             usetransformation = luxProp(mat, "transformation", "false")
-            luxBool("usetransformation", usetransformation, "Texture Transformation", "Enable transformation option", gui, 2.0)
+            luxCollapse("usetransformation", usetransformation, "Texture Transformation", "Enable transformation option", gui, 2.0)
             if usetransformation.get() == "true":
                 scale = luxProp(mat, "3dscale", 1.0)
                 rotate = luxProp(mat, "3drotate", "0 0 0")
@@ -5861,6 +6079,8 @@ if (pyargs != []) and (batchindex != 0):
         print "Error: End frame not supplied (-e)"; osys.exit(1)
     if opts.has_key('-l'):
         print "Path to lux binary: %s" %opts['-l']
+	luxbatchconsolemode = luxProp(scene, "luxbatchc", "false")
+	luxbatchconsolemode.set("true")
         luxpathprop = luxProp(scene, "lux", "")
         luxpathprop.set(opts['-l'])
     else:
@@ -5891,7 +6111,7 @@ if (pyargs != []) and (batchindex != 0):
             print "Error: No material with name \"Material\" found (--lbt)"; osys.exit(1)
 
 #    CBluxAnimExport(True, True)
-    CBluxAnimExport(False, False, False) # as by zukazuka (http://www.luxrender.net/forum/viewtopic.php?f=11&t=1288)
+    CBluxAnimExport(True, True, False) # as by zukazuka (http://www.luxrender.net/forum/viewtopic.php?f=11&t=1288)
     osys.exit(0)
 
 else:
