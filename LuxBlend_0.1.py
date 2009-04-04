@@ -1,16 +1,16 @@
 #!BPY
 # coding=utf-8
 """Registration info for Blender menus:
-Name: 'LuxBlend v0.6RC1 Exporter'
+Name: 'LuxBlend v0.6RC2 Exporter'
 Blender: 248
 Group: 'Render'
-Tooltip: 'Export/Render to LuxRender v0.6RC1 scene format (.lxs)'
+Tooltip: 'Export/Render to LuxRender v0.6RC2 scene format (.lxs)'
 """
 #
 # ***** BEGIN GPL LICENSE BLOCK *****
 #
 # --------------------------------------------------------------------------
-# LuxBlend v0.6RC1 exporter
+# LuxBlend v0.6RC2 exporter
 # --------------------------------------------------------------------------
 #
 # Authors:
@@ -684,7 +684,7 @@ def save_lux(filename, unindexedname):
         file = open(filename, 'w')
 
         ##### Write Header ######
-        file.write("# Lux Render v0.6RC1 Scene File\n")
+        file.write("# Lux Render v0.6RC2 Scene File\n")
         file.write("# Exported by LuxBlend Blender Exporter\n")
         file.write("\n")
     
@@ -1270,9 +1270,9 @@ def getScenePresets():
     'sampler.metro.usevariance': "false",
 
     'sintegrator.type': 'bidirectional',
-    'sintegrator.bidir.bounces': 10,
-    'sintegrator.bidir.eyedepth': 10,
-    'sintegrator.bidir.lightdepth': 10,
+    'sintegrator.bidir.bounces': 16,
+    'sintegrator.bidir.eyedepth': 16,
+    'sintegrator.bidir.lightdepth': 16,
 
     'pixelfilter.type': 'mitchell',
     'pixelfilter.mitchell.sharp': 0.333, 
@@ -1321,9 +1321,9 @@ def getScenePresets():
     'sampler.lowdisc.pixelsampler': 'lowdiscrepancy',
 
     'sintegrator.type': 'bidirectional',
-    'sintegrator.bidir.bounces': 10,
-    'sintegrator.bidir.eyedepth': 10,
-    'sintegrator.bidir.lightdepth': 10,
+    'sintegrator.bidir.bounces': 16,
+    'sintegrator.bidir.eyedepth': 16,
+    'sintegrator.bidir.lightdepth': 16,
 
     'pixelfilter.type': 'mitchell',
     'pixelfilter.mitchell.sharp': 0.333, 
@@ -2363,11 +2363,11 @@ def luxFilm(scn, gui=None):
             	str += luxBool("write_png_gamutclamp", pnggamutclamp, "Gamut Clamp", "Clamp out of gamut (bright) pixel values", gui, 1.0)
 
 		# Zbuf output
-            	pngZ = luxProp(scn, "film.write_png_ZBuf", "false")
-            	str += luxBool("write_png_ZBuf", pngZ, "ZBuf (Separate)", "Enable Z Depth Buffer channel", gui, 0.8)
-		if pngZ.get() == "true":
-            		pngZNormalize = luxProp(scn, "film.write_png_ZNorm", "Min/Max")
-            		str += luxOption("write_png_zbuf_normalizationtype", pngZNormalize, ["Camera Start/End clip", "Min/Max", "None"], "ZBuf Normalization", "Select type of normalization to use for Zbuf Depth Map", gui, 1.2)
+            	#pngZ = luxProp(scn, "film.write_png_ZBuf", "false")
+            	#str += luxBool("write_png_ZBuf", pngZ, "ZBuf (Separate)", "Enable Z Depth Buffer channel", gui, 0.8)
+		#if pngZ.get() == "true":
+            	#	pngZNormalize = luxProp(scn, "film.write_png_ZNorm", "Min/Max")
+            	#	str += luxOption("write_png_zbuf_normalizationtype", pngZNormalize, ["Camera Start/End clip", "Min/Max", "None"], "ZBuf Normalization", "Select type of normalization to use for Zbuf Depth Map", gui, 1.2)
 
 	    # TGA Output
             savetga = luxProp(scn, "film.write_tga", "false")
@@ -2381,11 +2381,11 @@ def luxFilm(scn, gui=None):
             	str += luxBool("write_tga_gamutclamp", tgagamutclamp, "Gamut Clamp", "Clamp out of gamut (bright) pixel values", gui, 1.5)
 
 		# Zbuf output
-            	tgaZ = luxProp(scn, "film.write_tga_ZBuf", "false")
-            	str += luxBool("write_tga_ZBuf", tgaZ, "ZBuf (Separate)", "Enable Z Depth Buffer channel", gui, 0.8)
-		if tgaZ.get() == "true":
-            		tgaZNormalize = luxProp(scn, "film.write_tga_ZNorm", "Min/Max")
-            		str += luxOption("write_tga_zbuf_normalizationtype", tgaZNormalize, ["Camera Start/End clip", "Min/Max", "None"], "ZBuf Normalization", "Select type of normalization to use for Zbuf Depth Map", gui, 1.2)
+            	#tgaZ = luxProp(scn, "film.write_tga_ZBuf", "false")
+            	#str += luxBool("write_tga_ZBuf", tgaZ, "ZBuf (Separate)", "Enable Z Depth Buffer channel", gui, 0.8)
+		#if tgaZ.get() == "true":
+            	#	tgaZNormalize = luxProp(scn, "film.write_tga_ZNorm", "Min/Max")
+            	#	str += luxOption("write_tga_zbuf_normalizationtype", tgaZNormalize, ["Camera Start/End clip", "Min/Max", "None"], "ZBuf Normalization", "Select type of normalization to use for Zbuf Depth Map", gui, 1.2)
 
 
             # override output image dir in case of command line batch mode 
@@ -5723,7 +5723,7 @@ def luxDraw():
 
     y = int(scrollbar.getTop()) # 420
     BGL.glColor3f(0.1,0.1,0.1); BGL.glRectf(0,0,440,y)
-    BGL.glColor3f(1.0,0.5,0.0); BGL.glRasterPos2i(130,y-21); Draw.Text("v0.6RC1")
+    BGL.glColor3f(1.0,0.5,0.0); BGL.glRasterPos2i(130,y-21); Draw.Text("v0.6RC2")
     BGL.glColor3f(0.9,0.9,0.9);
 
     drawLogo(icon_luxblend, 6, y-25);
@@ -6039,7 +6039,7 @@ try:
 except: pyargs = []
 
 if (pyargs != []) and (batchindex != 0):
-    print "\n\nLuxBlend v0.6RC1 - BATCH mode\n"
+    print "\n\nLuxBlend v0.6RC2 - BATCH mode\n"
     LuxIsGUI = False
 
     scene = Scene.GetCurrent()
@@ -6115,7 +6115,7 @@ if (pyargs != []) and (batchindex != 0):
     osys.exit(0)
 
 else:
-    print "\n\nLuxBlend v0.6RC1 - UI mode\n"
+    print "\n\nLuxBlend v0.6RC2 - UI mode\n"
     from Blender.Window import DrawProgressBar
     LuxIsGUI = True
     
