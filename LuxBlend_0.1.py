@@ -942,9 +942,9 @@ def launchLuxWait(filename):
 
     ic = luxProp(scn, "lux", "").get()
     if luxbatchconsolemode.get() == "false":
-    	ic = Blender.sys.dirname(ic) + os.sep + "luxrender"
+    	ic = Blender.sys.dirname(ic) + os.sep + "luxconsole"
     if ostype == "win32": ic = ic + ".exe"
-    if ostype == "darwin": ic = ic + ".app/Contents/MacOS/luxrender"
+    if ostype == "darwin": ic = ic + ".app/Contents/MacOS/luxconsole"
     checkluxpath = luxProp(scn, "checkluxpath", True).get()
     if checkluxpath:
         if sys.exists(ic) != 1:
