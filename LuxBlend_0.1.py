@@ -2718,7 +2718,7 @@ def luxSurfaceIntegrator(scn, gui=None):
             if showadvanced.get()=="false":
                 # Default parameters
                 if gui: gui.newline("  Depth:", 8, 0, None, [0.4,0.4,0.4])
-                bounces = luxProp(scn, "sintegrator.bidir.bounces", 10)
+                bounces = luxProp(scn, "sintegrator.bidir.bounces", 16)
                 luxInt("bounces", bounces, 5, 32, "bounces", "The maximum recursion depth for ray casting (in both directions)", gui, 2.0)
                 str += "\n   \"integer eyedepth\" [%i]\n"%bounces.get()
                 str += "   \"integer lightdepth\" [%i]"%bounces.get()
@@ -2726,8 +2726,8 @@ def luxSurfaceIntegrator(scn, gui=None):
             if showadvanced.get()=="true":
                 # Advanced parameters
                 if gui: gui.newline("  Depth:")
-                str += luxInt("eyedepth", luxProp(scn, "sintegrator.bidir.eyedepth", 10), 0, 2048, "eyedepth", "The maximum recursion depth for ray casting", gui)
-                str += luxInt("lightdepth", luxProp(scn, "sintegrator.bidir.lightdepth", 10), 0, 2048, "lightdepth", "The maximum recursion depth for light ray casting", gui)
+                str += luxInt("eyedepth", luxProp(scn, "sintegrator.bidir.eyedepth", 16), 0, 2048, "eyedepth", "The maximum recursion depth for ray casting", gui)
+                str += luxInt("lightdepth", luxProp(scn, "sintegrator.bidir.lightdepth", 16), 0, 2048, "lightdepth", "The maximum recursion depth for light ray casting", gui)
                 str += luxOption("strategy", luxProp(scn, "sintegrator.bidir.strategy", "auto"), ["one", "all", "auto"], "strategy", "select directlighting strategy", gui)
 
         if integratortype.get() == "exphotonmap":
@@ -2788,23 +2788,23 @@ def luxSurfaceIntegrator(scn, gui=None):
 		diffusereflectreject = luxProp(scn, "sintegrator.distributedpath.difreflreject", "false")
             	str += luxBool("diffusereflectreject", diffusereflectreject, "Reflect", "Enable Rejection for Diffuse Reflection", gui, 0.4)
 		if diffusereflectreject.get()=="true":
-            		str += luxFloat("diffusereflectreject_threshold", luxProp(scn, "sintegrator.distributedpath.difreflrejectthr", 5.0), 0.01, 10.0, "Thr", "The Average Threshold to reject", gui, 0.6)
+            		str += luxFloat("diffusereflectreject_threshold", luxProp(scn, "sintegrator.distributedpath.difreflrejectthr", 10.0), 0.01, 10.0, "Thr", "The Average Threshold to reject", gui, 0.6)
 		    
 		diffuserefractreject = luxProp(scn, "sintegrator.distributedpath.difrefrreject", "false")
             	str += luxBool("diffuserefractreject", diffuserefractreject, "Refract", "Enable Rejection for Diffuse Refraction", gui, 0.4)
 		if diffuserefractreject.get()=="true":
-            		str += luxFloat("diffuserefractreject_threshold", luxProp(scn, "sintegrator.distributedpath.difrefrrejectthr", 5.0), 0.01, 10.0, "Thr", "The Average Threshold to reject", gui, 0.6)
+            		str += luxFloat("diffuserefractreject_threshold", luxProp(scn, "sintegrator.distributedpath.difrefrrejectthr", 10.0), 0.01, 10.0, "Thr", "The Average Threshold to reject", gui, 0.6)
 
             	if gui: gui.newline("  Glossy:")
 		glossyreflectreject = luxProp(scn, "sintegrator.distributedpath.glosreflreject", "false")
             	str += luxBool("glossyreflectreject", glossyreflectreject, "Reflect", "Enable Rejection for Glossy Reflection", gui, 0.4)
 		if glossyreflectreject.get()=="true":
-            		str += luxFloat("glossyreflectreject_threshold", luxProp(scn, "sintegrator.distributedpath.glosreflrejectthr", 5.0), 0.01, 10.0, "Thr", "The Average Threshold to reject", gui, 0.6)
+            		str += luxFloat("glossyreflectreject_threshold", luxProp(scn, "sintegrator.distributedpath.glosreflrejectthr", 10.0), 0.01, 10.0, "Thr", "The Average Threshold to reject", gui, 0.6)
 		    
 		glossyrefractreject = luxProp(scn, "sintegrator.distributedpath.glosrefrreject", "false")
             	str += luxBool("glossyrefractreject", glossyrefractreject, "Refract", "Enable Rejection for Glossy Refraction", gui, 0.4)
 		if glossyrefractreject.get()=="true":
-            		str += luxFloat("glossyrefractreject_threshold", luxProp(scn, "sintegrator.distributedpath.glosrefrrejectthr", 5.0), 0.01, 10.0, "Thr", "The Average Threshold to reject", gui, 0.6)
+            		str += luxFloat("glossyrefractreject_threshold", luxProp(scn, "sintegrator.distributedpath.glosrefrrejectthr", 10.0), 0.01, 10.0, "Thr", "The Average Threshold to reject", gui, 0.6)
 
 
     return str
@@ -3311,7 +3311,7 @@ def luxSystem(scn, gui=None):
         luxFile("datadir", luxProp(scn, "datadir", ""), "default out dir", "default.lxs save path", gui, 2.0)
 
         if gui: gui.newline("PRIORITY:", 10)
-        luxnice = luxProp(scn, "luxnice", 0)
+        luxnice = luxProp(scn, "luxnice", 10)
         if osys.platform=="win32":
             r = gui.getRect(2, 1)
             Draw.Menu("priority%t|abovenormal%x-10|normal%x0|belownormal%x10|low%x19", evtLuxGui, r[0], r[1], r[2], r[3], luxnice.get(), "", lambda e,v: luxnice.set(v))
