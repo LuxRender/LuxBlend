@@ -4544,6 +4544,11 @@ def luxMaterialBlock(name, luxname, key, mat, gui=None, level=0, str_opt=""):
                 (str,link) = c((str,link), luxFloatTexture("M2", keyname, 1.0, 0.0, 1.0, "M2", "", mat, gui, level+1))
                 (str,link) = c((str,link), luxFloatTexture("M3", keyname, 1.0, 0.0, 1.0, "M3", "", mat, gui, level+1))
             else: link += carlink
+            absorption = luxProp(mat, keyname+".useabsorption", "false")
+            luxCollapse("absorption", absorption, "Absorption", "Enable Coating Absorption", gui, 2.0)
+            if absorption.get() == "true":
+                (str,link) = c((str,link), luxSpectrumTexture("Ka", keyname, "0.2 0.2 0.2", 1.0, "absorption", "", mat, gui, level+1))
+                (str,link) = c((str,link), luxFloatTexture("d", keyname, 5.0, 0.0, 15.0, "depth", "", mat, gui, level+1))
             has_bump_options = 1
             has_object_options = 1
             has_emission_options = 1
