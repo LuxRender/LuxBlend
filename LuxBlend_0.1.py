@@ -2305,7 +2305,7 @@ def luxFilm(scn, gui=None):
                 str += luxFloat("reinhard_postscale", luxProp(scn, "film.reinhard.postscale", 1.2), 0.0, 10.0, "postScale", "Image scale after tonemap operator", gui)
                 str += luxFloat("reinhard_burn", luxProp(scn, "film.reinhard.burn", 6.0), 0.1, 12.0, "burn", "12.0: no burn out, 0.1 lot of burn out", gui)
             elif tonemapkernel.get() == "linear":
-                str += luxFloat("linear_sensitivity", luxProp(scn, "film.linear.sensitivity", 50.0), 0.0, 100.0, "sensitivity", "Adaption/Sensitivity", gui)
+                str += luxFloat("linear_sensitivity", luxProp(scn, "film.linear.sensitivity", 50.0), 0.0, 1000.0, "sensitivity", "Adaption/Sensitivity", gui)
                 str += luxFloat("linear_exposure", luxProp(scn, "film.linear.exposure", 1.0), 0.001, 1.0, "exposure", "Exposure duration in seconds", gui)
                 str += luxFloat("linear_fstop", luxProp(scn, "film.linear.fstop", 2.8), 0.1, 64.0, "Fstop", "F-Stop", gui)
                 str += luxFloat("linear_gamma", luxProp(scn, "film.linear.gamma", 1.0), 0.0, 8.0, "gamma", "Tonemap operator gamma correction", gui)
@@ -3345,7 +3345,7 @@ def luxSystem(scn, gui=None):
         #if gui: gui.newline()
         #luxInt("barytrianglemesh thr", luxProp(scn, "barytrianglemesh_thr", 300000), 0, 100000000, "barytrianglemesh threshold", "Vertex threshold for exporting barytrianglemesh object(s) (slower but uses less memory)", gui, 2.0)
         if gui: gui.newline("INSTANCING:", 10)
-        luxInt("instancing_threshold", luxProp(scn, "instancing_threshold", 2), 0, 1000000, "object instanding threshold", "Threshold to created instanced objects", gui, 2.0)
+        luxInt("instancing_threshold", luxProp(scn, "instancing_threshold", 2), 0, 1000000, "object instancing threshold", "Threshold to created instanced objects", gui, 2.0)
 
 
 def scalelist(list, factor):
@@ -4707,8 +4707,8 @@ def luxMaterialBlock(name, luxname, key, mat, gui=None, level=0, str_opt=""):
             absorption = luxProp(mat, keyname+".useabsorption", "false")
             luxCollapse("absorption", absorption, "Absorption", "Enable Coating Absorption", gui, 2.0)
             if absorption.get() == "true":
-                (str,link) = c((str,link), luxSpectrumTexture("Ka", keyname, "1.0 1.0 1.0", 1.0, "absorption", "", mat, gui, level+1))
-                (str,link) = c((str,link), luxFloatTexture("d", keyname, 0.15, 0.0, 1.0, "depth", "", mat, gui, level+1))
+                (str,link) = c((str,link), luxSpectrumTexture("Ka", keyname, "0.2 0.2 0.2", 1.0, "absorption", "", mat, gui, level+1))
+                (str,link) = c((str,link), luxFloatTexture("d", keyname, 0.15, 0.0, 15.0, "depth", "", mat, gui, level+1))
             has_bump_options = 1
             has_object_options = 1
             has_emission_options = 1
