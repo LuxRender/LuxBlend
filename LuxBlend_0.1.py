@@ -3275,7 +3275,7 @@ def luxAccelerator(scn, gui=None):
     str = ""
     if scn:
         acceltype = luxProp(scn, "accelerator.type", "tabreckdtree")
-        str = luxIdentifier("Accelerator", acceltype, ["none", "tabreckdtree", "grid", "bvh"], "ACCEL", "select accelerator type", gui)
+        str = luxIdentifier("Accelerator", acceltype, ["none", "tabreckdtree", "grid", "bvh", "qbvh"], "ACCEL", "select accelerator type", gui)
         if acceltype.get() == "tabreckdtree":
             if gui: gui.newline()
             str += luxInt("intersectcost", luxProp(scn, "accelerator.kdtree.interscost", 80), 0, 1000, "inters.cost", "specifies how expensive ray-object intersections are", gui)
@@ -3296,6 +3296,9 @@ def luxAccelerator(scn, gui=None):
             str += luxInt("maxdepth", luxProp(scn, "accelerator.kdtree.maxdepth", -1), -1, 100, "maxdepth", "If positive, the maximum depth of the tree. If negative this value is set automatically", gui)
         if acceltype.get() == "grid":
             str += luxBool("refineimmediately", luxProp(scn, "accelerator.grid.refine", "false"), "refine immediately", "Makes the primitive intersectable as soon as it is added to the grid", gui)
+        if acceltype.get() == "qbvh":
+            if gui: gui.newline()
+            str += luxInt("maxprimsperleaf", luxProp(scn, "accelerator.qbvh.maxprimsperleaf", 4), 1, 64, "maxprimsperleaf", "Maximum number of primitives to leave in one leaf node", gui)
     return str
 
 def luxSystem(scn, gui=None):
@@ -4496,12 +4499,14 @@ def luxMaterialBlock(name, luxname, key, mat, gui=None, level=0, str_opt=""):
         if mattype.get() == "boundvolume":
             link = ""
             voltype = luxProp(mat, kn+"vol.type", "homogeneous")
-            vols = ["homogeneous", "exponential"]
+            vols = ["homogeneous", "exponential", "cloud"]
             vollink = luxOption("type", voltype, vols, "type", "", gui)
             if voltype.get() == "homogeneous":
                 link = "Volume \"homogeneous\""
             if voltype.get() == "exponential":
                 link = "Volume \"exponential\""
+            if voltype.get() == "cloud":
+                link = "Volume \"cloud\""
 
             if gui: gui.newline("absorption:", 0, level+1)
             link += luxRGB("sigma_a", luxProp(mat, kn+"vol.sig_a", "1.0 1.0 1.0"), 1.0, "sigma_a", "The absorption cross section", gui)
@@ -4519,6 +4524,20 @@ def luxMaterialBlock(name, luxname, key, mat, gui=None, level=0, str_opt=""):
                 if gui: gui.newline("updir:", 0, level+1)
                 link += luxVector("updir", luxProp(mat, kn+"vol.updir", "0 0 1"), -1.0, 1.0, "updir", "Up direction vector", gui, 2.0)
 
+            if voltype.get() == "cloud":
+                if gui: gui.newline("cloud:", 0, level+1)
+                link += luxFloat("radius", luxProp(mat, kn+"vol.radius", 0.5), 0.01, 2.0, "radius", "Radius of hemisphere used as basis for cloud shape", gui)
+                link += luxFloat("noisescale", luxProp(mat, kn+"vol.noisescale", 0.3), 0.1, 2.0, "noisesize", "Size of cloud noise", gui)
+                link += luxFloat("turbulence", luxProp(mat, kn+"vol.turbulence", 0.5), 0.0, 3.0, "turbulence", "Extent to which the noise effects the cloud shape", gui)
+                link += luxFloat("noiseoffset", luxProp(mat, kn+"vol.noiseoffset", 0.0), 0.0, 1000.0, "noiseoffset", "Useful for creating unique clouds", gui )
+                link += luxInt("octaves", luxProp(mat, kn+"vol.octaves", 3), 1, 8, "octaves", "Sets the amount of detail for the noise", gui )
+                link += luxFloat("omega", luxProp(mat, kn+"vol.omega", 0.75), 0.1, 1.0, "omega", "Sets the scale difference of each successive octave", gui )
+                link += luxFloat("sharpness", luxProp(mat, kn+"vol.sharpness", 6.0), 0.2, 10.0, "sharpness", "Sets the sharpness of the noise", gui)
+                link += luxFloat("variability", luxProp(mat, kn+"vol.variability", 0.9), 0.0, 1.0, "mask amount", "Noise mask amount. 0 means noise everywhere, 1 means only some spots have noise.", gui)
+                link += luxFloat("baseflatness", luxProp(mat, kn+"vol.baseflatness", 0.8), 0.0, 1.0, "baseflatness", "Flatness of the cloud's base. (0.0 makes a round cloud.)", gui)
+                link += luxInt("spheres", luxProp(mat, kn+"vol.spheres", 2000), 0, 10000, "spheres", "Number of small spheres for cumulus shape. 0 is non-cumulus.", gui )
+                link += luxFloat("spheresize", luxProp(mat, kn+"vol.spheresize", 0.15), 0.05, 0.55, "spheresize", "Size of cumulus spheres", gui)
+ 
             link += str_opt
 
             has_bump_options = 0
