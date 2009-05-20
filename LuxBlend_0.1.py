@@ -2320,6 +2320,12 @@ def luxFilm(scn, gui=None):
 
 	    # Image File Outputs
 
+	    # LDR clamping method
+	    if gui: gui.newline("  Clamping:")
+	    ldrclampmethod = luxProp(scn, "film.ldr_clamp_method", "lum")
+	    str += luxOption("ldr_clamp_method", ldrclampmethod, ["lum", "hue", "cut"], "LDR clamping", "Method to clamp high luminance values for LDR output", gui, 0.5)
+	    if gui: gui.newline()
+
 	    # OpenEXR Output
             saveexr = luxProp(scn, "film.write_exr", "false")
             str += luxCollapse("write_exr", saveexr, "OpenEXR Output", "Enable OpenEXR output", gui, 2.0)
