@@ -61,6 +61,56 @@ def newFName(ext):
     return Blender.Get('filename')[: -len(Blender.Get('filename').split('.', -1)[-1]) ] + ext
 
 
+# some helpers
+def luxstr(str):
+    return str.replace("\\", "\\\\")
+
+
+### relpath ##########################
+def relpath(base, target):
+	if target[0:2] == "\\\\" or target[0:2] == "//":
+		return target[2:len(target)]
+	if not os.path.isabs(base):
+		base = os.path.abspath(base)
+	if not os.path.isabs(target):
+		target = os.path.abspath(target)
+	if os.sep == "\\":
+		base = os.path.normcase(base)
+		target = os.path.normcase(target)
+	if base == os.sep:
+		return '.' + target
+	baselist = base.split(os.sep)
+	if baselist[-1] == "":
+		baselist = baselist[:-1]
+	targetlist = target.split(os.sep)
+	i = 0
+	top = min([len(baselist), len(targetlist)])
+	while i < top and baselist[i] == targetlist[i]:
+		i+=1
+	if i == 0:
+		return os.sep.join(targetlist)
+	if i == len(baselist):
+		return os.sep.join(targetlist[i:])
+	else:
+		return ('..' + os.sep) * (len(baselist) - i) + os.sep.join(targetlist[i:])
+
+### luxFilePath #####################
+lxs_filename = ""
+previewing = False
+def luxFilePath(filename):
+    global lxs_filename, previewing
+    scn = Scene.GetCurrent()
+    pm = luxProp(scn, "pathmode", "absolute").get()
+    if (pm=="absolute") or previewing: # absolute paths (the old / default mode)
+        return filename
+    elif pm=="relative": # relative paths
+        base = os.path.dirname(lxs_filename)
+        return relpath(base, filename)
+    elif pm=="flat": # flat mode - only filename
+        return os.path.basename(filename)
+
+
+
 ###### RGC ##########################
 def rg(col):
     scn = Scene.GetCurrent()
@@ -643,7 +693,7 @@ def save_lux(filename, unindexedname):
     
     export_total_steps = 12.0
     
-    global meshlist, matnames, geom_filename, geom_pfilename, mat_filename, mat_pfilename, vol_filename, vol_pfilename, LuxIsGUI
+    global meshlist, matnames, lxs_filename, geom_filename, geom_pfilename, mat_filename, mat_pfilename, vol_filename, vol_pfilename, LuxIsGUI
 
     print("Lux Render Export started...\n")
     time1 = Blender.sys.time()
@@ -651,6 +701,8 @@ def save_lux(filename, unindexedname):
 
     filepath = os.path.dirname(filename)
     filebase = os.path.splitext(os.path.basename(filename))[0]
+
+    lxs_filename = filename
 
     geom_filename = os.path.join(filepath, filebase + "-geom.lxo")
     geom_pfilename = filebase + "-geom.lxo"
@@ -1600,9 +1652,6 @@ def saveMaterialPreset(name, d):
 # **************************************************
 
 
-# some helpers
-def luxstr(str):
-    return str.replace("\\", "\\\\") # todo: do encode \ and " signs by a additional backslash
 
 
 
@@ -1989,7 +2038,7 @@ def luxFile(name, lux, caption, hint, gui, width=1.0):
         r = gui.getRect(width, 1)
         Draw.String(caption+": ", evtLuxGui, r[0], r[1], r[2]-r[3]-2, r[3], lux.get(), 250, hint, lambda e,v: lux.set(v))
         Draw.Button("...", 0, r[0]+r[2]-r[3], r[1], r[3], r[3], "click to open file selector", lambda e,v:Window.FileSelector(lambda s:lux.set(s), "Select %s"%(caption), lux.get()))
-    return "\n   \"string %s\" [\"%s\"]"%(name, luxstr(lux.get()))
+    return "\n   \"string %s\" [\"%s\"]"%(name, luxstr(luxFilePath(lux.get())))
 
 def luxPath(name, lux, caption, hint, gui, width=1.0):
     if gui:
@@ -3319,6 +3368,10 @@ def luxSystem(scn, gui=None):
         if gui: gui.newline()
         luxFile("datadir", luxProp(scn, "datadir", ""), "default out dir", "default.lxs save path", gui, 2.0)
 
+        if gui: gui.newline()
+        pm = ["absolute","relative","flat"]
+        luxOption("pathmode", luxProp(scn, "pathmode", "absolute"), pm, "path-mode", "select format for paths on export", gui, 2.0)
+
         if gui: gui.newline("PRIORITY:", 10)
         luxnice = luxProp(scn, "luxnice", 10)
         if osys.platform=="win32":
@@ -4145,10 +4198,10 @@ def luxLight(name, kn, mat, gui, level):
         luxOption("type", pmtype, pmtypes, "type", "Choose Photometric data type to use", gui, 0.6)
         if(pmtype.get() == "imagemap"):
             map = luxProp(mat, kn+"light.pmmapname", "")
-            link += luxFile("mapname", map, "map-file", "filename of the photometric map", gui, 1.4)        
+            link += luxFile("mapname", map, "map-file", "filename of the photometric map", gui, 1.4)
         if(pmtype.get() == "IESna"):
             map = luxProp(mat, kn+"light.pmiesname", "")
-            link += luxFile("iesname", map, "ies-file", "filename of the IES photometric data file", gui, 1.4)        
+            link += luxFile("iesname", map, "ies-file", "filename of the IES photometric data file", gui, 1.4)
 
     has_bump_options = 0
     has_object_options = 1
@@ -4175,10 +4228,10 @@ def luxLamp(name, kn, mat, gui, level):
         luxOption("type", pmtype, pmtypes, "type", "Choose Photometric data type to use", gui, 0.6)
         if(pmtype.get() == "imagemap"):
             map = luxProp(mat, kn+"light.pmmapname", "")
-            link += luxFile("mapname", map, "map-file", "filename of the photometric map", gui, 1.4)        
+            link += luxFile("mapname", map, "map-file", "filename of the photometric map", gui, 1.4)
         if(pmtype.get() == "IESna"):
             map = luxProp(mat, kn+"light.pmiesname", "")
-            link += luxFile("iesname", map, "ies-file", "filename of the IES photometric data file", gui, 1.4)        
+            link += luxFile("iesname", map, "ies-file", "filename of the IES photometric data file", gui, 1.4)
 
         link += luxBool("flipz", luxProp(mat, kn+"light.flipZ", "true"), "Flip Z", "Flip Z direction in mapping", gui, 2.0)
 
@@ -4201,7 +4254,7 @@ def luxSpot(name, kn, mat, gui, level):
 
     if(proj.get() == "true"):
         map = luxProp(mat, kn+"light.pmmapname", "")
-        link += luxFile("mapname", map, "map-file", "filename of the photometric map", gui, 2.0)        
+        link += luxFile("mapname", map, "map-file", "filename of the photometric map", gui, 2.0)
 
     return (str, link)
 
@@ -4224,6 +4277,9 @@ def Preview_Torusset(mat, kn, state):
 
 def Preview_Update(mat, kn, defLarge, defType, texName, name, level):
     #print "%s %s %s %s %s %s %s" % (mat, kn, defLarge, defType, texName, name, level)
+
+    global previewing
+    previewing = True
     
     Blender.Window.WaitCursor(True)
     scn = Scene.GetCurrent()
@@ -4347,6 +4403,7 @@ def Preview_Update(mat, kn, defLarge, defType, texName, name, level):
         p.stdin.write('AreaLightSource "area" "color L" [1.0 1.0 1.0]\n')
         p.stdin.write('Shape "disk" "float radius" [1.0]\nAttributeEnd\n')
     p.stdin.write('WorldEnd\n')
+    previewing = False
 
     data = p.communicate()[0]
     p.stdin.close()
