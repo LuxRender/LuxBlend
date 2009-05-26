@@ -273,13 +273,12 @@ class luxExport:
         else:
             file.write("\t%s"%exportMaterialGeomTag(mat)) # use original methode
 
-
-
     #-------------------------------------------------
     # exportMaterial(self, file, mat)
     # exports material. LuxRender "Texture" 
     #-------------------------------------------------
     def exportMaterial(self, file, mat):
+        print "material %s"%(mat.getName())
         file.write("\t%s"%exportMaterial(mat)) # use original methode        
     
     #-------------------------------------------------
@@ -288,7 +287,7 @@ class luxExport:
     #-------------------------------------------------
     def exportMaterials(self, file):
         for mat in self.materials:
-            print "material %s"%(mat.getName())
+            
             self.exportMaterial(file, mat)
 
     #-------------------------------------------------
@@ -2138,7 +2137,7 @@ def luxCamera(cam, context, gui=None):
     str = ""
     if cam:
         camtype = luxProp(cam, "camera.type", "perspective")
-    # Radiance - remarked 'realistic' for v0.6 release
+        # Radiance - remarked 'realistic' for v0.6 release
         #str = luxIdentifier("Camera", camtype, ["perspective","orthographic","environment","realistic"], "CAMERA", "select camera type", gui, icon_c_camera)
         str = luxIdentifier("Camera", camtype, ["perspective","orthographic","environment"], "CAMERA", "select camera type", gui, icon_c_camera)
         scale = 1.0
@@ -4706,7 +4705,7 @@ def luxMaterialBlock(name, luxname, key, mat, gui=None, level=0, str_opt=""):
             has_bump_options = 1
             has_object_options = 1
             has_emission_options = 1
-        has_compositing_options = 1
+            has_compositing_options = 1
         
         if mattype.get() == "glass":
             (str,link) = c((str,link), luxSpectrumTexture("Kr", keyname, "1.0 1.0 1.0", 1.0, "reflection", "", mat, gui, level+1))
@@ -4896,43 +4895,43 @@ def luxMaterialBlock(name, luxname, key, mat, gui=None, level=0, str_opt=""):
             else: luxProp(mat, "emission", "false").set("false") # prevent from exporting later
 
 
-    # Compositing options (common)
-    # Note - currently only display options when using distributedpath integrator
-    integratortype = luxProp(Scene.GetCurrent(), "sintegrator.type", "bidirectional")
-    if (integratortype.get() == "distributedpath" and level == 0):
-        if (has_compositing_options == 1):
-            if gui: gui.newline("", 2, level, None, [0.4,0.4,0.6])
-            usecompo = luxProp(mat, "compo", "false")
-            luxCollapse("compo", usecompo, "Compositing", "Enable Compositing options", gui, 2.0)
-            if usecompo.get() == "true":
-                if gui: gui.newline("", 2, level, None, [0.35,0.35,0.55])
-                usecompoviz = luxProp(mat, "compo_viz", "false")
-                luxCollapse("compo_viz", usecompoviz, "Visibility", "Enable Visibility Compositing options", gui, 2.0)
-                if usecompoviz.get() == "true":
-                    if gui: gui.newline("View", 2, level, None, [0.35,0.35,0.55])
-                    compovizmat = luxProp(mat, "compo_viz_mat", "true")
-                    link += luxBool("compo_visible_material", compovizmat, "Material", "Enable View Visibility of Material", gui, 1.0)
-                    compovizemi = luxProp(mat, "compo_viz_emi", "true")
-                    link += luxBool("compo_visible_emission", compovizemi, "Emission", "Enable View Visibility of Emission", gui, 1.0)
-                    
-                    if gui: gui.newline("Indirect", 2, level, None, [0.35,0.35,0.55])
-                    compovizmati = luxProp(mat, "compo_viz_mati", "true")
-                    link += luxBool("compo_visible_indirect_material", compovizmati, "Material", "Enable InDirect Visibility of Material", gui, 1.0)
-                    compovizemii = luxProp(mat, "compo_viz_emii", "true")
-                    link += luxBool("compo_visible_indirect_emission", compovizemii, "Emission", "Enable InDirect Visibility of Emission", gui, 1.0)
-                
+        # Compositing options (common)
+        # Note - currently only display options when using distributedpath integrator
+        integratortype = luxProp(Scene.GetCurrent(), "sintegrator.type", "bidirectional")
+        if (integratortype.get() == "distributedpath" and level == 0):
+            if (has_compositing_options == 1):
                 if gui: gui.newline("", 2, level, None, [0.4,0.4,0.6])
-                overridealpha = luxProp(mat, "compo_o_alpha", "false")
-                link += luxCollapse("compo_override_alpha", overridealpha, "Override Alpha", "Enable Manual control of alpha value", gui, 2.0)
-                if overridealpha.get() == "true":
-                    if gui: gui.newline("Alpha", 2, level, None, [0.4,0.4,0.6])
-                    link += luxFloat("compo_override_alpha_value", luxProp(mat, "compo_o_alpha_v", 0.0), 0.0, 1.0, "Alpha", "Alpha Value", gui, 2.0, 1)
-                usecolorkey = luxProp(mat, "compo_usekey", "false")
-                if gui: gui.newline("", 2, level, None, [0.35,0.35,0.55])
-                link += luxCollapse("compo_use_key", usecolorkey, "Chroma Key", "Enable Chroma Object key", gui, 2.0)
-                if usecolorkey.get() == "true":
-                    if gui: gui.newline("Key", 2, level, None, [0.35,0.35,0.55])
-                    link += luxRGB("compo_key_color", luxProp(mat, "compo_key_color", "0.0 0.0 1.0"), 1.0, "key", "", gui, 2.0)
+                usecompo = luxProp(mat, "compo", "false")
+                luxCollapse("compo", usecompo, "Compositing", "Enable Compositing options", gui, 2.0)
+                if usecompo.get() == "true":
+                    if gui: gui.newline("", 2, level, None, [0.35,0.35,0.55])
+                    usecompoviz = luxProp(mat, "compo_viz", "false")
+                    luxCollapse("compo_viz", usecompoviz, "Visibility", "Enable Visibility Compositing options", gui, 2.0)
+                    if usecompoviz.get() == "true":
+                        if gui: gui.newline("View", 2, level, None, [0.35,0.35,0.55])
+                        compovizmat = luxProp(mat, "compo_viz_mat", "true")
+                        link += luxBool("compo_visible_material", compovizmat, "Material", "Enable View Visibility of Material", gui, 1.0)
+                        compovizemi = luxProp(mat, "compo_viz_emi", "true")
+                        link += luxBool("compo_visible_emission", compovizemi, "Emission", "Enable View Visibility of Emission", gui, 1.0)
+                        
+                        if gui: gui.newline("Indirect", 2, level, None, [0.35,0.35,0.55])
+                        compovizmati = luxProp(mat, "compo_viz_mati", "true")
+                        link += luxBool("compo_visible_indirect_material", compovizmati, "Material", "Enable InDirect Visibility of Material", gui, 1.0)
+                        compovizemii = luxProp(mat, "compo_viz_emii", "true")
+                        link += luxBool("compo_visible_indirect_emission", compovizemii, "Emission", "Enable InDirect Visibility of Emission", gui, 1.0)
+                    
+                    if gui: gui.newline("", 2, level, None, [0.4,0.4,0.6])
+                    overridealpha = luxProp(mat, "compo_o_alpha", "false")
+                    link += luxCollapse("compo_override_alpha", overridealpha, "Override Alpha", "Enable Manual control of alpha value", gui, 2.0)
+                    if overridealpha.get() == "true":
+                        if gui: gui.newline("Alpha", 2, level, None, [0.4,0.4,0.6])
+                        link += luxFloat("compo_override_alpha_value", luxProp(mat, "compo_o_alpha_v", 0.0), 0.0, 1.0, "Alpha", "Alpha Value", gui, 2.0, 1)
+                    usecolorkey = luxProp(mat, "compo_usekey", "false")
+                    if gui: gui.newline("", 2, level, None, [0.35,0.35,0.55])
+                    link += luxCollapse("compo_use_key", usecolorkey, "Chroma Key", "Enable Chroma Object key", gui, 2.0)
+                    if usecolorkey.get() == "true":
+                        if gui: gui.newline("Key", 2, level, None, [0.35,0.35,0.55])
+                        link += luxRGB("compo_key_color", luxProp(mat, "compo_key_color", "0.0 0.0 1.0"), 1.0, "key", "", gui, 2.0)
 
         # transformation options (common)
         if (level == 0):
@@ -4999,6 +4998,7 @@ def luxMaterial(mat, gui=None):
             link += "\n\tAreaLightSource \"area\" "+elink 
             
         luxProp(mat, "link", "").set("".join(link))
+        
     return str
         
 
