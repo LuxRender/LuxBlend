@@ -2051,10 +2051,10 @@ def luxBool(name, lux, caption, hint, gui, width=1.0):
 def luxCollapse(name, lux, caption, hint, gui, width=1.0):
     if gui:
         r = gui.getRect(width, 1)
-    if lux.get() == "true":
-        drawArrow(arrow_down, r[0]-22, r[1]-2)
-    else:
-        drawArrow(arrow_right, r[0]-22, r[1]-2)
+        if lux.get() == "true":
+            drawArrow(arrow_down, r[0]-22, r[1]-2)
+        else:
+            drawArrow(arrow_right, r[0]-22, r[1]-2)
         Draw.Toggle(caption, evtLuxGui, r[0], r[1], r[2], r[3], lux.get()=="true", hint, lambda e,v: lux.set(["false","true"][bool(v)]))
     return "\n   \"bool %s\" [\"%s\"]"%(name, lux.get())
 
@@ -2423,18 +2423,18 @@ def luxFilm(scn, gui=None):
 
             exrimaging = luxProp(scn, "film.write_exr_imaging", "true")
             str += luxBool("write_exr_applyimaging", exrimaging, "Apply Imaging/Tonemapping", "Apply Imaging and Tonemapping pipeline", gui, 1.2)
-    
-        if exrimaging.get()=="true":
-            exrgamutclamp = luxProp(scn, "film.write_exr_gamutclamp", "true")
-            str += luxBool("write_exr_gamutclamp", exrgamutclamp, "Gamut Clamp", "Clamp out of gamut (bright) pixel values", gui, 0.8)
+        
+            if exrimaging.get()=="true":
+                exrgamutclamp = luxProp(scn, "film.write_exr_gamutclamp", "true")
+                str += luxBool("write_exr_gamutclamp", exrgamutclamp, "Gamut Clamp", "Clamp out of gamut (bright) pixel values", gui, 0.8)
 
-        if gui: gui.newline()
-        # Zbuf output
-        exrZ = luxProp(scn, "film.write_exr_Z", "true")
-        str += luxBool("write_exr_ZBuf", exrZ, "ZBuf", "Enable Z Depth Buffer channel", gui, 0.8)
-        if exrZ.get() == "true":
-            exrZNormalize = luxProp(scn, "film.write_exr_ZNorm", "None")
-            str += luxOption("write_exr_zbuf_normalizationtype", exrZNormalize, ["Camera Start/End clip", "Min/Max", "None"], "ZBuf Normalization", "Select type of normalization to use for Zbuf Depth Map", gui, 1.2)
+            if gui: gui.newline()
+            # Zbuf output
+            exrZ = luxProp(scn, "film.write_exr_Z", "true")
+            str += luxBool("write_exr_ZBuf", exrZ, "ZBuf", "Enable Z Depth Buffer channel", gui, 0.8)
+            if exrZ.get() == "true":
+                exrZNormalize = luxProp(scn, "film.write_exr_ZNorm", "None")
+                str += luxOption("write_exr_zbuf_normalizationtype", exrZNormalize, ["Camera Start/End clip", "Min/Max", "None"], "ZBuf Normalization", "Select type of normalization to use for Zbuf Depth Map", gui, 1.2)
 
         # PNG Output
         savepng = luxProp(scn, "film.write_png", "true")
@@ -2870,30 +2870,30 @@ def luxSurfaceIntegrator(scn, gui=None):
             usereject = luxProp(scn, "sintegrator.distributedpath.usereject", "false")
             luxCollapse("usereject", usereject, "Rejection", "Enable Rejection system to eliminate bright contributions", gui, 2.0)
 
-        if usereject.get()=="true":
-            if gui: gui.newline("  Diffuse:")
+            if usereject.get()=="true":
+                if gui: gui.newline("  Diffuse:")
+                
+                diffusereflectreject = luxProp(scn, "sintegrator.distributedpath.difreflreject", "false")
+                str += luxBool("diffusereflectreject", diffusereflectreject, "Reflect", "Enable Rejection for Diffuse Reflection", gui, 0.4)
+                if diffusereflectreject.get()=="true":
+                    str += luxFloat("diffusereflectreject_threshold", luxProp(scn, "sintegrator.distributedpath.difreflrejectthr", 10.0), 0.01, 10.0, "Thr", "The Average Threshold to reject", gui, 0.6)
             
-            diffusereflectreject = luxProp(scn, "sintegrator.distributedpath.difreflreject", "false")
-            str += luxBool("diffusereflectreject", diffusereflectreject, "Reflect", "Enable Rejection for Diffuse Reflection", gui, 0.4)
-            if diffusereflectreject.get()=="true":
-                str += luxFloat("diffusereflectreject_threshold", luxProp(scn, "sintegrator.distributedpath.difreflrejectthr", 10.0), 0.01, 10.0, "Thr", "The Average Threshold to reject", gui, 0.6)
-        
-            diffuserefractreject = luxProp(scn, "sintegrator.distributedpath.difrefrreject", "false")
-            str += luxBool("diffuserefractreject", diffuserefractreject, "Refract", "Enable Rejection for Diffuse Refraction", gui, 0.4)
-            if diffuserefractreject.get()=="true":
-                str += luxFloat("diffuserefractreject_threshold", luxProp(scn, "sintegrator.distributedpath.difrefrrejectthr", 10.0), 0.01, 10.0, "Thr", "The Average Threshold to reject", gui, 0.6)
-        
-            if gui: gui.newline("  Glossy:")
+                diffuserefractreject = luxProp(scn, "sintegrator.distributedpath.difrefrreject", "false")
+                str += luxBool("diffuserefractreject", diffuserefractreject, "Refract", "Enable Rejection for Diffuse Refraction", gui, 0.4)
+                if diffuserefractreject.get()=="true":
+                    str += luxFloat("diffuserefractreject_threshold", luxProp(scn, "sintegrator.distributedpath.difrefrrejectthr", 10.0), 0.01, 10.0, "Thr", "The Average Threshold to reject", gui, 0.6)
             
-            glossyreflectreject = luxProp(scn, "sintegrator.distributedpath.glosreflreject", "false")
-            str += luxBool("glossyreflectreject", glossyreflectreject, "Reflect", "Enable Rejection for Glossy Reflection", gui, 0.4)
-            if glossyreflectreject.get()=="true":
-                str += luxFloat("glossyreflectreject_threshold", luxProp(scn, "sintegrator.distributedpath.glosreflrejectthr", 10.0), 0.01, 10.0, "Thr", "The Average Threshold to reject", gui, 0.6)
-        
-            glossyrefractreject = luxProp(scn, "sintegrator.distributedpath.glosrefrreject", "false")
-            str += luxBool("glossyrefractreject", glossyrefractreject, "Refract", "Enable Rejection for Glossy Refraction", gui, 0.4)
-            if glossyrefractreject.get()=="true":
-                str += luxFloat("glossyrefractreject_threshold", luxProp(scn, "sintegrator.distributedpath.glosrefrrejectthr", 10.0), 0.01, 10.0, "Thr", "The Average Threshold to reject", gui, 0.6)
+                if gui: gui.newline("  Glossy:")
+                
+                glossyreflectreject = luxProp(scn, "sintegrator.distributedpath.glosreflreject", "false")
+                str += luxBool("glossyreflectreject", glossyreflectreject, "Reflect", "Enable Rejection for Glossy Reflection", gui, 0.4)
+                if glossyreflectreject.get()=="true":
+                    str += luxFloat("glossyreflectreject_threshold", luxProp(scn, "sintegrator.distributedpath.glosreflrejectthr", 10.0), 0.01, 10.0, "Thr", "The Average Threshold to reject", gui, 0.6)
+            
+                glossyrefractreject = luxProp(scn, "sintegrator.distributedpath.glosrefrreject", "false")
+                str += luxBool("glossyrefractreject", glossyrefractreject, "Refract", "Enable Rejection for Glossy Refraction", gui, 0.4)
+                if glossyrefractreject.get()=="true":
+                    str += luxFloat("glossyrefractreject_threshold", luxProp(scn, "sintegrator.distributedpath.glosrefrrejectthr", 10.0), 0.01, 10.0, "Thr", "The Average Threshold to reject", gui, 0.6)
     
     
     return str
@@ -3449,19 +3449,19 @@ def luxSystem(scn, gui=None):
         #luxBool('impack', impack, 'Pack All Images', '', gui, 2.0)
         
         if gui: 
-           network=luxProp(scn,"network","false")
-           gui.newline("NETWORK")
-           luxCollapse("network",network, "network", "enable network option", gui, 2.0)
-           if(network.get() == "true"):
-                  network_use_file=luxProp(scn,"network_use_file","false")
-                  luxBool ("use file",network_use_file,"use file", "get list of servers from file; one per line",gui,2.0)
-                  if (network_use_file.get() == "true"):
-                     luxFile("file", luxProp(scn, "network_file_path", ""), "file", "file where servers are defined", gui, 2.0)         
-                  else :     
-                     gui.newline("")
-                 luxString("Servers",luxProp(scn,"network_servers",""),"servers","coma separated list of servers",gui,2)
-                  gui.newline("")
-              luxInt("network_interval",luxProp(scn,"newtork_interval",180),0,300,"update interval","interval between network refresh",gui)
+            network=luxProp(scn,"network","false")
+            gui.newline("NETWORK:", 10)
+            luxCollapse("network",network, "network", "enable network option", gui, 2.0)
+            if(network.get() == "true"):
+                network_use_file=luxProp(scn,"network_use_file","false")
+                luxBool ("use file",network_use_file,"use file", "get list of servers from file; one per line",gui,2.0)
+                if (network_use_file.get() == "true"):
+                    luxFile("file", luxProp(scn, "network_file_path", ""), "file", "file where servers are defined", gui, 1.0)         
+                else :     
+                    #gui.newline("")
+                    luxString("Servers",luxProp(scn,"network_servers",""),"servers","coma separated list of servers",gui,1.0)
+                #gui.newline("")
+                luxInt("network_interval",luxProp(scn,"newtork_interval",180),0,300,"update interval","interval between network refresh",gui)
 
 
 def scalelist(list, factor):
@@ -4909,28 +4909,30 @@ def luxMaterialBlock(name, luxname, key, mat, gui=None, level=0, str_opt=""):
                 usecompoviz = luxProp(mat, "compo_viz", "false")
                 luxCollapse("compo_viz", usecompoviz, "Visibility", "Enable Visibility Compositing options", gui, 2.0)
                 if usecompoviz.get() == "true":
-                if gui: gui.newline("View", 2, level, None, [0.35,0.35,0.55])
-                        compovizmat = luxProp(mat, "compo_viz_mat", "true")
-                        link += luxBool("compo_visible_material", compovizmat, "Material", "Enable View Visibility of Material", gui, 1.0)
-                        compovizemi = luxProp(mat, "compo_viz_emi", "true")
-                        link += luxBool("compo_visible_emission", compovizemi, "Emission", "Enable View Visibility of Emission", gui, 1.0)
-                if gui: gui.newline("Indirect", 2, level, None, [0.35,0.35,0.55])
-                        compovizmati = luxProp(mat, "compo_viz_mati", "true")
-                        link += luxBool("compo_visible_indirect_material", compovizmati, "Material", "Enable InDirect Visibility of Material", gui, 1.0)
-                        compovizemii = luxProp(mat, "compo_viz_emii", "true")
-                        link += luxBool("compo_visible_indirect_emission", compovizemii, "Emission", "Enable InDirect Visibility of Emission", gui, 1.0)
-            if gui: gui.newline("", 2, level, None, [0.4,0.4,0.6])
-                    overridealpha = luxProp(mat, "compo_o_alpha", "false")
-                    link += luxCollapse("compo_override_alpha", overridealpha, "Override Alpha", "Enable Manual control of alpha value", gui, 2.0)
-            if overridealpha.get() == "true":
-                if gui: gui.newline("Alpha", 2, level, None, [0.4,0.4,0.6])
+                    if gui: gui.newline("View", 2, level, None, [0.35,0.35,0.55])
+                    compovizmat = luxProp(mat, "compo_viz_mat", "true")
+                    link += luxBool("compo_visible_material", compovizmat, "Material", "Enable View Visibility of Material", gui, 1.0)
+                    compovizemi = luxProp(mat, "compo_viz_emi", "true")
+                    link += luxBool("compo_visible_emission", compovizemi, "Emission", "Enable View Visibility of Emission", gui, 1.0)
+                    
+                    if gui: gui.newline("Indirect", 2, level, None, [0.35,0.35,0.55])
+                    compovizmati = luxProp(mat, "compo_viz_mati", "true")
+                    link += luxBool("compo_visible_indirect_material", compovizmati, "Material", "Enable InDirect Visibility of Material", gui, 1.0)
+                    compovizemii = luxProp(mat, "compo_viz_emii", "true")
+                    link += luxBool("compo_visible_indirect_emission", compovizemii, "Emission", "Enable InDirect Visibility of Emission", gui, 1.0)
+                
+                if gui: gui.newline("", 2, level, None, [0.4,0.4,0.6])
+                overridealpha = luxProp(mat, "compo_o_alpha", "false")
+                link += luxCollapse("compo_override_alpha", overridealpha, "Override Alpha", "Enable Manual control of alpha value", gui, 2.0)
+                if overridealpha.get() == "true":
+                    if gui: gui.newline("Alpha", 2, level, None, [0.4,0.4,0.6])
                     link += luxFloat("compo_override_alpha_value", luxProp(mat, "compo_o_alpha_v", 0.0), 0.0, 1.0, "Alpha", "Alpha Value", gui, 2.0, 1)
-                   usecolorkey = luxProp(mat, "compo_usekey", "false")
-            if gui: gui.newline("", 2, level, None, [0.35,0.35,0.55])
+                usecolorkey = luxProp(mat, "compo_usekey", "false")
+                if gui: gui.newline("", 2, level, None, [0.35,0.35,0.55])
                 link += luxCollapse("compo_use_key", usecolorkey, "Chroma Key", "Enable Chroma Object key", gui, 2.0)
-            if usecolorkey.get() == "true":
-                if gui: gui.newline("Key", 2, level, None, [0.35,0.35,0.55])
-                link += luxRGB("compo_key_color", luxProp(mat, "compo_key_color", "0.0 0.0 1.0"), 1.0, "key", "", gui, 2.0)
+                if usecolorkey.get() == "true":
+                    if gui: gui.newline("Key", 2, level, None, [0.35,0.35,0.55])
+                    link += luxRGB("compo_key_color", luxProp(mat, "compo_key_color", "0.0 0.0 1.0"), 1.0, "key", "", gui, 2.0)
 
         # transformation options (common)
         if (level == 0):
