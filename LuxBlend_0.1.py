@@ -3614,84 +3614,84 @@ def luxTexture(name, parentkey, type, default, min, max, caption, hint, mat, gui
     if texture.get() == "imagemap":
         str += luxOption("wrap", luxProp(mat, keyname+".wrap", "repeat"), ["repeat","black","clamp"], "repeat", "", gui, 1.1)
 
-    # ZANQDO
-    texturefilename = luxProp(mat, keyname+".filename", "")
-    luxFile("filename", texturefilename, "file", "texture file path", gui, 2.0)
-    # dougal2 image file packing
-    impack = luxProp(Scene.GetCurrent(), 'packtextures', 'false')
-    
-    if impack.get() == 'false':
-        str += luxFile("filename", texturefilename, "file", "texture file path", None, 2.0)
-    else:
-        import zlib, base64
-        def get_image_data(filename):
-            try:
-                f=open(filename,'rb')
-                d=f.read()
-                f.close()
-            except:
-                print 'Error reading image data from %s' % filename
-                d = ''
-            return base64.b64encode(zlib.compress(d))
-        imdata = get_image_data(texturefilename.get())
-        str += '\r\n   "string imagedata" ["%s"]' % imdata
-    
-    useseq = luxProp(mat, keyname+".useseq", "false")
-    luxCollapse("usesew", useseq, "Sequence", "", gui, 2.0)
-
-    if useseq.get() == "true":
-        seqframes = luxProp(mat, keyname+".seqframes", 100)
-        luxInt("frames", seqframes, 1, 100000, "Frames", "", gui, 0.5)
-        seqoffset = luxProp(mat, keyname+".seqoffset", 0)
-        luxInt("offset", seqoffset, 0, 100000, "Offset", "", gui, 0.5)
-        seqstartframe = luxProp(mat, keyname+".seqsframe", 1)
-        luxInt("startframe", seqstartframe, 1, 100000, "StartFr", "", gui, 0.5)
-        seqcyclic = luxProp(mat, keyname+".seqcycl", "false")
-        luxBool("cyclic", seqcyclic, "Cyclic", "", gui, 0.5)
-
+        # ZANQDO
+        texturefilename = luxProp(mat, keyname+".filename", "")
+        luxFile("filename", texturefilename, "file", "texture file path", gui, 2.0)
+        # dougal2 image file packing
+        impack = luxProp(Scene.GetCurrent(), 'packtextures', 'false')
         
-        totalframes = seqframes.get()
-        currentframe = Blender.Get('curframe')
-
-        if(currentframe < seqstartframe.get()):
-            fnumber = 1 + seqoffset.get()
+        if impack.get() == 'false':
+            str += luxFile("filename", texturefilename, "file", "texture file path", None, 2.0)
         else:
-            fnumber = (currentframe - (seqstartframe.get()-1)) + seqoffset.get()
-
-        if(fnumber > seqframes.get()):
-            if(seqcyclic.get() == "false"):
-                fnumber = seqframes.get()
+            import zlib, base64
+            def get_image_data(filename):
+                try:
+                    f=open(filename,'rb')
+                    d=f.read()
+                    f.close()
+                except:
+                    print 'Error reading image data from %s' % filename
+                    d = ''
+                return base64.b64encode(zlib.compress(d))
+            imdata = get_image_data(texturefilename.get())
+            str += '\r\n   "string imagedata" ["%s"]' % imdata
+        
+        useseq = luxProp(mat, keyname+".useseq", "false")
+        luxCollapse("usesew", useseq, "Sequence", "", gui, 2.0)
+    
+        if useseq.get() == "true":
+            seqframes = luxProp(mat, keyname+".seqframes", 100)
+            luxInt("frames", seqframes, 1, 100000, "Frames", "", gui, 0.5)
+            seqoffset = luxProp(mat, keyname+".seqoffset", 0)
+            luxInt("offset", seqoffset, 0, 100000, "Offset", "", gui, 0.5)
+            seqstartframe = luxProp(mat, keyname+".seqsframe", 1)
+            luxInt("startframe", seqstartframe, 1, 100000, "StartFr", "", gui, 0.5)
+            seqcyclic = luxProp(mat, keyname+".seqcycl", "false")
+            luxBool("cyclic", seqcyclic, "Cyclic", "", gui, 0.5)
+    
+            
+            totalframes = seqframes.get()
+            currentframe = Blender.Get('curframe')
+    
+            if(currentframe < seqstartframe.get()):
+                fnumber = 1 + seqoffset.get()
             else:
-                fnumber = currentframe % seqframes.get()
-
-        import re
-        def get_seq_filename(number, filename):
-            m = re.findall(r'(\d+)', filename)
-            if len(m) == 0:
-                return "ERR: Can't find pattern"
-
-            rightmost_number = m[len(m)-1]
-            seq_length = len(rightmost_number)
-
-            nstr = "%i" %number
-            new_seq_number = nstr.zfill(seq_length)
- 
-            return filename.replace(rightmost_number, new_seq_number)
- 
-        texturefilename.set(get_seq_filename(fnumber, texturefilename.get()))
-        if gui: gui.newline()
-
-        str += luxFloat("gamma", luxProp(mat, keyname+".gamma", texturegamma()), 0.0, 6.0, "gamma", "", gui, 0.75)
-        str += luxFloat("gain", luxProp(mat, keyname+".gain", 1.0), 0.0, 10.0, "gain", "", gui, 0.5)
-        filttype = luxProp(mat, keyname+".filtertype", "bilinear")
-        filttypes = ["mipmap_ewa","mipmap_trilinear","bilinear","nearest"]
-        str += luxOption("filtertype", filttype, filttypes, "filtertype", "Choose the filtering method to use for the image texture", gui, 0.75)
-
-        if filttype.get() == "mipmap_ewa" or filttype.get() == "mipmap_trilinear":    
-            str += luxFloat("maxanisotropy", luxProp(mat, keyname+".maxanisotropy", 8.0), 1.0, 512.0, "maxaniso", "", gui, 1.0)
-            str += luxInt("discardmipmaps", luxProp(mat, keyname+".discardmipmaps", 0), 0, 1, "discardmips", "", gui, 1.0)
-
-        str += luxMapping(keyname, mat, gui, level+1)
+                fnumber = (currentframe - (seqstartframe.get()-1)) + seqoffset.get()
+    
+            if(fnumber > seqframes.get()):
+                if(seqcyclic.get() == "false"):
+                    fnumber = seqframes.get()
+                else:
+                    fnumber = currentframe % seqframes.get()
+    
+            import re
+            def get_seq_filename(number, filename):
+                m = re.findall(r'(\d+)', filename)
+                if len(m) == 0:
+                    return "ERR: Can't find pattern"
+    
+                rightmost_number = m[len(m)-1]
+                seq_length = len(rightmost_number)
+    
+                nstr = "%i" %number
+                new_seq_number = nstr.zfill(seq_length)
+     
+                return filename.replace(rightmost_number, new_seq_number)
+     
+            texturefilename.set(get_seq_filename(fnumber, texturefilename.get()))
+            if gui: gui.newline()
+    
+            str += luxFloat("gamma", luxProp(mat, keyname+".gamma", texturegamma()), 0.0, 6.0, "gamma", "", gui, 0.75)
+            str += luxFloat("gain", luxProp(mat, keyname+".gain", 1.0), 0.0, 10.0, "gain", "", gui, 0.5)
+            filttype = luxProp(mat, keyname+".filtertype", "bilinear")
+            filttypes = ["mipmap_ewa","mipmap_trilinear","bilinear","nearest"]
+            str += luxOption("filtertype", filttype, filttypes, "filtertype", "Choose the filtering method to use for the image texture", gui, 0.75)
+    
+            if filttype.get() == "mipmap_ewa" or filttype.get() == "mipmap_trilinear":    
+                str += luxFloat("maxanisotropy", luxProp(mat, keyname+".maxanisotropy", 8.0), 1.0, 512.0, "maxaniso", "", gui, 1.0)
+                str += luxInt("discardmipmaps", luxProp(mat, keyname+".discardmipmaps", 0), 0, 1, "discardmips", "", gui, 1.0)
+    
+            str += luxMapping(keyname, mat, gui, level+1)
 
     if texture.get() == "mix":
         (s, l) = c(("", ""), luxTexture("amount", keyname, "float", 0.5, 0.0, 1.0, "amount", "The degree of mix between the two textures", mat, gui, matlevel, texlevel+1, lightsource))
