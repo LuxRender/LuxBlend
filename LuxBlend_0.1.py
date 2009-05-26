@@ -898,6 +898,26 @@ def save_lux(filename, unindexedname):
     print("Processing time: %f\n" %(time2-time1))
     return True
 
+########################################################################
+####  Construct server string argument
+########################################################################
+
+def networkstring(scn):
+    servers_string = ""
+    if  (luxProp(scn,"network","false").get() == "true"):
+        if (luxProp(scn,"network_use_file","false").get() == "true"):
+            print "read network servers from file: "+ luxProp(scn,"network_file_path","false").get()
+            f = open(luxProp(scn,"network_file_path","false").get())
+            for s in f:
+                s = s.strip("\n")
+                print "add server :" + s
+                servers_string=servers_string+" -u "+ s
+            f.close
+        else : 
+             if  luxProp(scn,"network_servers","").get():
+                 for server in luxProp(scn,"network_servers","").get().split(","):
+                    servers_string=servers_string+" -u "+ server
+    return servers_string
 
 
 #########################################################################
@@ -912,6 +932,10 @@ def launchLux(filename):
     scn = Scene.GetCurrent()
     ic = luxProp(scn, "lux", "").get()
     ic = Blender.sys.dirname(ic) + os.sep + "luxrender"
+
+    servers_string = networkstring(scn)
+    update_int=luxProp(scn,"newtork_interval",180).get()
+
     if ostype == "win32": ic = ic + ".exe"
     if ostype == "darwin": ic = ic + ".app/Contents/MacOS/luxrender"
     checkluxpath = luxProp(scn, "checkluxpath", True).get()
@@ -930,15 +954,16 @@ def launchLux(filename):
         elif luxnice > -15: prio = "/abovenormal"
         else: prio = "/high"
         if(autothreads=="true"):
-            cmd = "start /b %s \"\" \"%s\" \"%s\" "%(prio, ic, filename)        
+            cmd = "start /b %s \"\" \"%s\" %s -i %d \"%s\" "%(prio, ic,servers_string ,update_int, filename)        
         else:
-            cmd = "start /b %s \"\" \"%s\" \"%s\" --threads=%d"%(prio, ic, filename, threads)        
+            cmd = "start /b %s \"\" \"%s\" %s -i %d \"%s\" --threads=%d"%(prio, ic,servers_string ,update_int ,filename, threads)        
 
     if ostype == "linux2" or ostype == "darwin":
         if(autothreads=="true"):
-            cmd = "(nice -n %d \"%s\" \"%s\")&"%(luxnice, ic, filename)
+            cmd = "(nice -n %d \"%s\" %s -i %d \"%s\")&"%(luxnice, ic, servers_string ,update_int, filename)
+
         else:
-            cmd = "(nice -n %d \"%s\" --threads=%d \"%s\")&"%(luxnice, ic, threads, filename)
+            cmd = "(nice -n %d \"%s\" --threads=%d %s -i %d \"%s\")&"%(luxnice, ic, threads, servers_string ,update_int, filename)
 
     # call external shell script to start Lux    
     print("Running Luxrender:\n"+cmd)
@@ -950,6 +975,10 @@ def launchLuxPiped():
     datadir=Blender.Get("datadir")
     
     scn = Scene.GetCurrent()
+
+    servers_string = networkstring(scn)
+    update_int=luxProp(scn,"newtork_interval",180).get()
+
     ic = luxProp(scn, "lux", "").get()
     ic = Blender.sys.dirname(ic) + os.sep + "luxrender"
     if ostype == "win32": ic = ic + ".exe"
@@ -964,15 +993,15 @@ def launchLuxPiped():
 
     if ostype == "win32":
         if(autothreads=="true"):
-            cmd = "\"%s\" - "%(ic)        
+            cmd = "\"%s\" - %s -i %d "%(ic,servers_string,update_int)        
         else:
-            cmd = "\"%s\" - --threads=%d"%(ic, threads)        
+            cmd = "\"%s\" - %s -i %d --threads=%d"%(ic, threads)        
 
     if ostype == "linux2" or ostype == "darwin":
         if(autothreads=="true"):
-            cmd = "(\"%s\" \"%s\")&"%(ic, filename)
+            cmd = "(\"%s -u %s -i %d\" \"%s\")&"%(ic,servers_string,update_int, filename)
         else:
-            cmd = "(\"%s\" --threads=%d \"%s\")&"%(ic, threads, filename)
+            cmd = "(\"%s\" --threads=%d -u %s -i %d \"%s\")&"%(ic, threads,servers_string,update_int, filename)
 
     # call external shell script to start Lux    
     print("Running Luxrender:\n"+cmd)
@@ -992,6 +1021,9 @@ def launchLuxWait(filename):
     scn = Scene.GetCurrent()
     luxbatchconsolemode = luxProp(scn, "luxbatchc", "false")
 
+    servers_string = networkstring(scn)
+    update_int=luxProp(scn,"newtork_interval",180).get()
+
     ic = luxProp(scn, "lux", "").get()
     if luxbatchconsolemode.get() == "false":
     	ic = Blender.sys.dirname(ic) + os.sep + "luxconsole"
@@ -1008,9 +1040,9 @@ def launchLuxWait(filename):
 
     if ostype == "win32":
         if(autothreads=="true"):
-            cmd = "start /b /WAIT \"\" \"%s\"  -f \"%s\" "%(ic, filename)        
+            cmd = "start /b /WAIT \"\" \"%s\" %s -i %d -f \"%s\" "%(ic,servers_string,update_int, filename)        
         else:
-            cmd = "start /b /WAIT \"\" \"%s\"  -f \"%s\" --threads=%d"%(ic, filename, threads)        
+            cmd = "start /b /WAIT \"\" \"%s\"  %s -i %d -f \"%s\" --threads=%d"%(ic,servers_string,update_int, filename, threads)        
         # call external shell script to start Lux    
         #print("Running Luxrender:\n"+cmd)
         #os.spawnv(os.P_WAIT, cmd, 0)
@@ -1018,9 +1050,9 @@ def launchLuxWait(filename):
 
     if ostype == "linux2" or ostype == "darwin":
         if(autothreads=="true"):
-            cmd = "\"%s\" -f \"%s\""%(ic, filename)
+            cmd = "\"%s\" %s -i %d -f \"%s\""%(ic,servers_string,update_int, filename)
         else:
-            cmd = "\"%s\" -f --threads=%d \"%s\""%(ic, threads, filename)
+            cmd = "\"%s\" %s -i %d -f --threads=%d \"%s\""%(ic,servers_string,update_int,  threads, filename)
         subprocess.call(cmd,shell=True)
 
 #### SAVE ANIMATION ####    
@@ -3408,6 +3440,20 @@ def luxSystem(scn, gui=None):
         #luxInt("barytrianglemesh thr", luxProp(scn, "barytrianglemesh_thr", 300000), 0, 100000000, "barytrianglemesh threshold", "Vertex threshold for exporting barytrianglemesh object(s) (slower but uses less memory)", gui, 2.0)
         if gui: gui.newline("INSTANCING:", 10)
         luxInt("instancing_threshold", luxProp(scn, "instancing_threshold", 2), 0, 1000000, "object instancing threshold", "Threshold to created instanced objects", gui, 2.0)
+        if gui: 
+           network=luxProp(scn,"network","false")
+           gui.newline("NETWORK")
+           luxCollapse("network",network, "network", "enable network option", gui, 2.0)
+           if(network.get() == "true"):
+                  network_use_file=luxProp(scn,"network_use_file","false")
+                  luxBool ("use file",network_use_file,"use file", "get list of servers from file; one per line",gui,2.0)
+                  if (network_use_file.get() == "true"):
+                     luxFile("file", luxProp(scn, "network_file_path", ""), "file", "file where servers are defined", gui, 2.0)         
+                  else :     
+                     gui.newline("")
+	             luxString("Servers",luxProp(scn,"network_servers",""),"servers","coma separated list of servers",gui,2)
+                  gui.newline("")
+	          luxInt("network_interval",luxProp(scn,"newtork_interval",180),0,300,"update interval","interval between network refresh",gui)
 
 
 def scalelist(list, factor):
