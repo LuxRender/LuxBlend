@@ -3687,7 +3687,7 @@ def luxTexture(name, parentkey, type, default, min, max, caption, hint, mat, gui
         filttypes = ["mipmap_ewa","mipmap_trilinear","bilinear","nearest"]
         str += luxOption("filtertype", filttype, filttypes, "filtertype", "Choose the filtering method to use for the image texture", gui, 0.75)
         
-                if filttype.get() == "mipmap_ewa" or filttype.get() == "mipmap_trilinear":    
+        if filttype.get() == "mipmap_ewa" or filttype.get() == "mipmap_trilinear":    
             str += luxFloat("maxanisotropy", luxProp(mat, keyname+".maxanisotropy", 8.0), 1.0, 512.0, "maxaniso", "", gui, 1.0)
             str += luxInt("discardmipmaps", luxProp(mat, keyname+".discardmipmaps", 0), 0, 1, "discardmips", "", gui, 1.0)
     
