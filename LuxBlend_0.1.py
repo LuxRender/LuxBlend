@@ -212,22 +212,24 @@ class luxExport:
         self.meshes = {}
         self.materials = []
         self.lights = []
+        self.duplis = set()
 
     #-------------------------------------------------
     # analyseObject(self, obj, matrix, name)
     # called by analyseScene to build the lists before export
     #-------------------------------------------------
-    def analyseObject(self, obj, matrix, name, isOriginal=True):
+    def analyseObject(self, obj, matrix, name, isOriginal=True, isDupli=False):
         light = False
         if (obj.users > 0):
             obj_type = obj.getType()
             if (obj.enableDupFrames and isOriginal):
                 for o, m in obj.DupObjects:
                     self.analyseObject(o, m, "%s.%s"%(name, o.getName()), False)    
-            if (obj.enableDupGroup or obj.enableDupVerts):
+            if (obj.enableDupGroup or obj.enableDupVerts or obj.enableDupFaces):
+                self.duplis.add(obj)
                 for o, m in obj.DupObjects:
-                    self.analyseObject(o, m, "%s.%s"%(name, o.getName()))    
-            elif (obj_type == "Mesh") or (obj_type == "Surf") or (obj_type == "Curve") or (obj_type == "Text"):
+                    self.analyseObject(o, m, "%s.%s"%(name, o.getName()), True, True)    
+            elif ((isDupli or (not obj.getParent() in self.duplis)) and ((obj_type == "Mesh") or (obj_type == "Surf") or (obj_type == "Curve") or (obj_type == "Text"))):
                 mats = getMaterials(obj)
                 if (len(mats)>0) and (mats[0]!=None) and ((mats[0].name=="PORTAL") or (luxProp(mats[0], "type", "").get()=="portal")):
                     self.portals.append([obj, matrix])
