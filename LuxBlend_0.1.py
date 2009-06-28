@@ -947,6 +947,10 @@ def launchLux(filename):
     autothreads = luxProp(scn, "autothreads", "true").get()
     threads = luxProp(scn, "threads", 1).get()
     luxnice = luxProp(scn, "luxnice", 0).get()
+    noopengl = luxProp(scn, "noopengl", "false").get()
+    if noopengl == "true":
+        ic += " --noopengl"
+    
     if ostype == "win32":
         prio = ""
         if luxnice > 15: prio = "/low"
@@ -2649,7 +2653,7 @@ def luxPixelFilter(scn, gui=None):
                 # rule: B + 2*c = 1.0
                 C = slidval.getFloat() * 0.5
                 B = 1.0 - slidval.getFloat()
-                str += "\n   \"float B\" [%f]"%(B)
+                str += "\n   \"float B\" [%f]"%(B)glRasterPos
                 str += "\n   \"float C\" [%f]"%(C)
 
             if showadvanced.get()=="true":
@@ -3412,7 +3416,10 @@ def luxSystem(scn, gui=None):
         if osys.platform=="win32":
             r = gui.getRect(2, 1)
             Draw.Menu("priority%t|abovenormal%x-10|normal%x0|belownormal%x10|low%x19", evtLuxGui, r[0], r[1], r[2], r[3], luxnice.get(), "", lambda e,v: luxnice.set(v))
-        else: luxInt("nice", luxnice, -20, 19, "nice", "nice value. Range goes from -20 (highest priority) to 19 (lowest)", gui)  
+        else: luxInt("nice", luxnice, -20, 19, "nice", "nice value. Range goes from -20 (highest priority) to 19 (lowest)", gui)
+
+        luxBool("noopengl", luxProp(scn, "noopengl", "false"), "Disable OpenGL", "(workaround for some buggy display drivers)", gui, 1.0)
+
 
         if gui: gui.newline("THREADS:", 10)
         autothreads = luxProp(scn, "autothreads", "true")
