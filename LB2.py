@@ -1550,6 +1550,9 @@ class Lux:
             autothreads = Lux.Property(Lux.scene, "autothreads", "true").get()
             threads = Lux.Property(Lux.scene, "threads", 1).get()
             luxnice = Lux.Property(Lux.scene, "luxnice", 10).get()
+            noopengl = Lux.Property(Lux.scene, "noopengl", "false").get()
+            if noopengl == "true":
+                ic += " --noopengl"
             if ostype == "win32":
                 prio = ""
                 if luxnice > 15: prio = "/low"
@@ -1595,6 +1598,9 @@ class Lux:
                     return        
             autothreads = Lux.Property(Lux.scene, "autothreads", "true").get()
             threads = Lux.Property(Lux.scene, "threads", 1).get()
+            noopengl = Lux.Property(Lux.scene, "noopengl", "false").get()
+            if noopengl == "true":
+                ic += " --noopengl"
         
             if ostype == "win32":
                 if(autothreads=="true"):
@@ -1637,6 +1643,9 @@ class Lux:
                     return        
             autothreads = Lux.Property(Lux.scene, "autothreads", "true").get()
             threads = Lux.Property(Lux.scene, "threads", 1).get()
+            noopengl = Lux.Property(Lux.scene, "noopengl", "false").get()
+            if noopengl == "true":
+                ic += " --noopengl"
         
             if ostype == "win32":
                 if(autothreads=="true"):
@@ -2575,9 +2584,9 @@ class Lux:
                 if self.draw():
                     r = Lux.LB_UI.getRect(width, 1)
                     if lux.get() == "true":
-                        Lux.Graphic.Arrow('down', r[0]-22, r[1]-2)
+                        Lux.Graphic.Arrow('down').draw(r[0]-22, r[1]-2)
                     else:
-                        Lux.Graphic.Arrow('right', r[0]-22, r[1]-2)
+                        Lux.Graphic.Arrow('right').draw(r[0]-22, r[1]-2)
                     Blender_API.Draw.Toggle(caption, Lux.Events.LuxGui, r[0], r[1], r[2], r[3], lux.get()=="true", hint, lambda e,v: lux.set(["false","true"][bool(v)]))
                 return '\n   "bool %s" ["%s"]' % (name, lux.get())
         
@@ -3200,7 +3209,7 @@ class Lux:
                         # rule: B + 2*c = 1.0
                         C = slidval.getFloat() * 0.5
                         B = 1.0 - slidval.getFloat()
-                        str += '\n   "float B" [%f]'%(B)glRasterPos
+                        str += '\n   "float B" [%f]'%(B)
                         str += '\n   "float C" [%f]'%(C)
         
                     if showadvanced.get()=="true":
@@ -3611,9 +3620,6 @@ class Lux:
                 
                 if Lux.LB_UI.Active: Lux.LB_UI.newline("PRIORITY:", 10)
                 luxnice = Lux.Property(Lux.scene, "luxnice", 10)
-                noopengl = Lux.Property(Lux.scene, "noopengl", "false").get()
-                if noopengl == "true":
-                    ic += " --noopengl"
                 
                 if osys.platform=="win32":
                     r = Lux.LB_UI.getRect(2, 1)
