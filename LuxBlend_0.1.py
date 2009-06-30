@@ -2653,7 +2653,7 @@ def luxPixelFilter(scn, gui=None):
                 # rule: B + 2*c = 1.0
                 C = slidval.getFloat() * 0.5
                 B = 1.0 - slidval.getFloat()
-                str += "\n   \"float B\" [%f]"%(B)glRasterPos
+                str += "\n   \"float B\" [%f]"%(B)
                 str += "\n   \"float C\" [%f]"%(C)
 
             if showadvanced.get()=="true":
@@ -2760,7 +2760,7 @@ def luxSurfaceIntegrator(scn, gui=None):
     if scn:
         integratortype = luxProp(scn, "sintegrator.type", "bidirectional")
         
-        str = luxIdentifier("SurfaceIntegrator", integratortype, ["directlighting", "path", "bidirectional", "exphotonmap", "distributedpath" ], "INTEGRATOR", "select surface integrator type", gui, icon_c_integrator)
+        str = luxIdentifier("SurfaceIntegrator", integratortype, ["directlighting", "path", "bidirectional", "exphotonmap", "distributedpath", "igi" ], "INTEGRATOR", "select surface integrator type", gui, icon_c_integrator)
 
         # Advanced toggle
         parammodeadvanced = luxProp(scn, "parammodeadvanced", "false")
@@ -2900,6 +2900,17 @@ def luxSurfaceIntegrator(scn, gui=None):
                 if glossyrefractreject.get()=="true":
                     str += luxFloat("glossyrefractreject_threshold", luxProp(scn, "sintegrator.distributedpath.glosrefrrejectthr", 10.0), 0.01, 10.0, "Thr", "The Average Threshold to reject", gui, 0.6)
     
+        if integratortype.get() == "igi":
+            if gui: gui.newline("  Depth:", 8, 0, None, [0.4,0.4,0.4])
+            depth = luxProp(scn, "sintegrator.igi.maxdepth", 5)
+            luxInt("maxdepth", depth, 1, 32, "maxdepth", "The maximum recursion depth for ray casting", gui, 2.0)
+            if showadvanced.get()=="true":
+                # Advanced parameters
+                if gui: gui.newline("  VLights:")
+                str += luxInt("nsets", luxProp(scn, "sintegrator.igi.nsets", 4), 1, 100, "nsets", "The number of virtual lights sets", gui)
+                str += luxInt("nlights", luxProp(scn, "sintegrator.igi.nlights", 64), 1, 1000, "nlights", "The number of light paths per light set", gui)
+                str += luxFloat("strategy", luxProp(scn, "sintegrator.igi.mindist", 0.1), 0.01, 10.0, "mindist", "The minimal distance to a virtual light to take it into account", gui)
+
     
     return str
 

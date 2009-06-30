@@ -3316,7 +3316,7 @@ class Lux:
             str = ""
             if Lux.scene:
                 integratortype = Lux.Property(Lux.scene, "sintegrator.type", "bidirectional")
-                str = Lux.TypedControl.Identifier(icon='c_integrator').create("SurfaceIntegrator", integratortype, ["directlighting", "path", "bidirectional", "exphotonmap", "distributedpath" ], "INTEGRATOR", "select surface integrator type")
+                str = Lux.TypedControl.Identifier(icon='c_integrator').create("SurfaceIntegrator", integratortype, ["directlighting", "path", "bidirectional", "exphotonmap", "distributedpath", "igi" ], "INTEGRATOR", "select surface integrator type")
         
                 # Advanced toggle
                 parammodeadvanced = Lux.Property(Lux.scene, "parammodeadvanced", "false")
@@ -3452,6 +3452,17 @@ class Lux:
                         if glossyrefractreject.get()=="true":
                             str += Lux.TypedControl.Float().create("glossyrefractreject_threshold", Lux.Property(Lux.scene, "sintegrator.distributedpath.glosrefrrejectthr", 10.0), 0.01, 10.0, "Thr", "The Average Threshold to reject", 0.6)
             
+                if integratortype.get() == "igi":
+                    if Lux.LB_UI.Active: Lux.LB_UI.newline("  Depth:", 8, 0, None, [0.4,0.4,0.4])
+                    depth = Lux.Property(Lux.scene, "sintegrator.igi.maxdepth", 5)
+                    Lux.TypedControl.Int().create("maxdepth", depth, 1, 32, "maxdepth", "The maximum recursion depth for ray casting", 2.0)
+                    if showadvanced.get()=="true":
+                        # Advanced parameters
+                        if Lux.LB_UI.Active: Lux.LB_UI.newline("  VLights:")
+                        str += Lux.TypedControl.Int().create("nsets", Lux.Property(Lux.scene, "sintegrator.igi.nsets", 4), 1, 100, "nsets", "The number of virtual lights sets")
+                        str += Lux.TypedControl.Int().create("nlights", Lux.Property(Lux.scene, "sintegrator.igi.nlights", 64), 1, 1000, "nlights", "The number of light paths per light set")
+                        str += LuxTypedControl.Float().create("strategy", Lux.Property(Lux.scene, "sintegrator.igi.mindist", 0.1), 0.01, 10.0, "mindist", "The minimal distance to a virtual light to take it into account")
+
             
             return str
         
