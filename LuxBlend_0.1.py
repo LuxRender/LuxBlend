@@ -950,7 +950,7 @@ def launchLux(filename):
     noopengl = luxProp(scn, "noopengl", "false").get()
     if noopengl == "true":
         noopengl_str = " --noopengl"
-    else
+    else:
         noopengl_str = ""
     
     if ostype == "win32":
