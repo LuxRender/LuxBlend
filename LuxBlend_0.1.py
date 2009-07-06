@@ -2650,7 +2650,7 @@ def luxPixelFilter(scn, gui=None):
             if showadvanced.get()=="false":
                 # Default parameters
                 if gui: gui.newline("", 8, 0, None, [0.4,0.4,0.4])
-                slidval = luxProp(scn, "pixelfilter.mitchell.sharp", 0.33)
+                slidval = luxProp(scn, "pixelfilter.mitchell.sharp", 0.25)
                 luxFloat("sharpness", slidval, 0.0, 1.0, "sharpness", "Specify amount between blurred (left) and sharp/ringed (right)", gui, 2.0, 1)
                 # rule: B + 2*c = 1.0
                 C = slidval.getFloat() * 0.5
