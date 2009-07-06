@@ -1358,7 +1358,6 @@ def getScenePresets():
     'sampler.metro.lmprob': 0.4,
     'sampler.metro.maxrejects': 512,
     'sampler.metro.initsamples': 262144,
-    'sampler.metro.stratawidth': 256,
     'sampler.metro.usevariance': "false",
 
     'sintegrator.type': 'bidirectional',
@@ -1385,7 +1384,6 @@ def getScenePresets():
     'sampler.metro.lmprob': 0.4,
     'sampler.metro.maxrejects': 512,
     'sampler.metro.initsamples': 262144,
-    'sampler.metro.stratawidth': 256,
     'sampler.metro.usevariance': "false",
 
     'sintegrator.type': 'path',
@@ -2386,7 +2384,7 @@ def luxFilm(scn, gui=None):
             str += luxOption("tonemapkernel", tonemapkernel, ["reinhard", "linear", "contrast", "maxwhite"], "Tonemapping Kernel", "Select the tonemapping kernel to use", gui, 2.0)
             if tonemapkernel.get() == "reinhard":
                 autoywa = luxProp(scn, "film.reinhard.autoywa", "true")
-                str += luxBool("reinhard_autoywa", autoywa, "auto Ywa", "Automatically determine World Adaption Luminance", gui)
+                #str += luxBool("reinhard_autoywa", autoywa, "auto Ywa", "Automatically determine World Adaption Luminance", gui)
                 if autoywa.get() == "false":
                     str += luxFloat("reinhard_ywa", luxProp(scn, "film.reinhard.ywa", 0.1), 0.001, 1.0, "Ywa", "Display/World Adaption Luminance", gui)
                 str += luxFloat("reinhard_prescale", luxProp(scn, "film.reinhard.prescale", 1.0), 0.0, 10.0, "preScale", "Image scale before tonemap operator", gui)
@@ -2728,7 +2726,6 @@ def luxSampler(scn, gui=None):
                 str += luxInt("maxconsecrejects", luxProp(scn, "sampler.metro.maxrejects", 512), 0, 32768, "max.rejects", "number of consecutive rejects before a new mutation is forced", gui)
                 if gui: gui.newline("  Screen:")
                 str += luxInt("initsamples", luxProp(scn, "sampler.metro.initsamples", 262144), 1, 1000000, "initsamples", "", gui)
-                str += luxInt("stratawidth", luxProp(scn, "sampler.metro.stratawidth", 256), 1, 32768, "stratawidth", "The number of x/y strata for stratified sampling of seeds", gui)
                 str += luxBool("usevariance",luxProp(scn, "sampler.metro.usevariance", "false"), "usevariance", "Accept based on variance", gui, 1.0)
 
             if showhelp.get()=="true":
