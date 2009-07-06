@@ -1340,7 +1340,7 @@ def getScenePresets():
     'sintegrator.dlighting.maxdepth': 5,
 
     'pixelfilter.type': 'mitchell',
-    'pixelfilter.mitchell.sharp': 0.333, 
+    'pixelfilter.mitchell.sharp': 0.250, 
     'pixelfilter.mitchell.xwidth': 2.0, 
     'pixelfilter.mitchell.ywidth': 2.0, 
     'pixelfilter.mitchell.optmode': "slider" }
@@ -1367,7 +1367,7 @@ def getScenePresets():
     'sintegrator.bidir.lightdepth': 16,
 
     'pixelfilter.type': 'mitchell',
-    'pixelfilter.mitchell.sharp': 0.333, 
+    'pixelfilter.mitchell.sharp': 0.250, 
     'pixelfilter.mitchell.xwidth': 2.0, 
     'pixelfilter.mitchell.ywidth': 2.0, 
     'pixelfilter.mitchell.optmode': "slider" }
@@ -1393,7 +1393,7 @@ def getScenePresets():
     'sintegrator.bidir.maxdepth': 10,
 
     'pixelfilter.type': 'mitchell',
-    'pixelfilter.mitchell.sharp': 0.333, 
+    'pixelfilter.mitchell.sharp': 0.250, 
     'pixelfilter.mitchell.xwidth': 2.0, 
     'pixelfilter.mitchell.ywidth': 2.0, 
     'pixelfilter.mitchell.optmode': "slider" }
@@ -1418,7 +1418,7 @@ def getScenePresets():
     'sintegrator.bidir.lightdepth': 16,
 
     'pixelfilter.type': 'mitchell',
-    'pixelfilter.mitchell.sharp': 0.333, 
+    'pixelfilter.mitchell.sharp': 0.250, 
     'pixelfilter.mitchell.xwidth': 2.0, 
     'pixelfilter.mitchell.ywidth': 2.0, 
     'pixelfilter.mitchell.optmode': "slider" }
@@ -1440,7 +1440,7 @@ def getScenePresets():
     'sintegrator.bidir.maxdepth': 10,
 
     'pixelfilter.type': 'mitchell',
-    'pixelfilter.mitchell.sharp': 0.333, 
+    'pixelfilter.mitchell.sharp': 0.250, 
     'pixelfilter.mitchell.xwidth': 2.0, 
     'pixelfilter.mitchell.ywidth': 2.0, 
     'pixelfilter.mitchell.optmode': "slider" }
@@ -1465,7 +1465,7 @@ def getScenePresets():
     'sintegrator.bidir.lightdepth': 10,
 
     'pixelfilter.type': 'mitchell',
-    'pixelfilter.mitchell.sharp': 0.333, 
+    'pixelfilter.mitchell.sharp': 0.250, 
     'pixelfilter.mitchell.xwidth': 2.0, 
     'pixelfilter.mitchell.ywidth': 2.0, 
     'pixelfilter.mitchell.optmode': "slider" }
