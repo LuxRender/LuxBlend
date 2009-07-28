@@ -600,14 +600,16 @@ class luxExport:
                 energy = obj.getData(mesh=1).energy # data
                 if ltype == Lamp.Types["Lamp"]:
                     lightgroup = luxProp(obj, "light.lightgroup", "default")
-                    file.write("LightGroup \"%s\"\n"%lightgroup.get())
+                    if luxProp(Scene.GetCurrent(), "nolg", "false").get()!="true":
+                        file.write("LightGroup \"%s\"\n"%lightgroup.get())
                     (str, link) = luxLamp("", "", obj, None, 0)
                     file.write(str+"LightSource \"point\""+link+"\n")
                 if ltype == Lamp.Types["Spot"]:
                     (str, link) = luxSpot("", "", obj, None, 0)
                     file.write(str)
                     proj = luxProp(obj, "light.usetexproj", "false")
-                    lightgroup = luxProp(obj, "light.lightgroup", "default")
+                    if luxProp(Scene.GetCurrent(), "nolg", "false").get()!="true":
+                        lightgroup = luxProp(obj, "light.lightgroup", "default")
                     file.write("LightGroup \"%s\"\n"%lightgroup.get())
                     if(proj.get() == "true"):
                         file.write("Rotate 180 0 1 0\n")
@@ -618,7 +620,8 @@ class luxExport:
                     file.write(link+"\n")
                 if ltype == Lamp.Types["Area"]:
                     lightgroup = luxProp(obj, "light.lightgroup", "default")
-                    file.write("LightGroup \"%s\"\n"%lightgroup.get())
+                    if luxProp(Scene.GetCurrent(), "nolg", "false").get()!="true":
+                        file.write("LightGroup \"%s\"\n"%lightgroup.get())
                     file.write("\tAreaLightSource \"area\"")
                     file.write(link)
 #                    file.write(luxLight("", "", obj, None, 0))
@@ -2939,7 +2942,8 @@ def luxEnvironment(scn, gui=None):
             if envtype.get() in ["infinite", "sunsky"]:
                 env_lg = luxProp(scn, "env.lightgroup", "default")
                 luxString("env.lightgroup", env_lg, "lightgroup", "Environment light group", gui)
-                lsstr = '\nLightGroup "' + env_lg.get() + '"' + lsstr
+                if luxProp(scn, "nolg", "false").get()!="true":
+                    lsstr = '\nLightGroup "' + env_lg.get() + '"' + lsstr
                 rot = luxProp(scn, "env.rotation", 0.0)
                 luxFloat("rotation", rot, 0.0, 360.0, "rotation", "environment rotation", gui)
                 if rot.get() != 0:
@@ -2970,7 +2974,8 @@ def luxEnvironment(scn, gui=None):
                 if(infinitesun.get() == "true"):
                     sun_lg = luxProp(scn, "env.sun_lightgroup", "default")
                     luxString("env.lightgroup", sun_lg, "lightgroup", "Sun component light group", gui)
-                    str += '\nLightGroup "' + sun_lg.get() + '"'
+                    if luxProp(scn, "nolg", "false").get()!="true":
+                        str += '\nLightGroup "' + sun_lg.get() + '"'
                     str += "\nLightSource \"sun\" "
                     infinitehassun = 1
 
@@ -4641,7 +4646,8 @@ def luxMaterialBlock(name, luxname, key, mat, gui=None, level=0, str_opt=""):
 
         if mattype.get() == "light":
             lightgroup = luxProp(mat, kn+"light.lightgroup", "default")
-            link = "LightGroup \"%s\"\n"%lightgroup.get()
+            if luxProp(Scene.GetCurrent(), "nolg", "false").get()!="true":
+                link = "LightGroup \"%s\"\n"%lightgroup.get()
             link += "AreaLightSource \"area\""
             (str,link) = c((str,link), luxLight("", kn, mat, gui, level))
             has_bump_options = 0
@@ -5010,7 +5016,8 @@ def luxMaterial(mat, gui=None):
         useemission = luxProp(mat, "emission", "false")
         if useemission.get() == "true":
             lightgroup = luxProp(mat, "light.lightgroup", "default")
-            link += "\n\tLightGroup \"%s\"\n"%lightgroup.get()
+            if luxProp(Scene.GetCurrent(), "nolg", "false").get()!="true":
+                link += "\n\tLightGroup \"%s\"\n"%lightgroup.get()
             
             (estr, elink) = luxLight("", "", mat, None, 0)
             str += estr
@@ -6021,6 +6028,7 @@ def luxDraw():
         run = luxProp(scn, "run", "true")
         dlt = luxProp(scn, "default", "true")
         clay = luxProp(scn, "clay", "false")
+        nolg = luxProp(scn, "nolg", "false")
         lxs = luxProp(scn, "lxs", "true")
         lxo = luxProp(scn, "lxo", "true")
         lxm = luxProp(scn, "lxm", "true")
@@ -6034,9 +6042,10 @@ def luxDraw():
             Draw.Button("Export", 0, 10, y+20, 100, 36, "Export", lambda e,v:CBluxExport(dlt.get()=="true", False))
             Draw.Button("Export Anim", 0, 110, y+20, 100, 36, "Export animation", lambda e,v:CBluxAnimExport(dlt.get()=="true", False))
 
-        Draw.Toggle("run", evtLuxGui, 320, y+40, 30, 16, run.get()=="true", "start Lux after export", lambda e,v: run.set(["false","true"][bool(v)]))
-        Draw.Toggle("def", evtLuxGui, 350, y+40, 30, 16, dlt.get()=="true", "save to default.lxs", lambda e,v: dlt.set(["false","true"][bool(v)]))
-        Draw.Toggle("clay", evtLuxGui, 380, y+40, 30, 16, clay.get()=="true", "all materials are rendered as white-matte", lambda e,v: clay.set(["false","true"][bool(v)]))
+        Draw.Toggle("run", evtLuxGui, 290, y+40, 30, 16, run.get()=="true", "start Lux after export", lambda e,v: run.set(["false","true"][bool(v)]))
+        Draw.Toggle("def", evtLuxGui, 320, y+40, 30, 16, dlt.get()=="true", "save to default.lxs", lambda e,v: dlt.set(["false","true"][bool(v)]))
+        Draw.Toggle("clay", evtLuxGui, 350, y+40, 30, 16, clay.get()=="true", "all materials are rendered as white-matte", lambda e,v: clay.set(["false","true"][bool(v)]))
+        Draw.Toggle("nolg", evtLuxGui, 380, y+40, 30, 16, nolg.get()=="true", "disables all light groups", lambda e,v: nolg.set(["false","true"][bool(v)]))
         Draw.Toggle(".lxs", 0, 290, y+20, 30, 16, lxs.get()=="true", "export .lxs scene file", lambda e,v: lxs.set(["false","true"][bool(v)]))
         Draw.Toggle(".lxo", 0, 320, y+20, 30, 16, lxo.get()=="true", "export .lxo geometry file", lambda e,v: lxo.set(["false","true"][bool(v)]))
         Draw.Toggle(".lxm", 0, 350, y+20, 30, 16, lxm.get()=="true", "export .lxm material file", lambda e,v: lxm.set(["false","true"][bool(v)]))
