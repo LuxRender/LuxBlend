@@ -4467,7 +4467,7 @@ def Preview_Update(mat, kn, defLarge, defType, texName, name, level):
     if(prev_sphere.get()=="true"):
         p.stdin.write('Shape "sphere" "float radius" [1.0]\n')
     elif (prev_plane.get()=="true"):
-        p.stdin.write('    Shape "trianglemesh" "integer indices" [ 0 1 2 0 2 3 ] "point P" [ 1.0 1.0 0.0 -1.0 1.0 0.0 -1.0 -1.0 -0.0 1.0 -1.0 -0.0 ] "float uv" [ 0.0 0.0 1.0 0.0 1.0 -1.0 0.0 -1.0 ]\n')
+        p.stdin.write('    Shape "trianglemesh" "integer indices" [ 0 1 2 0 2 3 ] "point P" [ 1.0 1.0 0.0 -1.0 1.0 0.0 -1.0 -1.0 -0.0 1.0 -1.0 -0.0 ] "float uv" [ 1.0 1.0     0.0 1.0     0.0 0.0       1.0 0.0 ]\n')
     elif (prev_torus.get()=="true"):
         p.stdin.write('Shape "torus" "float radius" [1.0]\n')
     p.stdin.write('AttributeEnd\n')
