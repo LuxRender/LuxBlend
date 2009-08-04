@@ -4968,7 +4968,7 @@ def luxMaterialBlock(name, luxname, key, mat, gui=None, level=0, str_opt=""):
                         link += luxRGB("compo_key_color", luxProp(mat, "compo_key_color", "0.0 0.0 1.0"), 1.0, "key", "", gui, 2.0)
 
         # transformation options (common)
-        if (level == 0):
+        if (level == 0) and mattype.get() not in ['portal', 'null']:
             if gui: gui.newline("", 2, level, None, [0.6,0.6,0.4])
             usetransformation = luxProp(mat, "transformation", "false")
             luxCollapse("usetransformation", usetransformation, "Texture Transformation", "Enable transformation option", gui, 2.0)
