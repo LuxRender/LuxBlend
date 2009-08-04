@@ -4611,8 +4611,10 @@ def luxMaterialBlock(name, luxname, key, mat, gui=None, level=0, str_opt=""):
         if(mattype.get() == "substrate" or mattype.get() == "plastic"):
             mattype.set("glossy")
 
-        materials = ["carpaint","glass","matte","mattetranslucent","metal","mirror","roughglass","shinymetal","glossy","mix","null"]
-        if level == 0: materials = ["light","portal","boundvolume"]+materials
+        # this is reverse order than in shown in the dropdown list
+        materials = ["null","mix","mirror","shinymetal","metal","mattetranslucent","matte","glossy","roughglass","glass","carpaint"]
+        
+        if level == 0: materials = ["portal","light","boundvolume"]+materials
         if gui:
             icon = icon_mat
             if mattype.get() == "mix": icon = icon_matmix
