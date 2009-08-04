@@ -2944,10 +2944,17 @@ def luxEnvironment(scn, gui=None):
                 luxString("env.lightgroup", env_lg, "lightgroup", "Environment light group", gui)
                 if luxProp(scn, "nolg", "false").get()!="true":
                     lsstr = '\nLightGroup "' + env_lg.get() + '"' + lsstr
-                rot = luxProp(scn, "env.rotation", 0.0)
-                luxFloat("rotation", rot, 0.0, 360.0, "rotation", "environment rotation", gui)
-                if rot.get() != 0:
-                    str += "\tRotate %d 0 0 1\n"%(rot.get())
+                rotZ = luxProp(scn, "env.rotation", 0.0)
+                rotY = luxProp(scn, "env.rotationY", 0.0)
+                rotX = luxProp(scn, "env.rotationX", 0.0)
+                if gui: gui.newline()
+                luxFloat("rotation", rotX, 0.0, 360.0, "rot X", "environment rotation X", gui, 0.66)
+                luxFloat("rotation", rotY, 0.0, 360.0, "rot Y", "environment rotation Y", gui, 0.66)
+                luxFloat("rotation", rotZ, 0.0, 360.0, "rot Z", "environment rotation Z", gui, 0.66)
+                if rotZ.get() != 0 or rotY.get() != 0 or rotX.get() != 0:
+                    str += "\tRotate %d 1 0 0\n"%(rotX.get())
+                    str += "\tRotate %d 0 1 0\n"%(rotY.get())
+                    str += "\tRotate %d 0 0 1\n"%(rotZ.get())
             str += "\t"+lsstr
 
             infinitehassun = 0
