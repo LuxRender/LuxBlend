@@ -4715,11 +4715,11 @@ def luxMaterialBlock(name, luxname, key, mat, gui=None, level=0, str_opt=""):
             return (str, link)
 
         if mattype.get() == "carpaint":
-            if gui: gui.newline("name:", 0, level+1)
-            carname = luxProp(mat, kn+"carpaint.name", "white")
-            cars = ["","ford f8","polaris silber","opel titan","bmw339","2k acrylack","white","blue","blue matte"]
+            if gui: gui.newline("Preset:", 0, level+1)
+            carname = luxProp(mat, kn+"carpaint.name", "Custom")
+            cars = ["Custom","ford f8","polaris silber","opel titan","bmw339","2k acrylack","white","blue","blue matte"]
             carlink = luxOption("name", carname, cars, "name", "", gui)
-            if carname.get() == "":
+            if carname.get() == "Custom":
                 (str,link) = c((str,link), luxSpectrumTexture("Kd", keyname, "1.0 1.0 1.0", 1.0, "diffuse", "", mat, gui, level+1))
                 (str,link) = c((str,link), luxSpectrumTexture("Ks1", keyname, "1.0 1.0 1.0", 1.0, "specular1", "", mat, gui, level+1))
                 (str,link) = c((str,link), luxSpectrumTexture("Ks2", keyname, "1.0 1.0 1.0", 1.0, "specular2", "", mat, gui, level+1))
