@@ -4908,7 +4908,9 @@ def luxMaterialBlock(name, luxname, key, mat, gui=None, level=0, str_opt=""):
             has_object_options = 1
             has_emission_options = 1
             has_compositing_options = 1
-
+            
+        if mattype.get() == 'null':
+        	has_emission_options = 1
 
         # Bump mapping options (common)
         if (has_bump_options == 1):
