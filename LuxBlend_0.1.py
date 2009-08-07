@@ -1,7 +1,7 @@
 #!BPY
 # coding=utf-8
 """Registration info for Blender menus:
-Name: 'LuxBlend v0.6RC4 Exporter'
+Name: 'LuxBlend v0.6RC5 Exporter'
 Blender: 248
 Group: 'Render'
 Tooltip: 'Export/Render to LuxRender v0.6RC4 scene format (.lxs)'
