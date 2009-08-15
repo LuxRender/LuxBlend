@@ -1005,25 +1005,33 @@ def networkstring(scn):
 ###     LAUNCH LuxRender AND RENDER CURRENT SCENE
 #########################################################################
 
-def get_lux_args(filename, extra_args=[]):
-    ostype = osys.platform
+def get_lux_exec(scn, type="luxrender"):
+    
     #get blenders 'bpydata' directory
     datadir=Blender.Get("datadir")
     
-    scn = Scene.GetCurrent()
     ic = luxProp(scn, "lux", "").get()
-    ic = Blender.sys.dirname(ic) + os.sep + "luxrender"
-
+    ic = Blender.sys.dirname(ic) + os.sep + type
+    
+    if osys.platform == "win32": ic = ic + ".exe"
+    
+    if type=="luxrender" and osys.platform == "darwin": ic = ic + ".app/Contents/MacOS/luxrender"
+    
+    return ic
+    
+def get_lux_args(filename, extra_args=[]):
+    ostype = osys.platform
+    scn = Scene.GetCurrent()
+    ic = get_lux_exec(scn)
+    
     servers_string = networkstring(scn)
     update_int=luxProp(scn,"newtork_interval",180).get()
-
-    if ostype == "win32": ic = ic + ".exe"
-    if ostype == "darwin": ic = ic + ".app/Contents/MacOS/luxrender"
+    
     checkluxpath = luxProp(scn, "checkluxpath", True).get()
     if checkluxpath:
         if sys.exists(ic) != 1:
             Draw.PupMenu("Error: Lux renderer not found. Please set path on System page.%t|OK")
-            return        
+            return
     autothreads = luxProp(scn, "autothreads", "true").get()
     threads = luxProp(scn, "threads", 1).get()
     luxnice = luxProp(scn, "luxnice", 0).get()
@@ -1066,11 +1074,7 @@ def get_lux_args(filename, extra_args=[]):
     return cmd, lux_args2
 
 def get_lux_pipe(scn, buf = 1024, type="luxconsole"):
-    bin = Blender.sys.dirname(luxProp(scn, "lux", "").get()) + os.sep + type
-    
-    if osys.platform == "win32": bin += ".exe"
-    
-    if osys.platform == "darwin" and type == "luxrender": bin += ".app/Contents/MacOS/luxrender"
+    bin = get_lux_exec(scn, type)
     
     print "piping to lux binary: " + bin
     
@@ -1082,7 +1086,7 @@ def get_lux_pipe(scn, buf = 1024, type="luxconsole"):
 
 def launchLux(filename):
     cmd, raw_args = get_lux_args(filename)
-    # call external shell script to start Lux    
+    # call external shell script to start Lux
     print("Running Luxrender:\n"+cmd)
     os.system(cmd)
 
