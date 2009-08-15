@@ -806,14 +806,14 @@ def save_lux(filename, unindexedname):
     
     if luxProp(scn, "lxs", "true").get()=="true" or use_pipe_output:
         ##### Determine/open files
-        print("Exporting scene to '" + filename + "'...\n")
-        
         if use_pipe_output:
             print "using pipe output"
+            print("Exporting scene to pipe")
             xr,yr = get_render_resolution(scn)
             file = pipe_output(xr, yr, luxProp(scn, "haltspp", 0).get())
         else:
             print "using file output"
+            print("Exporting scene to '" + filename + "'...\n")
             file = file_output(filename)
 
         ##### Write Header ######
@@ -935,7 +935,7 @@ def save_lux(filename, unindexedname):
     if luxProp(scn, "lxm", "true").get()=="true":
         if LuxIsGUI: DrawProgressBar(9.0/export_total_steps,'Exporting Materials')
         ##### Write Material file #####
-        print("Exporting materials to '" + mat_filename + "'...\n")
+        if not file.combine_all_output: print("Exporting materials to '" + mat_filename + "'...\n")
         mat_file = open(mat_filename, 'w') if not file.combine_all_output else file
         mat_file.write("")
         export.exportMaterials(mat_file)
@@ -945,7 +945,7 @@ def save_lux(filename, unindexedname):
     if luxProp(scn, "lxo", "true").get()=="true":
         if LuxIsGUI: DrawProgressBar(10.0/export_total_steps,'Exporting Geometry')
         ##### Write Geometry file #####
-        print("Exporting geometry to '" + geom_filename + "'...\n")
+        if not file.combine_all_output: print("Exporting geometry to '" + geom_filename + "'...\n")
         geom_file = open(geom_filename, 'w') if not file.combine_all_output else file
         meshlist = []
         geom_file.write("")
@@ -958,7 +958,7 @@ def save_lux(filename, unindexedname):
     if luxProp(scn, "lxv", "true").get()=="true":
         if LuxIsGUI: DrawProgressBar(11.0/export_total_steps,'Exporting Volumes')
         ##### Write Volume file #####
-        print("Exporting volumes to '" + vol_filename + "'...\n")
+        if not file.combine_all_output: print("Exporting volumes to '" + vol_filename + "'...\n")
         vol_file = open(vol_filename, 'w') if not file.combine_all_output else file
         meshlist = []
         vol_file.write("")
