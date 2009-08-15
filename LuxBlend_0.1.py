@@ -1005,7 +1005,7 @@ def networkstring(scn):
 ###     LAUNCH LuxRender AND RENDER CURRENT SCENE
 #########################################################################
 
-def launchLux(filename):
+def get_lux_args(filename, stdin=False, extra_args=[]):
     ostype = osys.platform
     #get blenders 'bpydata' directory
     datadir=Blender.Get("datadir")
@@ -1028,10 +1028,27 @@ def launchLux(filename):
     threads = luxProp(scn, "threads", 1).get()
     luxnice = luxProp(scn, "luxnice", 0).get()
     noopengl = luxProp(scn, "noopengl", "false").get()
+    
     if noopengl == "true":
-        noopengl_str = " --noopengl"
+        extra_args.append("--noopengl")
+    
+    lux_args = "\"%s\" " % ic
+    
+    extra_args.append('%s'%servers_string)
+    extra_args.append("-i %d " % update_int)
+    
+    if autothreads != "true":
+        extra_args.append("--threads=%d " % threads)
+    
+    lux_args2 = ' '.join(extra_args)
+    
+    if stdin:
+        lux_args2 = " - " + lux_args2
     else:
-        noopengl_str = ""
+        filename = "\"%s\"" % filename
+        lux_args2 = lux_args2 + filename
+        
+    lux_args += lux_args2
     
     if ostype == "win32":
         prio = ""
@@ -1040,21 +1057,20 @@ def launchLux(filename):
         elif luxnice > -5: prio = "/normal"
         elif luxnice > -15: prio = "/abovenormal"
         else: prio = "/high"
-        if(autothreads=="true"):
-            cmd = "start /b %s \"\" \"%s\" %s %s -i %d \"%s\" "%(prio, ic, noopengl_str, servers_string ,update_int, filename)        
-        else:
-            cmd = "start /b %s \"\" \"%s\" %s %s -i %d \"%s\" --threads=%d"%(prio, ic, noopengl_str, servers_string ,update_int ,filename, threads)        
-
+        
+        cmd = "start /b %s \"\" %s" % (prio, lux_args)
+        
     if ostype == "linux2" or ostype == "darwin":
-        if(autothreads=="true"):
-            cmd = "(nice -n %d \"%s\" %s %s -i %d \"%s\")&"%(luxnice, ic, noopengl_str, servers_string ,update_int, filename)
+        cmd = "(nice -n %d \"%s\" %s)&"%(luxnice, lux_args)
+    
+    return cmd, lux_args2
 
-        else:
-            cmd = "(nice -n %d \"%s\" --threads=%d %s %s -i %d \"%s\")&"%(luxnice, ic, threads, noopengl_str, servers_string ,update_int, filename)
-
+def launchLux(filename):
+    cmd, raw_args = get_lux_args(filename)
     # call external shell script to start Lux    
     print("Running Luxrender:\n"+cmd)
     os.system(cmd)
+
 
 def launchLuxPiped():
     import os
@@ -4470,9 +4486,15 @@ def Preview_Torusset(mat, kn, state):
 def get_lux_pipe(scn, buf = 1024, type="luxconsole"):
     bin = Blender.sys.dirname(luxProp(scn, "lux", "").get()) + os.sep + type
     if osys.platform == "win32": bin = bin + ".exe"
+    if ostype == "darwin": bin = bin + ".app/Contents/MacOS/" + type
     
     PIPE = subprocess.PIPE
-    return subprocess.Popen((bin, '-b', '-'), bufsize=buf, stdin=PIPE, stdout=PIPE, stderr=PIPE)
+    
+    cmd, raw_args = get_lux_args('-', stdin=True)
+    
+    print '**' + raw_args + '**'
+    
+    return subprocess.Popen((bin, '-b', raw_args), bufsize=buf, stdin=PIPE, stdout=PIPE, stderr=PIPE)
     
 
 def Preview_Update(mat, kn, defLarge, defType, texName, name, level):
