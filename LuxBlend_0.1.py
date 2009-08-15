@@ -1061,7 +1061,7 @@ def get_lux_args(filename, extra_args=[]):
         cmd = "start /b %s \"\" %s" % (prio, lux_args)
         
     if ostype == "linux2" or ostype == "darwin":
-        cmd = "(nice -n %d \"%s\" %s)&"%(luxnice, lux_args)
+        cmd = "(nice -n %d %s)&"%(luxnice, lux_args)
     
     return cmd, lux_args2
 
