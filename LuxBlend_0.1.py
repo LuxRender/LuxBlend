@@ -1005,7 +1005,7 @@ def networkstring(scn):
 ###     LAUNCH LuxRender AND RENDER CURRENT SCENE
 #########################################################################
 
-def get_lux_args(filename, stdin=False, extra_args=[]):
+def get_lux_args(filename, extra_args=[]):
     ostype = osys.platform
     #get blenders 'bpydata' directory
     datadir=Blender.Get("datadir")
@@ -1042,7 +1042,7 @@ def get_lux_args(filename, stdin=False, extra_args=[]):
     
     lux_args2 = ' '.join(extra_args)
     
-    if stdin:
+    if filename == '-':
         lux_args2 = " - " + lux_args2
     else:
         filename = "\"%s\"" % filename
@@ -4485,16 +4485,16 @@ def Preview_Torusset(mat, kn, state):
 
 def get_lux_pipe(scn, buf = 1024, type="luxconsole"):
     bin = Blender.sys.dirname(luxProp(scn, "lux", "").get()) + os.sep + type
-    if osys.platform == "win32": bin = bin + ".exe"
-    if ostype == "darwin": bin = bin + ".app/Contents/MacOS/" + type
+    
+    if osys.platform == "win32": bin += ".exe"
+    
+    print "piping to lux binary: " + bin
     
     PIPE = subprocess.PIPE
     
-    cmd, raw_args = get_lux_args('-', stdin=True)
+    cmd, raw_args = get_lux_args('-', extra_args=['-b'])
     
-    print '**' + raw_args + '**'
-    
-    return subprocess.Popen((bin, '-b', raw_args), bufsize=buf, stdin=PIPE, stdout=PIPE, stderr=PIPE)
+    return subprocess.Popen(bin + " " + raw_args, bufsize=buf, stdin=PIPE, stdout=PIPE, stderr=PIPE)
     
 
 def Preview_Update(mat, kn, defLarge, defType, texName, name, level):
