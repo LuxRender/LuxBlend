@@ -734,10 +734,67 @@ def save_lux(filename, unindexedname):
         return False
 
     if LuxIsGUI: DrawProgressBar(0.0/export_total_steps,'Setting up Scene file')
-    if luxProp(scn, "lxs", "true").get()=="true":
+    
+    class output_proxy():
+        has_data = False
+        combine_all_output = False
+        f = None
+        def close(self):
+            self.f.close()
+        def write(self, str):
+            self.f.write(str)
+            
+    class file_output(output_proxy):
+        def __init__(self,filename):
+            self.f = open(filename, "w")
+            
+    from threading import Thread
+    class pipe_output(output_proxy, Thread):
+        combine_all_output = True
+        def __init__(self):
+            Thread.__init__(self)
+            self.p = get_console_pipe(scn)
+            self.f = self.p.stdin
+        def close(self):
+            global render_status_text
+            render_status_text = "Rendering ..."
+            Blender.Window.QRedrawAll()
+            self.start()
+        def run(self):
+            self.data = self.p.communicate()[0]
+            self.f.close()
+            print "RENDER FINISHED, got %i bytes" % len(self.data)
+            xr,yr = get_render_resolution(scn)
+            i = Blender.Image.New('luxrender', xr, yr, 32)
+            bb = [0.0, 0.0, 0.0, 0.0]
+            bi = 0
+            for y in range(yr-1, -1, -1):
+                for x in range(0, xr):
+                    bb[0] = ord(self.data[bi])
+                    bi+=1
+                    bb[1] = ord(self.data[bi])
+                    bi+=1
+                    bb[2] = ord(self.data[bi])
+                    bi+=1
+                    i.setPixelI(x,y , bb)
+                    bb = [0.0, 0.0, 0.0, 0.0]
+            i.makeCurrent()
+            global render_status_text
+            render_status_text = "Rendering complete, check Image Editor window"
+            Blender.Window.QRedrawAll()
+            
+    use_pipe_output = luxProp(scn, "pipe", "true").get()
+    
+    file = output_proxy()
+    
+    if luxProp(scn, "lxs", "true").get()=="true" or use_pipe_output:
         ##### Determine/open files
         print("Exporting scene to '" + filename + "'...\n")
-        file = open(filename, 'w')
+        
+        if use_pipe_output == "true":
+            file = pipe_output()
+        else:
+            file = file_output(filename)
 
         ##### Write Header ######
         file.write("# Lux Render v0.6RC5 Scene File\n")
@@ -851,48 +908,48 @@ def save_lux(filename, unindexedname):
 #            file.write("AttributeEnd\n\n")
 
         #### Write material & geometry file includes in scene file
-        file.write("Include \"%s\"\n\n" %(mat_pfilename))
-        file.write("Include \"%s\"\n\n" %(geom_pfilename))
-        file.write("Include \"%s\"\n\n" %(vol_pfilename))
-        
-        #### Write End Tag
-        file.write("WorldEnd\n\n")
-        file.close()
+        if not file.combine_all_output: file.write("Include \"%s\"\n\n" %(mat_pfilename))
+        if not file.combine_all_output: file.write("Include \"%s\"\n\n" %(geom_pfilename))
+        if not file.combine_all_output: file.write("Include \"%s\"\n\n" %(vol_pfilename))
         
     if luxProp(scn, "lxm", "true").get()=="true":
         if LuxIsGUI: DrawProgressBar(9.0/export_total_steps,'Exporting Materials')
         ##### Write Material file #####
         print("Exporting materials to '" + mat_filename + "'...\n")
-        mat_file = open(mat_filename, 'w')
+        mat_file = open(mat_filename, 'w') if not file.combine_all_output else file
         mat_file.write("")
         export.exportMaterials(mat_file)
         mat_file.write("")
-        mat_file.close()
+        if not file.combine_all_output: mat_file.close()
     
     if luxProp(scn, "lxo", "true").get()=="true":
         if LuxIsGUI: DrawProgressBar(10.0/export_total_steps,'Exporting Geometry')
         ##### Write Geometry file #####
         print("Exporting geometry to '" + geom_filename + "'...\n")
-        geom_file = open(geom_filename, 'w')
+        geom_file = open(geom_filename, 'w') if not file.combine_all_output else file
         meshlist = []
         geom_file.write("")
         export.exportLights(geom_file)
         export.exportMeshes(geom_file)
         export.exportObjects(geom_file)
         geom_file.write("")
-        geom_file.close()
+        if not file.combine_all_output: geom_file.close()
 
     if luxProp(scn, "lxv", "true").get()=="true":
         if LuxIsGUI: DrawProgressBar(11.0/export_total_steps,'Exporting Volumes')
         ##### Write Volume file #####
         print("Exporting volumes to '" + vol_filename + "'...\n")
-        vol_file = open(vol_filename, 'w')
+        vol_file = open(vol_filename, 'w') if not file.combine_all_output else file
         meshlist = []
         vol_file.write("")
         export.exportVolumes(vol_file)
         vol_file.write("")
-        vol_file.close()
+        if not file.combine_all_output: vol_file.close()
 
+    if luxProp(scn, "lxs", "true").get()=="true" or use_pipe_output:
+        #### Write End Tag
+        file.write("WorldEnd\n\n")
+        file.close()
 
     if LuxIsGUI: DrawProgressBar(12.0/export_total_steps,'Export Finished')
     print("Finished.\n")
@@ -980,6 +1037,7 @@ def launchLux(filename):
     os.system(cmd)
 
 def launchLuxPiped():
+    import os
     ostype = osys.platform
     #get blenders 'bpydata' directory
     datadir=Blender.Get("datadir")
@@ -1003,9 +1061,9 @@ def launchLuxPiped():
 
     if ostype == "win32":
         if(autothreads=="true"):
-            cmd = "\"%s\" - %s -i %d "%(ic,servers_string,update_int)        
+            cmd = "\"%s\" - %s -i %d "%(ic,servers_string,update_int)
         else:
-            cmd = "\"%s\" - %s -i %d --threads=%d"%(ic, threads)        
+            cmd = "\"%s\" - %s -i %d --threads=%d"%(ic, threads)
 
     if ostype == "linux2" or ostype == "darwin":
         if(autothreads=="true"):
@@ -1013,7 +1071,7 @@ def launchLuxPiped():
         else:
             cmd = "(\"%s\" --threads=%d -u %s -i %d \"%s\")&"%(ic, threads,servers_string,update_int, filename)
 
-    # call external shell script to start Lux    
+    # call external shell script to start Lux
     print("Running Luxrender:\n"+cmd)
 
     import subprocess, os
@@ -1105,7 +1163,7 @@ def save_still(filename):
     MatSaved = 0
     unindexedname = filename
     if save_lux(filename, unindexedname):
-        if runRenderAfterExport: #(run == None and luxProp(scn, "run", "true").get() == "true") or run:
+        if runRenderAfterExport and luxProp(scn, "pipe", "true").get() == "false": #(run == None and luxProp(scn, "run", "true").get() == "true") or run:
             launchLux(filename)
 
 
@@ -2355,6 +2413,15 @@ def luxCamera(cam, context, gui=None):
     return str
 
 
+def get_render_resolution(scn, gui = None):
+    context = scn.getRenderingContext()
+    scale = luxProp(scn, "film.scale", "100 %")
+    scale = int(scale.get()[:-1])
+    xr = luxAttr(context, "sizeX").get()*scale/100
+    yr = luxAttr(context, "sizeY").get()*scale/100
+    
+    return xr, yr
+
 def luxFilm(scn, gui=None):
     str = ""
     if scn:
@@ -2364,18 +2431,21 @@ def luxFilm(scn, gui=None):
             context = scn.getRenderingContext()
             if context:
                 if gui: gui.newline("  Resolution:")
+                
+                xr,yr = get_render_resolution(scn, gui)
+                
                 luxInt("xresolution", luxAttr(context, "sizeX"), 0, 8192, "X", "width of the render", gui, 0.666)
                 luxInt("yresolution", luxAttr(context, "sizeY"), 0, 8192, "Y", "height of the render", gui, 0.666)
                 scale = luxProp(scn, "film.scale", "100 %")
                 luxOption("", scale, ["400 %", "200 %", "100 %", "75 %", "50 %", "25 %"], "scale", "scale resolution", gui, 0.666)
-                scale = int(scale.get()[:-1])
+                
                 # render region option
                 if context.borderRender:
                     (x1,y1,x2,y2) = context.border
                     if (x1==x2) and (y1==y2): print "WARNING: empty render-region, use SHIFT-B to set render region in Blender."
-                    str += "\n   \"integer xresolution\" [%d] \n   \"integer yresolution\" [%d]"%(luxAttr(context, "sizeX").get()*scale/100*(x2-x1), luxAttr(context, "sizeY").get()*scale/100*(y2-y1))
+                    str += "\n   \"integer xresolution\" [%d] \n   \"integer yresolution\" [%d]"%(xr*(x2-x1), yr*(y2-y1))
                 else:
-                    str += "\n   \"integer xresolution\" [%d] \n   \"integer yresolution\" [%d]"%(luxAttr(context, "sizeX").get()*scale/100, luxAttr(context, "sizeY").get()*scale/100)
+                    str += "\n   \"integer xresolution\" [%d] \n   \"integer yresolution\" [%d]"%(xr, yr)
 
             if gui: gui.newline("  Halt:")
             str += luxInt("haltspp", luxProp(scn, "haltspp", 0), 0, 32768, "haltspp", "Stop rendering after specified amount of samples per pixel / 0 = never halt", gui)
@@ -4377,6 +4447,14 @@ def Preview_Torusset(mat, kn, state):
         luxProp(mat, kn+"prev_plane", "false").set("false")
         luxProp(mat, kn+"prev_torus", "false").set("true")
 
+def get_console_pipe(scn, buf = 1024):
+    consolebin = Blender.sys.dirname(luxProp(scn, "lux", "").get()) + os.sep + "luxconsole"
+    if osys.platform == "win32": consolebin = consolebin + ".exe"
+    
+    PIPE = subprocess.PIPE
+    return subprocess.Popen((consolebin, '-b', '-'), bufsize=buf, stdin=PIPE, stdout=PIPE, stderr=PIPE)
+    
+
 def Preview_Update(mat, kn, defLarge, defType, texName, name, level):
     #print "%s %s %s %s %s %s %s" % (mat, kn, defLarge, defType, texName, name, level)
 
@@ -4398,11 +4476,8 @@ def Preview_Update(mat, kn, defLarge, defType, texName, name, level):
     thumbbuf = thumbres*thumbres*3
 
 #        consolebin = luxProp(scn, "luxconsole", "").get()
-    consolebin = Blender.sys.dirname(luxProp(scn, "lux", "").get()) + os.sep + "luxconsole"
-    if osys.platform == "win32": consolebin = consolebin + ".exe"
-
-    PIPE = subprocess.PIPE
-    p = subprocess.Popen((consolebin, '-b', '-'), bufsize=thumbbuf, stdin=PIPE, stdout=PIPE, stderr=PIPE)
+    
+    p = get_console_pipe(scn, buf=thumbbuf)
 
     # Unremark to write debugging output to file
     # p.stdin = open('c:\preview.lxs', 'w')
@@ -4910,7 +4985,7 @@ def luxMaterialBlock(name, luxname, key, mat, gui=None, level=0, str_opt=""):
             has_compositing_options = 1
             
         if mattype.get() == 'null':
-        	has_emission_options = 1
+            has_emission_options = 1
 
         # Bump mapping options (common)
         if (has_bump_options == 1):
@@ -6038,6 +6113,7 @@ def luxDraw():
         if y > 0: y = 0 # bottom align of render button
         run = luxProp(scn, "run", "true")
         dlt = luxProp(scn, "default", "true")
+        pipe = luxProp(scn, "pipe", dlt.get())
         clay = luxProp(scn, "clay", "false")
         nolg = luxProp(scn, "nolg", "false")
         lxs = luxProp(scn, "lxs", "true")
@@ -6053,17 +6129,36 @@ def luxDraw():
             Draw.Button("Export", 0, 10, y+20, 100, 36, "Export", lambda e,v:CBluxExport(dlt.get()=="true", False))
             Draw.Button("Export Anim", 0, 110, y+20, 100, 36, "Export animation", lambda e,v:CBluxAnimExport(dlt.get()=="true", False))
 
-        Draw.Toggle("run", evtLuxGui, 290, y+40, 30, 16, run.get()=="true", "start Lux after export", lambda e,v: run.set(["false","true"][bool(v)]))
-        Draw.Toggle("def", evtLuxGui, 320, y+40, 30, 16, dlt.get()=="true", "save to default.lxs", lambda e,v: dlt.set(["false","true"][bool(v)]))
+        def set_pipe(v):
+            pipe.set(["false","true"][bool(v)])
+            if bool(v): dlt.set('true')
+
+        if luxProp(scn, "haltspp", 0).get() > 0:
+            Draw.Toggle("pipe", evtLuxGui, 290, y+40, 30, 16, pipe.get()=="true", "render without intermediate LXS files",lambda e,v: set_pipe(v))
+        else:
+            pipe.set('false')
+            Draw.Toggle("run", evtLuxGui, 290, y+40, 30, 16, run.get()=="true", "start Lux after export", lambda e,v: run.set(["false","true"][bool(v)]))
+            
+        if pipe.get() == 'false':
+            Draw.Toggle("def", evtLuxGui, 320, y+40, 30, 16, dlt.get()=="true", "save to default.lxs", lambda e,v: dlt.set(["false","true"][bool(v)]))
+        
         Draw.Toggle("clay", evtLuxGui, 350, y+40, 30, 16, clay.get()=="true", "all materials are rendered as white-matte", lambda e,v: clay.set(["false","true"][bool(v)]))
         Draw.Toggle("nolg", evtLuxGui, 380, y+40, 30, 16, nolg.get()=="true", "disables all light groups", lambda e,v: nolg.set(["false","true"][bool(v)]))
-        Draw.Toggle(".lxs", 0, 290, y+20, 30, 16, lxs.get()=="true", "export .lxs scene file", lambda e,v: lxs.set(["false","true"][bool(v)]))
-        Draw.Toggle(".lxo", 0, 320, y+20, 30, 16, lxo.get()=="true", "export .lxo geometry file", lambda e,v: lxo.set(["false","true"][bool(v)]))
-        Draw.Toggle(".lxm", 0, 350, y+20, 30, 16, lxm.get()=="true", "export .lxm material file", lambda e,v: lxm.set(["false","true"][bool(v)]))
-        Draw.Toggle(".lxv", 0, 380, y+20, 30, 16, lxm.get()=="true", "export .lxv volume file", lambda e,v: lxm.set(["false","true"][bool(v)]))
-    BGL.glColor3f(0.9, 0.9, 0.9) ; BGL.glRasterPos2i(340,y+5) ; Draw.Text("Press Q or ESC to quit.", "tiny")
+        
+        if pipe.get() == "false":
+            Draw.Toggle(".lxs", 0, 290, y+20, 30, 16, lxs.get()=="true", "export .lxs scene file", lambda e,v: lxs.set(["false","true"][bool(v)]))
+            Draw.Toggle(".lxo", 0, 320, y+20, 30, 16, lxo.get()=="true", "export .lxo geometry file", lambda e,v: lxo.set(["false","true"][bool(v)]))
+            Draw.Toggle(".lxm", 0, 350, y+20, 30, 16, lxm.get()=="true", "export .lxm material file", lambda e,v: lxm.set(["false","true"][bool(v)]))
+            Draw.Toggle(".lxv", 0, 380, y+20, 30, 16, lxv.get()=="true", "export .lxv volume file", lambda e,v: lxv.set(["false","true"][bool(v)]))
+    
+    BGL.glColor3f(0.9, 0.9, 0.9)
+    global render_status_text
+    BGL.glRasterPos2i(10,y+5) ; Draw.Text(render_status_text, "tiny")
+    BGL.glRasterPos2i(340,y+5) ; Draw.Text("Press Q or ESC to quit.", "tiny")
     scrollbar.height = scrollbar.getTop() - y
     scrollbar.draw()
+
+render_status_text = ''
 
 mouse_xr=1 
 mouse_yr=1 
