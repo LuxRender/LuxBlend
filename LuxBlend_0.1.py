@@ -1065,6 +1065,21 @@ def get_lux_args(filename, extra_args=[]):
     
     return cmd, lux_args2
 
+def get_lux_pipe(scn, buf = 1024, type="luxconsole"):
+    bin = Blender.sys.dirname(luxProp(scn, "lux", "").get()) + os.sep + type
+    
+    if osys.platform == "win32": bin += ".exe"
+    
+    if osys.platform == "darwin" and type == "luxrender": bin += ".app/Contents/MacOS/luxrender"
+    
+    print "piping to lux binary: " + bin
+    
+    PIPE = subprocess.PIPE
+    
+    cmd, raw_args = get_lux_args('-', extra_args=['-b'])
+    
+    return subprocess.Popen(raw_args, executable=bin, bufsize=buf, stdin=PIPE, stdout=PIPE, stderr=PIPE)
+
 def launchLux(filename):
     cmd, raw_args = get_lux_args(filename)
     # call external shell script to start Lux    
@@ -4483,18 +4498,7 @@ def Preview_Torusset(mat, kn, state):
         luxProp(mat, kn+"prev_plane", "false").set("false")
         luxProp(mat, kn+"prev_torus", "false").set("true")
 
-def get_lux_pipe(scn, buf = 1024, type="luxconsole"):
-    bin = Blender.sys.dirname(luxProp(scn, "lux", "").get()) + os.sep + type
-    
-    if osys.platform == "win32": bin += ".exe"
-    
-    print "piping to lux binary: " + bin
-    
-    PIPE = subprocess.PIPE
-    
-    cmd, raw_args = get_lux_args('-', extra_args=['-b'])
-    
-    return subprocess.Popen(bin + " " + raw_args, bufsize=buf, stdin=PIPE, stdout=PIPE, stderr=PIPE)
+
     
 
 def Preview_Update(mat, kn, defLarge, defType, texName, name, level):
