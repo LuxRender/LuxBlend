@@ -699,6 +699,11 @@ def save_lux(filename, unindexedname):
     
     global meshlist, matnames, lxs_filename, geom_filename, geom_pfilename, mat_filename, mat_pfilename, vol_filename, vol_pfilename, LuxIsGUI
 
+    global render_status_text
+    global render_status
+    render_status_text = 'Exporting...'
+    render_status = True
+
     print("Lux Render Export started...\n")
     time1 = Blender.sys.time()
     scn = Scene.GetCurrent()
@@ -772,9 +777,12 @@ def save_lux(filename, unindexedname):
             self.f = self.p.stdin
         def close(self):
             global render_status_text
+            global render_status
+            render_status = True
             render_status_text = "Rendering ..."
             Blender.Window.QRedrawAll()
             self.start()
+        
         def run(self):
             if self.load_result: self.data = self.p.communicate()[0]
             self.f.close()
@@ -804,9 +812,11 @@ def save_lux(filename, unindexedname):
             
         def update_status(self):
             global render_status_text
+            global render_status
+            render_status = False
             render_status_text = "Rendering complete"
             if self.haltspp>0: render_status_text += ", check Image Editor window"
-            Blender.Window.QRedrawAll()
+            Blender.Window.RedrawAll()
             
     use_pipe_output = luxProp(scn, "default", "true").get() == "true" and luxProp(scn, "run", "true").get() == "true"
     
@@ -977,6 +987,9 @@ def save_lux(filename, unindexedname):
         vol_file.write("")
         if not file.combine_all_output: vol_file.close()
 
+    render_status_text = ''
+    render_status = False
+
     if luxProp(scn, "lxs", "true").get()=="true" or use_pipe_output:
         #### Write End Tag
         file.write("WorldEnd\n\n")
@@ -985,7 +998,8 @@ def save_lux(filename, unindexedname):
     if LuxIsGUI: DrawProgressBar(12.0/export_total_steps,'Export Finished')
     print("Finished.\n")
     del export
-
+    
+    
     time2 = Blender.sys.time()
     print("Processing time: %f\n" %(time2-time1))
     return True
@@ -6189,39 +6203,49 @@ def luxDraw():
         net = luxProp(scn, "netrenderctl", "false")
         donet = luxProp(scn, "donetrender", "true")
         
-        if (run.get()=="true"):
-            Draw.Button("Render", 0, 10, y+20, 100, 36, "Render with Lux", lambda e,v:CBluxExport(dlt.get()=="true", True))
-            Draw.Button("Render Anim", 0, 110, y+20, 100, 36, "Render animation with Lux", lambda e,v:CBluxAnimExport(dlt.get()=="true", True))
+        global render_status_text
+        global render_status
+        
+        if render_status == True:
+            BGL.glRasterPos2i(10,y+20)
+            Draw.Text(render_status_text)
         else:
-            Draw.Button("Export", 0, 10, y+20, 100, 36, "Export", lambda e,v:CBluxExport(dlt.get()=="true", False))
-            Draw.Button("Export Anim", 0, 110, y+20, 100, 36, "Export animation", lambda e,v:CBluxAnimExport(dlt.get()=="true", False))
+            BGL.glRasterPos2i(10,y+5)
+            Draw.Text(render_status_text, "tiny")
+            
+            if (run.get()=="true"):
+                Draw.Button("Render", 0, 10, y+20, 100, 36, "Render with Lux", lambda e,v:CBluxExport(dlt.get()=="true", True))
+                Draw.Button("Render Anim", 0, 110, y+20, 100, 36, "Render animation with Lux", lambda e,v:CBluxAnimExport(dlt.get()=="true", True))
+            else:
+                Draw.Button("Export", 0, 10, y+20, 100, 36, "Export", lambda e,v:CBluxExport(dlt.get()=="true", False))
+                Draw.Button("Export Anim", 0, 110, y+20, 100, 36, "Export animation", lambda e,v:CBluxAnimExport(dlt.get()=="true", False))
         
-        def set_run(v):
-            run.set(["false","true"][bool(v)])
-            if bool(v): dlt.set('false') 
-        
-        Draw.Toggle("run", evtLuxGui, 290, y+40, 30, 16, run.get()=="true", "start Lux after export", lambda e,v: set_run(v))
-        
-        if run.get() == 'true':
-            Draw.Toggle("pipe", evtLuxGui, 320, y+40, 30, 16, dlt.get()=="true", "do not write intermediate lxs file", lambda e,v: dlt.set(["false","true"][bool(v)]))
-        
-        Draw.Toggle("clay", evtLuxGui, 350, y+40, 30, 16, clay.get()=="true", "all materials are rendered as white-matte", lambda e,v: clay.set(["false","true"][bool(v)]))
-        Draw.Toggle("nolg", evtLuxGui, 380, y+40, 30, 16, nolg.get()=="true", "disables all light groups", lambda e,v: nolg.set(["false","true"][bool(v)]))
-        
-        if dlt.get() == "false":
-            Draw.Toggle(".lxs", 0, 290, y+20, 30, 16, lxs.get()=="true", "export .lxs scene file", lambda e,v: lxs.set(["false","true"][bool(v)]))
-            Draw.Toggle(".lxo", 0, 320, y+20, 30, 16, lxo.get()=="true", "export .lxo geometry file", lambda e,v: lxo.set(["false","true"][bool(v)]))
-            Draw.Toggle(".lxm", 0, 350, y+20, 30, 16, lxm.get()=="true", "export .lxm material file", lambda e,v: lxm.set(["false","true"][bool(v)]))
-            Draw.Toggle(".lxv", 0, 380, y+20, 30, 16, lxv.get()=="true", "export .lxv volume file", lambda e,v: lxv.set(["false","true"][bool(v)]))
+            def set_run(v):
+                run.set(["false","true"][bool(v)])
+                if bool(v): dlt.set('false') 
+            
+            Draw.Toggle("run", evtLuxGui, 290, y+40, 30, 16, run.get()=="true", "start Lux after export", lambda e,v: set_run(v))
+            
+            if run.get() == 'true':
+                Draw.Toggle("pipe", evtLuxGui, 320, y+40, 30, 16, dlt.get()=="true", "do not write intermediate lxs file", lambda e,v: dlt.set(["false","true"][bool(v)]))
+            
+            Draw.Toggle("clay", evtLuxGui, 350, y+40, 30, 16, clay.get()=="true", "all materials are rendered as white-matte", lambda e,v: clay.set(["false","true"][bool(v)]))
+            Draw.Toggle("nolg", evtLuxGui, 380, y+40, 30, 16, nolg.get()=="true", "disables all light groups", lambda e,v: nolg.set(["false","true"][bool(v)]))
+            
+            if dlt.get() == "false":
+                Draw.Toggle(".lxs", 0, 290, y+20, 30, 16, lxs.get()=="true", "export .lxs scene file", lambda e,v: lxs.set(["false","true"][bool(v)]))
+                Draw.Toggle(".lxo", 0, 320, y+20, 30, 16, lxo.get()=="true", "export .lxo geometry file", lambda e,v: lxo.set(["false","true"][bool(v)]))
+                Draw.Toggle(".lxm", 0, 350, y+20, 30, 16, lxm.get()=="true", "export .lxm material file", lambda e,v: lxm.set(["false","true"][bool(v)]))
+                Draw.Toggle(".lxv", 0, 380, y+20, 30, 16, lxv.get()=="true", "export .lxv volume file", lambda e,v: lxv.set(["false","true"][bool(v)]))
     
     BGL.glColor3f(0.9, 0.9, 0.9)
-    global render_status_text
-    BGL.glRasterPos2i(10,y+5) ; Draw.Text(render_status_text, "tiny")
+    
     BGL.glRasterPos2i(340,y+5) ; Draw.Text("Press Q or ESC to quit.", "tiny")
     scrollbar.height = scrollbar.getTop() - y
     scrollbar.draw()
 
 render_status_text = ''
+render_status = False
 
 mouse_xr=1 
 mouse_yr=1 
