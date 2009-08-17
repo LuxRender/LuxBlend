@@ -6222,14 +6222,10 @@ def luxDraw():
             else:
                 Draw.Button("Export", 0, 10, y+20, 100, 36, "Export", lambda e,v:CBluxExport(dlt.get()=="true" or pipe.get()=="true", False))
                 Draw.Button("Export Anim", 0, 110, y+20, 100, 36, "Export animation", lambda e,v:CBluxAnimExport(dlt.get()=="true" or pipe.get()=="true", False))
-        
-            def set_run(v):
-                run.set(["false","true"][bool(v)])
-                if bool(v): dlt.set('false') 
             
-            Draw.Toggle("run", evtLuxGui, 290, y+40, 30, 16, run.get()=="true", "start Lux after export", lambda e,v: set_run(v))
+            Draw.Toggle("run", evtLuxGui, 290, y+40, 30, 16, run.get()=="true", "start Lux after export", lambda e,v: run.set(["false","true"][bool(v)]))
             
-            if pipe.get() == 'false' and dlt.get() == 'true':
+            if (pipe.get() == 'false' and dlt.get() == 'true') or run.get()=='false':
                 Draw.Toggle("def", evtLuxGui, 320, y+40, 30, 16, dlt.get()=="true", "write to default lxs file", lambda e,v: dlt.set(["false","true"][bool(v)]))
             elif pipe.get() == 'true' and dlt.get() == 'false':
                 Draw.Toggle("pipe", evtLuxGui, 320, y+40, 30, 16, pipe.get()=="true", "do not write any lxs file", lambda e,v: pipe.set(["false","true"][bool(v)]))
