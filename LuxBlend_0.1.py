@@ -747,7 +747,9 @@ def save_lux(filename, unindexedname):
         def close(self):
             if self.f is not None: self.f.close()
         def write(self, str):
-            if self.f is not None: self.f.write(str)
+            if self.f is not None:
+                self.f.write(str)
+                self.f.flush()
             
     class file_output(output_proxy):
         def __init__(self,filename):
@@ -1109,10 +1111,11 @@ def get_lux_pipe(scn, buf = 1024, type="luxconsole"):
         extra_args=['-b'] if type=="luxconsole" else []
     )
     
+    #, bufsize=buf,
     if osys.platform in ['linux', 'darwin']:
-        return subprocess.Popen(bin + raw_args, shell=True, bufsize=buf, stdin=PIPE, stdout=PIPE, stderr=PIPE)
+        return subprocess.Popen(bin + raw_args, shell=True, bufsize=1, stdin=PIPE, stdout=PIPE, stderr=PIPE)
     else:
-        return subprocess.Popen(raw_args, executable=bin, bufsize=buf, stdin=PIPE, stdout=PIPE, stderr=PIPE)
+        return subprocess.Popen(raw_args, executable=bin, bufsize=1, stdin=PIPE, stdout=PIPE, stderr=PIPE)
 
 def launchLux(filename):
     cmd, raw_args = get_lux_args(filename)
