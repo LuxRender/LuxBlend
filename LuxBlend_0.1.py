@@ -820,7 +820,7 @@ def save_lux(filename, unindexedname):
             if self.haltspp>0: render_status_text += ", check Image Editor window"
             Blender.Window.RedrawAll()
             
-    use_pipe_output = luxProp(scn, "default", "true").get() == "true" and luxProp(scn, "run", "true").get() == "true"
+    use_pipe_output = luxProp(scn, "pipe", "true").get() == "true" and luxProp(scn, "run", "true").get() == "true"
     
     file = output_proxy()
     
@@ -1250,7 +1250,7 @@ def save_still(filename):
     MatSaved = 0
     unindexedname = filename
     if save_lux(filename, unindexedname):
-        if runRenderAfterExport and luxProp(scn, "default", "true").get() == "false": #(run == None and luxProp(scn, "run", "true").get() == "true") or run:
+        if runRenderAfterExport and luxProp(scn, "pipe", "true").get() == "false": #(run == None and luxProp(scn, "run", "true").get() == "true") or run:
             launchLux(filename)
 
 
@@ -6196,6 +6196,7 @@ def luxDraw():
         if y > 0: y = 0 # bottom align of render button
         run = luxProp(scn, "run", "true")
         dlt = luxProp(scn, "default", "true")
+        pipe = luxProp(scn, "pipe", "false")
         clay = luxProp(scn, "clay", "false")
         nolg = luxProp(scn, "nolg", "false")
         lxs = luxProp(scn, "lxs", "true")
@@ -6216,11 +6217,11 @@ def luxDraw():
             Draw.Text(render_status_text, "tiny")
             
             if (run.get()=="true"):
-                Draw.Button("Render", 0, 10, y+20, 100, 36, "Render with Lux", lambda e,v:CBluxExport(dlt.get()=="true", True))
-                Draw.Button("Render Anim", 0, 110, y+20, 100, 36, "Render animation with Lux", lambda e,v:CBluxAnimExport(dlt.get()=="true", True))
+                Draw.Button("Render", 0, 10, y+20, 100, 36, "Render with Lux", lambda e,v:CBluxExport(dlt.get()=="true" or pipe.get()=="true", True))
+                Draw.Button("Render Anim", 0, 110, y+20, 100, 36, "Render animation with Lux", lambda e,v:CBluxAnimExport(dlt.get()=="true" or pipe.get()=="true", True))
             else:
-                Draw.Button("Export", 0, 10, y+20, 100, 36, "Export", lambda e,v:CBluxExport(dlt.get()=="true", False))
-                Draw.Button("Export Anim", 0, 110, y+20, 100, 36, "Export animation", lambda e,v:CBluxAnimExport(dlt.get()=="true", False))
+                Draw.Button("Export", 0, 10, y+20, 100, 36, "Export", lambda e,v:CBluxExport(dlt.get()=="true" or pipe.get()=="true", False))
+                Draw.Button("Export Anim", 0, 110, y+20, 100, 36, "Export animation", lambda e,v:CBluxAnimExport(dlt.get()=="true" or pipe.get()=="true", False))
         
             def set_run(v):
                 run.set(["false","true"][bool(v)])
@@ -6228,13 +6229,18 @@ def luxDraw():
             
             Draw.Toggle("run", evtLuxGui, 290, y+40, 30, 16, run.get()=="true", "start Lux after export", lambda e,v: set_run(v))
             
-            if run.get() == 'true':
-                Draw.Toggle("pipe", evtLuxGui, 320, y+40, 30, 16, dlt.get()=="true", "do not write intermediate lxs file", lambda e,v: dlt.set(["false","true"][bool(v)]))
+            if pipe.get() == 'false' and dlt.get() == 'true':
+                Draw.Toggle("def", evtLuxGui, 320, y+40, 30, 16, dlt.get()=="true", "write to default lxs file", lambda e,v: dlt.set(["false","true"][bool(v)]))
+            elif pipe.get() == 'true' and dlt.get() == 'false':
+                Draw.Toggle("pipe", evtLuxGui, 320, y+40, 30, 16, pipe.get()=="true", "do not write any lxs file", lambda e,v: pipe.set(["false","true"][bool(v)]))
+            else:
+                Draw.Toggle("d", evtLuxGui, 320, y+40, 15, 16, dlt.get()=="true", "write to default lxs file", lambda e,v: dlt.set(["false","true"][bool(v)]))
+                Draw.Toggle("p", evtLuxGui, 335, y+40, 15, 16, pipe.get()=="true", "do not write any lxs file", lambda e,v: pipe.set(["false","true"][bool(v)]))
             
             Draw.Toggle("clay", evtLuxGui, 350, y+40, 30, 16, clay.get()=="true", "all materials are rendered as white-matte", lambda e,v: clay.set(["false","true"][bool(v)]))
             Draw.Toggle("nolg", evtLuxGui, 380, y+40, 30, 16, nolg.get()=="true", "disables all light groups", lambda e,v: nolg.set(["false","true"][bool(v)]))
             
-            if dlt.get() == "false":
+            if pipe.get() == "false":
                 Draw.Toggle(".lxs", 0, 290, y+20, 30, 16, lxs.get()=="true", "export .lxs scene file", lambda e,v: lxs.set(["false","true"][bool(v)]))
                 Draw.Toggle(".lxo", 0, 320, y+20, 30, 16, lxo.get()=="true", "export .lxo geometry file", lambda e,v: lxo.set(["false","true"][bool(v)]))
                 Draw.Toggle(".lxm", 0, 350, y+20, 30, 16, lxm.get()=="true", "export .lxm material file", lambda e,v: lxm.set(["false","true"][bool(v)]))
@@ -6296,11 +6302,11 @@ def luxEvent(evt, val):  # function that handles keyboard and mouse events
             lastEventTime = sys.time()
             if evt == Draw.RKEY:
                 activeEvent = 'RKEY'
-                CBluxExport(luxProp(scn, "default", "true").get() == "true", True)
+                CBluxExport(luxProp(scn, "default", "true").get() == "true" or luxProp(scn, "pipe", "true").get() == "true", True)
                 activeEvent = None
             if evt == Draw.EKEY:
                 activeEvent = 'EKEY'
-                CBluxExport(luxProp(scn, "default", "true").get() == "true", False)
+                CBluxExport(luxProp(scn, "default", "true").get() == "true" or luxProp(scn, "pipe", "true").get() == "true", False)
                 activeEvent = None
             if evt == Draw.PKEY:
                 activeEvent = 'PKEY'
