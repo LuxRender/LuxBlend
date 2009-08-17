@@ -752,9 +752,10 @@ def save_lux(filename, unindexedname):
     class pipe_output(output_proxy, Thread):
         combine_all_output = True
         
-        def __init__(self, xr,yr, haltspp):
+        def __init__(self, xr,yr, haltspp, filename):
             Thread.__init__(self)
             
+            self.filename = filename
             self.haltspp = haltspp
             self.xr = xr
             self.yr = yr
@@ -775,29 +776,36 @@ def save_lux(filename, unindexedname):
             Blender.Window.QRedrawAll()
             self.start()
         def run(self):
-            self.data = self.p.communicate()[0]
+            if self.load_result: self.data = self.p.communicate()[0]
             self.f.close()
-            if self.load_result: self.load_data()
+            if self.load_result: self.load_image()
+            #self.load_data()
             print "LuxRender process finished"
+            self.update_status()
             
+        def load_image(self):
+            i = Blender.Image.Load(self.filename)
+            i.makeCurrent()
+            i.reload()
+           
         def load_data(self):
             print "processing %i image bytes" % len(self.data)
             i = Blender.Image.New('luxrender', self.xr, self.yr, 32)
-            bb = [0.0, 0.0, 0.0, 0.0]
+            raw_image = []
+            for j in self.data:
+                raw_image.append(ord(j))
+            del self.data
             bi = 0
             for y in range(self.yr-1, -1, -1):
                 for x in range(0, self.xr):
-                    bb[0] = ord(self.data[bi])
-                    bi+=1
-                    bb[1] = ord(self.data[bi])
-                    bi+=1
-                    bb[2] = ord(self.data[bi])
-                    bi+=1
-                    i.setPixelI(x,y , bb)
-                    bb = [0.0, 0.0, 0.0, 0.0]
+                    i.setPixelI(x,y, raw_image[bi:bi+3]+[0])
+                    bi+=3
             i.makeCurrent()
+            
+        def update_status(self):
             global render_status_text
-            render_status_text = "Rendering complete, check Image Editor window"
+            render_status_text = "Rendering complete"
+            if self.haltspp>0: render_status_text += ", check Image Editor window"
             Blender.Window.QRedrawAll()
             
     use_pipe_output = luxProp(scn, "default", "true").get() == "true" and luxProp(scn, "run", "true").get() == "true"
@@ -810,7 +818,10 @@ def save_lux(filename, unindexedname):
             print "using pipe output"
             print("Exporting scene to pipe")
             xr,yr = get_render_resolution(scn)
-            file = pipe_output(xr, yr, luxProp(scn, "haltspp", 0).get())
+            file = pipe_output(xr, yr,
+                luxProp(scn, "haltspp", 0).get(),
+                os.path.join(filepath, filebase + ".png")
+            )
         else:
             print "using file output"
             print("Exporting scene to '" + filename + "'...\n")
@@ -1080,9 +1091,11 @@ def get_lux_pipe(scn, buf = 1024, type="luxconsole"):
     
     PIPE = subprocess.PIPE
     
-    cmd, raw_args = get_lux_args('-', extra_args=['-b'])
+    cmd, raw_args = get_lux_args('-',
+        extra_args=['-b'] if type=="luxconsole" else []
+    )
     
-    return subprocess.Popen(raw_args, executable=bin, bufsize=buf, stdin=PIPE, stdout=PIPE, stderr=PIPE)
+    return subprocess.Popen(bin + raw_args, shell=True, bufsize=buf, stdin=PIPE, stdout=PIPE, stderr=PIPE)
 
 def launchLux(filename):
     cmd, raw_args = get_lux_args(filename)
@@ -4527,7 +4540,7 @@ def Preview_Update(mat, kn, defLarge, defType, texName, name, level):
 
 #        consolebin = luxProp(scn, "luxconsole", "").get()
     
-    p = get_lux_pipe(scn, buf=thumbbuf)
+    p = get_lux_pipe(scn, buf=thumbbuf, type="luxconsole")
 
     # Unremark to write debugging output to file
     # p.stdin = open('c:\preview.lxs', 'w')
@@ -4634,8 +4647,9 @@ def Preview_Update(mat, kn, defLarge, defType, texName, name, level):
 
     data = p.communicate()[0]
     p.stdin.close()
-    if(len(data) < thumbbuf): 
-        print "error on preview"
+    datalen = len(data)
+    if(datalen < thumbbuf): 
+        print "error on preview: got %i bytes, expected %i" % (datalen, thumbbuf)
         return
     global previewCache
     image = luxImage()
