@@ -955,7 +955,7 @@ def save_lux(filename, unindexedname):
         if not file.combine_all_output: file.write("Include \"%s\"\n\n" %(geom_pfilename))
         if not file.combine_all_output: file.write("Include \"%s\"\n\n" %(vol_pfilename))
         
-    if luxProp(scn, "lxm", "true").get()=="true":
+    if luxProp(scn, "lxm", "true").get()=="true" or use_pipe_output:
         if LuxIsGUI: DrawProgressBar(9.0/export_total_steps,'Exporting Materials')
         ##### Write Material file #####
         if not file.combine_all_output: print("Exporting materials to '" + mat_filename + "'...\n")
@@ -965,7 +965,7 @@ def save_lux(filename, unindexedname):
         mat_file.write("")
         if not file.combine_all_output: mat_file.close()
     
-    if luxProp(scn, "lxo", "true").get()=="true":
+    if luxProp(scn, "lxo", "true").get()=="true" or use_pipe_output:
         if LuxIsGUI: DrawProgressBar(10.0/export_total_steps,'Exporting Geometry')
         ##### Write Geometry file #####
         if not file.combine_all_output: print("Exporting geometry to '" + geom_filename + "'...\n")
@@ -978,7 +978,7 @@ def save_lux(filename, unindexedname):
         geom_file.write("")
         if not file.combine_all_output: geom_file.close()
 
-    if luxProp(scn, "lxv", "true").get()=="true":
+    if luxProp(scn, "lxv", "true").get()=="true" or use_pipe_output:
         if LuxIsGUI: DrawProgressBar(11.0/export_total_steps,'Exporting Volumes')
         ##### Write Volume file #####
         if not file.combine_all_output: print("Exporting volumes to '" + vol_filename + "'...\n")
