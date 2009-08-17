@@ -1095,7 +1095,10 @@ def get_lux_pipe(scn, buf = 1024, type="luxconsole"):
         extra_args=['-b'] if type=="luxconsole" else []
     )
     
-    return subprocess.Popen(bin + raw_args, shell=True, bufsize=buf, stdin=PIPE, stdout=PIPE, stderr=PIPE)
+    if osys.platform in ['linux', 'darwin']:
+        return subprocess.Popen(bin + raw_args, shell=True, bufsize=buf, stdin=PIPE, stdout=PIPE, stderr=PIPE)
+    else:
+        return subprocess.Popen(raw_args, executable=bin, bufsize=buf, stdin=PIPE, stdout=PIPE, stderr=PIPE)
 
 def launchLux(filename):
     cmd, raw_args = get_lux_args(filename)
