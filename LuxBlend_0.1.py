@@ -775,7 +775,7 @@ def save_lux(filename, unindexedname):
                
             print "pipe: using %s" % bintype
                 
-            self.p = get_lux_pipe(scn, 1024, bintype)
+            self.p = get_lux_pipe(scn, 1, bintype)
             self.f = self.p.stdin
         def close(self):
             global render_status_text
@@ -1111,11 +1111,10 @@ def get_lux_pipe(scn, buf = 1024, type="luxconsole"):
         extra_args=['-b'] if type=="luxconsole" else []
     )
     
-    #, bufsize=buf,
     if osys.platform in ['linux', 'darwin']:
-        return subprocess.Popen(bin + raw_args, shell=True, bufsize=1, stdin=PIPE, stdout=PIPE, stderr=PIPE)
+        return subprocess.Popen(bin + raw_args, shell=True, bufsize=buf, stdin=PIPE, stdout=PIPE, stderr=PIPE)
     else:
-        return subprocess.Popen(raw_args, executable=bin, bufsize=1, stdin=PIPE, stdout=PIPE, stderr=PIPE)
+        return subprocess.Popen(raw_args, executable=bin, bufsize=buf, stdin=PIPE, stdout=PIPE, stderr=PIPE)
 
 def launchLux(filename):
     cmd, raw_args = get_lux_args(filename)
