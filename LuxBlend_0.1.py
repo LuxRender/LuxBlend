@@ -1111,7 +1111,7 @@ def get_lux_pipe(scn, buf = 1024, type="luxconsole"):
         extra_args=['-b'] if type=="luxconsole" else []
     )
     
-    if osys.platform in ['linux', 'darwin']:
+    if osys.platform in ['linux2', 'darwin']:
         return subprocess.Popen(bin + raw_args, shell=True, bufsize=buf, stdin=PIPE, stdout=PIPE, stderr=PIPE)
     else:
         return subprocess.Popen(raw_args, executable=bin, bufsize=buf, stdin=PIPE, stdout=PIPE, stderr=PIPE)
