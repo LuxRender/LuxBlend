@@ -610,7 +610,7 @@ class luxExport:
                     proj = luxProp(obj, "light.usetexproj", "false")
                     if luxProp(Scene.GetCurrent(), "nolg", "false").get()!="true":
                         lightgroup = luxProp(obj, "light.lightgroup", "default")
-                    file.write("LightGroup \"%s\"\n"%lightgroup.get())
+                        file.write("LightGroup \"%s\"\n"%lightgroup.get())
                     if(proj.get() == "true"):
                         file.write("Rotate 180 0 1 0\n")
                         file.write("LightSource \"projection\" \"float fov\" [%f]"%(obj.getData(mesh=1).spotSize))
@@ -818,7 +818,7 @@ def save_lux(filename, unindexedname):
             render_status = False
             render_status_text = "Rendering complete"
             if self.haltspp>0: render_status_text += ", check Image Editor window"
-            Blender.Window.RedrawAll()
+            Blender.Window.QRedrawAll()
             
     use_pipe_output = luxProp(scn, "pipe", "true").get() == "true" and luxProp(scn, "run", "true").get() == "true"
     
