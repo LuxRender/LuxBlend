@@ -820,7 +820,7 @@ def save_lux(filename, unindexedname):
             if self.haltspp>0: render_status_text += ", check Image Editor window"
             Blender.Window.QRedrawAll()
             
-    use_pipe_output = luxProp(scn, "pipe", "true").get() == "true" and luxProp(scn, "run", "true").get() == "true"
+    use_pipe_output = luxProp(scn, "pipe", "false").get() == "true" and luxProp(scn, "run", "true").get() == "true"
     
     file = output_proxy()
     
@@ -1170,7 +1170,7 @@ def save_still(filename):
     MatSaved = 0
     unindexedname = filename
     if save_lux(filename, unindexedname):
-        if runRenderAfterExport and luxProp(scn, "pipe", "true").get() == "false": #(run == None and luxProp(scn, "run", "true").get() == "true") or run:
+        if runRenderAfterExport and luxProp(scn, "pipe", "false").get() == "false": #(run == None and luxProp(scn, "run", "true").get() == "true") or run:
             launchLux(filename)
 
 
@@ -6220,11 +6220,11 @@ def luxEvent(evt, val):  # function that handles keyboard and mouse events
             lastEventTime = sys.time()
             if evt == Draw.RKEY:
                 activeEvent = 'RKEY'
-                CBluxExport(luxProp(scn, "default", "true").get() == "true" or luxProp(scn, "pipe", "true").get() == "true", True)
+                CBluxExport(luxProp(scn, "default", "true").get() == "true" or luxProp(scn, "pipe", "false").get() == "true", True)
                 activeEvent = None
             if evt == Draw.EKEY:
                 activeEvent = 'EKEY'
-                CBluxExport(luxProp(scn, "default", "true").get() == "true" or luxProp(scn, "pipe", "true").get() == "true", False)
+                CBluxExport(luxProp(scn, "default", "true").get() == "true" or luxProp(scn, "pipe", "false").get() == "true", False)
                 activeEvent = None
             if evt == Draw.PKEY:
                 activeEvent = 'PKEY'
