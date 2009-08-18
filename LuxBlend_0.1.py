@@ -4732,9 +4732,11 @@ def luxMaterialBlock(name, luxname, key, mat, gui=None, level=0, str_opt=""):
             has_compositing_options = 0
 
         if mattype.get() == "light":
-            lightgroup = luxProp(mat, kn+"light.lightgroup", "default")
             if luxProp(Scene.GetCurrent(), "nolg", "false").get()!="true":
+                lightgroup = luxProp(mat, kn+"light.lightgroup", "default")
                 link = "LightGroup \"%s\"\n"%lightgroup.get()
+            else:
+                link = ''
             link += "AreaLightSource \"area\""
             (str,link) = c((str,link), luxLight("", kn, mat, gui, level))
             has_bump_options = 0
