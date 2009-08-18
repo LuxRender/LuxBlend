@@ -1117,12 +1117,12 @@ def get_lux_pipe(scn, buf = 1024, type="luxconsole"):
         return subprocess.Popen(raw_args, executable=bin, bufsize=buf, stdin=PIPE, stdout=PIPE, stderr=PIPE)
 
 def launchLux(filename):
-    cmd, raw_args = get_lux_args(filename)
+    cmd, raw_args = get_lux_args(filename, extra_args=[])
     print("Running Luxrender:\n"+cmd)
     os.system(cmd)
 
 def launchLuxWait(filename):
-    cmd, raw_args = get_lux_args(filename)
+    cmd, raw_args = get_lux_args(filename, extra_args=[])
     
     if ostype == "win32":
         os.system(cmd)
