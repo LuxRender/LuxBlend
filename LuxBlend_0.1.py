@@ -1118,96 +1118,16 @@ def get_lux_pipe(scn, buf = 1024, type="luxconsole"):
 
 def launchLux(filename):
     cmd, raw_args = get_lux_args(filename)
-    # call external shell script to start Lux
     print("Running Luxrender:\n"+cmd)
     os.system(cmd)
 
-
-def launchLuxPiped():
-    import os
-    ostype = osys.platform
-    #get blenders 'bpydata' directory
-    datadir=Blender.Get("datadir")
-    
-    scn = Scene.GetCurrent()
-
-    servers_string = networkstring(scn)
-    update_int=luxProp(scn,"newtork_interval",180).get()
-
-    ic = luxProp(scn, "lux", "").get()
-    ic = Blender.sys.dirname(ic) + os.sep + "luxrender"
-    if ostype == "win32": ic = ic + ".exe"
-    if ostype == "darwin": ic = ic + ".app/Contents/MacOS/luxrender"
-    checkluxpath = luxProp(scn, "checkluxpath", True).get()
-    if checkluxpath:
-        if sys.exists(ic) != 1:
-            Draw.PupMenu("Error: Lux renderer not found. Please set path on System page.%t|OK")
-            return        
-    autothreads = luxProp(scn, "autothreads", "true").get()
-    threads = luxProp(scn, "threads", 1).get()
-
-    if ostype == "win32":
-        if(autothreads=="true"):
-            cmd = "\"%s\" - %s -i %d "%(ic,servers_string,update_int)
-        else:
-            cmd = "\"%s\" - %s -i %d --threads=%d"%(ic, threads)
-
-    if ostype == "linux2" or ostype == "darwin":
-        if(autothreads=="true"):
-            cmd = "(\"%s -u %s -i %d\" \"%s\")&"%(ic,servers_string,update_int, filename)
-        else:
-            cmd = "(\"%s\" --threads=%d -u %s -i %d \"%s\")&"%(ic, threads,servers_string,update_int, filename)
-
-    # call external shell script to start Lux
-    print("Running Luxrender:\n"+cmd)
-
-    import subprocess, os
-
-    PIPE = subprocess.PIPE
-    p = subprocess.Popen(cmd, stdin=PIPE)
-    
-    return p.stdin
-
 def launchLuxWait(filename):
-    ostype = osys.platform
-    #get blenders 'bpydata' directory
-    datadir=Blender.Get("datadir")
-
-    scn = Scene.GetCurrent()
-    luxbatchconsolemode = luxProp(scn, "luxbatchc", "false")
-
-    servers_string = networkstring(scn)
-    update_int=luxProp(scn,"newtork_interval",180).get()
-
-    ic = luxProp(scn, "lux", "").get()
-    if luxbatchconsolemode.get() == "false":
-        ic = Blender.sys.dirname(ic) + os.sep + "luxconsole"
-    if ostype == "win32": ic = ic + ".exe"
-    # radiance - comment out app install for luxconsole on OSX for jensverwiebe
-    #if ostype == "darwin": ic = ic + ".app/Contents/MacOS/luxconsole"
-    checkluxpath = luxProp(scn, "checkluxpath", True).get()
-    if checkluxpath:
-        if sys.exists(ic) != 1:
-            Draw.PupMenu("Error: Lux renderer not found. Please set path on System page.%t|OK")
-            return        
-    autothreads = luxProp(scn, "autothreads", "true").get()
-    threads = luxProp(scn, "threads", 1).get()
-
+    cmd, raw_args = get_lux_args(filename)
+    
     if ostype == "win32":
-        if(autothreads=="true"):
-            cmd = "start /b /WAIT \"\" \"%s\" %s -i %d -f \"%s\" "%(ic,servers_string,update_int, filename)        
-        else:
-            cmd = "start /b /WAIT \"\" \"%s\"  %s -i %d -f \"%s\" --threads=%d"%(ic,servers_string,update_int, filename, threads)        
-        # call external shell script to start Lux    
-        #print("Running Luxrender:\n"+cmd)
-        #os.spawnv(os.P_WAIT, cmd, 0)
         os.system(cmd)
-
+    
     if ostype == "linux2" or ostype == "darwin":
-        if(autothreads=="true"):
-            cmd = "\"%s\" %s -i %d -f \"%s\""%(ic,servers_string,update_int, filename)
-        else:
-            cmd = "\"%s\" %s -i %d -f --threads=%d \"%s\""%(ic,servers_string,update_int,  threads, filename)
         subprocess.call(cmd,shell=True)
 
 #### SAVE ANIMATION ####    
