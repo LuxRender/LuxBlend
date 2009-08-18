@@ -1,13 +1,13 @@
 #!BPY
 # coding=utf-8
 """Registration info for Blender menus:
-Name: 'LuxBlend v0.6RC3 Exporter - 2nd Generation'
+Name: 'LuxBlend v0.6RC5 Exporter - 2nd Generation'
 Blender: 248
 Group: 'Render'
-Tooltip: 'Export/Render to LuxRender v0.6RC3 scene format (.lxs)'
+Tooltip: 'Export/Render to LuxRender v0.6RC5 scene format (.lxs)'
 """
 #===============================================================================
-# LuxBlend v0.6RC3 Exporter
+# LuxBlend v0.6RC5 Exporter
 #-------------------------------------------------------------------------------
 #
 # Authors:
@@ -43,6 +43,7 @@ try:
     import types       # used all over the place
     import subprocess  # used in Launch and Preview
     import time        # used in sun_calculator
+    import threading   # used in Lux.Export (pipe)
 except ImportError:
     print "Unable to import required libraries - you may need to install Python"
     exit()
@@ -62,7 +63,7 @@ except ImportError:
 class Lux:
     '''Lux Export Class'''
     
-    Version             = 'LB2 v0.6RC3'
+    Version             = 'LB2 v0.6RC5'
     
     # enabled features ('instances')
     LB_UI               = False
@@ -145,9 +146,9 @@ class Lux:
             if evt in [Blender_API.Draw.RKEY, Blender_API.Draw.EKEY, Blender_API.Draw.PKEY] and val:
                 if self.lastEvent is not evt:
                     if evt == Blender_API.Draw.RKEY:
-                        Lux.Export.Still(Lux.Property(Lux.scene, "default", "true").get() == "true", True)
+                        Lux.Export.Still(Lux.Property(Lux.scene, "default", "true").get() == "true" or Lux.Property(Lux.scene, "pipe", "false").get() == "true", True)
                     if evt == Blender_API.Draw.EKEY:
-                        Lux.Export.Still(Lux.Property(Lux.scene, "default", "true").get() == "true", False)
+                        Lux.Export.Still(Lux.Property(Lux.scene, "default", "true").get() == "true" or Lux.Property(Lux.scene, "pipe", "false").get() == "true", False)
                     if evt == Blender_API.Draw.PKEY:
                         if Lux.Materials.activemat != None:
                             Lux.Preview.Update(Lux.Materials.activemat, '', True, 0, None, None, None)
@@ -308,7 +309,7 @@ class Lux:
                     'sintegrator.dlighting.maxdepth': 5,
                 
                     'pixelfilter.type': 'mitchell',
-                    'pixelfilter.mitchell.sharp': 0.333, 
+                    'pixelfilter.mitchell.sharp': 0.250, 
                     'pixelfilter.mitchell.xwidth': 2.0, 
                     'pixelfilter.mitchell.ywidth': 2.0, 
                     'pixelfilter.mitchell.optmode': "slider"
@@ -327,7 +328,6 @@ class Lux:
                     'sampler.metro.lmprob': 0.4,
                     'sampler.metro.maxrejects': 512,
                     'sampler.metro.initsamples': 262144,
-                    'sampler.metro.stratawidth': 256,
                     'sampler.metro.usevariance': "false",
                 
                     'sintegrator.type': 'bidirectional',
@@ -336,7 +336,7 @@ class Lux:
                     'sintegrator.bidir.lightdepth': 16,
                 
                     'pixelfilter.type': 'mitchell',
-                    'pixelfilter.mitchell.sharp': 0.333, 
+                    'pixelfilter.mitchell.sharp': 0.250, 
                     'pixelfilter.mitchell.xwidth': 2.0, 
                     'pixelfilter.mitchell.ywidth': 2.0, 
                     'pixelfilter.mitchell.optmode': "slider"
@@ -355,7 +355,6 @@ class Lux:
                     'sampler.metro.lmprob': 0.4,
                     'sampler.metro.maxrejects': 512,
                     'sampler.metro.initsamples': 262144,
-                    'sampler.metro.stratawidth': 256,
                     'sampler.metro.usevariance': "false",
                 
                     'sintegrator.type': 'path',
@@ -363,7 +362,7 @@ class Lux:
                     'sintegrator.bidir.maxdepth': 10,
                 
                     'pixelfilter.type': 'mitchell',
-                    'pixelfilter.mitchell.sharp': 0.333, 
+                    'pixelfilter.mitchell.sharp': 0.250, 
                     'pixelfilter.mitchell.xwidth': 2.0, 
                     'pixelfilter.mitchell.ywidth': 2.0, 
                     'pixelfilter.mitchell.optmode': "slider"
@@ -389,7 +388,7 @@ class Lux:
                     'sintegrator.bidir.lightdepth': 16,
                 
                     'pixelfilter.type': 'mitchell',
-                    'pixelfilter.mitchell.sharp': 0.333, 
+                    'pixelfilter.mitchell.sharp': 0.250, 
                     'pixelfilter.mitchell.xwidth': 2.0, 
                     'pixelfilter.mitchell.ywidth': 2.0, 
                     'pixelfilter.mitchell.optmode': "slider"
@@ -412,7 +411,7 @@ class Lux:
                     'sintegrator.bidir.maxdepth': 10,
                 
                     'pixelfilter.type': 'mitchell',
-                    'pixelfilter.mitchell.sharp': 0.333, 
+                    'pixelfilter.mitchell.sharp': 0.250, 
                     'pixelfilter.mitchell.xwidth': 2.0, 
                     'pixelfilter.mitchell.ywidth': 2.0, 
                     'pixelfilter.mitchell.optmode': "slider"
@@ -438,7 +437,7 @@ class Lux:
                     'sintegrator.bidir.lightdepth': 10,
                 
                     'pixelfilter.type': 'mitchell',
-                    'pixelfilter.mitchell.sharp': 0.333, 
+                    'pixelfilter.mitchell.sharp': 0.250, 
                     'pixelfilter.mitchell.xwidth': 2.0, 
                     'pixelfilter.mitchell.ywidth': 2.0, 
                     'pixelfilter.mitchell.optmode': "slider"
@@ -461,7 +460,7 @@ class Lux:
                     'sintegrator.bidir.maxdepth': 8,
                 
                     'pixelfilter.type': 'mitchell',
-                    'pixelfilter.mitchell.sharp': 0.333, 
+                    'pixelfilter.mitchell.sharp': 0.250, 
                     'pixelfilter.mitchell.xwidth': 2.0, 
                     'pixelfilter.mitchell.ywidth': 2.0, 
                     'pixelfilter.mitchell.optmode': "slider"
@@ -505,7 +504,7 @@ class Lux:
                     'sintegrator.distributedpath.specularrefractdepth': 5,
                 
                     'pixelfilter.type': 'mitchell',
-                    'pixelfilter.mitchell.sharp': 0.333, 
+                    'pixelfilter.mitchell.sharp': 0.250, 
                     'pixelfilter.mitchell.xwidth': 2.0, 
                     'pixelfilter.mitchell.ywidth': 2.0, 
                     'pixelfilter.mitchell.optmode': "slider"
@@ -547,7 +546,7 @@ class Lux:
                     'sintegrator.distributedpath.specularrefractdepth': 5,
                 
                     'pixelfilter.type': 'mitchell',
-                    'pixelfilter.mitchell.sharp': 0.333, 
+                    'pixelfilter.mitchell.sharp': 0.250, 
                     'pixelfilter.mitchell.xwidth': 2.0, 
                     'pixelfilter.mitchell.ywidth': 2.0, 
                     'pixelfilter.mitchell.optmode': "slider"
@@ -589,7 +588,7 @@ class Lux:
                     'sintegrator.distributedpath.specularrefractdepth': 5,
                 
                     'pixelfilter.type': 'mitchell',
-                    'pixelfilter.mitchell.sharp': 0.333, 
+                    'pixelfilter.mitchell.sharp': 0.250, 
                     'pixelfilter.mitchell.xwidth': 2.0, 
                     'pixelfilter.mitchell.ywidth': 2.0, 
                     'pixelfilter.mitchell.optmode': "slider"
@@ -631,7 +630,7 @@ class Lux:
                     'sintegrator.distributedpath.specularrefractdepth': 5,
                 
                     'pixelfilter.type': 'mitchell',
-                    'pixelfilter.mitchell.sharp': 0.333, 
+                    'pixelfilter.mitchell.sharp': 0.250, 
                     'pixelfilter.mitchell.xwidth': 2.0, 
                     'pixelfilter.mitchell.ywidth': 2.0, 
                     'pixelfilter.mitchell.optmode': "slider"
@@ -672,8 +671,28 @@ class Lux:
     class Util:
         '''Lux Utilities'''
         
-        lxs_filename = ""
         previewing = False
+        
+        @staticmethod
+        def GetRenderResolution():
+            context = Lux.scene.getRenderingContext()
+            scale = Lux.Property(Lux.scene, "film.scale", "100 %")
+            scale = int(scale.get()[:-1])
+            xr = Lux.Attribute(context, "sizeX").get() * scale/100
+            yr = Lux.Attribute(context, "sizeY").get() * scale/100
+            
+            return xr, yr
+        
+        # helper function to retrive name of the selected treemenu-item
+        @staticmethod
+        def getTreeNameById(tree, i):
+            for t in tree:
+                if type(t)==types.TupleType:
+                    if type(t[1])==types.ListType: 
+                        n=Lux.Util.getTreeNameById(t[1], i)
+                        if n: return n
+                elif t[1]==i: return t[0]
+            return None
         
         @staticmethod
         def newFName(ext):
@@ -726,7 +745,7 @@ class Lux:
             if (pm=="absolute") or previewing: # absolute paths (the old / default mode)
                 return filename
             elif pm=="relative": # relative paths
-                base = os.path.dirname(Lux.Util.lxs_filename)
+                base = os.path.dirname(Lux.Export.lxs_filename)
                 return Lux.Util.relpath(base, filename)
             elif pm=="flat": # flat mode - only filename
                 return os.path.basename(filename)
@@ -1158,16 +1177,18 @@ class Lux:
                     col = obj.getData(mesh=1).col # data
                     energy = obj.getData(mesh=1).energy # data
                     if ltype == Blender_API.Lamp.Types["Lamp"]:
-                        lightgroup = Lux.Property(obj, "light.lightgroup", "default")
-                        file.write('LightGroup "%s"\n'%lightgroup.get())
+                        if luxProp(Scene.GetCurrent(), "nolg", "false").get()!="true":
+                            lightgroup = Lux.Property(obj, "light.lightgroup", "default")
+                            file.write('LightGroup "%s"\n'%lightgroup.get())
                         (str, link) = Lux.Light.Point("", "", obj, 0)
                         file.write(str+'LightSource "point"'+link+"\n")
                     if ltype == Blender_API.Lamp.Types["Spot"]:
                         (str, link) = Lux.Light.Spot("", "", obj, 0)
                         file.write(str)
                         proj = Lux.Property(obj, "light.usetexproj", "false")
-                        lightgroup = Lux.Property(obj, "light.lightgroup", "default")
-                        file.write('LightGroup "%s"\n' % lightgroup.get())
+                        if luxProp(Scene.GetCurrent(), "nolg", "false").get()!="true":
+                            lightgroup = Lux.Property(obj, "light.lightgroup", "default")
+                            file.write('LightGroup "%s"\n' % lightgroup.get())
                         if(proj.get() == "true"):
                             file.write("Rotate 180 0 1 0\n")
                             file.write('LightSource "projection" "float fov" [%f]'%(obj.getData(mesh=1).spotSize))
@@ -1176,8 +1197,9 @@ class Lux:
                                 (obj.getData(mesh=1).spotSize*0.5, obj.getData(mesh=1).spotSize*0.5*obj.getData(mesh=1).spotBlend)) # data
                         file.write(link+"\n")
                     if ltype == Blender_API.Lamp.Types["Area"]:
-                        lightgroup = Lux.Property(obj, "light.lightgroup", "default")
-                        file.write('LightGroup "%s"\n'%lightgroup.get())
+                        if luxProp(Scene.GetCurrent(), "nolg", "false").get()!="true":
+                            lightgroup = Lux.Property(obj, "light.lightgroup", "default")
+                            file.write('LightGroup "%s"\n'%lightgroup.get())
                         file.write('\tAreaLightSource "area"')
                         file.write(link)
                         file.write("\n")
@@ -1234,13 +1256,14 @@ class Lux:
         MatSaved                = False
         
         # filenames
+        lxs_filename            = ""
         geom_filename           = None
         geom_pfilename          = None
         mat_filename            = None
         mat_pfilename           = None
         vol_filename            = None
         vol_pfilename           = None
-
+        
         @staticmethod
         def Still(default, run):
             Lux.Export.runRenderAfterExport = run
@@ -1276,6 +1299,63 @@ class Lux:
                     filename = Blender_API.sys.makename(Blender_API.Get("filename") , ".lxs")
                     Lux.Export.save_anim(filename)
         
+        class output_proxy():
+            load_result = False
+            combine_all_output = False
+            f = None
+            def __init__(self):
+                # This class should be overridden, else nothing will happen
+                Lux.Log("WARNING: NULL EXPORT")
+                
+            def close(self):
+                if self.f is not None: self.f.close()
+                
+            def write(self, atr):
+                if self.f is not None:
+                    self.f.write(str)
+                    self.f.flush()
+        
+        class file_output(output_proxy):
+            def __init__(self, filename):
+                self.f = open(filename, "w")
+        
+        class pipe_output(output_proxy, threading.Thread):
+            combine_all_output = True
+            
+            def __init__(self, xr, yr, haltspp, filename):
+                Thread.__init__(self)
+                
+                self.filename=filename
+                self.haltspp=haltspp
+                self.xr=xr
+                self.yr=yr
+                
+                if self.haltspp > 0:
+                    bintype = "luxconsole"
+                    self.laod_result = True
+                else:
+                    bintype = "luxrender"
+                    
+                Lux.Log("Pipe: using %s"%sbintype)
+                
+                self.p = Lux.Launch.Piped(1, bintype)
+                self.f = self.p.stdin
+                
+            def close(self):
+                self.start()
+                
+            def run(self):
+                #if self.load_result: self.data = self.p.communicate()[0]
+                self.f.close()
+                if self.load_result: self.load_image()
+                #if self.load_result: self.load_data()
+                Lux.Log("LuxRender process finished")
+                
+            def load_image(self):
+                i = Blender_API.Image.Load(self.filename)
+                i.makeCurrent()
+                i.reload()
+        
         @staticmethod
         def save_lux(filename, unindexedname):
             '''EXPORT'''
@@ -1288,20 +1368,20 @@ class Lux:
             
             filepath = os.path.dirname(filename)
             filebase = os.path.splitext(os.path.basename(filename))[0]
-        
-            Lux.Util.lxs_filename = filename
+            
+            Lux.Export.lxs_filename = filename
             
             Lux.Export.geom_filename  = os.path.join(filepath, filebase + "-geom.lxo")
             Lux.Export.geom_pfilename = filebase + "-geom.lxo"
-        
+            
             Lux.Export.mat_filename  = os.path.join(filepath, filebase + "-mat.lxm")
             Lux.Export.mat_pfilename = filebase + "-mat.lxm"
             
             Lux.Export.vol_filename  = os.path.join(filepath, filebase + "-vol.lxv")
             Lux.Export.vol_pfilename = filebase + "-vol.lxv"
-        
+            
             export = Lux.SceneIterator(Lux.scene)
-        
+            
             # check if a light is present
             envtype = Lux.Property(Lux.scene, "env.type", "infinite").get()
             if envtype == "sunsky":
@@ -1314,30 +1394,45 @@ class Lux:
                 Lux.LB_UI.Active = True
                 Lux.Log("ERROR: No light source found", popup = True)
                 return False
-        
+            
+            use_pipe_output = (Lux.Property(Lux.scene, "pipe", "false").get() == "true") and (Lux.Property(Lux.scene, "run", "true") == "true")
+            
+            file = Lux.Export.output_proxy()
+            
             if not Lux.LB_UI.CLI: Lux.LB_UI.startStatus(12, 'Setting up Scene file')
-            if Lux.Property(Lux.scene, "lxs", "true").get()=="true":
-                ##### Determine/open files
-                Lux.Log("Exporting scene to '" + filename + "'...")
-                file = open(filename, 'w')
-        
+            
+            if Lux.Property(Lux.scene, "lxs", "true").get()=="true" or use_pipe_output:
+                ##### Determine/open files or pipe
+                if use_pipe_output:
+                    Lux.Log("Using pipe output")
+                    xr, yr = Lux.Util.GetRenderResolution()
+                    file = Lux.Export.pipe_output(
+                        xr,yr,
+                        Lux.Property(Lux.scene, "haltspp", 0).get(),
+                        os.path.join(filepath, filebase + ".png")
+                    )
+                else:
+                    Lux.Log("Using file output")
+                    Lux.Log("Exporting scene to '" + filename + "'...")
+                    file = Lux.Export.file_output(filename)
+                
                 ##### Write Header ######
-                file.write("# Lux Render v0.6RC3 Scene File\n")
+                file.write("#LuxRender Scene File\n")
                 file.write("# Exported by LuxBlend "+Lux.Version+" Exporter\n")
                 file.write("\n")
-            
+                
                 ##### Write camera ######
                 camObj = Lux.scene.objects.camera
-        
+                
                 if not Lux.LB_UI.CLI: Lux.LB_UI.updateStatus('Exporting Camera')
                 if camObj:
                     Lux.Log("processing Camera...")
                     cam = camObj.data
                     cammblur = Lux.Property(cam, "cammblur", "true")
                     usemblur = Lux.Property(cam, "usemblur", "false")
-        
+                    
                     matrix = camObj.getMatrix()
-        
+                    
                     motion = None
                     if(cammblur.get() == "true" and usemblur.get() == "true"):
                         # motion blur
@@ -1357,7 +1452,7 @@ class Lux:
                             file.write("   LookAt %f %f %f \n       %f %f %f \n       %f %f %f\n" % ( pos[0], pos[1], pos[2], target[0], target[1], target[2], up[0], up[1], up[2] ))
                             file.write('   CoordinateSystem "CameraEndTransform"\n')
                             file.write("TransformEnd\n\n")
-        
+                    
                     # Write original lookat transform
                     pos = matrix[3]
                     forwards = -matrix[2]
@@ -1369,22 +1464,22 @@ class Lux:
                         file.write('\n   "string endtransform" ["CameraEndTransform"]')
                     file.write("\n")
                 file.write("\n")
-            
+                
                 if not Lux.LB_UI.CLI: Lux.LB_UI.updateStatus('Exporting Film Settings')
                 ##### Write film ######
                 file.write(Lux.SceneElements.Film())
                 file.write("\n")
-        
+                
                 if not Lux.LB_UI.CLI: Lux.LB_UI.updateStatus('Exporting Pixel Filter')
                 ##### Write Pixel Filter ######
                 file.write(Lux.SceneElements.PixelFilter())
                 file.write("\n")
-            
+                
                 if not Lux.LB_UI.CLI: Lux.LB_UI.updateStatus('Exporting Sampler')
                 ##### Write Sampler ######
                 file.write(Lux.SceneElements.Sampler())
                 file.write("\n")
-            
+                
                 if not Lux.LB_UI.CLI: Lux.LB_UI.updateStatus('Exporting Surface Integrator')
                 ##### Write Surface Integrator ######
                 file.write(Lux.SceneElements.SurfaceIntegrator())
@@ -1398,20 +1493,20 @@ class Lux:
                 if not Lux.LB_UI.CLI: Lux.LB_UI.updateStatus('Exporting Accelerator')
                 ##### Write Acceleration ######
                 file.write(Lux.SceneElements.Accelerator())
-                file.write("\n")    
-            
+                file.write("\n")
+                
                 ########## BEGIN World
                 file.write("\n")
                 file.write("WorldBegin\n")
                 file.write("\n")
-        
+                
                 ########## World scale
-#                scale = Lux.Property(Lux.scene, "global.scale", 1.0).get()
-#                if scale != 1.0:
-#                    # TODO: not working yet !!!
-#                    # TODO: propabily scale needs to be applyed on camera coords too 
-#                    file.write("Transform [%s 0.0 0.0 0.0  0.0 %s 0.0 0.0  0.0 0.0 %s 0.0  0.0 0.0 0 1.0]\n"%(scale, scale, scale))
-#                    file.write("\n")
+                #scale = Lux.Property(Lux.scene, "global.scale", 1.0).get()
+                #if scale != 1.0:
+                #    # TODO: not working yet !!!
+                #    # TODO: propabily scale needs to be applyed on camera coords too 
+                #    file.write("Transform [%s 0.0 0.0 0.0  0.0 %s 0.0 0.0  0.0 0.0 %s 0.0  0.0 0.0 0 1.0]\n"%(scale, scale, scale))
+                #    file.write("\n")
                 
                 if not Lux.LB_UI.CLI: Lux.LB_UI.updateStatus('Exporting Environment')
                 ##### Write World Background, Sunsky or Env map ######
@@ -1421,8 +1516,8 @@ class Lux:
                     file.write(env)
                     export.Portals(file)
                     file.write("AttributeEnd\n")
-                    file.write("\n")    
-        
+                    file.write("\n")
+                
                 # Note - radiance - this is a work in progress
                 #flash = Lux.Experimental.FlashBlock(camObj)
                 #if flash != "":
@@ -1431,58 +1526,60 @@ class Lux:
                 #    #file.write('CoordSysTransform "camera"\n')
                 #    file.write(flash)
                 #    file.write("AttributeEnd\n\n")
-        
+                
                 #### Write material & geometry file includes in scene file
-                file.write('Include "%s"\n\n' %(Lux.Export.mat_pfilename))
-                file.write('Include "%s"\n\n' %(Lux.Export.geom_pfilename))
-                file.write('Include "%s"\n\n' %(Lux.Export.vol_pfilename))
+                if not file.combine_all_output: file.write('Include "%s"\n\n' %(Lux.Export.mat_pfilename))
+                if not file.combine_all_output: file.write('Include "%s"\n\n' %(Lux.Export.geom_pfilename))
+                if not file.combine_all_output: file.write('Include "%s"\n\n' %(Lux.Export.vol_pfilename))
                 
-                #### Write End Tag
-                file.write("WorldEnd\n\n")
-                file.close()
-                
-            if Lux.Property(Lux.scene, "lxm", "true").get()=="true":
+            if Lux.Property(Lux.scene, "lxm", "true").get()=="true" or use_pipe_output:
                 if not Lux.LB_UI.CLI: Lux.LB_UI.updateStatus('Exporting Materials')
                 ##### Write Material file #####
-                Lux.Log("Exporting materials to '" + Lux.Export.mat_filename + "'...")
-                mat_file = open(Lux.Export.mat_filename, 'w')
+                if not file.combine_all_output: Lux.Log("Exporting materials to '" + Lux.Export.mat_filename + "'...")
+                mat_file = open(Lux.Export.mat_filename, 'w') if not file.combine_all_output else file
                 mat_file.write("")
                 export.Materials(mat_file)
                 mat_file.write("")
-                mat_file.close()
-            
-            if Lux.Property(Lux.scene, "lxo", "true").get()=="true":
+                if not file.combine_all_output: mat_file.close()
+                
+            if Lux.Property(Lux.scene, "lxo", "true").get()=="true" or use_pipe_output:
                 if not Lux.LB_UI.CLI: Lux.LB_UI.updateStatus('Exporting Geometry')
                 ##### Write Geometry file #####
-                Lux.Log("Exporting geometry to '" + Lux.Export.geom_filename + "'...")
-                geom_file = open(Lux.Export.geom_filename, 'w')
+                if not file.combine_all_output: Lux.Log("Exporting geometry to '" + Lux.Export.geom_filename + "'...")
+                geom_file = open(Lux.Export.geom_filename, 'w') if not file.combine_all_output else file
                 geom_file.write("")
                 export.Lights(geom_file)
                 export.Meshes(geom_file)
                 export.Objects(geom_file)
                 geom_file.write("")
-                geom_file.close()
-        
-            if Lux.Property(Lux.scene, "lxv", "true").get()=="true":
+                if not file.combine_all_output: geom_file.close()
+                
+            if Lux.Property(Lux.scene, "lxv", "true").get()=="true" or use_pipe_output:
                 if not Lux.LB_UI.CLI: Lux.LB_UI.updateStatus('Exporting Volumes')
                 ##### Write Volume file #####
-                Lux.Log("Exporting volumes to '" + Lux.Export.vol_filename + "'...")
-                vol_file = open(Lux.Export.vol_filename, 'w')
+                if not file.combine_all_output: Lux.Log("Exporting volumes to '" + Lux.Export.vol_filename + "'...")
+                vol_file = open(Lux.Export.vol_filename, 'w') if not file.combine_all_output else file
                 vol_file.write("")
                 export.Volumes(vol_file)
                 vol_file.write("")
-                vol_file.close()
-            
+                if not file.combine_all_output: vol_file.close()
+                
+            if Lux.Property(Lux.scene, "lxs", "true").get()=="true" or use_pipe_output:
+                #### Write End Tag
+                file.write("WorldEnd\n\n")
+                file.close()
+                
             if not Lux.LB_UI.CLI: Lux.LB_UI.updateStatus('Export Finished')
             Lux.Log("Finished.")
+            
             del export
-        
             time2 = Blender_API.sys.time()
             Lux.Log("Processing time: %f" %(time2-time1))
             
             if Lux.LB_UI.CLI == False:
                 Lux.LB_UI.Active = True
                 Blender_API.Draw.Redraw()
+                
             return True
         
         @staticmethod
@@ -1491,9 +1588,9 @@ class Lux:
             endF = Blender_API.Get('endframe')
             Lux.scene = Blender_API.Scene.GetCurrent()
             Run = Lux.Property(Lux.scene, "run", "true").get()
-        
+            
             Lux.Log("Rendering animation (frame %i to %i)"%(startF, endF))
-        
+            
             for i in range (startF, endF+1):
                 Blender_API.Set('curframe', i)
                 Lux.Log("Rendering frame %i"%(i))
@@ -1502,13 +1599,13 @@ class Lux:
                 indexedname = Blender_API.sys.makename(filename, frameindex)
                 unindexedname = filename
                 Lux.Property(Lux.scene, "filename", Blender_API.Get("filename")).set(Blender_API.sys.makename(filename, "-%05d" %  (Blender_API.Get('curframe'))))
-        
+                
                 success = Lux.Export.save_lux(filename, unindexedname) 
                 if Run == "true" and success:
                     Lux.Launch.Wait(filename)
-        
+                    
                 Lux.Export.MatSaved = True
-        
+            
             Lux.Log("Finished Rendering animation")
             
         @staticmethod
@@ -1517,151 +1614,146 @@ class Lux:
             Lux.Property(Lux.scene, "filename", Blender_API.Get("filename")).set(Blender_API.sys.makename(filename, ""))
             Lux.Export.MatSaved = False
             unindexedname = filename
-            if Lux.Export.save_lux(filename, unindexedname) and Lux.Export.runRenderAfterExport:
+            if Lux.Export.save_lux(filename, unindexedname) and Lux.Export.runRenderAfterExport and Lux.Property(Lux.scene, "pipe", "false").get() == "false":
                 Lux.Launch.Normal(filename)
     
     class Launch:
         
         @staticmethod
-        def Normal(filename):
-            
-            ostype = osys.platform
-            #get blenders 'bpydata' directory
+        def GetExecutable(type="luxrender"):
             datadir = Blender_API.Get("datadir")
             
             Lux.scene = Blender_API.Scene.GetCurrent()
-            luxbatchconsolemode = Lux.Property(Lux.scene, "luxbatchc", "false")
             
             ic = Lux.Property(Lux.scene, "lux", "").get()
-            if luxbatchconsolemode.get() == "false":
-                ic = Blender_API.sys.dirname(ic) + os.sep + "luxconsole"
+            ic = Blender_API.sys.dirname(ic) + os.sep + type
             
-            servers_string = Lux.Util.Networkstring()
-            update_int=Lux.Property(Lx.scene,"network_interval",180).get()
+            if osys.platform == "win32": ic += ".exe"
             
-            if ostype == "win32": ic = ic + ".exe"
-            # radiance - comment out app install for luxconsole on OSX for jensverwiebe
-            #if ostype == "darwin": ic = ic + ".app/Contents/MacOS/luxconsole"
-            checkluxpath = Lux.Property(Lux.scene, "checkluxpath", True).get()
-            if checkluxpath:
-                if Blender_API.sys.exists(ic) != 1:
-                    Lux.Log("Error: Lux renderer not found. Please set path on System page.", popup=True)
-                    return        
-            autothreads = Lux.Property(Lux.scene, "autothreads", "true").get()
-            threads = Lux.Property(Lux.scene, "threads", 1).get()
+            if type=="luxrender" and osys.platform == "darwin": ic += ".app/Contents/MacOS/luxrender"
+            
+            return ic
+        
+        @staticmethod
+        def GetArgs(filename, extra_args=[]):
+            # Disable OpenGL
+            if Lux.Property(Lux.scene, "noopengl", "false").get() == "true":
+                extra_args.append('--noopengl')
+                
+            # Add Network Servers
+            extra_args.append(Lux.Util.Networkstring())
+            # Add Network update interval
+            extra_args.append("-i %d" % Lux.Property(Lux.scene,"network_interval",180).get())
+            
+            # Override auto threads
+            if Lux.Property(Lux.scene, "autothreads", "true").get() != "true":
+                extra_args.append("--threads=%d" % Lux.Property(Lux.scene, "threads", 1).get())
+                
+            lux_args = "\"%s\" " % Lux.Launch.GetExecutable()
+            lux_args2 = ' '.join(extra_args)
+            
+            if filename == '-':
+                lux_args2 = " - " + lux_args2
+            else:
+                filename = "\"%s\"" % filename
+                lux_args2 = lux_args2 + filename
+                
+            lux_args += lux_args2
+            
             luxnice = Lux.Property(Lux.scene, "luxnice", 10).get()
-            noopengl = Lux.Property(Lux.scene, "noopengl", "false").get()
-            if noopengl == "true":
-                ic += " --noopengl"
-            if ostype == "win32":
+            
+            if osys.platform == "win32":
                 prio = ""
-                if luxnice > 15: prio = "/low"
-                elif luxnice > 5: prio = "/belownormal"
-                elif luxnice > -5: prio = "/normal"
+                if   luxnice >  15: prio = "/low"
+                elif luxnice >   5: prio = "/belownormal"
+                elif luxnice >  -5: prio = "/normal"
                 elif luxnice > -15: prio = "/abovenormal"
                 else: prio = "/high"
-                if(autothreads=="true"):
-                    cmd = 'start /b %s "" "%s" %s -i %d "%s" ' % (prio, ic, iservers_string, update_int, filename)        
-                else:
-                    cmd = 'start /b %s "" "%s" %s -i %d "%s" --threads=%d' % (prio, ic, servers_string, update_int, filename, threads)        
+                
+                cmd = "start /b %s \"\" %s" % (prio, lux_args)
+                
+            if osys.platform in ['linux', 'darwin']:
+                cmd = "(nice -n %d %s)&" % (luxnice, lux_args)
+                
+            return cmd, lux_args2
         
-            if ostype in ["linux2", "darwin"]:
-                if(autothreads=="true"):
-                    cmd = '(nice -n %d "%s" %s -i %d "%s")&' % (luxnice, ic, servers_string, update_int, filename)
-                else:
-                    cmd = '(nice -n %d "%s" %s -i %d --threads=%d "%s")&' % (luxnice, ic, servers_string, update_int, threads, filename)
+        @staticmethod
+        def Piped(buf = 1, type="luxconsole"):
+            bin = Lux.Launch.GetExecutable(type)
+            
+            Lux.Log("piping to lux binary: %s" % bin)
+            
+            PIPE = subprocess.PIPE
+            
+            cmd, raw_args = Lux.Launch.GetArgs(
+                '-',
+                extra_args=['-b'] if type=="luxconsole" else []
+            )
+            
+            if osys.platform in ['linux', 'darwin']:
+                return subprocess.Popen(bin + raw_args, shell=True, bufsize=buf, stdin=PIPE, stdout=PIPE, stderr=PIPE)
+            else:
+                return subprocess.Popen(raw_args, executable=bin, bufsize=buf, stdin=PIPE, stdout=PIPE, stderr=PIPE)
         
-            # call external shell script to start Lux    
+        @staticmethod
+        def Normal(filename):
+            cmd, raw_args = Lux.Launch.GetArgs(filename)
             Lux.Log("Running Luxrender: "+cmd)
             os.system(cmd)
         
-        @staticmethod
-        def Piped():
-            ostype = osys.platform
-            #get blenders 'bpydata' directory
-            datadir = Blender_API.Get("datadir")
-            
-            Lux.scene = Blender_API.Scene.GetCurrent()
-            
-            ic = Lux.Property(Lux.scene, "lux", "").get()
-            ic = Blender_API.sys.dirname(ic) + os.sep + "luxrender"
-            
-            servers_string = Lux.Util.Networkstring()
-            update_int=Lux.Property(Lx.scene,"network_interval",180).get()
-            
-            if ostype == "win32": ic = ic + ".exe"
-            if ostype == "darwin": ic = ic + ".app/Contents/MacOS/luxrender"
-            checkluxpath = Lux.Property(Lux.scene, "checkluxpath", True).get()
-            if checkluxpath:
-                if Blender_API.sys.exists(ic) != 1:
-                    Lux.Log("Error: Lux renderer not found. Please set path on System page.", popup=True)
-                    return        
-            autothreads = Lux.Property(Lux.scene, "autothreads", "true").get()
-            threads = Lux.Property(Lux.scene, "threads", 1).get()
-            noopengl = Lux.Property(Lux.scene, "noopengl", "false").get()
-            if noopengl == "true":
-                ic += " --noopengl"
-        
-            if ostype == "win32":
-                if(autothreads=="true"):
-                    cmd = '"%s" - %s -i %d '%(ic, servers_string, update_int)        
-                else:
-                    cmd = '"%s" - %s -i %d --threads=%d' % (ic, servers_string, update_int, threads)        
-        
-            if ostype in ["linux2", "darwin"]:
-                if(autothreads=="true"):
-                    cmd = '("%s" %s -i %d "%s")&' % (ic, servers_string, update_int, filename)
-                else:
-                    cmd = '("%s" %s -i %d --threads=%d "%s")&' % (ic, servers_string, update_int, threads, filename)
-        
-            # call external shell script to start Lux    
-            Lux.Log("Running Luxrender: "+cmd)
-            p = subprocess.Popen(cmd, stdin=subprocess.PIPE)
-            
-            return p.stdin
+#        @staticmethod
+#        def Piped():
+#            ostype = osys.platform
+#            #get blenders 'bpydata' directory
+#            datadir = Blender_API.Get("datadir")
+#            
+#            Lux.scene = Blender_API.Scene.GetCurrent()
+#            
+#            ic = Lux.Property(Lux.scene, "lux", "").get()
+#            ic = Blender_API.sys.dirname(ic) + os.sep + "luxrender"
+#            
+#            servers_string = Lux.Util.Networkstring()
+#            update_int=Lux.Property(Lx.scene,"network_interval",180).get()
+#            
+#            if ostype == "win32": ic = ic + ".exe"
+#            if ostype == "darwin": ic = ic + ".app/Contents/MacOS/luxrender"
+#            checkluxpath = Lux.Property(Lux.scene, "checkluxpath", True).get()
+#            if checkluxpath:
+#                if Blender_API.sys.exists(ic) != 1:
+#                    Lux.Log("Error: Lux renderer not found. Please set path on System page.", popup=True)
+#                    return        
+#            autothreads = Lux.Property(Lux.scene, "autothreads", "true").get()
+#            threads = Lux.Property(Lux.scene, "threads", 1).get()
+#            noopengl = Lux.Property(Lux.scene, "noopengl", "false").get()
+#            if noopengl == "true":
+#                ic += " --noopengl"
+#        
+#            if ostype == "win32":
+#                if(autothreads=="true"):
+#                    cmd = '"%s" - %s -i %d '%(ic, servers_string, update_int)        
+#                else:
+#                    cmd = '"%s" - %s -i %d --threads=%d' % (ic, servers_string, update_int, threads)        
+#        
+#            if ostype in ["linux2", "darwin"]:
+#                if(autothreads=="true"):
+#                    cmd = '("%s" %s -i %d "%s")&' % (ic, servers_string, update_int, filename)
+#                else:
+#                    cmd = '("%s" %s -i %d --threads=%d "%s")&' % (ic, servers_string, update_int, threads, filename)
+#        
+#            # call external shell script to start Lux    
+#            Lux.Log("Running Luxrender: "+cmd)
+#            p = subprocess.Popen(cmd, stdin=subprocess.PIPE)
+#            
+#            return p.stdin
         
         @staticmethod
         def Wait(filename):
-            ostype = osys.platform
-            #get blenders 'bpydata' directory
-            datadir=Blender_API.Get("datadir")
-            
-            Lux.scene = Blender_API.Scene.GetCurrent()
-            
-            ic = Lux.Property(Lux.scene, "lux", "").get()
-            ic = Blender_API.sys.dirname(ic) + os.sep + "luxrender"
-            
-            servers_string = Lux.Util.Networkstring()
-            update_int=Lux.Property(Lx.scene,"network_interval",180).get()
-            
-            if ostype == "win32": ic = ic + ".exe"
-            if ostype == "darwin": ic = ic + ".app/Contents/MacOS/luxrender"
-            checkluxpath = Lux.Property(Lux.scene, "checkluxpath", True).get()
-            if checkluxpath:
-                if Blender_API.sys.exists(ic) != 1:
-                    Lux.Log("Error: Lux renderer not found. Please set path on command line.", popup=True)
-                    return        
-            autothreads = Lux.Property(Lux.scene, "autothreads", "true").get()
-            threads = Lux.Property(Lux.scene, "threads", 1).get()
-            noopengl = Lux.Property(Lux.scene, "noopengl", "false").get()
-            if noopengl == "true":
-                ic += " --noopengl"
+            cmd, raw_args = Lux.Launch.GetArgs(filename)
         
             if ostype == "win32":
-                if(autothreads=="true"):
-                    cmd = 'start /b /WAIT "" "%s" %s -i %d -f "%s" ' % (ic, servers_string, update_int, filename)        
-                else:
-                    cmd = 'start /b /WAIT "" "%s" %s -i %d -f "%s" --threads=%d' % (ic, servers_string, update_int, filename, threads)        
-                # call external shell script to start Lux    
-                #Lux.Log("Running Luxrender: "+cmd)
-                #os.spawnv(os.P_WAIT, cmd, 0)
                 os.system(cmd)
         
             if ostype in ["linux2", "darwin"]:
-                if(autothreads=="true"):
-                    cmd = '"%s" %s -i %d -f "%s"' % (ic, servers_string, update_int, filename)
-                else:
-                    cmd = '"%s" %s -i %d -f --threads=%d "%s"' % (ic, servers_string, update_int, threads, filename)
                 subprocess.call(cmd,shell=True)
     
     class Graphic:
@@ -2286,27 +2378,42 @@ class Lux:
                 if y > 0: y = 0 # bottom align of render button
                 run = Lux.Property(Lux.scene, "run", "true")
                 dlt = Lux.Property(Lux.scene, "default", "true")
+                pipe = Lux.Property(Lux.scene, "pipe", "false")
                 clay = Lux.Property(Lux.scene, "clay", "false")
+                nolg = Lux.Property(Lux.scene, "nolg", "false")
                 lxs = Lux.Property(Lux.scene, "lxs", "true")
                 lxo = Lux.Property(Lux.scene, "lxo", "true")
                 lxm = Lux.Property(Lux.scene, "lxm", "true")
                 lxv = Lux.Property(Lux.scene, "lxv", "true")
                 net = Lux.Property(Lux.scene, "netrenderctl", "false")
                 donet = Lux.Property(Lux.scene, "donetrender", "true")
+                
+                
                 if (run.get()=="true"):
                     Blender_API.Draw.Button("Render", 0, 10, y+20, 100, 36, "Render with Lux", lambda e,v: Lux.Export.Still(dlt.get()=="true", True))
                     Blender_API.Draw.Button("Render Anim", 0, 110, y+20, 100, 36, "Render animation with Lux", lambda e,v:Lux.Export.Anim(dlt.get()=="true", True))
                 else:
                     Blender_API.Draw.Button("Export", 0, 10, y+20, 100, 36, "Export", lambda e,v: Lux.Export.Still(dlt.get()=="true", False))
                     Blender_API.Draw.Button("Export Anim", 0, 110, y+20, 100, 36, "Export animation", lambda e,v: Lux.Export.Anim(dlt.get()=="true", False))
-        
-                Blender_API.Draw.Toggle("run", Lux.Events.LuxGui, 320, y+40, 30, 16, run.get()=="true", "start Lux after export", lambda e,v: run.set(["false","true"][bool(v)]))
-                Blender_API.Draw.Toggle("def", Lux.Events.LuxGui, 350, y+40, 30, 16, dlt.get()=="true", "save to default.lxs", lambda e,v: dlt.set(["false","true"][bool(v)]))
-                Blender_API.Draw.Toggle("clay", Lux.Events.LuxGui, 380, y+40, 30, 16, clay.get()=="true", "all materials are rendered as white-matte", lambda e,v: clay.set(["false","true"][bool(v)]))
-                Blender_API.Draw.Toggle(".lxs", 0, 290, y+20, 30, 16, lxs.get()=="true", "export .lxs scene file", lambda e,v: lxs.set(["false","true"][bool(v)]))
-                Blender_API.Draw.Toggle(".lxo", 0, 320, y+20, 30, 16, lxo.get()=="true", "export .lxo geometry file", lambda e,v: lxo.set(["false","true"][bool(v)]))
-                Blender_API.Draw.Toggle(".lxm", 0, 350, y+20, 30, 16, lxm.get()=="true", "export .lxm material file", lambda e,v: lxm.set(["false","true"][bool(v)]))
-                Blender_API.Draw.Toggle(".lxv", 0, 380, y+20, 30, 16, lxm.get()=="true", "export .lxv volume file", lambda e,v: lxm.set(["false","true"][bool(v)]))
+                
+                Blender_API.Draw.Toggle("run", Lux.Events.LuxGui, 290, y+40, 30, 16, run.get()=="true", "start Lux after export", lambda e,v: run.set(["false","true"][bool(v)]))
+                
+                if (pipe.get() == 'false' and dlt.get() == 'true') or run.get() == 'false':
+                    Blender_API.Draw.Toggle("def", Lux.Events.LuxGui, 320, y+40, 30, 16, dlt.get()=="true", "write to default lxs file", lambda e,v: dlt.set(["false","true"][bool(v)]))
+                elif pipe.get() == 'true' and dlt.get() == 'false':
+                    Blender_API.Draw.Toggle("pipe", Lux.Events.LuxGui, 320, y+40, 30, 16, pipe.get()=="true", "do not write any lxs file", lambda e,v: pipe.set(["false","true"][bool(v)]))
+                else:
+                    Blender_API.Draw.Toggle("d", Lux.Events.LuxGui, 320, y+40, 15, 16, dlt.get()=="true", "write to default lxs file", lambda e,v: dlt.set(["false","true"][bool(v)]))
+                    Blender_API.Draw.Toggle("p", Lux.Events.LuxGui, 335, y+40, 15, 16, pipe.get()=="true", "do not write any lxs file", lambda e,v: pipe.set(["false","true"][bool(v)]))
+                
+                Blender_API.Draw.Toggle("clay", Lux.Events.LuxGui, 350, y+40, 30, 16, clay.get()=="true", "all materials are rendered as white-matte", lambda e,v: clay.set(["false","true"][bool(v)]))
+                Blender_API.Draw.Toggle("nolg", Lux.Events.LuxGui, 380, y+40, 30, 16, nolg.get()=="true", "disables all light groups", lambda e,v: nolg.set(["false","true"][bool(v)]))
+                
+                if pipe.get() == 'false':
+                    Blender_API.Draw.Toggle(".lxs", 0, 290, y+20, 30, 16, lxs.get()=="true", "export .lxs scene file", lambda e,v: lxs.set(["false","true"][bool(v)]))
+                    Blender_API.Draw.Toggle(".lxo", 0, 320, y+20, 30, 16, lxo.get()=="true", "export .lxo geometry file", lambda e,v: lxo.set(["false","true"][bool(v)]))
+                    Blender_API.Draw.Toggle(".lxm", 0, 350, y+20, 30, 16, lxm.get()=="true", "export .lxm material file", lambda e,v: lxm.set(["false","true"][bool(v)]))
+                    Blender_API.Draw.Toggle(".lxv", 0, 380, y+20, 30, 16, lxv.get()=="true", "export .lxv volume file", lambda e,v: lxv.set(["false","true"][bool(v)]))
                 
                 Blender_API.BGL.glColor3f(0.9, 0.9, 0.9)
                 Blender_API.BGL.glRasterPos2i(340,y+5)
@@ -2676,7 +2783,7 @@ class Lux:
     class SceneElements:
     
         @staticmethod
-        def Camera(cam, context):            
+        def Camera(cam, context):
             str = ""
             if cam:
                 camtype = Lux.Property(cam, "camera.type", "perspective")
@@ -2732,7 +2839,7 @@ class Lux:
                     if Lux.LB_UI.Active: Lux.LB_UI.newline("  Clipping:")
                     str += Lux.TypedControl.Float().create("hither", Lux.Attribute(cam, "clipStart"), 0.0, 100.0, "start", "near clip distance")
                     str += Lux.TypedControl.Float().create("yon", Lux.Attribute(cam, "clipEnd"), 1.0, 10000.0, "end", "far clip distance")
-        
+                
                 # Depth of Field
                 usedof = Lux.Property(cam, "usedof", "false")
                 
@@ -2768,7 +2875,7 @@ class Lux:
                         
                     focustype = Lux.Property(cam, "camera.focustype", "autofocus")
                     Lux.TypedControl.Option().create("focustype", focustype, ["autofocus", "manual", "object"], "Focus Type", "Choose the focus behaviour")
-        
+                    
                     if focustype.get() == "autofocus":
                         str += Lux.TypedControl.Bool().create("autofocus",Lux.Property(cam, "camera.autofocus", "true"), "autofocus", "Enable automatic focus")
                     if focustype.get() == "object":
@@ -2784,12 +2891,12 @@ class Lux:
                         if Lux.LB_UI.Active:
                             Blender_API.Draw.Button("S", Lux.Events.LuxGui, Lux.LB_UI.x, Lux.LB_UI.y-Lux.LB_UI.h, Lux.LB_UI.h, Lux.LB_UI.h, "focus selected object", lambda e,v:Lux.Util.setFocus("S"))
                             Blender_API.Draw.Button("C", Lux.Events.LuxGui, Lux.LB_UI.x+Lux.LB_UI.h, Lux.LB_UI.y-Lux.LB_UI.h, Lux.LB_UI.h, Lux.LB_UI.h, "focus cursor", lambda e,v:Lux.Util.setFocus("C"))
-        
+                
                 if camtype.get() == "perspective" and usedof.get() == "true":
                     str += Lux.TypedControl.Int().create("blades", Lux.Property(cam, "camera.blades", 6), 0, 16, "aperture blades", "Number of blade edges of the aperture, values 0 to 2 defaults to a circle")
                     str += Lux.TypedControl.Option().create("distribution", Lux.Property(cam, "camera.distribution", "uniform"), ["uniform", "exponential", "inverse exponential", "gaussian", "inverse gaussian"], "distribution", "Choose the lens sampling distribution. Non-uniform distributions allow for ring effects.")
                     str += Lux.TypedControl.Int().create("power", Lux.Property(cam, "camera.power", 1), 0, 512, "power", "Exponent for the expression in exponential distribution. Higher value gives a more pronounced ring effect.")
-        
+                
                 useaspect = Lux.Property(cam, "useaspectratio", "false")
                 aspectratio = Lux.Property(cam, "ratio", 1.3333)
                 if camtype.get() in ["perspective", "orthographic"]:
@@ -2799,7 +2906,7 @@ class Lux:
                         if Lux.LB_UI.Active: Lux.LB_UI.newline("  Shift:")
                         Lux.TypedControl.Float().create("X", Lux.Attribute(cam, "shiftX"), -2.0, 2.0, "X", "horizontal lens shift")
                         Lux.TypedControl.Float().create("Y", Lux.Attribute(cam, "shiftY"), -2.0, 2.0, "Y", "vertical lens shift")
-        
+                        
                         if Lux.LB_UI.Active: Lux.LB_UI.newline("  AspectRatio:")
                         Lux.TypedControl.Bool().create("useaspectratio", useaspect, "Custom", "Define a custom frame aspect ratio")
                         if useaspect.get() == "true":
@@ -2819,13 +2926,13 @@ class Lux:
                             screenwindow = [screenwindow[0]*(1-x1)+screenwindow[1]*x1, screenwindow[0]*(1-x2)+screenwindow[1]*x2,\
                                     screenwindow[2]*(1-y1)+screenwindow[3]*y1, screenwindow[2]*(1-y2)+screenwindow[3]*y2]
                         str += '\n   "float screenwindow" [%f %f %f %f]'%(screenwindow[0], screenwindow[1], screenwindow[2], screenwindow[3])
-        
+                
                 # Note - radiance - this is a work in progress
                 # Flash lamp option for perspective and ortho cams
                 #if camtype.get() in ["perspective", "orthographic"]:
                 #    useflash = Lux.Property(cam, "useflash", "false")
                 #    Lux.TypedControl.Bool().create("useflash", useflash, "Flash Lamp", "Enable Camera mounted flash lamp options", 2.0)
-        
+                
                 # Motion Blur Options (common to all cameras)
                 usemblur = Lux.Property(cam, "usemblur", "false")
                 Lux.TypedControl.Collapse().create("usemblur", usemblur, "Motion Blur", "Enable Motion Blur", 2.0)
@@ -2837,11 +2944,11 @@ class Lux:
                         shutterpresets = ["full frame", "half frame", "quarter frame", "1/25", "1/30", "1/45", "1/60", "1/85", "1/125", "1/250", "1/500"]        
                         shutterpreset = Lux.Property(cam, "camera.shutterspeedpreset", "full frame")
                         Lux.TypedControl.Option().create("shutterpreset", shutterpreset, shutterpresets, "shutterspeed", "Choose the Shutter speed preset.", 1.0)
-        
+                        
                         fpspresets = ["10 FPS", "12 FPS", "20 FPS", "25 FPS", "29.99 FPS", "30 FPS", "50 FPS", "60 FPS"]
                         shutfps = Lux.Property(cam, "camera.shutfps", "25 FPS")
                         Lux.TypedControl.Option().create("shutfps", shutfps, fpspresets, "@", "Choose the number of frames per second as the time base.", 0.6)
-        
+                        
                         sfps = shutfps.get()
                         fps = 25
                         if sfps == "10 FPS": fps = 10
@@ -2852,7 +2959,7 @@ class Lux:
                         elif sfps == "30 FPS": fps = 30
                         elif sfps == "50 FPS": fps = 50
                         elif sfps == "60 FPS": fps = 60
-        
+                        
                         spre = shutterpreset.get()
                         open = 0.0
                         close = 1.0
@@ -2867,13 +2974,13 @@ class Lux:
                         elif spre == "1/125": close = 1.0 / 125.0 * fps
                         elif spre == "1/250": close = 1.0 / 250.0 * fps
                         elif spre == "1/500": close = 1.0 / 500.0 * fps
-        
+                        
                         str += '\n   "float shutteropen" [%f]\n   "float shutterclose" [%f] ' % (open,close)
-        
+                    
                     else:
                         str += Lux.TypedControl.Float().create("shutteropen", Lux.Property(cam, "camera.shutteropen", 0.0), 0.0, 100.0, "open", "time in seconds when shutter opens", 0.8)
                         str += Lux.TypedControl.Float().create("shutterclose", Lux.Property(cam, "camera.shutterclose", 1.0), 0.0, 100.0, "close", "time in seconds when shutter closes", 0.8)
-        
+                    
                     str += Lux.TypedControl.Option().create("shutterdistribution", Lux.Property(cam, "camera.shutterdistribution", "uniform"), ["uniform", "gaussian"], "distribution", "Choose the shutter sampling distribution.", 2.0)
                     objectmblur = Lux.Property(cam, "objectmblur", "true")
                     Lux.TypedControl.Bool().create("objectmblur", objectmblur, "Object", "Enable Motion Blur for scene object motions", 1.0)
@@ -2891,31 +2998,34 @@ class Lux:
                     context = Lux.scene.getRenderingContext()
                     if context:
                         if Lux.LB_UI.Active: Lux.LB_UI.newline("  Resolution:")
+                        
+                        xr, yr = Lux.Util.GetRenderResolution()
+                        
                         Lux.TypedControl.Int().create("xresolution", Lux.Attribute(context, "sizeX"), 0, 8192, "X", "width of the render", 0.666)
                         Lux.TypedControl.Int().create("yresolution", Lux.Attribute(context, "sizeY"), 0, 8192, "Y", "height of the render", 0.666)
                         scale = Lux.Property(Lux.scene, "film.scale", "100 %")
                         Lux.TypedControl.Option().create("", scale, ["400 %", "200 %", "100 %", "75 %", "50 %", "25 %"], "scale", "scale resolution", 0.666)
-                        scale = int(scale.get()[:-1])
+                        
                         # render region option
                         if context.borderRender:
                             (x1,y1,x2,y2) = context.border
                             if (x1==x2) and (y1==y2):
                                 Lux.Log("WARNING: empty render-region, use SHIFT-B to set render region in Blender_API.", popup = True)
-                            str += '\n   "integer xresolution" [%d] \n   "integer yresolution" [%d]' % (Lux.Attribute(context, "sizeX").get()*scale/100*(x2-x1), Lux.Attribute(context, "sizeY").get()*scale/100*(y2-y1))
+                            str += '\n   "integer xresolution" [%d] \n   "integer yresolution" [%d]' % (xr*(x2-x1), yr*(y2-y1))
                         else:
-                            str += '\n   "integer xresolution" [%d] \n   "integer yresolution" [%d]' % (Lux.Attribute(context, "sizeX").get()*scale/100, Lux.Attribute(context, "sizeY").get()*scale/100)
-        
+                            str += '\n   "integer xresolution" [%d] \n   "integer yresolution" [%d]' % (xr, yr)
+                    
                     if Lux.LB_UI.Active: Lux.LB_UI.newline("  Halt:")
                     str += Lux.TypedControl.Int().create("haltspp", Lux.Property(Lux.scene, "haltspp", 0), 0, 32768, "haltspp", "Stop rendering after specified amount of samples per pixel / 0 = never halt")
                     palpha = Lux.Property(Lux.scene, "film.premultiplyalpha", "false")
                     str += Lux.TypedControl.Bool().create("premultiplyalpha", palpha, "premultiplyalpha", "Pre multiply film alpha channel during normalization")
-            
+                    
                     if Lux.LB_UI.Active: Lux.LB_UI.newline("  Tonemap:")
                     tonemapkernel =    Lux.Property(Lux.scene, "film.tonemapkernel", "reinhard")
                     str += Lux.TypedControl.Option().create("tonemapkernel", tonemapkernel, ["reinhard", "linear", "contrast", "maxwhite"], "Tonemapping Kernel", "Select the tonemapping kernel to use", 2.0)
                     if tonemapkernel.get() == "reinhard":
                         autoywa = Lux.Property(Lux.scene, "film.reinhard.autoywa", "true")
-                        str += Lux.TypedControl.Bool().create("reinhard_autoywa", autoywa, "auto Ywa", "Automatically determine World Adaption Luminance")
+                        #str += Lux.TypedControl.Bool().create("reinhard_autoywa", autoywa, "auto Ywa", "Automatically determine World Adaption Luminance")
                         if autoywa.get() == "false":
                             str += Lux.TypedControl.Float().create("reinhard_ywa", Lux.Property(Lux.scene, "film.reinhard.ywa", 0.1), 0.001, 1.0, "Ywa", "Display/World Adaption Luminance")
                         str += Lux.TypedControl.Float().create("reinhard_prescale", Lux.Property(Lux.scene, "film.reinhard.prescale", 1.0), 0.0, 10.0, "preScale", "Image scale before tonemap operator")
@@ -3204,24 +3314,24 @@ class Lux:
                     if showadvanced.get()=="false":
                         # Default parameters
                         if Lux.LB_UI.Active: Lux.LB_UI.newline("", 8, 0, None, [0.4,0.4,0.4])
-                        slidval = Lux.Property(Lux.scene, "pixelfilter.mitchell.sharp", 0.33)
+                        slidval = Lux.Property(Lux.scene, "pixelfilter.mitchell.sharp", 0.25)
                         Lux.TypedControl.Float().create("sharpness", slidval, 0.0, 1.0, "sharpness", "Specify amount between blurred (left) and sharp/ringed (right)", 2.0, 1)
                         # rule: B + 2*c = 1.0
                         C = slidval.getFloat() * 0.5
                         B = 1.0 - slidval.getFloat()
                         str += '\n   "float B" [%f]'%(B)
                         str += '\n   "float C" [%f]'%(C)
-        
+                        
                     if showadvanced.get()=="true":
                         # Advanced parameters
                         if Lux.LB_UI.Active: Lux.LB_UI.newline()
                         str += Lux.TypedControl.Float().create("xwidth", Lux.Property(Lux.scene, "pixelfilter.mitchell.xwidth", 2.0), 0.0, 10.0, "x-width", "Width of the filter in the x direction")
                         str += Lux.TypedControl.Float().create("ywidth", Lux.Property(Lux.scene, "pixelfilter.mitchell.ywidth", 2.0), 0.0, 10.0, "y-width", "Width of the filter in the y direction")
                         if Lux.LB_UI.Active: Lux.LB_UI.newline()
-            
+                        
                         optmode = Lux.Property(Lux.scene, "pixelfilter.mitchell.optmode", "slider")
                         Lux.TypedControl.Option().create("optmode", optmode, ["slider", "preset", "manual"], "Mode", "Mode of configuration", 0.5)
-            
+                        
                         if(optmode.get() == "slider"):
                             slidval = Lux.Property(Lux.scene, "pixelfilter.mitchell.sharp", 0.33)
                             Lux.TypedControl.Float().create("sharpness", slidval, 0.0, 1.0, "sharpness", "Specify amount between blurred (left) and sharp/ringed (right)", 1.5, 1)
@@ -3235,7 +3345,7 @@ class Lux:
                         else:
                             str += Lux.TypedControl.Float().create("B", Lux.Property(Lux.scene, "pixelfilter.mitchell.B", 0.3333), 0.0, 1.0, "B", "Specify the shape of the Mitchell filter. Often best result is when B + 2C = 1", 0.75)
                             str += Lux.TypedControl.Float().create("C", Lux.Property(Lux.scene, "pixelfilter.mitchell.C", 0.3333), 0.0, 1.0, "C", "Specify the shape of the Mitchell filter. Often best result is when B + 2C = 1", 0.75)
-        
+                
                 if filtertype.get() == "sinc":
                     if showadvanced.get()=="true":
                         # Advanced parameters
@@ -3282,34 +3392,33 @@ class Lux:
                         str += Lux.TypedControl.Int().create("maxconsecrejects", Lux.Property(Lux.scene, "sampler.metro.maxrejects", 512), 0, 32768, "max.rejects", "number of consecutive rejects before a new mutation is forced")
                         if Lux.LB_UI.Active: Lux.LB_UI.newline("  Screen:")
                         str += Lux.TypedControl.Int().create("initsamples", Lux.Property(Lux.scene, "sampler.metro.initsamples", 262144), 1, 1000000, "initsamples", "")
-                        str += Lux.TypedControl.Int().create("stratawidth", Lux.Property(Lux.scene, "sampler.metro.stratawidth", 256), 1, 32768, "stratawidth", "The number of x/y strata for stratified sampling of seeds")
                         str += Lux.TypedControl.Bool().create("usevariance",Lux.Property(Lux.scene, "sampler.metro.usevariance", "false"), "usevariance", "Accept based on variance", 1.0)
-        
+                    
                     if showhelp.get()=="true":
                         if Lux.LB_UI.Active: Lux.LB_UI.newline("  Description:", 8, 0, Lux.Graphic.Icon('help'), [0.4,0.5,0.56])
                         r = Lux.LB_UI.getRect(2,1)
                         Blender_API.BGL.glRasterPos2i(r[0],r[1]+5) 
                         Blender_API.Draw.Text("A Metropolis-Hastings mutating sampler which implements MLT", 'small')    
-        
+                
                 if samplertype.get() == "erpt":
                     str += Lux.TypedControl.Int().create("initsamples", Lux.Property(Lux.scene, "sampler.erpt.initsamples", 100000), 1, 1000000, "initsamples", "")
                     if Lux.LB_UI.Active: Lux.LB_UI.newline("  Mutation:")
                     str += Lux.TypedControl.Int().create("chainlength", Lux.Property(Lux.scene, "sampler.erpt.chainlength", 512), 1, 32768, "chainlength", "The number of mutations from a given seed")
                     if Lux.LB_UI.Active: Lux.LB_UI.newline()
                     str += Lux.TypedControl.Int().create("stratawidth", Lux.Property(Lux.scene, "sampler.erpt.stratawidth", 256), 1, 32768, "stratawidth", "The number of x/y strata for stratified sampling of seeds")
-        
+                
                 if samplertype.get() == "lowdiscrepancy":
                     if Lux.LB_UI.Active: Lux.LB_UI.newline("  PixelSampler:")
                     str += Lux.TypedControl.Option().create("pixelsampler", Lux.Property(Lux.scene, "sampler.lowdisc.pixelsampler", "lowdiscrepancy"), ["linear", "tile", "random", "vegas","lowdiscrepancy","hilbert"], "pixel-sampler", "select pixel-sampler")
                     str += Lux.TypedControl.Int().create("pixelsamples", Lux.Property(Lux.scene, "sampler.lowdisc.pixelsamples", 4), 1, 2048, "samples", "Average number of samples taken per pixel. More samples create a higher quality image at the cost of render time")
-        
+                
                 if samplertype.get() == "random":
                     if Lux.LB_UI.Active: Lux.LB_UI.newline("  PixelSampler:")
                     str += Lux.TypedControl.Option().create("pixelsampler", Lux.Property(Lux.scene, "sampler.random.pixelsampler", "vegas"), ["linear", "tile", "random", "vegas","lowdiscrepancy","hilbert"], "pixel-sampler", "select pixel-sampler")
                     if Lux.LB_UI.Active: Lux.LB_UI.newline()
                     str += Lux.TypedControl.Int().create("xsamples", Lux.Property(Lux.scene, "sampler.random.xsamples", 2), 1, 512, "xsamples", "Allows you to specify how many samples per pixel are taking in the x direction")
                     str += Lux.TypedControl.Int().create("ysamples", Lux.Property(Lux.scene, "sampler.random.ysamples", 2), 1, 512, "ysamples", "Allows you to specify how many samples per pixel are taking in the y direction")
-            return str            
+            return str
         
         @staticmethod
         def SurfaceIntegrator():
@@ -3490,13 +3599,21 @@ class Lux:
                     if envtype.get() in ["infinite", "sunsky"]:
                         env_lg = Lux.Property(Lux.scene, "env.lightgroup", "default")
                         Lux.TypedControl.String().create("env.lightgroup", env_lg, "lightgroup", "Environment light group")
-                        lsstre = '\nLightGroup "' + env_lg.get() + '"' + lsstr
-                        rot = Lux.Property(Lux.scene, "env.rotation", 0.0)
-                        Lux.TypedControl.Float().create("rotation", rot, 0.0, 360.0, "rotation", "environment rotation")
-                        if rot.get() != 0:
-                            str += "\tRotate %d 0 0 1\n"%(rot.get())
+                        if Lux.Property(Lux.scene, "nolg", "false").get() != "true":
+                            lsstr = '\nLightGroup "' + env_lg.get() + '"' + lsstr
+                        rotZ = Lux.Property(Lux.scene, "env.rotation", 0.0)
+                        rotY = Lux.Property(Lux.scene, "env.rotationY", 0.0)
+                        rotX = Lux.Property(Lux.scene, "env.rotationX", 0.0)
+                        if Lux.LB_UI.Active: Lux.LB_UI.newline()
+                        Lux.TypedControl.Float().create("rotation", rotZ, 0.0, 360.0, "rot Z", "environment rotation Z", 0.66)
+                        Lux.TypedControl.Float().create("rotation", rotY, 0.0, 360.0, "rot Y", "environment rotation Y", 0.66)
+                        Lux.TypedControl.Float().create("rotation", rotX, 0.0, 360.0, "rot X", "environment rotation X", 0.66)
+                        if rotZ.get() != 0 or rotY.get() != 0 or rotX.get() != 0:
+                            str += "\tRotate %d 1 0 0\n"%(rotX.get())
+                            str += "\tRotate %d 0 1 0\n"%(rotY.get())
+                            str += "\tRotate %d 0 0 1\n"%(rotZ.get())
                     str += "\t"+lsstr
-        
+                    
                     infinitehassun = 0
                     if envtype.get() == "infinite":
                         mapping = Lux.Property(Lux.scene, "env.infinite.mapping", "latlong")
@@ -3513,19 +3630,19 @@ class Lux:
                                 worldcolor = Blender_API.World.Get('World').getHor()
                                 str += '\n   "color L" [%g %g %g]' %(worldcolor[0], worldcolor[1], worldcolor[2])
                             except: pass
-        
+                        
                         str += Lux.TypedControl.Float().create("gain", Lux.Property(Lux.scene, "env.infinite.gain", 1.0), 0.0001, 100.0, "gain", "", 1.0)
-        
+                        
                         infinitesun = Lux.Property(Lux.scene, "env.infinite.hassun", "false")
                         Lux.TypedControl.Collapse().create("infinitesun", infinitesun, "Sun Component", "Add Sunlight Component", 2.0)
                         if(infinitesun.get() == "true"):
                             sun_lg = Lux.Property(Lux.scene, "env.sun_lightgroup", "default")
-                            Lux.TypedControl.String().create("env.lightgroup", sun_lg, "lightgroup", "Sun component light group")
+                            if Lux.Property(Lux.scene, "nolg", "false").get() != "true":
+                                Lux.TypedControl.String().create("env.lightgroup", sun_lg, "lightgroup", "Sun component light group")
                             str += '\nLightGroup "' + sun_lg.get() + '"'
                             str += '\n\tLightSource "sun" '
                             infinitehassun = 1
-        
-        
+                            
                     if envtype.get() == "sunsky" or infinitehassun == 1:
                         sun = None
                         for obj in Lux.scene.objects:
@@ -4033,15 +4150,6 @@ class Lux:
             
             return azimuth, elevation
     
-    def getTreeNameById(tree, i): # helper function to retrive name of the selected treemenu-item
-        for t in tree:
-            if type(t)==types.TupleType:
-                if type(t[1])==types.ListType: 
-                    n=getTreeNameById(t[1], i)
-                    if n: return n
-                elif t[1]==i: return t[0]
-        return None    
-    
     class Textures:
         # was luxTexture
         @staticmethod
@@ -4067,9 +4175,9 @@ class Lux:
                 else: texture = Lux.Property(mat, keyname+".texture", "constant")
             else:
                 texture = Lux.Property(mat, keyname+".texture", "blackbody")
-        
+            
             textures = ["constant","blackbody", "lampspectrum", "equalenergy", "frequency", "gaussian", "regulardata", "irregulardata", "imagemap","mix","scale","bilerp","uv", "checkerboard","brick","dots","fbm","marble","wrinkled", "windy", "blender_marble", "blender_musgrave", "blender_wood", "blender_clouds", "blender_blend", "blender_distortednoise", "blender_noise", "blender_magic", "blender_stucci", "blender_voronoi", "harlequin"]
-        
+            
             if Lux.LB_UI.Active:
                 if(overrideicon != ""):
                     icon = overrideicon
@@ -4091,14 +4199,14 @@ class Lux:
                 else: Lux.LB_UI.newline("texture:", -2, level, icon, Lux.Util.scalelist([0.5,0.5,0.5],2.0/(level+2)))
             Lux.TypedControl.Option().create("texture", texture, textures, "texture", "", 0.9)
             str = 'Texture "%s" "%s" "%s"' % (texname, type, texture.get())
-        
+            
             if Lux.LB_UI.Active: Blender_API.Draw.PushButton(">", Lux.Events.LuxGui, Lux.LB_UI.xmax+Lux.LB_UI.h, Lux.LB_UI.y-Lux.LB_UI.h, Lux.LB_UI.h, Lux.LB_UI.h, "Menu", lambda e,v: Lux.LB_UI.showMatTexMenu(mat,keyname,True))
             if Lux.LB_UI.Active: # Draw Texture level Material preview
                 Lux.Preview.Preview(mat, parentkey, 1, False, False, name, texlevel, [0.5, 0.5, 0.5])
                 # Add an offset for next controls
                 #r = Lux.LB_UI.getRect(1.0, 1)
                 #Lux.LB_UI.x += 140
-        
+            
             if texture.get() == "constant":
                 value = Lux.Property(mat, keyname+".value", default)
                 if type == "float": Lux.TypedControl.Float().create("value", value, min, max, "", "", 1.1)
@@ -4109,7 +4217,7 @@ class Lux:
                 # indirect version
                 #if type == "color": str += ' "%s value" [%s]' % (type, value.getRGC())
                 #else: str += ' "%s value" [%s]' % (type, value.get())
-        
+            
             if texture.get() == "blackbody":
                 if Lux.LB_UI.Active:
                     if Lux.LB_UI.xmax-Lux.LB_UI.x < Lux.LB_UI.w: Lux.LB_UI.newline()
@@ -4125,10 +4233,10 @@ class Lux:
                     def setLamp(i, value, preset, tree, dict): # callback function to set ior value after selection
                         if i >= 0:
                             value.set(dict[i])
-                            preset.set(getTreeNameById(tree, i))
+                            preset.set(Lux.Util.getTreeNameById(tree, i))
                             
                     measuredtree = [ 	("Natural Daylight", 	[ ("Natural Daylight", 1) ] ), ("Incandescent", 	[ ("Paraffin Candle Flame", 2), ("Generic 7W Incandescent Lamp", 3), ("PHILIPS [Argenta] 200W Incandescent Lamp", 4), ("Welsbach Gas Mantle (modern, without Thorium)", 5), ("Incandescent Anti-Insect Lamp", 6) ] ), ("Fluorescent/Compact Fluorescent",	[ ("PHILIPS [TL-D 30W/55] Regular Daylight Fluorescent", 7), ("Sylvania [F4T5 4W] Regular Warm White Fluorescent", 8), ("OSRAM [DULUXSTAR 21W/827] Regular Compact Triphosphor Fluorescent", 9), ("Cold Cathode Warm White CFL Triphosphor Fluorescent.", 10), ("NARVA [COLOURLUX plus daylight 20W/860] Daylight CFL Triphosphor Fluorescent", 11), ("Sylvania [GroLux] Fluorescent Aquarium/Plant Lamp", 12), ("Laptop LCD Screen", 13), ("PHILIPS [ActiViva] \"Natural\" Triphosphor Fluorescent", 14), ("PHILIPS [ActiViva] \"Active\" Triphosphor Fluorescent", 16) ] ), ("High Pressure Mercury",		[ ("OSRAM [HQA 80W] Clear HPM Lamp", 17), ("PHILIPS [HPL 125W] HPM Lamp with improved color", 18), ("OSRAM [HQL 80W] HPM Lamp with improved warm deluxe color", 19), ("PHILIPS [ML 160W] Self-Ballasted HPM Vapor Lamp", 20), ("NARVA [160W] Self-ballasted HPM Vapor Lamp", 21) ] ), ("Low/High Pressure Sodium",		[ ("Regular High Pressure Sodium Lamp, warmup after 5-7 sec", 22), ("Regular High Pressure Sodium Lamp, warmup after 10-12 sec", 23), ("SOX Low Pressure Sodium Discharge Lamp", 24), ("Medium Pressure Sodium Discharge Lamp, warmup after ~35 sec", 25), ("GE [Lucalox 35W] High Pressure Sodium Lamp", 26), ("PHILIPS [SDW-T 100W] Super High Pressure White Sodium Lamp", 27) ] ), ("Metal Halide",		[ ("PHILIPS [HPI-T 400W] MH Lamp with Mercury, Sodium, Thallium and Indium iodides", 28), ("OSRAM [HQI-TS 75W/WDL] Metal Halide lamp with Mercury, sodium, thallium, indium and tin iodides, from ", 29), ("GE [MVR325IUWM 325 Watt I-Line Multi-Vapor® Metal Halide - Clear Watt Miser®] MH Lamp with Mercury, Sodium and Scandium iodides", 30), ("OSRAM [HQI-T 400W/D] MH Lamp with Mercury, Thallium, Dysprosium, Holmium, Thulium and Caesium iodides", 31), ("PHILIPS Diazo MH Lamp with Mercury, iron and cobalt iodides", 32), ("Sylvania Diazo MH Lamp with Mercury, gallium and lead iodides", 33), ("OSRAM [HQI-T 400W/Blau] Blue colored MH Lamp with Mercury and indium iodides", 34), ("RADIUM [HRI-T 400W/Planta] Plant growing MH Lamp with Mercury, indium and sodium iodides", 35), ("OSRAM [HQI-T 400W/Grun] Green colored MH Lamp with Mercury and thallium iodides", 36) ] ), ("Diode",		[ ("Regular High Brightness Blue LED", 37), ("Monochromatic emission from a Red Laser diode", 38), ("Monochromatic emission from a Green Laser diode.", 39) ] ), ("Spectral",		[ ("PHILIPS Spectral Xenon Lamp - Continuous Xenon low pressure thermionic discharge", 40), ("PHILIPS spectral Rubidium Lamp - Continuous Rubidium low pressure thermionic discharge", 41), ("PHILIPS spectral Cadmium Lamp - Continuous Cadmium low pressure thermionic discharge", 42), ("PHILIPS spectral zinc Lamp - Continuous Zinc low pressure thermionic discharge", 43) ] ), ("Glow Discharge",		[ ("Neon glow discharge", 44), ("Neon and Krypton glow discharge and green phosphor (night-lights/indicators)", 45), ("Neon and Xenon glow discharge and green phosphor (night-lights/indicators)", 46), ("Neon and Xenon glow discharge and blue phosphor (night-lights/indicators)", 48), ("Argon glow discharge", 49), ("Self-ballasted High Pressure Mercury Vapor Lamp, with yttrium vanadate phosphate fluorescent phosphors, in glow discharge mode", 50) ] ), ("Molecular",		[ ("Butane Gas Flame", 51), ("Alcohol Flame", 52) ] ), ("General Fluorescence",		[ ("Print quality A4 Xerox paper wrapped around a blacklight Lamp", 53), ("Neon green dye, bombarded with black light", 54), ("Regular Modern Color TV CRT", 55) ] ), ("Various",		[ ("Stroboscopic flash. Xenon I, likely II and perhaps III", 56), ("Carbon Arc Spectrum", 57), ("OSRAM [XBO 75W/2] Short Arc Xenon Lamp", 58) ] ), ("Blacklight/Ultraviolet",		[ ("Sylvania [G8T5 8W] Germicidal lamp", 59), ("Sylvania [F6T5/BLB 8W] Black light blue fluorescent", 60), ("PHILIPS [HPW 125W] High Pressure Mercury Black Light", 61), ("Sylvania [Blacklite 350 F8W/BL350] Black Light fluorescent", 62) ] ), ("Mercury UV Spectrum",		[ ("The near visible UVA emissions from a high pressure Mercury clear lamp", 63) ] ), ("Absorption/Mixed Spectra",		[ ("High Pressure Mercury Warm Deluxe light ([1.4.3]) absorbed through blue Cobalt glass", 64), ("Incandescent light ([1.2.3]) absorbed through blue Cobalt glass", 65), ("High Pressure Mercury Warm Deluxe light ([1.4.3]) absorbed through ciel dye #42053", 66), ("Incandescent light ([1.2.3]) absorbed through ciel dye #42053", 67), ("High Pressure Mercury Warm Deluxe light ([1.4.3]) absorbed through red glass", 68), ("Incandescent light ([1.2.3]) absorbed through red glass.m", 69), ("Incandescent light ([1.2.3]) absorbed through olive oil. ", 70) ] ) ] 
-                
+                    
                     measureddict  = {1:"Daylight", 2:"Candle", 3:"Incandescent1", 4:"Incandescent2", 5:"Welsbach", 6:"AntiInsect", 7:"FLD2", 8:"FL37K", 9:"CFL27K", 10:"CFL4K", 11:"CFL6K", 12:"GroLux", 13:"LCDS", 14:"FLAV8K", 15:"none", 16:"FLAV17K", 17:"HPM2", 18:"HPMFL1", 19:"HPMFL2", 20:"HPMSB", 21:"HPMSBFL", 22:"SS1", 23:"SS2", 24:"LPS", 25:"MPS", 26:"HPS", 27:"SHPS", 28:"MHN", 29:"MHWWD", 30:"MHSc", 31:"MHD", 32:"FeCo", 33:"GaPb", 34:"BLAU", 35:"PLANTA", 36:"GRUN", 37:"LEDB", 38:"RedLaser", 39:"GreenLaser", 40:"XeI", 41:"Rb", 42:"Cd", 43:"Zn", 44:"Ne", 45:"NeKrFL", 46:"NeXeFL1", 47:"none", 48:"NeXeFL2", 49:"Ar", 50:"HPMFL2Glow", 51:"Butane", 52:"Alcohol", 53:"BLP", 54:"BLNG", 55:"TV", 56:"Xe", 57:"CarbonArc", 58:"HPX", 59:"LPM2", 60:"FLBLB", 61:"HPMBL", 62:"FLBL", 63:"UVA", 64:"HPMFLCobaltGlass", 65:"CobaltGlass", 66:"HPMFLCL42053", 67:"CL42053", 68:"HPMFLRedGlass", 69:"RedGlass", 70:"OliveOil" }
                     
                     r = Lux.LB_UI.getRect(2.0, 1)
@@ -4142,12 +4250,12 @@ class Lux:
                     Lux.LB_UI.newline()
                     Lux.Graphic.Bar('equalenergy').draw(Lux.LB_UI.xmax-Lux.LB_UI.w-7, r[1])
                 str += Lux.TypedControl.Float().create("energy", Lux.Property(mat, keyname+".energy", 1.0), 0.0, 1.0, "energy", "Energy of each spectral band", 2.0, 1)
-        
+            
             if texture.get() == "frequency":
-                str += Lux.TypedControl.Float().create("freq", Lux.Property(mat, keyname+".freq", 0.01), 0.03, 100.0, "frequency", "Frequency in nm", 2.0, 1)
+                str += Lux.TypedControl.Float().create("freq", Lux.Property(mat, keyname+".freq", 0.01), 0.01, 100.0, "frequency", "Frequency in nm", 2.0, 1)
                 str += Lux.TypedControl.Float().create("phase", Lux.Property(mat, keyname+".phase", 0.5), 0.0, 1.0, "phase", "Phase", 1.1, 1)
                 str += Lux.TypedControl.Float().create("energy", Lux.Property(mat, keyname+".energy", 1.0), 0.0, 1.0, "energy", "Amount of mean energy", 0.9, 1)
-        
+            
             if texture.get() == "gaussian":
                 if Lux.LB_UI.Active:
                     if Lux.LB_UI.xmax-Lux.LB_UI.x < Lux.LB_UI.w: Lux.LB_UI.newline()
@@ -4157,11 +4265,10 @@ class Lux:
                 str += Lux.TypedControl.Float().create("wavelength", Lux.Property(mat, keyname+".wavelength", 550.0), 380.0, 720.0, "wavelength", "Mean Wavelength in visible spectrum in nm", 2.0, 1)
                 str += Lux.TypedControl.Float().create("width", Lux.Property(mat, keyname+".width", 50.0), 20.0, 300.0, "width", "Width of gaussian distribution in nm", 1.1, 1)
                 str += Lux.TypedControl.Float().create("energy", Lux.Property(mat, keyname+".energy", 1.0), 0.0, 1.0, "energy", "Amount of mean energy", 0.9, 1)
-        
+            
             if texture.get() == "imagemap":
                 str += Lux.TypedControl.Option().create("wrap", Lux.Property(mat, keyname+".wrap", "repeat"), ["repeat","black","clamp"], "repeat", "", 1.1)
-
-                # ZANQDO
+                
                 texturefilename = Lux.Property(mat, keyname+".filename", "")
                 str += Lux.TypedControl.File().create("filename", texturefilename, "file", "texture file path", 2.0)
                 
@@ -4177,7 +4284,6 @@ class Lux:
                     Lux.TypedControl.Int().create("startframe", seqstartframe, 1, 100000, "StartFr", "", 0.5)
                     seqcyclic = Lux.Property(mat, keyname+".seqcycl", "false")
                     Lux.TypedControl.Bool().create("cyclic", seqcyclic, "Cyclic", "", 0.5)
-                    
                     
                     totalframes = seqframes.get()
                     currentframe = Blender_API.Get('curframe')
@@ -4733,7 +4839,7 @@ class Lux:
                     def setIor(i, value, preset, tree, dict): # callback function to set ior value after selection
                         if i >= 0:
                             value.set(dict[i])
-                            preset.set(getTreeNameById(tree, i))            
+                            preset.set(Lux.Util.getTreeNameById(tree, i))
                     iortree = [ ("LIQUIDS", [("Acetone", 1), ("Alcohol, Ethyl (grain)", 2), ("Alcohol, Methyl (wood)", 3), ("Beer", 4), ("Benzene", 5), ("Carbon tetrachloride", 6), ("Carbon disulfide", 7), ("Carbonated Beverages", 8), ("Chlorine (liq)", 9), ("Cranberry Juice (25%)", 10), ("Glycerin", 11), ("Honey, 13% water content", 12), ("Honey, 17% water content", 13), ("Honey, 21% water content", 14), ("Ice", 15), ("Milk", 16), ("Oil, Clove", 17), ("Oil, Lemon", 18), ("Oil, Neroli", 19), ("Oil, Orange", 20), ("Oil, Safflower", 21), ("Oil, vegetable (50 C)", 22), ("Oil of Wintergreen", 23), ("Rum, White", 24), ("Shampoo", 25), ("Sugar Solution 30%", 26), ("Sugar Solution 80%", 27), ("Turpentine", 28), ("Vodka", 29), ("Water (0 C)", 30), ("Water (100 C)", 31), ("Water (20 C)", 32), ("Whisky", 33) ] ), ("GASES(0C)", [("Vacuum", 101), ("Air @ STP", 102), ("Air", 103), ("Helium", 104), ("Hydrogen", 105), ("Carbon dioxide", 106) ]), ("TRANSPARENT", [("Eye, Aqueous humor", 201), ("Eye, Cornea", 202), ("Eye, Lens", 203), ("Eye, Vitreous humor", 204), ("Glass, Arsenic Trisulfide", 205), ("Glass, Crown (common)", 206), ("Glass, Flint, 29% lead", 207), ("Glass, Flint, 55% lead", 208), ("Glass, Flint, 71% lead", 209), ("Glass, Fused Silica", 210), ("Glass, Pyrex", 211), ("Lucite", 212), ("Nylon", 213), ("Obsidian", 214), ("Plastic", 215), ("Plexiglas", 216), ("Salt", 217)  ]), ("GEMSTONES", [("Agate", 301), ("Alexandrite", 302), ("Almandine", 303), ("Amber", 304), ("Amethyst", 305), ("Ammolite", 306), ("Andalusite", 307), ("Apatite", 308), ("Aquamarine", 309), ("Axenite", 310), ("Beryl", 311), ("Beryl, Red", 312), ("Chalcedony", 313), ("Chrome Tourmaline", 314), ("Citrine", 315), ("Clinohumite", 316), ("Coral", 317), ("Crystal", 318), ("Crysoberyl, Catseye", 319), ("Danburite", 320), ("Diamond", 321), ("Emerald", 322), ("Emerald Catseye", 323), ("Flourite", 324), ("Garnet, Grossular", 325), ("Garnet, Andradite", 326), ("Garnet, Demantiod", 327), ("Garnet, Mandarin", 328), ("Garnet, Pyrope", 329), ("Garnet, Rhodolite", 330), ("Garnet, Tsavorite", 331), ("Garnet, Uvarovite", 332), ("Hauyn", 333), ("Iolite", 334), ("Jade, Jadeite", 335), ("Jade, Nephrite", 336), ("Jet", 337), ("Kunzite", 338), ("Labradorite", 339), ("Lapis Lazuli", 340), ("Moonstone", 341), ("Morganite", 342), ("Obsidian", 343), ("Opal, Black", 344), ("Opal, Fire", 345), ("Opal, White", 346), ("Oregon Sunstone", 347), ("Padparadja", 348), ("Pearl", 349), ("Peridot", 350), ("Quartz", 351), ("Ruby", 352), ("Sapphire", 353), ("Sapphire, Star", 354), ("Spessarite", 355), ("Spinel", 356), ("Spinel, Blue", 357), ("Spinel, Red", 358), ("Star Ruby", 359), ("Tanzanite", 360), ("Topaz", 361), ("Topaz, Imperial", 362), ("Tourmaline", 363), ("Tourmaline, Blue", 364), ("Tourmaline, Catseye", 365), ("Tourmaline, Green", 366), ("Tourmaline, Paraiba", 367), ("Tourmaline, Red", 368), ("Zircon", 369), ("Zirconia, Cubic", 370) ] ), ("OTHER", [("Pyrex (Borosilicate glass)", 401), ("Ruby", 402), ("Water ice", 403), ("Cryolite", 404), ("Acetone", 405), ("Ethanol", 406), ("Teflon", 407), ("Glycerol", 408), ("Acrylic glass", 409), ("Rock salt", 410), ("Crown glass (pure)", 411), ("Salt (NaCl)", 412), ("Polycarbonate", 413), ("PMMA", 414), ("PETg", 415), ("PET", 416), ("Flint glass (pure)", 417), ("Crown glass (impure)", 418), ("Fused Quartz", 419), ("Bromine", 420), ("Flint glass (impure)", 421), ("Cubic zirconia", 422), ("Moissanite", 423), ("Cinnabar (Mercury sulfide)", 424), ("Gallium(III) prosphide", 425), ("Gallium(III) arsenide", 426), ("Silicon", 427) ] ) ]
                     iordict = {1:1.36, 2:1.36, 3:1.329, 4:1.345, 5:1.501, 6:1.000132, 7:1.00045, 8:1.34, 9:1.385, 10:1.351, 11:1.473, 12:1.504, 13:1.494, 14:1.484, 15:1.309, 16:1.35, 17:1.535, 18:1.481, 19:1.482, 20:1.473, 21:1.466, 22:1.47, 23:1.536, 24:1.361, 25:1.362, 26:1.38, 27:1.49, 28:1.472, 29:1.363, 30:1.33346, 31:1.31766, 32:1.33283, 33:1.356, 101:1.0, 102:1.0002926, 103:1.000293, 104:1.000036, 105:1.000132, 106:1.00045, 201:1.33, 202:1.38, 203:1.41, 204:1.34, 205:2.04, 206:1.52, 207:1.569, 208:1.669, 209:1.805, 210:1.459, 211:1.474, 212:1.495, 213:1.53, 214:1.50, 215:1.460, 216:1.488, 217:1.516, 301:1.544, 302:1.746, 303:1.75, 304:1.539, 305:1.532, 306:1.52, 307:1.629, 308:1.632, 309:1.567, 310:1.674, 311:1.57, 312:1.570, 313:1.544, 314:1.61, 315:1.532, 316:1.625, 317:1.486, 318:2.000, 319:1.746, 320:1.627, 321:2.417, 322:1.560, 323:1.560, 324:1.434, 325:1.72, 326:1.88, 327:1.880, 328:1.790, 329:1.73, 330:1.740, 331:1.739, 332:1.74, 333:1.490, 334:1.522, 335:1.64, 336:1.600, 337:1.660, 338:1.660, 339:1.560, 340:1.50, 341:1.518, 342:1.585, 343:1.50, 344:1.440, 345:1.430, 346:1.440, 347:1.560, 348:1.760, 349:1.53, 350:1.635, 351:1.544, 352:1.757, 353:1.757, 354:1.760, 355:1.79, 356:1.712, 357:1.712, 358:1.708, 359:1.76, 360:1.690, 361:1.607, 362:1.605, 363:1.603, 364:1.61, 365:1.61, 366:1.61, 367:1.61, 368:1.61, 369:1.777, 370:2.173, 401:1.47, 402:1.76, 403:1.31, 404:1.388, 405:1.36, 406:1.36, 407:1.35, 408:1.4729, 409:1.49, 410:1.516, 411:1.5, 412:1.544, 413:1.584, 414:1.4893, 415:1.57, 416:1.575, 417:1.6, 418:1.485, 419:1.46, 420:1.661, 421:1.523, 422:2.15, 423:2.419, 424:2.65, 425:3.02, 426:3.5, 427:3.927}
                     r = Lux.LB_UI.getRect(1.6, 1)
@@ -4864,8 +4970,9 @@ class Lux:
                 # export emission options (no gui)
                 useemission = Lux.Property(mat, "emission", "false")
                 if useemission.get() == "true":
-                    lightgroup = Lux.Property(mat, "light.lightgroup", "default")
-                    link += '\n\tLightGroup "' + lightgroup.get() + '"\n'
+                    if Lux.Property(Lux.scene, "nolg", "false").get() != "true":
+                        lightgroup = Lux.Property(mat, "light.lightgroup", "default")
+                        link += '\n\tLightGroup "' + lightgroup.get() + '"\n'
                     # DH - this had gui = None - worked around with Lux.LB_UI.Active
                     pre_active = Lux.LB_UI.Active
                     Lux.LB_UI.Active=False
@@ -4898,9 +5005,11 @@ class Lux:
                 # Set backwards compatibility of glossy material from plastic and substrate
                 if mattype.get() in ["substrate", "plastic"]:
                     mattype.set("glossy")
-        
-                materials = ["carpaint","glass","matte","mattetranslucent","metal","mirror","roughglass","shinymetal","glossy","mix","null"]
-                if level == 0: materials = ["light","portal","boundvolume"]+materials
+
+                # this is reverse order than in shown in the dropdown list
+                materials = ["null","mix","mirror","shinymetal","metal","mattetranslucent","matte","glossy","roughglass","glass","carpaint"]
+                        
+                if level == 0: materials = ["portal","light","boundvolume"]+materials
                 if Lux.LB_UI.Active:
                     icon = icon_mat
                     if mattype.get() == "mix":
@@ -4942,8 +5051,11 @@ class Lux:
                     has_compositing_options = 0
         
                 if mattype.get() == "light":
-                    lightgroup = Lux.Property(mat, kn+"light.lightgroup", "default")
-                    link = 'LightGroup "%s"\n'%lightgroup.get()
+                    if Lux.Property(Lux.scene, "nolg", "false").get() != "true":
+                        lightgroup = Lux.Property(mat, kn+"light.lightgroup", "default")
+                        link = 'LightGroup "%s"\n'%lightgroup.get()
+                    else:
+                        link = ''
                     link += 'AreaLightSource "area"'
                     (str,link) = c((str,link), Lux.Light.Area("", kn, mat, level))
                     has_bump_options = 0
@@ -4995,19 +5107,19 @@ class Lux:
                     
                     
                     link += str_opt
-        
+                    
                     has_bump_options = 0
                     has_object_options = 0
                     has_emission_options = 0
-        
+                    
                     return (str, link)
-        
+                
                 if mattype.get() == "carpaint":
-                    if Lux.LB_UI.Active: Lux.LB_UI.newline("name:", 0, level+1)
-                    carname = Lux.Property(mat, kn+"carpaint.name", "white")
-                    cars = ["","ford f8","polaris silber","opel titan","bmw339","2k acrylack","white","blue","blue matte"]
+                    if Lux.LB_UI.Active: Lux.LB_UI.newline("Preset:", 0, level+1)
+                    carname = Lux.Property(mat, kn+"carpaint.name", "Custom")
+                    cars = ["Custom","ford f8","polaris silber","opel titan","bmw339","2k acrylack","white","blue","blue matte"]
                     carlink = Lux.TypedControl.Option().create("name", carname, cars, "name", "")
-                    if carname.get() == "":
+                    if carname.get() == "Custom":
                         (str,link) = c((str,link), Lux.Textures.SpectrumTexture("Kd", keyname, "1.0 1.0 1.0", 1.0, "diffuse", "", mat, level+1))
                         (str,link) = c((str,link), Lux.Textures.SpectrumTexture("Ks1", keyname, "1.0 1.0 1.0", 1.0, "specular1", "", mat, level+1))
                         (str,link) = c((str,link), Lux.Textures.SpectrumTexture("Ks2", keyname, "1.0 1.0 1.0", 1.0, "specular2", "", mat, level+1))
@@ -5073,7 +5185,7 @@ class Lux:
                     if Lux.LB_UI.Active: Lux.LB_UI.newline("name:", 0, level+1)
                     metalname = Lux.Property(mat, kn+"metal.name", "")
                     metals = ["aluminium","amorphous carbon","silver","gold","copper"]
-        
+                    
                     if not(metalname.get() in metals):
                         metals.append(metalname.get())
                     metallink = Lux.TypedControl.Option().create("name", metalname, metals, "name", "", 1.88)
@@ -5102,7 +5214,7 @@ class Lux:
                     if thinfilm.get() == "true":
                         (str,link) = c((str,link), Lux.Textures.FloatSliderTexture("film", keyname, 200.0, 1.0, 1500.0, "film", "thickness of film coating in nanometers", mat, level+1))
                         (str,link) = c((str,link), Lux.Textures.IORFloatTexture("filmindex", keyname, 1.5, 1.0, 6.0, "film IOR", "film coating index of refraction", mat, level+1))
-        
+                    
                     has_bump_options = 1
                     has_object_options = 1
                     has_emission_options = 1
@@ -5144,13 +5256,13 @@ class Lux:
                         (s, l) = Lux.Textures.ExponentTexture("uroughness", keyname, 0.002, 0.0, 1.0, "exponent", "", mat, level+1)
                         (str,link) = c((str,link), (s, l))
                         link += l.replace("uroughness", "vroughness", 1)
-        
+                    
                     thinfilm = Lux.Property(mat, keyname+".thinfilm", "false")
                     Lux.TypedControl.Collapse().create("thinfilm", thinfilm, "Thin Film Coating", "Enable Thin Film Coating", 2.0)
                     if thinfilm.get() == "true":
                         (str,link) = c((str,link), Lux.Textures.FloatSliderTexture("film", keyname, 200.0, 1.0, 1500.0, "film", "thickness of film coating in nanometers", mat, level+1))
                         (str,link) = c((str,link), Lux.Textures.IORFloatTexture("filmindex", keyname, 1.5, 1.0, 6.0, "film IOR", "film coating index of refraction", mat, level+1))
-        
+                    
                     has_bump_options = 1
                     has_object_options = 1
                     has_emission_options = 1
@@ -5178,7 +5290,7 @@ class Lux:
                         (s, l) = Lux.Textures.ExponentTexture("uroughness", keyname, 0.002, 0.0, 1.0, "exponent", "", mat, level+1)
                         (str,link) = c((str,link), (s, l))
                         link += l.replace("uroughness", "vroughness", 1)
-        
+                    
                     absorption = Lux.Property(mat, keyname+".useabsorption", "false")
                     Lux.TypedControl.Collapse().create("absorption", absorption, "Absorption", "Enable Coating Absorption", 2.0)
                     if absorption.get() == "true":
@@ -5188,15 +5300,18 @@ class Lux:
                     has_object_options = 1
                     has_emission_options = 1
                     has_compositing_options = 1
-        
-        
+                
+                
+                if mattype.get() == 'null':
+                    has_emission_options = 1
+                
                 # Bump mapping options (common)
                 if (has_bump_options == 1):
                     usebump = Lux.Property(mat, keyname+".usebump", "false")
                     Lux.TypedControl.Collapse().create("usebump", usebump, "Bump Map", "Enable Bump Mapping options", 2.0)
                     if usebump.get() == "true":
-                        (str,link) = c((str,link), Lux.Textures.FloatTexture("bumpmap", keyname, 0.0, 0.0, 1.0, "bumpmap", "", mat, level+1))
-        
+                        (str,link) = c((str,link), Lux.Textures.FloatTexture("bumpmap", keyname, 0.0, -1.0, 1.0, "bumpmap", "", mat, level+1))
+                
                 # emission options (common)
                 if (level == 0):
                     if (has_emission_options == 1):
@@ -5207,8 +5322,8 @@ class Lux:
                             # emission GUI is here but lux export will be done later 
                             Lux.Light.Area("", "", mat, level)
                     else: Lux.Property(mat, "emission", "false").set("false") # prevent from exporting later
-        
-
+                
+                
                 # Compositing options (common)
                 # Note - currently only display options when using distributedpath integrator
                 integratortype = Lux.Property(Lux.scene, "sintegrator.type", "bidirectional")
@@ -5246,7 +5361,7 @@ class Lux:
                                 link += Lux.TypedControl.RGB().create("compo_key_color", luxProp(mat, "compo_key_color", "0.0 0.0 1.0"), 1.0, "key", "", 2.0)
                 
                 # transformation options (common)
-                if (level == 0):
+                if (level == 0) and mattype.get() not in ['portal', 'null']:
                     if Lux.LB_UI.Active: Lux.LB_UI.newline("", 2, level, None, [0.6,0.6,0.4])
                     usetransformation = Lux.Property(mat, "transformation", "false")
                     Lux.TypedControl.Collapse().create("usetransformation", usetransformation, "Texture Transformation", "Enable transformation option", 2.0)
@@ -5262,7 +5377,7 @@ class Lux:
                             Lux.LB_UI.newline("move:", -2, level, icon_map3dparam)
                             Lux.TypedControl.Vector().create("translate", translate, -1000.0, 1000.0, "move", "translate-vector", 2.0)
                         str = ("TransformBegin\n\tScale %f %f %f\n"%( 1.0/scale.getVector()[0],1.0/scale.getVector()[1],1.0/scale.getVector()[2] ))+("\tRotate %f 1 0 0\n\tRotate %f 0 1 0\n\tRotate %f 0 0 1\n"%rotate.getVector())+("\tTranslate %f %f %f\n"%translate.getVector()) + str + "TransformEnd\n"
-        
+                
                 # Object options (common)
                 if (level == 0) and (has_object_options == 1):
                     if Lux.LB_UI.Active: Lux.LB_UI.newline("Mesh:", 2, level, icon, [0.6,0.6,0.4])
@@ -5280,7 +5395,7 @@ class Lux:
                         (str,ll) = c((str,link), Lux.Textures.DispFloatTexture("dispmap", keyname, 0.1, -10, 10.0, "dispmap", "Displacement Mapping amount", mat, level+1))
                         Lux.TypedControl.Float().create("sdoffset",  Lux.Property(mat, "sdoffset", 0.0), 0.0, 1.0, "Offset", "Offset for displacement map", 2.0)
                         usesubdiv.set("true")
-        
+                
                 if mattype.get() == "light":
                     return (str, link)
         
@@ -5457,7 +5572,7 @@ class Lux:
             
             Blender_API.Window.WaitCursor(True)
             Lux.scene = Blender_API.Scene.GetCurrent()
-        
+            
             # Size of preview thumbnail
             thumbres = 110 # default 110x110
             if(defLarge):
@@ -5466,22 +5581,18 @@ class Lux:
                 large = Lux.Property(mat, kn+"prev_large", "false")
             if(large.get() == "true"):
                 thumbres = 140 # small 140x140
-        
+            
             thumbbuf = thumbres*thumbres*3
-        
-            #consolebin = Lux.Property(Lux.scene, "luxconsole", "").get()
-            consolebin = Blender_API.sys.dirname(Lux.Property(Lux.scene, "lux", "").get()) + os.sep + "luxconsole"
-            if osys.platform == "win32": consolebin = consolebin + ".exe"
             
             try:
-                p = subprocess.Popen((consolebin, '-b', '-'), bufsize=thumbbuf, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                p = Lux.Launch.Piped(thumbbuf, type="luxconsole")
             except:
                 Lux.Log('Error: Could not launch lux process: check path in System tab', popup=True)
                 return
-        
+            
             # Unremark to write debugging output to file
             # p.stdin = open('c:\preview.lxs', 'w')
-        
+            
             if defType == 0:    
                 prev_sphere = Lux.Property(mat, kn+"prev_sphere", "true")
                 prev_plane = Lux.Property(mat, kn+"prev_plane", "false")
@@ -5501,7 +5612,7 @@ class Lux:
             else:
                 p.stdin.write('LookAt 0.0 -3.0 0.5 0.0 -2.0 0.5 0.0 0.0 1.0\nCamera "perspective" "float fov" [22.5]\n')
             # Fleximage
-            p.stdin.write('Film "fleximage" "integer xresolution" [%i] "integer yresolution" [%i] "integer displayinterval" [3] "integer ldr_writeinterval" [3600] "string tonemapper" ["reinhard"] "integer haltspp" [1] "integer reject_warmup" [64] "bool write_tonemapped_tga" ["false"] "bool write_untonemapped_exr" ["false"] "bool write_tonemapped_exr" ["false"] "bool write_untonemapped_igi" ["false"] "bool write_tonemapped_igi" ["false"] \n'%(thumbres, thumbres))
+            p.stdin.write('Film "fleximage" "integer xresolution" [%i] "integer yresolution" [%i] "integer displayinterval" [3] "integer ldr_writeinterval" [3600] "string tonemapper" ["reinhard"] "integer haltspp" [1] "integer reject_warmup" [64] "bool write_tonemapped_tga" ["false"] "bool write_untonemapped_exr" ["false"] "bool write_tonemapped_exr" ["false"] "bool write_untonemapped_igi" ["false"] "bool write_tonemapped_igi" ["false"] "bool write_png" ["false"] "string filename" ["luxblend-preview"] \n'%(thumbres, thumbres))
             p.stdin.write('PixelFilter "sinc"\n')
             # Quality
             
@@ -5555,7 +5666,7 @@ class Lux:
             if(prev_sphere.get()=="true"):
                 p.stdin.write('Shape "sphere" "float radius" [1.0]\n')
             elif (prev_plane.get()=="true"):
-                p.stdin.write('    Shape "trianglemesh" "integer indices" [ 0 1 2 0 2 3 ] "point P" [ 1.0 1.0 0.0 -1.0 1.0 0.0 -1.0 -1.0 -0.0 1.0 -1.0 -0.0 ] "float uv" [ 0.0 0.0 1.0 0.0 1.0 -1.0 0.0 -1.0 ]\n')
+                p.stdin.write('    Shape "trianglemesh" "integer indices" [ 0 1 2 0 2 3 ] "point P" [ 1.0 1.0 0.0 -1.0 1.0 0.0 -1.0 -1.0 -0.0 1.0 -1.0 -0.0 ] "float uv" [ 1.0 1.0 0.0 1.0 0.0 0.0 1.0 0.0 ]\n')
             elif (prev_torus.get()=="true"):
                 p.stdin.write('Shape "torus" "float radius" [1.0]\n')
             p.stdin.write('AttributeEnd\n')
@@ -5590,8 +5701,9 @@ class Lux:
         
             data = p.communicate()[0]
             p.stdin.close()
-            if(len(data) < thumbbuf): 
-                Lux.Log("Error: Preview data corrupt", popup = True)
+            datalen = len(data)
+            if(datalen < thumbbuf): 
+                Lux.Log("Error: Preview data corrupt. Got %i bytes, expected %i" % (datalen, thumbbuf), popup = True)
                 return
             
             im = Lux.Graphic.PreviewImage(mat.name+":"+kn, thumbres, thumbres)
