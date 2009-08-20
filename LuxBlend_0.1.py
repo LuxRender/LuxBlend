@@ -4503,7 +4503,7 @@ def Preview_Update(mat, kn, defLarge, defType, texName, name, level):
     else:
         p.stdin.write('LookAt 0.0 -3.0 0.5 0.0 -2.0 0.5 0.0 0.0 1.0\nCamera "perspective" "float fov" [22.5]\n')
     # Fleximage
-    p.stdin.write('Film "fleximage" "integer xresolution" [%i] "integer yresolution" [%i] "integer displayinterval" [3] "integer ldr_writeinterval" [3600] "string tonemapper" ["reinhard"] "integer haltspp" [1] "integer reject_warmup" [64] "bool write_tonemapped_tga" ["false"] "bool write_untonemapped_exr" ["false"] "bool write_tonemapped_exr" ["false"] "bool write_untonemapped_igi" ["false"] "bool write_tonemapped_igi" ["false"] "bool write_png" ["false"] "string filename" ["luxblend-preview"] \n'%(thumbres, thumbres))
+    p.stdin.write('Film "fleximage" "integer xresolution" [%i] "integer yresolution" [%i] "integer displayinterval" [3] "integer ldr_writeinterval" [3600] "string tonemapkernel" ["linear"] "integer haltspp" [1] "integer reject_warmup" [64] "bool write_tonemapped_tga" ["false"] "bool write_untonemapped_exr" ["false"] "bool write_tonemapped_exr" ["false"] "bool write_untonemapped_igi" ["false"] "bool write_tonemapped_igi" ["false"] "bool write_png" ["false"] "string filename" ["luxblend-preview"] \n'%(thumbres, thumbres))
     p.stdin.write('PixelFilter "sinc"\n')
     # Quality
     scn = Scene.GetCurrent()
@@ -4576,10 +4576,12 @@ def Preview_Update(mat, kn, defLarge, defType, texName, name, level):
     area = luxProp(mat, kn+"prev_arealight", "false")
     if(area.get() == "false"):
         p.stdin.write('Texture "pL" "color" "blackbody" "float temperature" [6500.0]\n')
-        p.stdin.write('LightSource "point" "texture L" ["pL"]')
+        p.stdin.write('LightSource "point" "texture L" ["pL"] "float gain" [0.002]')
     else:
         p.stdin.write('ReverseOrientation\n')
         p.stdin.write('AreaLightSource "area" "color L" [1.0 1.0 1.0]\n')
+        if(prev_plane.get()=="false"):
+            p.stdin.write(' "float gain" [0.3]\n')
         p.stdin.write('Shape "disk" "float radius" [1.0]\nAttributeEnd\n')
     p.stdin.write('WorldEnd\n')
     previewing = False
