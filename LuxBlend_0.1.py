@@ -3836,7 +3836,7 @@ def luxTexture(name, parentkey, type, default, min, max, caption, hint, mat, gui
 
     if texture.get() == "checkerboard":
         dim = luxProp(mat, keyname+".dim", 2)
-        str += luxInt("dimension", dim, 2, 3, "dim", "", gui, 0.5)
+        str += luxInt("dimension", dim, 2, 3, "dim", "", gui, 1)
         if dim.get() == 2: str += luxOption("aamode", luxProp(mat, keyname+".aamode", "closedform"), ["closedform","supersample","none"], "aamode", "antialiasing mode", gui, 0.6)
         if gui: gui.newline("", -2)
         (s, l) = c(("", ""), luxTexture("tex1", keyname, type, default, min, max, "tex1", "", mat, gui, matlevel, texlevel+1, lightsource))
