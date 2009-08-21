@@ -3583,10 +3583,10 @@ def luxMapping(key, mat, gui, level=0):
     mappings = ["uv","spherical","cylindrical","planar"]
     str = luxOption("mapping", mapping, mappings, "mapping", "", gui, 0.5)
     if mapping.get() == "uv":
-        str += luxFloat("uscale", luxProp(mat, key+".uscale", 1.0), -100.0, 100.0, "Us", "u-scale", gui, 0.375)
-        str += luxFloat("vscale", luxProp(mat, key+".vscale", -1.0), -100.0, 100.0, "Vs", "v-scale", gui, 0.375)
-        str += luxFloat("udelta", luxProp(mat, key+".udelta", 0.0), -100.0, 100.0, "Ud", "u-delta", gui, 0.375)
-        str += luxFloat("vdelta", luxProp(mat, key+".vdelta", 0.0), -100.0, 100.0, "Vd", "v-delta", gui, 0.375)
+        str += luxFloat("uscale", luxProp(mat, key+".uscale", 1.0), -100.0, 100.0, "Us", "u-scale", gui, 0.75)
+        str += luxFloat("vscale", luxProp(mat, key+".vscale", -1.0), -100.0, 100.0, "Vs", "v-scale", gui, 0.75)
+        str += luxFloat("udelta", luxProp(mat, key+".udelta", 0.0), -100.0, 100.0, "Ud", "u-delta", gui, 0.75)
+        str += luxFloat("vdelta", luxProp(mat, key+".vdelta", 0.0), -100.0, 100.0, "Vd", "v-delta", gui, 0.75)
     if mapping.get() == "planar":
         str += luxFloat("udelta", luxProp(mat, key+".udelta", 0.0), -100.0, 100.0, "Ud", "u-delta", gui, 0.75)
         str += luxFloat("vdelta", luxProp(mat, key+".vdelta", 0.0), -100.0, 100.0, "Vd", "v-delta", gui, 0.75)
@@ -3650,7 +3650,7 @@ def luxTexture(name, parentkey, type, default, min, max, caption, hint, mat, gui
                 else: icon = icon_tex
         if (texlevel > 0): gui.newline(caption+":", -2, level, icon, scalelist([0.5,0.5,0.5],2.0/(level+2)))
         else: gui.newline("texture:", -2, level, icon, scalelist([0.5,0.5,0.5],2.0/(level+2)))
-    luxOption("texture", texture, textures, "texture", "", gui, 0.9)
+    luxOption("texture", texture, textures, "texture", "", gui, 2)
     str = "Texture \"%s\" \"%s\" \"%s\""%(texname, type, texture.get())
 
     if gui: Draw.PushButton(">", evtLuxGui, gui.xmax+gui.h, gui.y-gui.h, gui.h, gui.h, "Menu", lambda e,v: showMatTexMenu(mat,keyname,True))
@@ -3663,7 +3663,7 @@ def luxTexture(name, parentkey, type, default, min, max, caption, hint, mat, gui
     if texture.get() == "constant":
         value = luxProp(mat, keyname+".value", default)
         if type == "float": luxFloat("value", value, min, max, "", "", gui, 1.1)
-        elif type == "color": luxRGB("value", value, max, "", "", gui, 1.1)
+        elif type == "color": luxRGB("value", value, max, "", "", gui, 2)
 # direct version
         if type == "color": return ("", " \"%s %s\" [%s]"%(type, name, value.getRGC()))
         return ("", " \"%s %s\" [%s]"%(type, name, value.get()))
