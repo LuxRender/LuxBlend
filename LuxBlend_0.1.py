@@ -3583,10 +3583,11 @@ def luxMapping(key, mat, gui, level=0):
     mappings = ["uv","spherical","cylindrical","planar"]
     str = luxOption("mapping", mapping, mappings, "mapping", "", gui, 0.5)
     if mapping.get() == "uv":
-        str += luxFloat("uscale", luxProp(mat, key+".uscale", 1.0), -100.0, 100.0, "Us", "u-scale", gui, 0.75)
-        str += luxFloat("vscale", luxProp(mat, key+".vscale", -1.0), -100.0, 100.0, "Vs", "v-scale", gui, 0.75)
-        str += luxFloat("udelta", luxProp(mat, key+".udelta", 0.0), -100.0, 100.0, "Ud", "u-delta", gui, 0.75)
-        str += luxFloat("vdelta", luxProp(mat, key+".vdelta", 0.0), -100.0, 100.0, "Vd", "v-delta", gui, 0.75)
+    	if gui: gui.newline()
+        str += luxFloat("uscale", luxProp(mat, key+".uscale", 1.0), -100.0, 100.0, "Us", "u-scale", gui, 0.5)
+        str += luxFloat("vscale", luxProp(mat, key+".vscale", -1.0), -100.0, 100.0, "Vs", "v-scale", gui, 0.5)
+        str += luxFloat("udelta", luxProp(mat, key+".udelta", 0.0), -100.0, 100.0, "Ud", "u-delta", gui, 0.5)
+        str += luxFloat("vdelta", luxProp(mat, key+".vdelta", 0.0), -100.0, 100.0, "Vd", "v-delta", gui, 0.5)
     if mapping.get() == "planar":
         str += luxFloat("udelta", luxProp(mat, key+".udelta", 0.0), -100.0, 100.0, "Ud", "u-delta", gui, 0.75)
         str += luxFloat("vdelta", luxProp(mat, key+".vdelta", 0.0), -100.0, 100.0, "Vd", "v-delta", gui, 0.75)
@@ -3852,16 +3853,16 @@ def luxTexture(name, parentkey, type, default, min, max, caption, hint, mat, gui
         str += luxMapping(keyname, mat, gui, level+1)
 
     if texture.get() == "fbm":
-        str += luxInt("octaves", luxProp(mat, keyname+".octaves", 8), 1, 100, "octaves", "", gui, 1.1)
-        if gui: gui.newline("", -2)
-        str += luxFloat("roughness", luxProp(mat, keyname+".roughness", 0.5), 0.0, 1.0, "roughness", "", gui, 2.0, 1)
+        str += luxInt("octaves", luxProp(mat, keyname+".octaves", 8), 1, 100, "octaves", "", gui, 1)
+        # if gui: gui.newline("", -2)
+        str += luxFloat("roughness", luxProp(mat, keyname+".roughness", 0.5), 0.0, 1.0, "roughness", "", gui, 1, 1)
         if gui: gui.newline("", -2)
         str += lux3DMapping(keyname, mat, gui, level+1)
 
     if texture.get() == "marble":
-        str += luxInt("octaves", luxProp(mat, keyname+".octaves", 8), 1, 100, "octaves", "", gui, 1.1)
-        if gui: gui.newline("", -2)
-        str += luxFloat("roughness", luxProp(mat, keyname+".roughness", 0.5), 0.0, 1.0, "roughness", "", gui, 2.0, 1)
+        str += luxInt("octaves", luxProp(mat, keyname+".octaves", 8), 1, 100, "octaves", "", gui, 1)
+        # if gui: gui.newline("", -2)
+        str += luxFloat("roughness", luxProp(mat, keyname+".roughness", 0.5), 0.0, 1.0, "roughness", "", gui, 1, 1)
         if gui: gui.newline("", -2)
         str += luxFloat("nscale", luxProp(mat, keyname+".nscale", 1.0), 0.0, 100.0, "nscale", "Scaling factor for the noise input", gui, 1.0)
         str += luxFloat("variation", luxProp(mat, keyname+".variation", 0.2), 0.0, 100.0, "variation", "A scaling factor for the noise input function", gui, 1.0)
@@ -3869,9 +3870,9 @@ def luxTexture(name, parentkey, type, default, min, max, caption, hint, mat, gui
         str += lux3DMapping(keyname, mat, gui, level+1)
 
     if texture.get() == "wrinkled":
-        str += luxInt("octaves", luxProp(mat, keyname+".octaves", 8), 1, 100, "octaves", "", gui, 1.1)
-        if gui: gui.newline("", -2)
-        str += luxFloat("roughness", luxProp(mat, keyname+".roughness", 0.5), 0.0, 1.0, "roughness", "", gui, 2.0, 1)
+        str += luxInt("octaves", luxProp(mat, keyname+".octaves", 8), 1, 100, "octaves", "", gui, 1)
+        # if gui: gui.newline("", -2)
+        str += luxFloat("roughness", luxProp(mat, keyname+".roughness", 0.5), 0.0, 1.0, "roughness", "", gui, 1, 1)
         if gui: gui.newline("", -2)
         str += lux3DMapping(keyname, mat, gui, level+1)
 
