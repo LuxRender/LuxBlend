@@ -2926,24 +2926,24 @@ def luxSurfaceIntegrator(scn, gui=None):
         if integratortype.get() == "distributedpath":
             str += luxOption("strategy", luxProp(scn, "sintegrator.distributedpath.strategy", "auto"), ["one", "all", "auto"], "strategy", "select directlighting strategy", gui)
             if gui: gui.newline("  Direct:")
-            str += luxBool("directsampleall",luxProp(scn, "sintegrator.distributedpath.directsampleall", "true"), "Direct ALL", "Include diffuse direct light sample at first vertex", gui, 0.75)
-            str += luxInt("directsamples", luxProp(scn, "sintegrator.distributedpath.directsamples", 1), 0, 1024, "s", "The number of direct light samples to take at the eye vertex", gui, 0.25)
-            str += luxBool("indirectsampleall",luxProp(scn, "sintegrator.distributedpath.indirectsampleall", "false"), "Indirect ALL", "Include diffuse direct light sample at first vertex", gui, 0.75)
-            str += luxInt("indirectsamples", luxProp(scn, "sintegrator.distributedpath.indirectsamples", 1), 0, 1024, "s", "The number of direct light samples to take at the remaining vertices", gui, 0.25)
+            str += luxBool("directsampleall",luxProp(scn, "sintegrator.distributedpath.directsampleall", "true"), "Direct ALL", "Include diffuse direct light sample at first vertex", gui, 0.7)
+            str += luxInt("directsamples", luxProp(scn, "sintegrator.distributedpath.directsamples", 1), 0, 1024, "s", "The number of direct light samples to take at the eye vertex", gui, 0.3)
+            str += luxBool("indirectsampleall",luxProp(scn, "sintegrator.distributedpath.indirectsampleall", "false"), "Indirect ALL", "Include diffuse direct light sample at first vertex", gui, 0.7)
+            str += luxInt("indirectsamples", luxProp(scn, "sintegrator.distributedpath.indirectsamples", 1), 0, 1024, "s", "The number of direct light samples to take at the remaining vertices", gui, 0.3)
             if gui: gui.newline("  Diffuse:")
             str += luxInt("diffusereflectdepth", luxProp(scn, "sintegrator.distributedpath.diffusereflectdepth", 3), 0, 2048, "Reflect", "The maximum recursion depth for diffuse reflection ray casting", gui, 0.5)
-            str += luxInt("diffusereflectsamples", luxProp(scn, "sintegrator.distributedpath.diffusereflectsamples", 1), 0, 1024, "s", "The number of diffuse reflection samples to take at the eye vertex", gui, 0.25)
+            str += luxInt("diffusereflectsamples", luxProp(scn, "sintegrator.distributedpath.diffusereflectsamples", 1), 0, 1024, "s", "The number of diffuse reflection samples to take at the eye vertex", gui, 0.3)
             str += luxInt("diffuserefractdepth", luxProp(scn, "sintegrator.distributedpath.diffuserefractdepth", 5), 0, 2048, "Refract", "The maximum recursion depth for diffuse refraction ray casting", gui, 0.5)
-            str += luxInt("diffuserefractsamples", luxProp(scn, "sintegrator.distributedpath.diffuserefractsamples", 1), 0, 1024, "s", "The number of diffuse refraction samples to take at the eye vertex", gui, 0.25)
-            str += luxBool("directdiffuse",luxProp(scn, "sintegrator.distributedpath.directdiffuse", "true"), "DL", "Include diffuse direct light sample at first vertex", gui, 0.25)
-            str += luxBool("indirectdiffuse",luxProp(scn, "sintegrator.distributedpath.indirectdiffuse", "true"), "IDL", "Include diffuse indirect light sample at first vertex", gui, 0.25)
+            str += luxInt("diffuserefractsamples", luxProp(scn, "sintegrator.distributedpath.diffuserefractsamples", 1), 0, 1024, "s", "The number of diffuse refraction samples to take at the eye vertex", gui, 0.3)
+            str += luxBool("directdiffuse",luxProp(scn, "sintegrator.distributedpath.directdiffuse", "true"), "DL", "Include diffuse direct light sample at first vertex", gui, 0.20)
+            str += luxBool("indirectdiffuse",luxProp(scn, "sintegrator.distributedpath.indirectdiffuse", "true"), "IDL", "Include diffuse indirect light sample at first vertex", gui, 0.20)
             if gui: gui.newline("  Glossy:")
-            str += luxInt("glossyreflectdepth", luxProp(scn, "sintegrator.distributedpath.glossyreflectdepth", 2), 0, 2048, "Reflect", "The maximum recursion depth for glossy reflection ray casting", gui, 0.5)
-            str += luxInt("glossyreflectsamples", luxProp(scn, "sintegrator.distributedpath.glossyreflectsamples", 1), 0, 1024, "s", "The number of glossy reflection samples to take at the eye vertex", gui, 0.25)
-            str += luxInt("glossyrefractdepth", luxProp(scn, "sintegrator.distributedpath.glossyrefractdepth", 5), 0, 2048, "Refract", "The maximum recursion depth for glossy refraction ray casting", gui, 0.5)
-            str += luxInt("glossyrefractsamples", luxProp(scn, "sintegrator.distributedpath.glossyrefractsamples", 1), 0, 1024, "s", "The number of glossy refraction samples to take at the eye vertex", gui, 0.25)
-            str += luxBool("directglossy",luxProp(scn, "sintegrator.distributedpath.directglossy", "true"), "DL", "Include glossy direct light sample at first vertex", gui, 0.25)
-            str += luxBool("indirectglossy",luxProp(scn, "sintegrator.distributedpath.indirectglossy", "true"), "IDL", "Include glossy indirect light sample at first vertex", gui, 0.25)
+            str += luxInt("glossyreflectdepth", luxProp(scn, "sintegrator.distributedpath.glossyreflectdepth", 2), 0, 2048, "Reflect", "The maximum recursion depth for glossy reflection ray casting", gui, 0.50)
+            str += luxInt("glossyreflectsamples", luxProp(scn, "sintegrator.distributedpath.glossyreflectsamples", 1), 0, 1024, "s", "The number of glossy reflection samples to take at the eye vertex", gui, 0.3)
+            str += luxInt("glossyrefractdepth", luxProp(scn, "sintegrator.distributedpath.glossyrefractdepth", 5), 0, 2048, "Refract", "The maximum recursion depth for glossy refraction ray casting", gui, 0.50)
+            str += luxInt("glossyrefractsamples", luxProp(scn, "sintegrator.distributedpath.glossyrefractsamples", 1), 0, 1024, "s", "The number of glossy refraction samples to take at the eye vertex", gui, 0.3)
+            str += luxBool("directglossy",luxProp(scn, "sintegrator.distributedpath.directglossy", "true"), "DL", "Include glossy direct light sample at first vertex", gui, 0.20)
+            str += luxBool("indirectglossy",luxProp(scn, "sintegrator.distributedpath.indirectglossy", "true"), "IDL", "Include glossy indirect light sample at first vertex", gui, 0.20)
             if gui: gui.newline("  Specular:")
             str += luxInt("specularreflectdepth", luxProp(scn, "sintegrator.distributedpath.specularreflectdepth", 3), 0, 2048, "Reflect", "The maximum recursion depth for specular reflection ray casting", gui, 1.0)
             str += luxInt("specularrefractdepth", luxProp(scn, "sintegrator.distributedpath.specularrefractdepth", 5), 0, 2048, "Refract", "The maximum recursion depth for specular refraction ray casting", gui, 1.0)
@@ -6148,28 +6148,28 @@ def luxDraw():
                 Draw.Button("Export", 0, 10, y+20, 100, 36, "Export", lambda e,v:CBluxExport(dlt.get()=="true" or pipe.get()=="true", False))
                 Draw.Button("Export Anim", 0, 110, y+20, 100, 36, "Export animation", lambda e,v:CBluxAnimExport(dlt.get()=="true" or pipe.get()=="true", False))
             
-            Draw.Toggle("run", evtLuxGui, 290, y+40, 30, 16, run.get()=="true", "start Lux after export", lambda e,v: run.set(["false","true"][bool(v)]))
+            Draw.Toggle("run", evtLuxGui, 265, y+40, 30, 16, run.get()=="true", "start Lux after export", lambda e,v: run.set(["false","true"][bool(v)]))
             
             if (pipe.get() == 'false' and dlt.get() == 'true') or run.get()=='false':
-                Draw.Toggle("def", evtLuxGui, 320, y+40, 30, 16, dlt.get()=="true", "write to default lxs file", lambda e,v: dlt.set(["false","true"][bool(v)]))
+                Draw.Toggle("def", evtLuxGui, 295, y+40, 55, 16, dlt.get()=="true", "write to default lxs file", lambda e,v: dlt.set(["false","true"][bool(v)]))
             elif pipe.get() == 'true' and dlt.get() == 'false':
-                Draw.Toggle("pipe", evtLuxGui, 320, y+40, 30, 16, pipe.get()=="true", "do not write any lxs file", lambda e,v: pipe.set(["false","true"][bool(v)]))
+                Draw.Toggle("pipe", evtLuxGui, 295, y+40, 55, 16, pipe.get()=="true", "do not write any lxs file", lambda e,v: pipe.set(["false","true"][bool(v)]))
             else:
-                Draw.Toggle("d", evtLuxGui, 320, y+40, 15, 16, dlt.get()=="true", "write to default lxs file", lambda e,v: dlt.set(["false","true"][bool(v)]))
-                Draw.Toggle("p", evtLuxGui, 335, y+40, 15, 16, pipe.get()=="true", "do not write any lxs file", lambda e,v: pipe.set(["false","true"][bool(v)]))
+                Draw.Toggle("def", evtLuxGui, 295, y+40, 25, 16, dlt.get()=="true", "write to default lxs file", lambda e,v: dlt.set(["false","true"][bool(v)]))
+                Draw.Toggle("pipe", evtLuxGui, 320, y+40, 30, 16, pipe.get()=="true", "do not write any lxs file", lambda e,v: pipe.set(["false","true"][bool(v)]))
             
             Draw.Toggle("clay", evtLuxGui, 350, y+40, 30, 16, clay.get()=="true", "all materials are rendered as white-matte", lambda e,v: clay.set(["false","true"][bool(v)]))
-            Draw.Toggle("nolg", evtLuxGui, 380, y+40, 30, 16, nolg.get()=="true", "disables all light groups", lambda e,v: nolg.set(["false","true"][bool(v)]))
+            Draw.Toggle("noLG", evtLuxGui, 380, y+40, 35, 16, nolg.get()=="true", "disables all light groups", lambda e,v: nolg.set(["false","true"][bool(v)]))
             
             if pipe.get() == "false":
-                Draw.Toggle(".lxs", 0, 290, y+20, 30, 16, lxs.get()=="true", "export .lxs scene file", lambda e,v: lxs.set(["false","true"][bool(v)]))
-                Draw.Toggle(".lxo", 0, 320, y+20, 30, 16, lxo.get()=="true", "export .lxo geometry file", lambda e,v: lxo.set(["false","true"][bool(v)]))
-                Draw.Toggle(".lxm", 0, 350, y+20, 30, 16, lxm.get()=="true", "export .lxm material file", lambda e,v: lxm.set(["false","true"][bool(v)]))
-                Draw.Toggle(".lxv", 0, 380, y+20, 30, 16, lxv.get()=="true", "export .lxv volume file", lambda e,v: lxv.set(["false","true"][bool(v)]))
+                Draw.Toggle(".lxs", 0, 265, y+20, 37, 16, lxs.get()=="true", "export .lxs scene file", lambda e,v: lxs.set(["false","true"][bool(v)]))
+                Draw.Toggle(".lxo", 0, 302, y+20, 38, 16, lxo.get()=="true", "export .lxo geometry file", lambda e,v: lxo.set(["false","true"][bool(v)]))
+                Draw.Toggle(".lxm", 0, 340, y+20, 37, 16, lxm.get()=="true", "export .lxm material file", lambda e,v: lxm.set(["false","true"][bool(v)]))
+                Draw.Toggle(".lxv", 0, 377, y+20, 38, 16, lxv.get()=="true", "export .lxv volume file", lambda e,v: lxv.set(["false","true"][bool(v)]))
     
     BGL.glColor3f(0.9, 0.9, 0.9)
     
-    BGL.glRasterPos2i(340,y+5) ; Draw.Text("Press Q or ESC to quit.", "tiny")
+    BGL.glRasterPos2i(330,y+5) ; Draw.Text("Press Q or ESC to quit.", "tiny")
     scrollbar.height = scrollbar.getTop() - y
     scrollbar.draw()
 
