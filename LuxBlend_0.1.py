@@ -1101,7 +1101,7 @@ def get_lux_args(filename, extra_args=[]):
     return cmd, lux_args2
 
 def get_lux_pipe(scn, buf = 1024, type="luxconsole"):
-    bin = get_lux_exec(scn, type)
+    bin = "\"%s\"" % get_lux_exec(scn, type)
     
     print("piping to lux binary: " + bin)
     
