@@ -2829,8 +2829,7 @@ def luxSampler(scn, gui=None):
             if gui: gui.newline("  PixelSampler:")
             str += luxOption("pixelsampler", luxProp(scn, "sampler.random.pixelsampler", "vegas"), ["linear", "tile", "random", "vegas","lowdiscrepancy","hilbert"], "pixel-sampler", "select pixel-sampler", gui)
             if gui: gui.newline()
-            str += luxInt("xsamples", luxProp(scn, "sampler.random.xsamples", 2), 1, 512, "xsamples", "Allows you to specify how many samples per pixel are taking in the x direction", gui)
-            str += luxInt("ysamples", luxProp(scn, "sampler.random.ysamples", 2), 1, 512, "ysamples", "Allows you to specify how many samples per pixel are taking in the y direction", gui)
+            str += luxInt("pixelsamples", luxProp(scn, "sampler.random.pixelsamples", 2), 1, 512, "pixelsamples", "Allows you to specify how many samples per pixel are computed", gui)
     return str            
 
 def luxSurfaceIntegrator(scn, gui=None):
