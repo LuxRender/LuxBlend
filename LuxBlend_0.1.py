@@ -6,6 +6,29 @@ Blender: 248
 Group: 'Render'
 Tooltip: 'Export/Render to LuxRender v0.6RC5 scene format (.lxs)'
 """
+
+__author__ = "radiance, zuegs, ideasman42, luxblender, dougal2"
+__version__ = "0.6RC5"
+__url__ = [
+	"http://www.luxrender.net/",
+	"http://www.luxrender.net/forum/viewforum.php?f=11",
+	"http://www.luxrender.net/wiki/index.php/Tutorial_1:_Your_first_scene_%26_render"
+]
+__bpydoc__ = """\
+LuxRender is an open-source rendering system for physically correct, unbiased image synthesis.
+This is the Luxrender Blender Export Script.
+
+Useful links:
+- For updates: http://www.luxrender.net/forum/viewforum.php?f=11
+- For Blender Tutorial: http://www.luxrender.net/wiki/index.php/Tutorial_1:_Your_first_scene_%26_render
+
+Usage: 
+- Run the script from the render menu.
+- Set the default location of the Luxrender.exe.
+
+Please check the lux tutorials & forums for more information.
+"""
+
 #
 # ***** BEGIN GPL LICENSE BLOCK *****
 #
