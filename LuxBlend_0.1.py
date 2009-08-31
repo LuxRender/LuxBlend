@@ -4484,6 +4484,12 @@ def Preview_Update(mat, kn, defLarge, defType, texName, name, level):
     previewing = True
     
     Blender.Window.WaitCursor(True)
+    
+    # set path mode to absolute for preview
+    pm_prop = luxProp(scn, "pathmode", "absolute")
+    pm = pm_prop.get()
+    pm_prop.set('absolute')
+    
     scn = Scene.GetCurrent()
 
     # Size of preview thumbnail
@@ -4604,10 +4610,15 @@ def Preview_Update(mat, kn, defLarge, defType, texName, name, level):
             p.stdin.write(' "float gain" [0.3]\n')
         p.stdin.write('Shape "disk" "float radius" [1.0]\nAttributeEnd\n')
     p.stdin.write('WorldEnd\n')
+    
     previewing = False
 
     data = p.communicate()[0]
     p.stdin.close()
+    
+    # restore path mode
+    pm_prop.set(pm)    
+    
     datalen = len(data)
     if(datalen < thumbbuf): 
         print("error on preview: got %i bytes, expected %i" % (datalen, thumbbuf))
