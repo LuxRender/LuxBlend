@@ -4484,13 +4484,13 @@ def Preview_Update(mat, kn, defLarge, defType, texName, name, level):
     previewing = True
     
     Blender.Window.WaitCursor(True)
+    scn = Scene.GetCurrent()
     
     # set path mode to absolute for preview
     pm_prop = luxProp(scn, "pathmode", "absolute")
     pm = pm_prop.get()
     pm_prop.set('absolute')
     
-    scn = Scene.GetCurrent()
 
     # Size of preview thumbnail
     thumbres = 110 # default 110x110
