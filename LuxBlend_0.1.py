@@ -3073,7 +3073,7 @@ def luxEnvironment(scn, gui=None):
                         str += "\n   \"color L\" [%g %g %g]" %(worldcolor[0], worldcolor[1], worldcolor[2])
                     except: pass
 
-                str += luxFloat("gain", luxProp(scn, "env.infinite.gain", 1.0), 0.0001, 100.0, "gain", "", gui, 1.0)
+                str += luxFloat("gain", luxProp(scn, "env.infinite.gain", 1.0), 0.0001, 100.0, "gain", "Infinite Env Gain", gui, 1.0)
 
                 infinitesun = luxProp(scn, "env.infinite.hassun", "false")
                 luxCollapse("infinitesun", infinitesun, "Sun Component", "Add Sunlight Component", gui, 2.0)
@@ -3095,7 +3095,7 @@ def luxEnvironment(scn, gui=None):
                         if obj.getData(mesh=1).getType() == 1: # sun object # data
                             sun = obj
                 if sun:
-                    str += luxFloat("gain", luxProp(scn, "env.sunsky.gain", 1.0), 0.0, 1000.0, "gain", "Sky gain", gui)
+                    str += luxFloat("gain", luxProp(scn, "env.sunsky.gain", 1.0), 0.0001, 1000.0, "gain", "Sky gain", gui)
                     
                     invmatrix = Mathutils.Matrix(sun.getInverseMatrix())
                     str += "\n   \"vector sundir\" [%f %f %f]\n" %(invmatrix[0][2], invmatrix[1][2], invmatrix[2][2])
