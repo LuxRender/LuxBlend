@@ -1014,6 +1014,7 @@ def save_lux(filename, unindexedname):
 
     render_status_text = ''
     render_status = False
+    Blender.Window.QRedrawAll()
 
     if luxProp(scn, "lxs", "true").get()=="true" or use_pipe_output:
         #### Write End Tag
