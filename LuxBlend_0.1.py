@@ -1,4 +1,5 @@
 #!BPY
+# -*- coding: utf-8 -*-
 # coding=utf-8
 """Registration info for Blender menus:
 Name: 'LuxBlend v0.6RC6 Exporter'
@@ -1446,7 +1447,7 @@ def getScenePresets():
     'sampler.metro.strength': 0.6,
     'sampler.metro.lmprob': 0.4,
     'sampler.metro.maxrejects': 512,
-    'sampler.metro.initsamples': 262144,
+    #'sampler.metro.initsamples': 262144,
     'sampler.metro.usevariance': "false",
 
     'sintegrator.type': 'bidirectional',
@@ -1472,7 +1473,7 @@ def getScenePresets():
     'sampler.metro.strength': 0.6,
     'sampler.metro.lmprob': 0.4,
     'sampler.metro.maxrejects': 512,
-    'sampler.metro.initsamples': 262144,
+    #'sampler.metro.initsamples': 262144,
     'sampler.metro.usevariance': "false",
 
     'sintegrator.type': 'path',
@@ -2826,7 +2827,7 @@ def luxSampler(scn, gui=None):
                 str += luxFloat("largemutationprob", luxProp(scn, "sampler.metro.lmprob", 0.4), 0.0, 1.0, "LM.prob.", "Probability of generating a large sample (mutation)", gui)
                 str += luxInt("maxconsecrejects", luxProp(scn, "sampler.metro.maxrejects", 512), 0, 32768, "max.rejects", "number of consecutive rejects before a new mutation is forced", gui)
                 if gui: gui.newline("  Screen:")
-                str += luxInt("initsamples", luxProp(scn, "sampler.metro.initsamples", 262144), 1, 1000000, "initsamples", "", gui)
+                #str += luxInt("initsamples", luxProp(scn, "sampler.metro.initsamples", 262144), 1, 1000000, "initsamples", "", gui)
                 str += luxBool("usevariance",luxProp(scn, "sampler.metro.usevariance", "false"), "usevariance", "Accept based on variance", gui, 1.0)
 
             if showhelp.get()=="true":
@@ -2835,7 +2836,7 @@ def luxSampler(scn, gui=None):
                 Draw.Text("A Metropolis-Hastings mutating sampler which implements MLT", 'small')    
 
         if samplertype.get() == "erpt":
-            str += luxInt("initsamples", luxProp(scn, "sampler.erpt.initsamples", 100000), 1, 1000000, "initsamples", "", gui)
+            #str += luxInt("initsamples", luxProp(scn, "sampler.erpt.initsamples", 100000), 1, 1000000, "initsamples", "", gui)
             if gui: gui.newline("  Mutation:")
             str += luxInt("chainlength", luxProp(scn, "sampler.erpt.chainlength", 512), 1, 32768, "chainlength", "The number of mutations from a given seed", gui)
             if gui: gui.newline()
@@ -2850,7 +2851,7 @@ def luxSampler(scn, gui=None):
             if gui: gui.newline("  PixelSampler:")
             str += luxOption("pixelsampler", luxProp(scn, "sampler.random.pixelsampler", "vegas"), ["linear", "tile", "random", "vegas","lowdiscrepancy","hilbert"], "pixel-sampler", "select pixel-sampler", gui)
             if gui: gui.newline()
-            str += luxInt("pixelsamples", luxProp(scn, "sampler.random.pixelsamples", 2), 1, 512, "pixelsamples", "Allows you to specify how many samples per pixel are computed", gui)
+            str += luxInt("pixelsamples", luxProp(scn, "sampler.random.pixelsamples", 4), 1, 512, "pixelsamples", "Allows you to specify how many samples per pixel are computed", gui)
     return str            
 
 def luxSurfaceIntegrator(scn, gui=None):
