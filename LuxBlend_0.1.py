@@ -2337,7 +2337,12 @@ def luxCamera(cam, context, gui=None):
                     dofdist = luxAttr(cam, "dofDist")
                     str += luxFloat("focaldistance", dofdist, 0.0, 100.0, "distance", "Distance from the camera at which objects will be in focus. Has no effect if Lens Radius is 0", gui)
                     if objectfocus.get() != "":
-                        setFocus(objectfocus.get())
+                        try:
+                            setFocus(objectfocus.get())
+                        except:
+                            Draw.PupMenu("focus-object does not match existing object-name !!!")
+                            # todo : reset field until input is valid
+                                                                  
                 if focustype.get() == "manual":
                     dofdist = luxAttr(cam, "dofDist")
                     str += luxFloat("focaldistance", dofdist, 0.0, 100.0, "distance", "Distance from the camera at which objects will be in focus. Has no effect if Lens Radius is 0", gui)
