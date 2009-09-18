@@ -2340,8 +2340,9 @@ def luxCamera(cam, context, gui=None):
                         try:
                             setFocus(objectfocus.get())
                         except:
-                            Draw.PupMenu("focus-object does not match existing object-name !!!")
-                            # todo : reset field until input is valid
+                            luxProp(cam, "camera.objectfocus", "").set("")
+                            Draw.PupMenu("WARNING: focus-object does not match existing object-name")
+                            if LuxIsGUI: Draw.Redraw()
                                                                   
                 if focustype.get() == "manual":
                     dofdist = luxAttr(cam, "dofDist")
