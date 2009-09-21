@@ -3759,10 +3759,16 @@ def luxTexture(name, parentkey, type, default, min, max, caption, hint, mat, gui
         texturefilename = luxProp(mat, keyname+".filename", "")
         extimage = luxProp(mat, keyname+'.externalimage', "true")
         luxBool("External Image", extimage, "External Image", "External Image", gui, 1.0)
+        if gui: gui.newline("IM-path:", -2, level)
         if extimage.get() == "true":
             luxFile("filename", texturefilename, "file", "texture file path", gui, 2.0)
         else:
-            bil = [i.filename for i in Image.Get()]
+            bil = [i.filename for i in Image.Get() if '.' in i.filename]
+            try:
+                uti = [i.filename for i in Image.Get() if '.' not in i.filename]
+                if len(uti) > 0:
+                    luxLabel("INFO: Images not listed here must be saved first", gui)
+            except: pass    
             if len(bil) > 0:
                 luxOption("Image", texturefilename, bil, "Blender Images", "Blender Image", gui, 2.0)
             else:
@@ -5243,6 +5249,12 @@ def convertMaterial(mat):
             else: luxProp(mat, dot(name)+"mapping","").set("planar")
         luxProp(mat, dot(name)+"3dscale", "1.0 1.0 1.0").setVector((1.0/tex.size[0], 1.0/tex.size[1], 1.0/tex.size[2]))
         luxProp(mat, dot(name)+"3dtranslate", "0.0 0.0 0.0").setVector((-tex.ofs[0], -tex.ofs[1], -tex.ofs[2]))
+
+# below a hack to make planar-mapping work and convert correctly from blender to luxblend - please review - jens
+#        luxProp(mat, dot(name)+"v1", "1.0 1.0 1.0").setVector((0.5*tex.size[0], 0.0, 0.0))
+#        luxProp(mat, dot(name)+"v2", "0.0 0.0 0.0").setVector((0.0, -0.5*tex.size[1], -0.0))
+#        luxProp(mat, dot(name)+"udelta", 0.0).set(tex.ofs[0]+0.5)
+#        luxProp(mat, dot(name)+"vdelta", 0.0).set(-tex.ofs[1]-0.5)
 
     def convertColorband(colorband):
         # colorbands are not supported in lux - so lets extract a average low-side and high-side color
