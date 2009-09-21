@@ -3753,7 +3753,10 @@ def luxTexture(name, parentkey, type, default, min, max, caption, hint, mat, gui
         str += luxFloat("energy", luxProp(mat, keyname+".energy", 1.0), 0.0, 1.0, "energy", "Amount of mean energy", gui, 0.9, 1)
 
     if texture.get() == "imagemap":
+        if gui: gui.newline("IM-clip:", -2, level)
         str += luxOption("wrap", luxProp(mat, keyname+".wrap", "repeat"), ["repeat","black","clamp"], "repeat", "", gui, 1.0)
+
+        if gui: gui.newline("IM-source:", -2, level)
 
         # ZANQDO
         texturefilename = luxProp(mat, keyname+".filename", "")
