@@ -2147,6 +2147,11 @@ def luxBool(name, lux, caption, hint, gui, width=1.0):
         Draw.Toggle(caption, evtLuxGui, r[0], r[1], r[2], r[3], lux.get()=="true", hint, lambda e,v: lux.set(["false","true"][bool(v)]))
     return "\n   \"bool %s\" [\"%s\"]"%(name, lux.get())
 
+def luxLabel(caption, gui):
+    if gui:
+        r = gui.getRect(2,1); BGL.glRasterPos2i(r[0],r[1]+5)
+        Draw.Text(caption)
+
 def luxCollapse(name, lux, caption, hint, gui, width=1.0):
     if gui:
         r = gui.getRect(width, 1)
@@ -3752,11 +3757,29 @@ def luxTexture(name, parentkey, type, default, min, max, caption, hint, mat, gui
         str += luxFloat("energy", luxProp(mat, keyname+".energy", 1.0), 0.0, 1.0, "energy", "Amount of mean energy", gui, 0.9, 1)
 
     if texture.get() == "imagemap":
-        str += luxOption("wrap", luxProp(mat, keyname+".wrap", "repeat"), ["repeat","black","clamp"], "repeat", "", gui, 1.1)
+        if gui: gui.newline("IM-clip:", -2, level)
+        str += luxOption("wrap", luxProp(mat, keyname+".wrap", "repeat"), ["repeat","black","clamp"], "repeat", "", gui, 1.0)
+
+        if gui: gui.newline("IM-source:", -2, level)
 
         # ZANQDO
         texturefilename = luxProp(mat, keyname+".filename", "")
-        luxFile("filename", texturefilename, "file", "texture file path", gui, 2.0)
+        extimage = luxProp(mat, keyname+'.externalimage', "true")
+        luxBool("External Image", extimage, "External Image", "External Image", gui, 1.0)
+        if gui: gui.newline("IM-path:", -2, level)
+        if extimage.get() == "true":
+            luxFile("filename", texturefilename, "file", "texture file path", gui, 2.0)
+        else:
+            bil = [i.filename for i in Image.Get() if '.' in i.filename]
+            try:
+                uti = [i.filename for i in Image.Get() if '.' not in i.filename]
+                if len(uti) > 0:
+                    luxLabel("INFO: Images not listed here must be saved first", gui)
+            except: pass    
+            if len(bil) > 0:
+                luxOption("Image", texturefilename, bil, "Blender Images", "Blender Image", gui, 2.0)
+            else:
+                luxLabel("No Blender Images - Load Image in the Image Editor", gui)
         # dougal2 image file packing
         impack = luxProp(Scene.GetCurrent(), 'packtextures', 'false')
         
@@ -5231,6 +5254,11 @@ def convertMaterial(mat):
             elif tex.mapping == Texture.Mappings["SPHERE"]:
                 luxProp(mat, dot(name)+"mapping","").set("spherical")
             else: luxProp(mat, dot(name)+"mapping","").set("planar")
+# below a hack to make planar-mapping work and convert correctly from blender to luxblend - please review - jens
+#            luxProp(mat, dot(name)+"v1", "1.0 1.0 1.0").setVector((0.5*tex.size[0], 0.0, 0.0))
+#            luxProp(mat, dot(name)+"v2", "0.0 0.0 0.0").setVector((0.0, -0.5*tex.size[1], -0.0))
+#            luxProp(mat, dot(name)+"udelta", 0.0).set(tex.ofs[0]+0.5)
+#            luxProp(mat, dot(name)+"vdelta", 0.0).set(-tex.ofs[1]-0.5)
         luxProp(mat, dot(name)+"3dscale", "1.0 1.0 1.0").setVector((1.0/tex.size[0], 1.0/tex.size[1], 1.0/tex.size[2]))
         luxProp(mat, dot(name)+"3dtranslate", "0.0 0.0 0.0").setVector((-tex.ofs[0], -tex.ofs[1], -tex.ofs[2]))
 
