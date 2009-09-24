@@ -760,6 +760,10 @@ def save_lux(filename, unindexedname):
     if not(export.analyseScene()) and not(envtype == "infinite") and not((envtype == "sunsky") and (sun != None)):
         print("ERROR: No light source found")
         Draw.PupMenu("ERROR: No light source found%t|OK%x1")
+        render_status_text = ''
+        render_status = False
+        Blender.Window.QRedrawAll()
+        del export
         return False
 
     if LuxIsGUI: DrawProgressBar(0.0/export_total_steps,'Setting up Scene file')
