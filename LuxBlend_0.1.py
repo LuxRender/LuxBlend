@@ -1124,7 +1124,8 @@ def get_lux_args(filename, extra_args=[]):
         
         cmd = "start /b %s \"\" %s" % (prio, lux_args)
         
-    if ostype == "linux2" or ostype == "darwin":
+#    if ostype == "linux2" or ostype == "darwin":
+    else:
         cmd = "(nice -n %d %s)&"%(luxnice, lux_args)
     
     return cmd, lux_args2
@@ -1154,7 +1155,8 @@ def launchLuxWait(filename):
     if ostype == "win32":
         os.system(cmd)
     
-    if ostype == "linux2" or ostype == "darwin":
+#    if ostype == "linux2" or ostype == "darwin":
+    else:
         subprocess.call(cmd,shell=True)
 
 #### SAVE ANIMATION ####    
