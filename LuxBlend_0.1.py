@@ -1148,6 +1148,7 @@ def launchLux(filename):
     os.system(cmd)
 
 def launchLuxWait(filename):
+    ostype = osys.platform
     cmd, raw_args = get_lux_args(filename, extra_args=[])
     
     if ostype == "win32":
