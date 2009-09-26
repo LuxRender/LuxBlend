@@ -2937,6 +2937,9 @@ def luxSurfaceIntegrator(scn, gui=None):
                 str += luxInt("eyedepth", luxProp(scn, "sintegrator.bidir.eyedepth", 16), 0, 2048, "eyedepth", "The maximum recursion depth for ray casting", gui)
                 str += luxInt("lightdepth", luxProp(scn, "sintegrator.bidir.lightdepth", 16), 0, 2048, "lightdepth", "The maximum recursion depth for light ray casting", gui)
                 str += luxOption("strategy", luxProp(scn, "sintegrator.bidir.strategy", "auto"), ["one", "all", "auto"], "strategy", "select directlighting strategy", gui)
+                
+                str += luxFloat('eyerrthreshold', luxProp(scn, "sintegrator.bidir.eyerrthreshold", 0), 0, 1, "eyerrthreshold", "The minimum probability for russian roulette eye subpath termination ", gui)
+                str += luxFloat('lightrrthreshold', luxProp(scn, "sintegrator.bidir.lightrrthreshold", 0), 0, 1, "lightrrthreshold", "The minimum probability for russian roulette light subpath termination ", gui)
 
         if integratortype.get() == "exphotonmap":
             if gui: gui.newline("  Render:")
