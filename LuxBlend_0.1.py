@@ -816,8 +816,8 @@ def save_lux(filename, unindexedname):
         def run(self):
             if self.load_result: self.data = self.p.communicate()[0]
             self.f.close()
-            if self.load_result: self.load_image()
-            #self.load_data()
+            if self.load_result: # self.load_image()
+                self.load_data()
             print("LuxRender process finished")
             self.update_status()
             
@@ -1030,9 +1030,20 @@ def save_lux(filename, unindexedname):
     print("Finished.\n")
     del export
     
-    
     time2 = Blender.sys.time()
     print("Processing time: %f\n" %(time2-time1))
+
+    if use_pipe_output:
+        if luxProp(scn, "haltspp", 0).get() > 0:
+            # Wait for piped luxconsole render thread to end
+            import time
+            while render_status:
+                print "Waiting for render process to end.."
+                time.sleep(10)
+
+        # Don't launch it again as a piped scene is started implicitly
+        return False
+
     return True
 
 ########################################################################
@@ -1175,6 +1186,14 @@ def save_anim(filename):
 
     Run = luxProp(scn, "run", "true").get()
 
+    if Run == "true":
+        haltspp = luxProp(scn, "haltspp", 0).get()
+        if haltspp == 0:
+            Draw.PupMenu("ERROR: You must set a limit for spp (Output->halt) when doing animation and the 'run' flag is switched on")
+            if LuxIsGUI:
+                Draw.Redraw()
+            return
+
     print("\n\nRendering animation (frame %i to %i)\n\n"%(startF, endF))
 
     for i in range (startF, endF+1):
@@ -1187,12 +1206,6 @@ def save_anim(filename):
         luxProp(scn, "filename", Blender.Get("filename")).set(sys.makename(filename, "-%05d" %  (Blender.Get('curframe'))))
 
         if Run == "true":
-            haltspp = luxProp(scn, "haltspp", 0).get()
-            if haltspp == 0:
-                Draw.PupMenu("ERROR: You must set a limit for spp (Output->halt) when doing animation and the 'run' flag is switched on")
-                if LuxIsGUI:
-                    Draw.Redraw()
-                return
             if save_lux(filename, unindexedname):
                 launchLuxWait(filename, anim=True)
         else:
