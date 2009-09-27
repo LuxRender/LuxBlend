@@ -1075,10 +1075,11 @@ def get_lux_exec(scn, type="luxrender"):
     
     return ic
     
-def get_lux_args(filename, extra_args=[]):
+def get_lux_args(filename, extra_args=[], anim=False):
     ostype = osys.platform
     scn = Scene.GetCurrent()
-    ic = get_lux_exec(scn)
+    
+    ic = get_lux_exec(scn, type=(anim and 'luxconsole' or 'luxrender'))
     
     servers_string = networkstring(scn)
     update_int=luxProp(scn,"newtork_interval",180).get()
@@ -1122,11 +1123,15 @@ def get_lux_args(filename, extra_args=[]):
         elif luxnice > -15: prio = "/abovenormal"
         else: prio = "/high"
         
-        cmd = "start /b %s \"\" %s" % (prio, lux_args)
+        if not anim:
+            cmd = "start /b %s \"\" %s" % (prio, lux_args)
         
 #    if ostype == "linux2" or ostype == "darwin":
     else:
-        cmd = "(nice -n %d %s)&"%(luxnice, lux_args)
+        if not anim:
+            cmd = "(nice -n %d %s)&"%(luxnice, lux_args)
+        else:
+            cmd = "(nice -n %d %s)"%(luxnice, lux_args)
     
     return cmd, lux_args2
 
@@ -1148,9 +1153,9 @@ def launchLux(filename):
     print("Running Luxrender:\n"+cmd)
     os.system(cmd)
 
-def launchLuxWait(filename):
+def launchLuxWait(filename, anim=False):
     ostype = osys.platform
-    cmd, raw_args = get_lux_args(filename, extra_args=[])
+    cmd, raw_args = get_lux_args(filename, extra_args=[], anim=anim)
     
     if ostype == "win32":
         os.system(cmd)
@@ -1182,8 +1187,14 @@ def save_anim(filename):
         luxProp(scn, "filename", Blender.Get("filename")).set(sys.makename(filename, "-%05d" %  (Blender.Get('curframe'))))
 
         if Run == "true":
+            haltspp = luxProp(scn, "haltspp", 0).get()
+            if haltspp == 0:
+                Draw.PupMenu("ERROR: You must set a limit for spp (Output->halt) when doing animation and the 'run' flag is switched on")
+                if LuxIsGUI:
+                    Draw.Redraw()
+                return
             if save_lux(filename, unindexedname):
-                launchLuxWait(filename)
+                launchLuxWait(filename, anim=True)
         else:
             save_lux(indexedname, unindexedname)
 
