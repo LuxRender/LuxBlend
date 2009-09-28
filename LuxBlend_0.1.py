@@ -1133,7 +1133,10 @@ def get_lux_args(filename, extra_args=[], anim=False):
         elif luxnice > -15: prio = "/abovenormal"
         else: prio = "/high"
         
-        cmd = "start /b %s \"\" %s" % (prio, lux_args)
+        if not anim:
+            cmd = "start /b %s \"\" %s" % (prio, lux_args)
+        else:
+            cmd = "start /WAIT %s \"\" %s" % (prio, lux_args)
         
 #    if ostype == "linux2" or ostype == "darwin":
     else:
