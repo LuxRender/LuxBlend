@@ -1036,9 +1036,7 @@ def save_lux(filename, unindexedname):
     if use_pipe_output:
         if luxProp(scn, "haltspp", 0).get() > 0:
             # Wait for piped luxconsole render thread to end
-            import time
-            while render_status:
-                time.sleep(1)
+            file.join()
 
         # Don't launch it again as a piped scene is started implicitly
         return False
@@ -1176,8 +1174,19 @@ def launchLuxWait(filename, anim=False):
     else:
         subprocess.call(cmd,shell=True)
 
-#### SAVE ANIMATION ####    
+#### SAVE ANIMATION ####
+
+
 def save_anim(filename):
+    to = luxProp(Scene.GetCurrent(), 'export.threaded', 'true').get()
+    if to == 'true':
+        import threading
+        anim_thread = threading.Thread(target=save_anim_real, args=(filename,))
+        anim_thread.start()
+    else:
+        save_anim_real(filename)
+
+def save_anim_real(filename):
     global MatSaved
     
     MatSaved = 0
@@ -1217,7 +1226,18 @@ def save_anim(filename):
     print("\n\nFinished Rendering animation\n")
 
 #### SAVE STILL (hackish...) ####
+
+import threading
 def save_still(filename):
+    to = luxProp(Scene.GetCurrent(), 'export.threaded', 'true').get()
+    if to == 'true':
+        import threading
+        still_thread = threading.Thread(target=save_still_real, args=(filename,))
+        still_thread.start()
+    else:
+        save_still_real(filename)
+
+def save_still_real(filename):
     global MatSaved
     scn = Scene.GetCurrent()
     luxProp(scn, "filename", Blender.Get("filename")).set(sys.makename(filename, ""))
@@ -3592,6 +3612,7 @@ def luxSystem(scn, gui=None):
         luxBool("autothreads", autothreads, "Auto Detect", "Automatically use all available processors", gui, 1.0)
         if autothreads.get()=="false":
             luxInt("threads", luxProp(scn, "threads", 1), 1, 100, "threads", "number of threads used for rendering", gui, 1.0)
+        luxBool('export.threaded', luxProp(scn, 'export.threaded', 'true'), 'Pipe in background', 'When using pipe export, do not block Blender UI', gui, 1.0)
 
         if gui: gui.newline("ANIM:", 10)
         useparamkeys = luxProp(scn, "useparamkeys", "false")
