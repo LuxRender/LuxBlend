@@ -1034,9 +1034,9 @@ def save_lux(filename, unindexedname):
     print("Processing time: %f\n" %(time2-time1))
 
     if use_pipe_output:
-        if luxProp(scn, "haltspp", 0).get() > 0:
+        #if luxProp(scn, "haltspp", 0).get() > 0:
             # Wait for piped luxconsole render thread to end
-            file.join()
+        file.join()
 
         # Don't launch it again as a piped scene is started implicitly
         return False
@@ -1178,16 +1178,21 @@ def launchLuxWait(filename, anim=False):
 
 
 def save_anim(filename):
-    to = luxProp(Scene.GetCurrent(), 'export.threaded', 'true').get()
-    if to == 'true':
+    global LuxIsGUI
+    scn = Scene.GetCurrent()
+    to = luxProp(scn, 'export.threaded', 'true').get()
+    run = luxProp(scn, "run", "true").get()
+    deflt = luxProp(scn, "default", "true").get()
+    if to == 'true' and run == 'true' and deflt == 'false':
         import threading
-        anim_thread = threading.Thread(target=save_anim_real, args=(filename,))
+        anim_thread = threading.Thread(target=save_anim_real, args=(filename,True))
         anim_thread.start()
     else:
         save_anim_real(filename)
 
-def save_anim_real(filename):
-    global MatSaved
+def save_anim_real(filename, as_thread=False):
+    if as_thread: print('SAR thread started')
+    global MatSaved, LuxIsGUI
     
     MatSaved = 0
     startF = Blender.Get('staframe')
@@ -1206,7 +1211,12 @@ def save_anim_real(filename):
 
     print("\n\nRendering animation (frame %i to %i)\n\n"%(startF, endF))
 
+    v_frame = Blender.Get('curframe')
+
     for i in range (startF, endF+1):
+        # Seems to get stuck unless we redraw the UI
+        if LuxIsGUI:
+            Window.QRedrawAll()
         Blender.Set('curframe', i)
         print("Rendering frame %i"%(i))
         Blender.Redraw()
@@ -1222,15 +1232,23 @@ def save_anim_real(filename):
             save_lux(indexedname, unindexedname)
 
         MatSaved = 1
+        # Seems to get stuck unless we redraw the UI
+        if LuxIsGUI:
+            Window.QRedrawAll()
+            
+    Blender.Set('curframe', v_frame)
 
     print("\n\nFinished Rendering animation\n")
+    if as_thread: print('SAR thread finished')
 
 #### SAVE STILL (hackish...) ####
 
 import threading
 def save_still(filename):
-    to = luxProp(Scene.GetCurrent(), 'export.threaded', 'true').get()
-    if to == 'true':
+    global LuxIsGUI
+    scn = Scene.GetCurrent()
+    to = luxProp(scn, 'export.threaded', 'true').get()
+    if to == 'true' and luxProp(scn, "run", "true").get() == "true":
         import threading
         still_thread = threading.Thread(target=save_still_real, args=(filename,))
         still_thread.start()
@@ -1238,14 +1256,21 @@ def save_still(filename):
         save_still_real(filename)
 
 def save_still_real(filename):
-    global MatSaved
+    global MatSaved, runRenderAfterExport
     scn = Scene.GetCurrent()
     luxProp(scn, "filename", Blender.Get("filename")).set(sys.makename(filename, ""))
     MatSaved = 0
     unindexedname = filename
+    # Seems to get stuck unless we redraw the UI
+    if LuxIsGUI:
+        Window.QRedrawAll()
     if save_lux(filename, unindexedname):
         if runRenderAfterExport and luxProp(scn, "pipe", "false").get() == "false": #(run == None and luxProp(scn, "run", "true").get() == "true") or run:
             launchLux(filename)
+            
+    # Seems to get stuck unless we redraw the UI
+    if LuxIsGUI:
+        Window.QRedrawAll()
 
 
 ######################################################
