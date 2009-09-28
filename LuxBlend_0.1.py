@@ -1177,20 +1177,20 @@ def launchLuxWait(filename, anim=False):
 #### SAVE ANIMATION ####
 
 
-def save_anim(filename):
-    global LuxIsGUI
-    scn = Scene.GetCurrent()
-    to = luxProp(scn, 'export.threaded', 'true').get()
-    run = luxProp(scn, "run", "true").get()
-    deflt = luxProp(scn, "default", "true").get()
-    if to == 'true' and run == 'true' and deflt == 'false':
-        import threading
-        anim_thread = threading.Thread(target=save_anim_real, args=(filename,True))
-        anim_thread.start()
-    else:
-        save_anim_real(filename)
+#def save_anim(filename):
+#    global LuxIsGUI
+#    scn = Scene.GetCurrent()
+#    to = luxProp(scn, 'export.threaded', 'true').get()
+#    run = luxProp(scn, "run", "true").get()
+#    deflt = luxProp(scn, "default", "true").get()
+#    if to == 'true' and run == 'true' and deflt == 'false':
+#        import threading
+#        anim_thread = threading.Thread(target=save_anim_real, args=(filename,True))
+#        anim_thread.start()
+#    else:
+#        save_anim_real(filename)
 
-def save_anim_real(filename, as_thread=False):
+def save_anim(filename, as_thread=False):
     if as_thread: print('SAR thread started')
     global MatSaved, LuxIsGUI
     
@@ -1215,8 +1215,8 @@ def save_anim_real(filename, as_thread=False):
 
     for i in range (startF, endF+1):
         # Seems to get stuck unless we redraw the UI
-        if LuxIsGUI:
-            Window.QRedrawAll()
+#        if LuxIsGUI:
+#            Window.QRedrawAll()
         Blender.Set('curframe', i)
         print("Rendering frame %i"%(i))
         Blender.Redraw()
@@ -1233,8 +1233,8 @@ def save_anim_real(filename, as_thread=False):
 
         MatSaved = 1
         # Seems to get stuck unless we redraw the UI
-        if LuxIsGUI:
-            Window.QRedrawAll()
+#        if LuxIsGUI:
+#            Window.QRedrawAll()
             
     Blender.Set('curframe', v_frame)
 
@@ -1243,34 +1243,34 @@ def save_anim_real(filename, as_thread=False):
 
 #### SAVE STILL (hackish...) ####
 
-import threading
-def save_still(filename):
-    global LuxIsGUI
-    scn = Scene.GetCurrent()
-    to = luxProp(scn, 'export.threaded', 'true').get()
-    if to == 'true' and luxProp(scn, "run", "true").get() == "true":
-        import threading
-        still_thread = threading.Thread(target=save_still_real, args=(filename,))
-        still_thread.start()
-    else:
-        save_still_real(filename)
+#import threading
+#def save_still(filename):
+#    global LuxIsGUI
+#    scn = Scene.GetCurrent()
+#    to = luxProp(scn, 'export.threaded', 'true').get()
+#    if to == 'true' and luxProp(scn, "run", "true").get() == "true":
+#        import threading
+#        still_thread = threading.Thread(target=save_still_real, args=(filename,))
+#        still_thread.start()
+#    else:
+#        save_still_real(filename)
 
-def save_still_real(filename):
+def save_still(filename):
     global MatSaved, runRenderAfterExport
     scn = Scene.GetCurrent()
     luxProp(scn, "filename", Blender.Get("filename")).set(sys.makename(filename, ""))
     MatSaved = 0
     unindexedname = filename
     # Seems to get stuck unless we redraw the UI
-    if LuxIsGUI:
-        Window.QRedrawAll()
+#    if LuxIsGUI:
+#        Window.QRedrawAll()
     if save_lux(filename, unindexedname):
         if runRenderAfterExport and luxProp(scn, "pipe", "false").get() == "false": #(run == None and luxProp(scn, "run", "true").get() == "true") or run:
             launchLux(filename)
             
     # Seems to get stuck unless we redraw the UI
-    if LuxIsGUI:
-        Window.QRedrawAll()
+#    if LuxIsGUI:
+#        Window.QRedrawAll()
 
 
 ######################################################
@@ -3637,7 +3637,7 @@ def luxSystem(scn, gui=None):
         luxBool("autothreads", autothreads, "Auto Detect", "Automatically use all available processors", gui, 1.0)
         if autothreads.get()=="false":
             luxInt("threads", luxProp(scn, "threads", 1), 1, 100, "threads", "number of threads used for rendering", gui, 1.0)
-        luxBool('export.threaded', luxProp(scn, 'export.threaded', 'true'), 'Pipe in background', 'When using pipe export, do not block Blender UI', gui, 1.0)
+#        luxBool('export.threaded', luxProp(scn, 'export.threaded', 'true'), 'Pipe in background', 'When using pipe export, do not block Blender UI', gui, 1.0)
 
         if gui: gui.newline("ANIM:", 10)
         useparamkeys = luxProp(scn, "useparamkeys", "false")
