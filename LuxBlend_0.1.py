@@ -5286,6 +5286,12 @@ def CBluxExport(default, run):
     if default:
         datadir = luxProp(Scene.GetCurrent(), "datadir", "").get()
         if datadir=="": datadir = Blender.Get("datadir")
+        import os.path
+        if not os.path.exists(datadir):
+            Draw.PupMenu("ERROR: output directory does not exist!")
+            if LuxIsGUI:
+                Draw.Redraw()
+            return
         filename = datadir + os.sep + "default.lxs"
         save_still(filename)
     else:
@@ -5296,6 +5302,12 @@ def CBluxAnimExport(default, run, fileselect=True):
     if default:
         datadir = luxProp(Scene.GetCurrent(), "datadir", "").get()
         if datadir=="": datadir = Blender.Get("datadir")
+        import os.path
+        if not os.path.exists(datadir):
+            Draw.PupMenu("ERROR: output directory does not exist!")
+            if LuxIsGUI:
+                Draw.Redraw()
+            return
         filename = datadir + os.sep + "default.lxs"
         save_anim(filename)
     else:
