@@ -204,7 +204,9 @@ def getMaterials(obj, compress=False):
                 mats[i] = dataMats[i]
         if compress:
             mats = [m for m in mats if m]
-    else:
+    
+    slots = [m for m in mats if m]
+    if m==0 or not slots:
         print("Warning: object %s has no material assigned" % (obj.getName()))
         mats = []
     # clay option
