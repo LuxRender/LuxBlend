@@ -398,81 +398,86 @@ class luxExport:
                 shapeList, smoothFltr, normalFltr, uvFltr, shapeText = [0,1], [[0],[1]], [0,1], [1,1], ["flat w/o normals", "smoothed with normals"]
         if mats == []:
             mats = [dummyMat]
+        usedmats = [f.mat for f in mesh.faces]
         for matIndex in range(len(mats)):
-            if (mats[matIndex] != None):
-                if not(portal):
-                    self.exportMaterialLink(file, mats[matIndex])
-                for shape in shapeList:
-                    blenderExportVertexMap = []
-                    exportVerts = []
-                    exportFaces = []
-                    ffaces = [f for f in mesh.faces if (f.mat == matIndex) and (f.smooth in smoothFltr[shape])]
-                    for face in ffaces:
-                        exportVIndices = []
-                        index = 0
-                        for vertex in face:
+            if not matIndex in usedmats:
+                continue
+            if not(portal):
+                mat = mats[matIndex]
+                if not mat:
+                   mat = dummyMat
+                self.exportMaterialLink(file, mat)
+            for shape in shapeList:
+                blenderExportVertexMap = []
+                exportVerts = []
+                exportFaces = []
+                ffaces = [f for f in mesh.faces if (f.mat == matIndex) and (f.smooth in smoothFltr[shape])]
+                for face in ffaces:
+                    exportVIndices = []
+                    index = 0
+                    for vertex in face:
 #                            v = [vertex.co[0], vertex.co[1], vertex.co[2]]
-                            v = [vertex.co]
-                            if normalFltr[shape]:
-                                if (face.smooth):
+                        v = [vertex.co]
+                        if normalFltr[shape]:
+                            if (face.smooth):
 #                                    v.extend(vertex.no)
-                                    v.append(vertex.no)
-                                else:
+                                v.append(vertex.no)
+                            else:
 #                                    v.extend(face.no)
-                                    v.append(face.no)
-                            if (uvFltr[shape]) and (mesh.faceUV):
+                                v.append(face.no)
+                        if (uvFltr[shape]) and (mesh.faceUV):
 #                                v.extend(face.uv[index])
-                                v.append(face.uv[index])
-                            blenderVIndex = vertex.index
-                            newExportVIndex = -1
-                            length = len(v)
-                            if (blenderVIndex < len(blenderExportVertexMap)):
-                                for exportVIndex in blenderExportVertexMap[blenderVIndex]:
-                                    v2 = exportVerts[exportVIndex]
-                                    if (length==len(v2)) and (v == v2):
-                                        newExportVIndex = exportVIndex
-                                        break
-                            if (newExportVIndex < 0):
-                                newExportVIndex = len(exportVerts)
-                                exportVerts.append(v)
-                                while blenderVIndex >= len(blenderExportVertexMap):
-                                    blenderExportVertexMap.append([])
-                                blenderExportVertexMap[blenderVIndex].append(newExportVIndex)
-                            exportVIndices.append(newExportVIndex)
-                            index += 1
-                        exportFaces.append(exportVIndices)
-                    if (len(exportVerts)>0):
-                        mesh_str = self.getMeshType(len(exportVerts), mats[matIndex])
-                        if (portal):
-                            file.write("\tPortalShape %s \"integer indices\" [\n"% mesh_str)
-                        else:
-                            file.write("\tShape %s \"integer indices\" [\n"% mesh_str)
-                        for face in exportFaces:
-                            file.write("%d %d %d\n"%(face[0], face[1], face[2]))
-                            if (len(face)==4):
-                                file.write("%d %d %d\n"%(face[0], face[2], face[3]))
-                        file.write("\t] \"point P\" [\n")
+                            v.append(face.uv[index])
+                        blenderVIndex = vertex.index
+                        newExportVIndex = -1
+                        length = len(v)
+                        if (blenderVIndex < len(blenderExportVertexMap)):
+                            for exportVIndex in blenderExportVertexMap[blenderVIndex]:
+                                v2 = exportVerts[exportVIndex]
+                                if (length==len(v2)) and (v == v2):
+                                    newExportVIndex = exportVIndex
+                                    break
+                        if (newExportVIndex < 0):
+                            newExportVIndex = len(exportVerts)
+                            exportVerts.append(v)
+                            while blenderVIndex >= len(blenderExportVertexMap):
+                                blenderExportVertexMap.append([])
+                            blenderExportVertexMap[blenderVIndex].append(newExportVIndex)
+                        exportVIndices.append(newExportVIndex)
+                        index += 1
+                    exportFaces.append(exportVIndices)
+                if (len(exportVerts)>0):
+                    mesh_str = self.getMeshType(len(exportVerts), mats[matIndex])
+                    if (portal):
+                        file.write("\tPortalShape %s \"integer indices\" [\n"% mesh_str)
+                    else:
+                        file.write("\tShape %s \"integer indices\" [\n"% mesh_str)
+                    for face in exportFaces:
+                        file.write("%d %d %d\n"%(face[0], face[1], face[2]))
+                        if (len(face)==4):
+                            file.write("%d %d %d\n"%(face[0], face[2], face[3]))
+                    file.write("\t] \"point P\" [\n")
 #                        for vertex in exportVerts:
 #                            file.write("%f %f %f\n"%(vertex[0], vertex[1], vertex[2]))
-                        file.write("".join(["%f %f %f\n"%tuple(vertex[0]) for vertex in exportVerts]))
-                        if normalFltr[shape]:
-                            file.write("\t] \"normal N\" [\n")
+                    file.write("".join(["%f %f %f\n"%tuple(vertex[0]) for vertex in exportVerts]))
+                    if normalFltr[shape]:
+                        file.write("\t] \"normal N\" [\n")
 #                            for vertex in exportVerts:
 #                                file.write("%f %f %f\n"%(vertex[3], vertex[4], vertex[5]))
-                            file.write("".join(["%f %f %f\n"%tuple(vertex[1]) for vertex in exportVerts])) 
-                            if (uvFltr[shape]) and (mesh.faceUV):
-                                file.write("\t] \"float uv\" [\n")
+                        file.write("".join(["%f %f %f\n"%tuple(vertex[1]) for vertex in exportVerts])) 
+                        if (uvFltr[shape]) and (mesh.faceUV):
+                            file.write("\t] \"float uv\" [\n")
 #                                for vertex in exportVerts:
 #                                    file.write("%f %f\n"%(vertex[6], vertex[7]))
-                                file.write("".join(["%f %f\n"%tuple(vertex[2]) for vertex in exportVerts])) 
-                        else:            
-                            if (uvFltr[shape]) and (mesh.faceUV):
-                                file.write("\t] \"float uv\" [\n")
+                            file.write("".join(["%f %f\n"%tuple(vertex[2]) for vertex in exportVerts])) 
+                    else:            
+                        if (uvFltr[shape]) and (mesh.faceUV):
+                            file.write("\t] \"float uv\" [\n")
 #                                for vertex in exportVerts:
 #                                    file.write("%f %f\n"%(vertex[3], vertex[4]))
-                                file.write("".join(["%f %f\n"%tuple(vertex[1]) for vertex in exportVerts])) 
-                        file.write("\t]\n")
-                        print("  shape(%s): %d vertices, %d faces"%(shapeText[shape], len(exportVerts), len(exportFaces)))
+                            file.write("".join(["%f %f\n"%tuple(vertex[1]) for vertex in exportVerts])) 
+                    file.write("\t]\n")
+                    print("  shape(%s): %d vertices, %d faces"%(shapeText[shape], len(exportVerts), len(exportFaces)))
     
     #-------------------------------------------------
     # exportMeshes(self, file)
@@ -500,6 +505,7 @@ class luxExport:
                 mesh.getFromObject(objs[0], 0, 1)
                 print("blender-mesh: %s (%d vertices, %d faces)"%(mesh_name, len(mesh.verts), len(mesh.faces)))
                 file.write("ObjectBegin \"%s\"\n"%mesh_name)
+
                 if (mesh_optimizing):
                     self.exportMeshOpt(file, mesh, mats, mesh_name)
                 else:
