@@ -5345,17 +5345,17 @@ def convertMaterial(mat):
                 print("Material Conversion Warning: for UV-texture-input only FLAT mapping is supported\n") 
         else:
             if tex.mapping == Texture.Mappings["FLAT"]:
-                luxProp(mat, dot(name)+"mapping","").set("planar")
+                luxProp(mat, dot(name)+"mapping","").set("planar") # make planar-mapping convert correctly from blender(WYSIWYG)- jens
+                luxProp(mat, dot(name)+"v1", "1.0 1.0 1.0").setVector((0.5*tex.size[0], 0.0, 0.0))
+                luxProp(mat, dot(name)+"v2", "0.0 0.0 0.0").setVector((0.0, -0.5*tex.size[1], -0.0))
+                luxProp(mat, dot(name)+"udelta", 0.0).set(tex.ofs[0]+0.5)
+                luxProp(mat, dot(name)+"vdelta", 0.0).set(-tex.ofs[1]-0.5)
             elif tex.mapping == Texture.Mappings["TUBE"]:
                 luxProp(mat, dot(name)+"mapping","").set("cylindrical")
             elif tex.mapping == Texture.Mappings["SPHERE"]:
                 luxProp(mat, dot(name)+"mapping","").set("spherical")
             else: luxProp(mat, dot(name)+"mapping","").set("planar")
-# below a hack to make planar-mapping work and convert correctly from blender to luxblend - please review - jens
-#            luxProp(mat, dot(name)+"v1", "1.0 1.0 1.0").setVector((0.5*tex.size[0], 0.0, 0.0))
-#            luxProp(mat, dot(name)+"v2", "0.0 0.0 0.0").setVector((0.0, -0.5*tex.size[1], -0.0))
-#            luxProp(mat, dot(name)+"udelta", 0.0).set(tex.ofs[0]+0.5)
-#            luxProp(mat, dot(name)+"vdelta", 0.0).set(-tex.ofs[1]-0.5)
+
         luxProp(mat, dot(name)+"3dscale", "1.0 1.0 1.0").setVector((1.0/tex.size[0], 1.0/tex.size[1], 1.0/tex.size[2]))
         luxProp(mat, dot(name)+"3dtranslate", "0.0 0.0 0.0").setVector((-tex.ofs[0], -tex.ofs[1], -tex.ofs[2]))
 
