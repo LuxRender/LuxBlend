@@ -5150,7 +5150,7 @@ def luxMaterialBlock(name, luxname, key, mat, gui=None, level=0, str_opt=""):
             usebump = luxProp(mat, keyname+".usebump", "false")
             luxCollapse("usebump", usebump, "Bump Map", "Enable Bump Mapping options", gui, 2.0)
             if usebump.get() == "true":
-                (str,link) = c((str,link), luxFloatTexture("bumpmap", keyname, 0.0, -1.0, 1.0, "bumpmap", "", mat, gui, level+1))
+                (str,link) = c((str,link), luxFloatTexture("bumpmap", keyname, 0.0, -1.0, 1.0, "bumpmap", "bumpmap scale in meters - i.e. 0.01 = 1 cm", mat, gui, level+1))
 
         # emission options (common)
         if (level == 0):
