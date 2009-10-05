@@ -6627,10 +6627,19 @@ else:
 
     if checkluxpath and luxrun:
         if (luxpath is None) or (sys.exists(luxpath)<=0):
-            # luxpath not valid, so delete entry from .blend scene file ...
+            # luxpath not valid, so delete entry from .blend scene file
             luxpathprop.delete()
             # and re-get luxpath, so we get the path from default-settings
             luxpath = luxpathprop.get()
+            #
+            LUXRENDER_ROOT = os.getenv('LUXRENDER_ROOT') + os.sep
+            if LUXRENDER_ROOT is not None:
+                luxpathprop.set(LUXRENDER_ROOT)
+                luxpath = LUXRENDER_ROOT
+                if sys.exists(luxpath)>0:
+                    print('LuxRender path set from LUXRENDER_ROOT environment variable')
+                    saveluxdefaults()
+            
             if (luxpath is None) or (sys.exists(luxpath)<=0):
                 print("WARNING: LuxPath \"%s\" is not valid\n"%(luxpath))
                 scn = Scene.GetCurrent()
