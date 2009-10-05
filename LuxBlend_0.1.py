@@ -6308,6 +6308,18 @@ def luxDraw():
             BGL.glRasterPos2i(10,y+5)
             Draw.Text(render_status_text, "tiny")
             
+            def check_pipe_def_exclusion(m, v):
+            	if m == 'd':
+            		dlt.set(["false","true"][bool(v)])
+            		
+            		if dlt.get() == 'true':
+            			pipe.set('false')
+            	elif m == 'p':
+            		pipe.set(["false","true"][bool(v)])
+            		
+            		if pipe.get() == 'true':
+            			dlt.set('false')
+            
             if (run.get()=="true"):
                 Draw.Button("Render", 0, 10, y+20, 100, 36, "Render with Lux", lambda e,v:CBluxExport(dlt.get()=="true" or pipe.get()=="true", True))
                 Draw.Button("Render Anim", 0, 110, y+20, 100, 36, "Render animation with Lux", lambda e,v:CBluxAnimExport(dlt.get()=="true" or pipe.get()=="true", True))
@@ -6318,12 +6330,12 @@ def luxDraw():
             Draw.Toggle("run", evtLuxGui, 265, y+40, 30, 16, run.get()=="true", "start Lux after export", lambda e,v: run.set(["false","true"][bool(v)]))
             
             if (pipe.get() == 'false' and dlt.get() == 'true') or run.get()=='false':
-                Draw.Toggle("def", evtLuxGui, 295, y+40, 55, 16, dlt.get()=="true", "write to default lxs file", lambda e,v: dlt.set(["false","true"][bool(v)]))
+                Draw.Toggle("def", evtLuxGui, 295, y+40, 55, 16, dlt.get()=="true", "write to default lxs file", lambda e,v: check_pipe_def_exclusion('d',v))
             elif pipe.get() == 'true' and dlt.get() == 'false':
-                Draw.Toggle("pipe", evtLuxGui, 295, y+40, 55, 16, pipe.get()=="true", "do not write any lxs file", lambda e,v: pipe.set(["false","true"][bool(v)]))
+                Draw.Toggle("pipe", evtLuxGui, 295, y+40, 55, 16, pipe.get()=="true", "do not write any lxs file", lambda e,v: check_pipe_def_exclusion('p',v))
             else:
-                Draw.Toggle("def", evtLuxGui, 295, y+40, 25, 16, dlt.get()=="true", "write to default lxs file", lambda e,v: dlt.set(["false","true"][bool(v)]))
-                Draw.Toggle("pipe", evtLuxGui, 320, y+40, 30, 16, pipe.get()=="true", "do not write any lxs file", lambda e,v: pipe.set(["false","true"][bool(v)]))
+                Draw.Toggle("def", evtLuxGui, 295, y+40, 25, 16, dlt.get()=="true", "write to default lxs file", lambda e,v: check_pipe_def_exclusion('d',v))
+                Draw.Toggle("pipe", evtLuxGui, 320, y+40, 30, 16, pipe.get()=="true", "do not write any lxs file", lambda e,v: check_pipe_def_exclusion('p',v))
             
             Draw.Toggle("clay", evtLuxGui, 350, y+40, 30, 16, clay.get()=="true", "all materials are rendered as white-matte", lambda e,v: clay.set(["false","true"][bool(v)]))
             Draw.Toggle("noLG", evtLuxGui, 380, y+40, 35, 16, nolg.get()=="true", "disables all light groups", lambda e,v: nolg.set(["false","true"][bool(v)]))
