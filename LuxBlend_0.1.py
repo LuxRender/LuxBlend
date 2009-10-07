@@ -6634,7 +6634,7 @@ else:
             #
             LUXRENDER_ROOT = os.getenv('LUXRENDER_ROOT')
             if LUXRENDER_ROOT is not None:
-	        LUXRENDER_ROOT = LUXRENDER_ROOT + os.sep
+                LUXRENDER_ROOT = LUXRENDER_ROOT + os.sep
                 luxpathprop.set(LUXRENDER_ROOT)
                 luxpath = LUXRENDER_ROOT
                 if sys.exists(luxpath)>0:
