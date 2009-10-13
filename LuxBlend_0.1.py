@@ -2,14 +2,14 @@
 # -*- coding: utf-8 -*-
 # coding=utf-8
 """Registration info for Blender menus:
-Name: 'LuxBlend v0.6RC6 Exporter'
+Name: 'LuxBlend v0.6 Exporter'
 Blender: 248
 Group: 'Render'
-Tooltip: 'Export/Render to LuxRender v0.6RC6 scene format (.lxs)'
+Tooltip: 'Export/Render to LuxRender v0.6 scene format (.lxs)'
 """
 
 __author__ = "radiance, zuegs, ideasman42, luxblender, dougal2"
-__version__ = "0.6RC6"
+__version__ = "0.6"
 __url__ = [
 	"http://www.luxrender.net/",
 	"http://www.luxrender.net/forum/viewforum.php?f=11",
@@ -34,7 +34,7 @@ Please check the lux tutorials & forums for more information.
 # ***** BEGIN GPL LICENSE BLOCK *****
 #
 # --------------------------------------------------------------------------
-# LuxBlend v0.6RC6 exporter
+# LuxBlend v0.6 exporter
 # --------------------------------------------------------------------------
 #
 # Authors:
@@ -876,7 +876,7 @@ def save_lux(filename, unindexedname):
             file = file_output(filename)
 
         ##### Write Header ######
-        file.write("# Lux Render v0.6RC6 Scene File\n")
+        file.write("# Lux Render v0.6 Scene File\n")
         file.write("# Exported by LuxBlend Blender Exporter\n")
         file.write("\n")
     
@@ -6180,7 +6180,7 @@ def luxDraw():
 
     y = int(scrollbar.getTop()) # 420
     BGL.glColor3f(0.1,0.1,0.1); BGL.glRectf(0,0,440,y)
-    BGL.glColor3f(1.0,0.5,0.0); BGL.glRasterPos2i(130,y-21); Draw.Text("v0.6RC6")
+    BGL.glColor3f(1.0,0.5,0.0); BGL.glRasterPos2i(130,y-21); Draw.Text("v0.6")
     BGL.glColor3f(0.9,0.9,0.9)
 
     drawLogo(icon_luxblend, 6, y-25)
@@ -6538,7 +6538,7 @@ try:
 except: pyargs = []
 
 if (pyargs != []) and (batchindex != 0):
-    print("\n\nLuxBlend v0.6RC6 - BATCH mode\n")
+    print("\n\nLuxBlend v0.6 - BATCH mode\n")
     LuxIsGUI = False
 
     scene = Scene.GetCurrent()
@@ -6614,7 +6614,7 @@ if (pyargs != []) and (batchindex != 0):
     osys.exit(0)
 
 else:
-    print("\n\nLuxBlend v0.6RC6 - UI mode\n")
+    print("\n\nLuxBlend v0.6 - UI mode\n")
     from Blender.Window import DrawProgressBar
     LuxIsGUI = True
     
