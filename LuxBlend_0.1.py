@@ -71,7 +71,7 @@ import sys as osys
 import types
 import subprocess
 import Blender
-from Blender import Mesh, Scene, Object, Material, Texture, Window, sys, Draw, BGL, Mathutils, Lamp, Image
+from Blender import Mesh, Scene, Object, Material, Texture, Window, sys, Draw, BGL, Mathutils, Lamp, Image, Particle
 
 
 
@@ -248,6 +248,46 @@ class luxExport:
         light = False
         if (obj.users > 0):
             obj_type = obj.getType()
+
+            psystems = obj.getParticleSystems()
+            for psys in psystems:
+                if ( (psys.type == Particle.TYPE['EMITTER'] or psys.type == Particle.TYPE['REACTOR']) and psys.drawAs == Particle.DRAWAS['OBJECT']):
+                    dup_obj = psys.duplicateObject
+                    self.duplis.add(dup_obj)
+                    
+                    obj_matrix = dup_obj.getMatrix()
+                    obj_translation_vec = obj_matrix.translationPart()
+                    obj_rotation_scale_mat = obj_matrix.rotationPart()  # This gets a 3D submatrix with the rotation AND scale parts.
+                    
+                    locs = psys.getLoc()
+                    scales = psys.getSize()
+                    rots = psys.getRot()
+                    if(len(locs) != len(scales) or len(locs) != len(rots)):
+                        print("ERROR: Please bake particle systems before rendering")
+                        Draw.PupMenu("ERROR: Please bake particle systems before rendering%t|OK%x1")
+                        break
+    
+                    for i in range(len(locs)) :
+                        part_rotation_quat = Mathutils.Quaternion(rots[i])
+                        part_rotation_mat = part_rotation_quat.toMatrix()
+                        rotation_scale_mat =  obj_rotation_scale_mat * part_rotation_mat * scales[i]
+                                    
+                        # If dup_obj is translated, the particles are translated by the same amount but
+                        # the direction is rotated by the particle rotation. If dup_obj is rotated, that rotation
+                        # does not affect the translation. I know it's a bit odd, but that's the way Blender does it
+                        # and so that's why the order of the matrix multiplications is like this.
+                        translation_vec = Mathutils.Vector(locs[i]) + part_rotation_quat*obj_translation_vec
+                        translation_mat = Mathutils.TranslationMatrix(translation_vec)
+                                    
+                        rotation_scale_mat.resize4x4()
+                        
+                        # Translation must be last because of the way the rotations and translations are encoded in 4D matrices.
+                        #combined_matrix = scale_matrix*rotation_mat*translation_mat
+                        combined_matrix = rotation_scale_mat*translation_mat
+                        #print "combined_matrix = ", combined_matrix
+                        self.analyseObject(dup_obj, combined_matrix, "%s.%s"%(obj.getName(), dup_obj.getName()), False, True)
+                        #if self.analyseObject(dup_obj, combined_matrix, "%s.%s"%(obj.getName(), dup_obj.getName()), True, True): light = True
+
             if (obj.enableDupFrames and isOriginal):
                 for o, m in obj.DupObjects:
                     self.analyseObject(o, m, "%s.%s"%(name, o.getName()), False)    
@@ -765,7 +805,7 @@ def save_lux(filename, unindexedname):
             if (obj.getType() == "Lamp") and ((obj.Layers & scn.Layers) > 0):
                 if obj.getData(mesh=1).getType() == 1: # sun object # data
                     sun = obj
-    if not(export.analyseScene()) and not(envtype == "infinite") and not((envtype == "sunsky") and (sun != None)):
+    if not(export.analyseScene()) and not(envtype == "infinite") and not(envtype == "infinitesample") and not((envtype == "sunsky") and (sun != None)):
         print("ERROR: No light source found")
         Draw.PupMenu("ERROR: No light source found%t|OK%x1")
         render_status_text = ''
@@ -3130,13 +3170,13 @@ def luxEnvironment(scn, gui=None):
     str = ""
     if scn:
         envtype = luxProp(scn, "env.type", "infinite")
-        lsstr = luxIdentifier("LightSource", envtype, ["none", "infinite", "sunsky"], "ENVIRONMENT", "select environment light type", gui, icon_c_environment)
+        lsstr = luxIdentifier("LightSource", envtype, ["none", "infinite", "infinitesample", "sunsky"], "ENVIRONMENT", "select environment light type", gui, icon_c_environment)
         if gui: gui.newline()
         str = ""
         
         if envtype.get() != "none":
             
-            if envtype.get() in ["infinite", "sunsky"]:
+            if envtype.get() in ["infinite", "infinitesample", "sunsky"]:
                 env_lg = luxProp(scn, "env.lightgroup", "default")
                 luxString("env.lightgroup", env_lg, "lightgroup", "Environment light group", gui)
                 if luxProp(scn, "nolg", "false").get()!="true":
@@ -3155,7 +3195,7 @@ def luxEnvironment(scn, gui=None):
             str += "\t"+lsstr
 
             infinitehassun = 0
-            if envtype.get() == "infinite":
+            if envtype.get() in ["infinite", "infinitesample"]:
                 mapping = luxProp(scn, "env.infinite.mapping", "latlong")
                 mappings = ["latlong","angular","vcross"]
                 mapstr = luxOption("mapping", mapping, mappings, "mapping", "Select mapping type", gui, 0.5)
