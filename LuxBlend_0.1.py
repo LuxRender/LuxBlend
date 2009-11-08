@@ -3070,7 +3070,7 @@ def luxSurfaceIntegrator(scn, gui=None):
 
             if gui: gui.newline("  Photons:")
             str += luxInt("indirectphotons", luxProp(scn, "sintegrator.photonmap.idphotons", 200000), 0, 10000000, "indirect", "The number of photons to shoot for indirect lighting during preprocessing of the photon map", gui)
-            str += luxInt("maxdirectphotons", luxProp(scn, "sintegrator.photonmap.maxdphotons", 1000000), 0, 10000000, "maxdirect", "The maximum number of photons to shoot for direct lighting during preprocessing of the photon map", gui)
+            str += luxInt("directphotons", luxProp(scn, "sintegrator.photonmap.dphotons", 1000000), 0, 10000000, "direct", "The number of photons to shoot for direct lighting during preprocessing of the photon map", gui)
             str += luxInt("causticphotons", luxProp(scn, "sintegrator.photonmap.cphotons", 20000), 0, 10000000, "caustic", "The number of photons to shoot for caustics during preprocessing of the photon map", gui)
             if gui: gui.newline("  FinalGather:")
             fg = luxProp(scn, "sintegrator.photonmap.fgather", "true")
@@ -3082,6 +3082,19 @@ def luxSurfaceIntegrator(scn, gui=None):
                 str += luxFloat("gatherangle", luxProp(scn, "sintegrator.photonmap.gangle", 10.0), 0.0, 360.0, "gatherangle", "Angle for final gather", gui)
                 if rrstrat.get() == "probability":
                     str += luxFloat("gatherrrcontinueprob", luxProp(scn, "sintegrator.photonmap.gatherrrcontinueprob", 0.65), 0.0, 1.0, "rrcontinueprob", "Probability for russian roulette particle tracing termination", gui)
+
+            if showadvanced.get()=="true":
+                if gui: gui.newline("  Debug options:")
+                dbg_enabledirect = luxProp(scn, "sintegrator.photonmap.dbg_enabledirect", "false")
+                dbg_enableradiancemap = luxProp(scn, "sintegrator.photonmap.dbg_enableradiancemap", "false")
+                dbg_enableindircaustic = luxProp(scn, "sintegrator.photonmap.dbg_enableindircaustic", "false")
+                dbg_enableindirdiffuse = luxProp(scn, "sintegrator.photonmap.dbg_enableindirdiffuse", "false")
+                dbg_enableindirspecular = luxProp(scn, "sintegrator.photonmap.dbg_enableindirspecular", "false")
+                str += luxBool("dbg_enabledirect", dbg_enabledirect, "Direct lighing", "Enable visual inspection of direct ligting", gui)
+                str += luxBool("dbg_enableradiancemap", dbg_enableradiancemap, "Radiancemap", "Enable visual inspection of radiance map", gui)
+                str += luxBool("dbg_enableindircaustic", dbg_enableindircaustic, "Indirect caustics", "Enable visual inspection of indirect caustic map", gui)
+                str += luxBool("dbg_enableindirdiffuse", dbg_enableindirdiffuse, "Indirect diffuse", "Enable visual inspection of indirect diffuse map", gui)
+                str += luxBool("dbg_enableindirspecular", dbg_enableindirspecular, "Indirect specular", "Enable visual inspection of indirect specular map", gui)
 
         if integratortype.get() == "distributedpath":
             str += luxOption("strategy", luxProp(scn, "sintegrator.distributedpath.strategy", "auto"), ["one", "all", "auto"], "strategy", "select directlighting strategy", gui)
