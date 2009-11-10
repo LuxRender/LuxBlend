@@ -3065,8 +3065,8 @@ def luxSurfaceIntegrator(scn, gui=None):
             str += luxOption("strategy", luxProp(scn, "sintegrator.photonmap.strategy", "auto"), ["one", "all", "auto"], "strategy", "select directlighting strategy", gui)
             str += luxInt("maxphotondepth", luxProp(scn, "sintegrator.photonmap.maxphotondepth", 10), 1, 1024, "maxphotondepth", "The maximum recursion depth of photon tracing", gui)
             str += luxInt("maxdepth", luxProp(scn, "sintegrator.photonmap.maxdepth", 6), 1, 1024, "maxdepth", "The maximum recursion depth of specular reflection and refraction", gui)
-            str += luxFloat("maxdist", luxProp(scn, "sintegrator.photonmap.maxdist", 0.1), 0.0, 10.0, "maxdist", "The maximum distance between a point being shaded and a photon that can contribute to that point", gui)
-            str += luxInt("nused", luxProp(scn, "sintegrator.photonmap.nused", 50), 0, 1000000, "nused", "The number of photons to use in density estimation", gui)
+            str += luxFloat("maxphotondist", luxProp(scn, "sintegrator.photonmap.maxphotondist", 0.1), 0.0, 10.0, "maxphotondist", "The maximum distance between a point being shaded and a photon that can contribute to that point", gui)
+            str += luxInt("nphotonsused", luxProp(scn, "sintegrator.photonmap.nphotonsused", 50), 0, 1000000, "nphotonsused", "The number of photons to use in density estimation", gui)
 
             if gui: gui.newline("  Photons:")
             str += luxInt("indirectphotons", luxProp(scn, "sintegrator.photonmap.idphotons", 200000), 0, 10000000, "indirect", "The number of photons to shoot for indirect lighting during preprocessing of the photon map", gui)
@@ -3076,12 +3076,12 @@ def luxSurfaceIntegrator(scn, gui=None):
             fg = luxProp(scn, "sintegrator.photonmap.fgather", "true")
             str += luxBool("finalgather", fg, "finalgather", "Enable use of final gather during rendering", gui)
             if fg.get() == "true":
-                rrstrat = luxProp(scn, "sintegrator.photonmap.gatherrrstrategy", "efficiency")
-                str += luxOption("gatherrrstrategy", rrstrat, ["efficiency", "probability", "none"], "RR strategy", "select Russian Roulette gather termination strategy", gui)
+                rrstrat = luxProp(scn, "sintegrator.photonmap.rrstrategy", "efficiency")
+                str += luxOption("rrstrategy", rrstrat, ["efficiency", "probability", "none"], "RR strategy", "select Russian Roulette gather termination strategy", gui)
                 str += luxInt("finalgathersamples", luxProp(scn, "sintegrator.photonmap.fgathers", 32), 1, 1024, "samples", "The number of finalgather samples to take per pixel during rendering", gui)
                 str += luxFloat("gatherangle", luxProp(scn, "sintegrator.photonmap.gangle", 10.0), 0.0, 360.0, "gatherangle", "Angle for final gather", gui)
                 if rrstrat.get() == "probability":
-                    str += luxFloat("gatherrrcontinueprob", luxProp(scn, "sintegrator.photonmap.gatherrrcontinueprob", 0.65), 0.0, 1.0, "rrcontinueprob", "Probability for russian roulette particle tracing termination", gui)
+                    str += luxFloat("rrcontinueprob", luxProp(scn, "sintegrator.photonmap.rrcontinueprob", 0.65), 0.0, 1.0, "rrcontinueprob", "Probability for russian roulette particle tracing termination", gui)
 
             if showadvanced.get()=="true":
                 if gui: gui.newline("  Debug options:")
