@@ -296,23 +296,24 @@ class luxExport:
                 for o, m in obj.DupObjects:
                     self.analyseObject(o, m, "%s.%s"%(name, o.getName()), True, True)    
             elif ((isDupli or (not obj.getParent() in self.duplis)) and ((obj_type == "Mesh") or (obj_type == "Surf") or (obj_type == "Curve") or (obj_type == "Text"))):
-                mats = getMaterials(obj)
-                if (len(mats)>0) and (mats[0]!=None) and ((mats[0].name=="PORTAL") or (luxProp(mats[0], "type", "").get()=="portal")):
-                    self.portals.append([obj, matrix])
-                elif (len(mats)>0) and (luxProp(mats[0], "type", "").get()=="boundvolume"):
-                    self.volumes.append([obj, matrix])
-                else:
-                    for mat in mats:
-                        if (mat!=None) and (mat not in self.materials):
-                            self.materials.append(mat)
-                        if (mat!=None) and ((luxProp(mat, "type", "").get()=="light") or (luxProp(mat, "emission", "false").get()=="true")):
-                            light = True
-                    mesh_name = obj.getData(name_only=True)
-                    try:
-                        self.meshes[mesh_name] += [obj]
-                    except KeyError:
-                        self.meshes[mesh_name] = [obj]                
-                    self.objects.append([obj, matrix])
+                if (len(psystems) == 0) or psystems[0].renderEmitter:
+                    mats = getMaterials(obj)
+                    if (len(mats)>0) and (mats[0]!=None) and ((mats[0].name=="PORTAL") or (luxProp(mats[0], "type", "").get()=="portal")):
+                        self.portals.append([obj, matrix])
+                    elif (len(mats)>0) and (luxProp(mats[0], "type", "").get()=="boundvolume"):
+                        self.volumes.append([obj, matrix])
+                    else:
+                        for mat in mats:
+                            if (mat!=None) and (mat not in self.materials):
+                                self.materials.append(mat)
+                            if (mat!=None) and ((luxProp(mat, "type", "").get()=="light") or (luxProp(mat, "emission", "false").get()=="true")):
+                                light = True
+                        mesh_name = obj.getData(name_only=True)
+                        try:
+                            self.meshes[mesh_name] += [obj]
+                        except KeyError:
+                            self.meshes[mesh_name] = [obj]
+                        self.objects.append([obj, matrix])
             elif (obj_type == "Lamp"):
                 ltype = obj.getData(mesh=1).getType() # data
                 if (ltype == Lamp.Types["Lamp"]) or (ltype == Lamp.Types["Spot"]) or (ltype == Lamp.Types["Area"]):
