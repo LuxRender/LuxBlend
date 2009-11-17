@@ -1556,9 +1556,10 @@ def getScenePresets():
     'sintegrator.dlighting.maxdepth': 5,
 
     'pixelfilter.type': 'mitchell',
-    'pixelfilter.mitchell.sharp': 0.250, 
-    'pixelfilter.mitchell.xwidth': 2.0, 
-    'pixelfilter.mitchell.ywidth': 2.0, 
+    'pixelfilter.mitchell.sharp': 0.3333,
+    'pixelfilter.mitchell.xwidth': 1.5,
+    'pixelfilter.mitchell.ywidth': 1.5,
+    'pixelfilter.mitchell.supersample': "true",
     'pixelfilter.mitchell.optmode': "slider" }
 
     presets['1 Final - MLT/Bidir Path Tracing (interior) (recommended)'] =  {
@@ -1582,9 +1583,10 @@ def getScenePresets():
     'sintegrator.bidir.lightdepth': 16,
 
     'pixelfilter.type': 'mitchell',
-    'pixelfilter.mitchell.sharp': 0.250, 
-    'pixelfilter.mitchell.xwidth': 2.0, 
-    'pixelfilter.mitchell.ywidth': 2.0, 
+    'pixelfilter.mitchell.sharp': 0.3333,
+    'pixelfilter.mitchell.xwidth': 1.5,
+    'pixelfilter.mitchell.ywidth': 1.5,
+    'pixelfilter.mitchell.supersample': "true",
     'pixelfilter.mitchell.optmode': "slider" }
 
     presets['2 Final - MLT/Path Tracing (exterior)'] =  {
@@ -1607,9 +1609,10 @@ def getScenePresets():
     'sintegrator.bidir.maxdepth': 10,
 
     'pixelfilter.type': 'mitchell',
-    'pixelfilter.mitchell.sharp': 0.250, 
-    'pixelfilter.mitchell.xwidth': 2.0, 
-    'pixelfilter.mitchell.ywidth': 2.0, 
+    'pixelfilter.mitchell.sharp': 0.3333,
+    'pixelfilter.mitchell.xwidth': 1.5,
+    'pixelfilter.mitchell.ywidth': 1.5,
+    'pixelfilter.mitchell.supersample': "true",
     'pixelfilter.mitchell.optmode': "slider" }
     
     presets['4 '] = { }
@@ -1632,9 +1635,10 @@ def getScenePresets():
     'sintegrator.bidir.lightdepth': 16,
 
     'pixelfilter.type': 'mitchell',
-    'pixelfilter.mitchell.sharp': 0.250, 
-    'pixelfilter.mitchell.xwidth': 2.0, 
-    'pixelfilter.mitchell.ywidth': 2.0, 
+    'pixelfilter.mitchell.sharp': 0.3333,
+    'pixelfilter.mitchell.xwidth': 1.5,
+    'pixelfilter.mitchell.ywidth': 1.5,
+    'pixelfilter.mitchell.supersample': "true",
     'pixelfilter.mitchell.optmode': "slider" }
 
     presets['6 Progressive - Path Tracing (exterior)'] =  {
@@ -1654,9 +1658,10 @@ def getScenePresets():
     'sintegrator.bidir.maxdepth': 10,
 
     'pixelfilter.type': 'mitchell',
-    'pixelfilter.mitchell.sharp': 0.250, 
-    'pixelfilter.mitchell.xwidth': 2.0, 
-    'pixelfilter.mitchell.ywidth': 2.0, 
+    'pixelfilter.mitchell.sharp': 0.3333,
+    'pixelfilter.mitchell.xwidth': 1.5,
+    'pixelfilter.mitchell.ywidth': 1.5,
+    'pixelfilter.mitchell.supersample': "true",
     'pixelfilter.mitchell.optmode': "slider" }
 
     presets['7 '] = { }
@@ -1679,9 +1684,10 @@ def getScenePresets():
     'sintegrator.bidir.lightdepth': 10,
 
     'pixelfilter.type': 'mitchell',
-    'pixelfilter.mitchell.sharp': 0.250, 
-    'pixelfilter.mitchell.xwidth': 2.0, 
-    'pixelfilter.mitchell.ywidth': 2.0, 
+    'pixelfilter.mitchell.sharp': 0.3333,
+    'pixelfilter.mitchell.xwidth': 1.5,
+    'pixelfilter.mitchell.ywidth': 1.5,
+    'pixelfilter.mitchell.supersample': "true",
     'pixelfilter.mitchell.optmode': "slider" }
 
     presets['9 Bucket - Path Tracing (exterior)'] =  {
@@ -1701,9 +1707,10 @@ def getScenePresets():
     'sintegrator.bidir.maxdepth': 8,
 
     'pixelfilter.type': 'mitchell',
-    'pixelfilter.mitchell.sharp': 0.333, 
-    'pixelfilter.mitchell.xwidth': 2.0, 
-    'pixelfilter.mitchell.ywidth': 2.0, 
+    'pixelfilter.mitchell.sharp': 0.3333,
+    'pixelfilter.mitchell.xwidth': 1.5,
+    'pixelfilter.mitchell.ywidth': 1.5,
+    'pixelfilter.mitchell.supersample': "true",
     'pixelfilter.mitchell.optmode': "slider" }
 
     presets['A '] = { }
@@ -1744,9 +1751,10 @@ def getScenePresets():
     'sintegrator.distributedpath.specularrefractdepth': 5,
 
     'pixelfilter.type': 'mitchell',
-    'pixelfilter.mitchell.sharp': 0.333, 
-    'pixelfilter.mitchell.xwidth': 2.0, 
-    'pixelfilter.mitchell.ywidth': 2.0, 
+    'pixelfilter.mitchell.sharp': 0.3333,
+    'pixelfilter.mitchell.xwidth': 1.5,
+    'pixelfilter.mitchell.ywidth': 1.5,
+    'pixelfilter.mitchell.supersample': "true",
     'pixelfilter.mitchell.optmode': "slider" }
 
     presets['C Anim - Distributed/GI medium Q'] =  {
@@ -1785,9 +1793,10 @@ def getScenePresets():
     'sintegrator.distributedpath.specularrefractdepth': 5,
 
     'pixelfilter.type': 'mitchell',
-    'pixelfilter.mitchell.sharp': 0.333, 
-    'pixelfilter.mitchell.xwidth': 2.0, 
-    'pixelfilter.mitchell.ywidth': 2.0, 
+    'pixelfilter.mitchell.sharp': 0.3333,
+    'pixelfilter.mitchell.xwidth': 1.5,
+    'pixelfilter.mitchell.ywidth': 1.5,
+    'pixelfilter.mitchell.supersample': "true",
     'pixelfilter.mitchell.optmode': "slider" }
     
     presets['D Anim - Distributed/GI high Q'] =  {
@@ -1826,9 +1835,10 @@ def getScenePresets():
     'sintegrator.distributedpath.specularrefractdepth': 5,
 
     'pixelfilter.type': 'mitchell',
-    'pixelfilter.mitchell.sharp': 0.333, 
-    'pixelfilter.mitchell.xwidth': 2.0, 
-    'pixelfilter.mitchell.ywidth': 2.0, 
+    'pixelfilter.mitchell.sharp': 0.3333,
+    'pixelfilter.mitchell.xwidth': 1.5,
+    'pixelfilter.mitchell.ywidth': 1.5,
+    'pixelfilter.mitchell.supersample': "true",
     'pixelfilter.mitchell.optmode': "slider" }
 
     presets['E Anim - Distributed/GI very high Q'] =  {
@@ -1867,9 +1877,10 @@ def getScenePresets():
     'sintegrator.distributedpath.specularrefractdepth': 5,
 
     'pixelfilter.type': 'mitchell',
-    'pixelfilter.mitchell.sharp': 0.333, 
-    'pixelfilter.mitchell.xwidth': 2.0, 
-    'pixelfilter.mitchell.ywidth': 2.0, 
+    'pixelfilter.mitchell.sharp': 0.3333,
+    'pixelfilter.mitchell.xwidth': 1.5,
+    'pixelfilter.mitchell.ywidth': 1.5,
+    'pixelfilter.mitchell.supersample': "true",
     'pixelfilter.mitchell.optmode': "slider" }
 
     return presets
@@ -2887,13 +2898,15 @@ def luxPixelFilter(scn, gui=None):
             if showadvanced.get()=="false":
                 # Default parameters
                 if gui: gui.newline("", 8, 0, None, [0.4,0.4,0.4])
-                slidval = luxProp(scn, "pixelfilter.mitchell.sharp", 0.25)
+                slidval = luxProp(scn, "pixelfilter.mitchell.sharp", 0.3333)
                 luxFloat("sharpness", slidval, 0.0, 1.0, "sharpness", "Specify amount between blurred (left) and sharp/ringed (right)", gui, 2.0, 1)
-                # rule: B + 2*c = 1.0
-                C = slidval.getFloat() * 0.5
-                B = 1.0 - slidval.getFloat()
-                str += "\n   \"float B\" [%f]"%(B)
-                str += "\n   \"float C\" [%f]"%(C)
+                sharp = slidval.getFloat()
+                width = 1.5
+                str += "\n   \"float xwidth\" [%f]" % (width)
+                str += "\n   \"float ywidth\" [%f]" % (width)
+                str += "\n   \"float B\" [%f]" % (sharp)
+                str += "\n   \"float C\" [%f]" % (sharp)
+                str += "\n   \"bool supersample\" [\"true\"]"
 
             if showadvanced.get()=="true":
                 # Advanced parameters
@@ -2906,11 +2919,15 @@ def luxPixelFilter(scn, gui=None):
                 luxOption("optmode", optmode, ["slider", "preset", "manual"], "Mode", "Mode of configuration", gui, 0.5)
     
                 if(optmode.get() == "slider"):
-                    slidval = luxProp(scn, "pixelfilter.mitchell.sharp", 0.33)
+                    slidval = luxProp(scn, "pixelfilter.mitchell.sharp", 0.3333)
                     luxFloat("sharpness", slidval, 0.0, 1.0, "sharpness", "Specify amount between blurred (left) and sharp/ringed (right)", gui, 1.5, 1)
                     # rule: B + 2*c = 1.0
-                    C = slidval.getFloat() * 0.5
-                    B = 1.0 - slidval.getFloat()
+                    # we must apply the rule only when supersampling is disabled
+                    if luxProp(scn, 'pixelfilter.mitchell.supersample', 'true').get() != 'true':
+                        C = slidval.getFloat() * 0.5
+                        B = 1.0 - slidval.getFloat()
+                    else:
+                        B = C = slidval.getFloat()
                     str += "\n   \"float B\" [%f]"%(B)
                     str += "\n   \"float C\" [%f]"%(C)
                 elif(optmode.get() == "preset"):
@@ -2918,6 +2935,7 @@ def luxPixelFilter(scn, gui=None):
                 else:
                     str += luxFloat("B", luxProp(scn, "pixelfilter.mitchell.B", 0.3333), 0.0, 1.0, "B", "Specify the shape of the Mitchell filter. Often best result is when B + 2C = 1", gui, 0.75)
                     str += luxFloat("C", luxProp(scn, "pixelfilter.mitchell.C", 0.3333), 0.0, 1.0, "C", "Specify the shape of the Mitchell filter. Often best result is when B + 2C = 1", gui, 0.75)
+                str += luxBool("supersample", luxProp(scn, "pixelfilter.mitchell.supersample", "true"), "Supersample", "Use supersampling to avoid aliasing with sharp narrow filter", gui, 1.0)
 
         if filtertype.get() == "sinc":
             if showadvanced.get()=="true":
