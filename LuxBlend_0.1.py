@@ -229,7 +229,7 @@ class luxExport:
     # __init__
     # initializes the exporter object
     #-------------------------------------------------
-    def __init__(self, scene):
+    def __init__(self, scene, master_progress):
         self.scene = scene
         self.camera = scene.objects.camera
         self.objects = []
@@ -239,6 +239,7 @@ class luxExport:
         self.materials = []
         self.lights = []
         self.duplis = set()
+        self.mpb = master_progress
 
     #-------------------------------------------------
     # analyseObject(self, obj, matrix, name)
@@ -355,8 +356,9 @@ class luxExport:
     # exports materials to the file
     #-------------------------------------------------
     def exportMaterials(self, file):
+        pb = exportProgressBar(len(self.materials), self.mpb)
         for mat in self.materials:
-            
+            pb.counter('Exporting Materials')
             self.exportMaterial(file, mat)
 
     #-------------------------------------------------
@@ -529,7 +531,9 @@ class luxExport:
         instancing_threshold = luxProp(scn, "instancing_threshold", 2).get()
         mesh_optimizing = luxProp(scn, "mesh_optimizing", True).get()
         mesh = Mesh.New('')
+        pb = exportProgressBar(len(self.meshes), self.mpb)
         for (mesh_name, objs) in self.meshes.items():
+            pb.counter('Exporting Meshes')
             allow_instancing = True
             mats = getMaterials(objs[0]) # mats = obj.getData().getMaterials()
             for mat in mats: # don't instance if one of the materials is emissive
@@ -565,7 +569,9 @@ class luxExport:
         usemblur = luxProp(cam, "usemblur", "false")
         mesh_optimizing = luxProp(scn, "mesh_optimizing", True).get()
         mesh = Mesh.New('')
+        pb = exportProgressBar(len(self.objects), self.mpb)
         for [obj, matrix] in self.objects:
+            pb.counter('Exporting Objects')
             print("object: %s"%(obj.getName()))
             mesh_name = obj.getData(name_only=True)
 
@@ -715,7 +721,9 @@ class luxExport:
     # exports volumes to the file
     #-------------------------------------------------
     def exportVolumes(self, file):
+        pb = exportProgressBar(len(self.volumes), self.mpb)
         for [obj, matrix] in self.volumes:
+            pb.counter('Exporting Volumes')
             print("volume: %s"%(obj.getName()))
             file.write("# Volume: %s\n"%(obj.getName()))
 
@@ -761,14 +769,67 @@ def luxFlashBlock(camObj):
 
     return str
 
+class exportProgressBar(object):
+	totalSteps	= None
+	realSteps   = None
+	currentStep	= None
+	subMode     = False
+	counterStep = None
+	
+	def __init__(self, ts, other=None):
+		self.realSteps = ts
+		self.counterStep = 0
+		if other is None:
+			# Master progress indicator
+			self.totalSteps  = self.realSteps
+			self.currentStep = 0
+		else:
+			# sub-progress of another progress indicator
+			self.totalSteps  = self.realSteps * other.totalSteps
+			self.currentStep = self.realSteps * (other.currentStep-1)
+			self.subMode = True
+			
+	def __repr__(self):
+		return '<progress total:%i real:%i current:%i count:%i frac:%f>' % (self.totalSteps, self.realSteps, self.currentStep, self.counterStep, self.get_frac())
+			
+	def get_frac(self):
+		return float(self.currentStep) / float(self.totalSteps)
+	
+	def next(self, msg):
+		amt = self.get_frac()
+		Window.DrawProgressBar(amt, msg)
+		#print('%s %s'%(self,msg))
+		Blender.Redraw()
+		self.currentStep += 1
+		
+	def counter(self, prefix):
+		
+		amt = self.get_frac()
+		if self.subMode:
+			msg = '%s (%i/%i)' % (prefix, self.counterStep, self.realSteps)
+		else:
+			msg = '%s (%i/%i)' % (prefix, self.counterStep, self.totalSteps)
+		Window.DrawProgressBar(amt, msg)
+		#print('%s %s'%(self,msg))
+		Blender.Redraw()
+		self.currentStep += 1
+		self.counterStep += 1
+		
+	def finished(self):
+		if not self.subMode:
+			Window.DrawProgressBar(1.0, 'Finished')
+			Blender.Redraw()
 
 ######################################################
 # EXPORT
 ######################################################
 
-def save_lux(filename, unindexedname):
+def save_lux(filename, unindexedname, anim_progress=None):
     
-    export_total_steps = 12.0
+    if LuxIsGUI:
+        pb = exportProgressBar(12, anim_progress)
+    else:
+        pb = None
     
     global meshlist, matnames, lxs_filename, geom_filename, geom_pfilename, mat_filename, mat_pfilename, vol_filename, vol_pfilename, LuxIsGUI
 
@@ -796,7 +857,7 @@ def save_lux(filename, unindexedname):
     vol_pfilename = filebase + "-vol.lxv"
 
     ### Zuegs: initialization for export class
-    export = luxExport(Blender.Scene.GetCurrent())
+    export = luxExport(Blender.Scene.GetCurrent(), pb)
 
     # check if a light is present
     envtype = luxProp(scn, "env.type", "infinite").get()
@@ -815,7 +876,7 @@ def save_lux(filename, unindexedname):
         del export
         return False
 
-    if LuxIsGUI: DrawProgressBar(0.0/export_total_steps,'Setting up Scene file')
+    if LuxIsGUI: pb.next('Setting up Scene file')
     
     class output_proxy():
         load_result = False
@@ -924,7 +985,7 @@ def save_lux(filename, unindexedname):
         ##### Write camera ######
         camObj = scn.getCurrentCamera()
 
-        if LuxIsGUI: DrawProgressBar(1.0/export_total_steps,'Exporting Camera')
+        if LuxIsGUI: pb.next('Exporting Camera')
         if camObj:
             print("processing Camera...")
             cam = camObj.data
@@ -965,32 +1026,32 @@ def save_lux(filename, unindexedname):
             file.write("\n")
         file.write("\n")
     
-        if LuxIsGUI: DrawProgressBar(2.0/export_total_steps,'Exporting Film Settings')
+        if LuxIsGUI: pb.next('Exporting Film Settings')
         ##### Write film ######
         file.write(luxFilm(scn))
         file.write("\n")
 
-        if LuxIsGUI: DrawProgressBar(3.0/export_total_steps,'Exporting Pixel Filter')
+        if LuxIsGUI: pb.next('Exporting Pixel Filter')
         ##### Write Pixel Filter ######
         file.write(luxPixelFilter(scn))
         file.write("\n")
     
-        if LuxIsGUI: DrawProgressBar(4.0/export_total_steps,'Exporting Sampler')
+        if LuxIsGUI: pb.next('Exporting Sampler')
         ##### Write Sampler ######
         file.write(luxSampler(scn))
         file.write("\n")
     
-        if LuxIsGUI: DrawProgressBar(5.0/export_total_steps,'Exporting Surface Integrator')
+        if LuxIsGUI: pb.next('Exporting Surface Integrator')
         ##### Write Surface Integrator ######
         file.write(luxSurfaceIntegrator(scn))
         file.write("\n")
         
-        if LuxIsGUI: DrawProgressBar(6.0/export_total_steps,'Exporting Volume Integrator')
+        if LuxIsGUI: pb.next('Exporting Volume Integrator')
         ##### Write Volume Integrator ######
         file.write(luxVolumeIntegrator(scn))
         file.write("\n")
         
-        if LuxIsGUI: DrawProgressBar(7.0/export_total_steps,'Exporting Accelerator')
+        if LuxIsGUI: pb.next('Exporting Accelerator')
         ##### Write Acceleration ######
         file.write(luxAccelerator(scn))
         file.write("\n")    
@@ -1008,7 +1069,7 @@ def save_lux(filename, unindexedname):
         #    file.write("Transform [%s 0.0 0.0 0.0  0.0 %s 0.0 0.0  0.0 0.0 %s 0.0  0.0 0.0 0 1.0]\n"%(scale, scale, scale))
         #    file.write("\n")
         
-        if LuxIsGUI: DrawProgressBar(8.0/export_total_steps,'Exporting Environment')
+        if LuxIsGUI: pb.next('Exporting Environment')
         ##### Write World Background, Sunsky or Env map ######
         env = luxEnvironment(scn)
         if env != "":
@@ -1033,7 +1094,7 @@ def save_lux(filename, unindexedname):
         if not file.combine_all_output: file.write("Include \"%s\"\n\n" %(vol_pfilename))
         
     if luxProp(scn, "lxm", "true").get()=="true" or use_pipe_output:
-        if LuxIsGUI: DrawProgressBar(9.0/export_total_steps,'Exporting Materials')
+        if LuxIsGUI: pb.next('Exporting Materials')
         ##### Write Material file #####
         if not file.combine_all_output: print("Exporting materials to '" + mat_filename + "'...\n")
         mat_file = open(mat_filename, 'w') if not file.combine_all_output else file
@@ -1043,7 +1104,7 @@ def save_lux(filename, unindexedname):
         if not file.combine_all_output: mat_file.close()
     
     if luxProp(scn, "lxo", "true").get()=="true" or use_pipe_output:
-        if LuxIsGUI: DrawProgressBar(10.0/export_total_steps,'Exporting Geometry')
+        if LuxIsGUI: pb.next('Exporting Geometry')
         ##### Write Geometry file #####
         if not file.combine_all_output: print("Exporting geometry to '" + geom_filename + "'...\n")
         geom_file = open(geom_filename, 'w') if not file.combine_all_output else file
@@ -1056,7 +1117,7 @@ def save_lux(filename, unindexedname):
         if not file.combine_all_output: geom_file.close()
 
     if luxProp(scn, "lxv", "true").get()=="true" or use_pipe_output:
-        if LuxIsGUI: DrawProgressBar(11.0/export_total_steps,'Exporting Volumes')
+        if LuxIsGUI: pb.next('Exporting Volumes')
         ##### Write Volume file #####
         if not file.combine_all_output: print("Exporting volumes to '" + vol_filename + "'...\n")
         vol_file = open(vol_filename, 'w') if not file.combine_all_output else file
@@ -1075,7 +1136,7 @@ def save_lux(filename, unindexedname):
         file.write("WorldEnd\n\n")
         file.close()
 
-    if LuxIsGUI: DrawProgressBar(12.0/export_total_steps,'Export Finished')
+    if LuxIsGUI: pb.finished()
     print("Finished.\n")
     del export
     
@@ -1261,8 +1322,11 @@ def save_anim(filename, as_thread=False):
     print("\n\nRendering animation (frame %i to %i)\n\n"%(startF, endF))
 
     v_frame = Blender.Get('curframe')
+    
+    pb = exportProgressBar(endF-startF +1)
 
     for i in range (startF, endF+1):
+        pb.next('Exporting frame %d\n'%i)
         # Seems to get stuck unless we redraw the UI
 #        if LuxIsGUI:
 #            Window.QRedrawAll()
@@ -1275,10 +1339,10 @@ def save_anim(filename, as_thread=False):
         luxProp(scn, "filename", Blender.Get("filename")).set(sys.makename(filename, "-%05d" %  (Blender.Get('curframe'))))
 
         if Run == "true":
-            if save_lux(filename, unindexedname):
+            if save_lux(filename, unindexedname, pb):
                 launchLuxWait(filename, anim=True)
         else:
-            save_lux(indexedname, unindexedname)
+            save_lux(indexedname, unindexedname, pb)
 
         MatSaved = 1
         # Seems to get stuck unless we redraw the UI
