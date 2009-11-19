@@ -4182,7 +4182,7 @@ def luxTexture(name, parentkey, type, default, min, max, caption, hint, mat, gui
         str += luxInt("noisedepth", luxProp(mat, keyname+".noisedepth", 2), 0, 6, "noisedepth", "", gui, 0.75)
 
         str += luxFloat("noisesize", luxProp(mat, keyname+".noisesize", 0.25), 0.0, 2.0, "noisesize", "", gui, 1.0)
-        str += luxFloat("turbulance", luxProp(mat, keyname+".turbulance", 5.0), 0.0, 200.0, "turbulance", "", gui, 1.0)
+        str += luxFloat("turbulence", luxProp(mat, keyname+".turbulence", 5.0), 0.0, 200.0, "turbulence", "", gui, 1.0)
 
         if gui: gui.newline("basis:", -2, level+1, icon_texparam)
         noisebasis2 = luxProp(mat, keyname+".noisebasis2", "sin")
@@ -4252,7 +4252,7 @@ def luxTexture(name, parentkey, type, default, min, max, caption, hint, mat, gui
         str += luxOption("noisetype", noisetype, noisetypes, "noisetypes", "", gui, 0.75)
 
         str += luxFloat("noisesize", luxProp(mat, keyname+".noisesize", 0.25), 0.0, 2.0, "noisesize", "", gui, 1.0)
-        str += luxFloat("turbulance", luxProp(mat, keyname+".turbulance", 5.0), 0.0, 200.0, "turbulance", "", gui, 1.0)
+        str += luxFloat("turbulence", luxProp(mat, keyname+".turbulence", 5.0), 0.0, 200.0, "turbulence", "", gui, 1.0)
 
         if gui: gui.newline("basis:", -2, level+1, icon_texparam)
         noisebasis2 = luxProp(mat, keyname+".noisebasis2", "sin")
@@ -4364,7 +4364,7 @@ def luxTexture(name, parentkey, type, default, min, max, caption, hint, mat, gui
         if gui: gui.newline("noise:", -2, level+1, icon_texparam)
         
         str += luxInt("noisedepth", luxProp(mat, keyname+".noisedepth", 2), 0.0, 10.0, "noisedepth", "", gui, 1.0)
-        str += luxFloat("turbulance", luxProp(mat, keyname+".turbulance", 5.0), 0.0, 2.0, "turbulance", "", gui, 1.0)
+        str += luxFloat("turbulence", luxProp(mat, keyname+".turbulence", 5.0), 0.0, 2.0, "turbulence", "", gui, 1.0)
 
         if gui: gui.newline("level:", -2, level+1, icon_texparam)
         str += luxFloat("bright", luxProp(mat, keyname+".bright", 1.0), 0.0, 2.0, "bright", "", gui, 1.0)
@@ -4387,7 +4387,7 @@ def luxTexture(name, parentkey, type, default, min, max, caption, hint, mat, gui
         str += luxOption("noisetype", noisetype, noisetypes, "noisetypes", "", gui, 0.75)
         
         str += luxFloat("noisesize", luxProp(mat, keyname+".noisesize", 0.25), 0.0, 10.0, "noisesize", "", gui, 1.0)
-        str += luxFloat("turbulance", luxProp(mat, keyname+".turbulance", 5.0), 0.0, 200.0, "turbulance", "", gui, 1.0)
+        str += luxFloat("turbulence", luxProp(mat, keyname+".turbulence", 5.0), 0.0, 200.0, "turbulence", "", gui, 1.0)
 
         noisebasis = luxProp(mat, keyname+".noisebasis", "blender_original")
         noisebasises = ["blender_original","original_perlin", "improved_perlin", "voronoi_f1", "voronoi_f2", "voronoi_f3", "voronoi_f4", "voronoi_f2f1", "voronoi_crackle", "cell_noise"]
@@ -5533,7 +5533,7 @@ def convertMaterial(mat):
                 luxProp(mat, dot(name)+"noisebasis", "").set(mapConstDict(texture.noiseBasis, Texture.Noise, noiseDict, ""))
                 luxProp(mat, dot(name)+"noisetype", "").set({"soft":"soft_noise", "hard":"hard_noise"}[texture.noiseType])
                 luxProp(mat, dot(name)+"noisesize", 0.25).set(texture.noiseSize)
-                luxProp(mat, dot(name)+"turbulance", 0.25).set(texture.turbulence)
+                luxProp(mat, dot(name)+"turbulence", 0.25).set(texture.turbulence)
             elif texture.type == Texture.Types["MUSGRAVE"]:
                 luxProp(mat, dot(name)+"texture", "").set("blender_musgrave")
                 luxProp(mat, dot(name)+"mtype", "").set(mapConstDict(texture.stype, Texture.STypes, {"MUS_MFRACTAL":"multifractal", "MUS_RIDGEDMF":"ridged_multifractal", "MUS_HYBRIDMF":"hybrid_multifractal", "MUS_HTERRAIN":"hetero_terrain", "MUS_FBM":"fbm"}, ""))
@@ -5554,7 +5554,7 @@ def convertMaterial(mat):
                 luxProp(mat, dot(name)+"texture", "").set("blender_marble")
                 luxProp(mat, dot(name)+"mtype", "").set(mapConstDict(texture.stype, Texture.STypes, {"MBL_SOFT":"soft", "MBL_SHARP":"sharp", "MBL_SHARPER":"sharper"}, ""))
                 luxProp(mat, dot(name)+"noisetype", "").set({"soft":"soft_noise", "hard":"hard_noise"}[texture.noiseType])
-                luxProp(mat, dot(name)+"turbulance", 0.25).set(texture.turbulence)
+                luxProp(mat, dot(name)+"turbulence", 0.25).set(texture.turbulence)
                 luxProp(mat, dot(name)+"noisedepth", 2).set(texture.noiseDepth)
                 luxProp(mat, dot(name)+"noisebasis", "").set(mapConstDict(texture.noiseBasis, Texture.Noise, noiseDict, ""))
                 luxProp(mat, dot(name)+"noisebasis2", "").set(mapConstDict(texture.noiseBasis2, Texture.Noise, {"SINE":"sin", "SAW":"saw", "TRI":"tri"}, ""))
@@ -5579,14 +5579,14 @@ def convertMaterial(mat):
                 luxProp(mat, dot(name)+"noisebasis2", "").set(mapConstDict(texture.noiseBasis2, Texture.Noise, noiseDict, ""))
             elif texture.type == Texture.Types["MAGIC"]:
                 luxProp(mat, dot(name)+"texture", "").set("blender_magic")
-                luxProp(mat, dot(name)+"turbulance", 0.25).set(texture.turbulence)
+                luxProp(mat, dot(name)+"turbulence", 0.25).set(texture.turbulence)
                 luxProp(mat, dot(name)+"noisedepth", 2).set(texture.noiseDepth)
             elif texture.type == Texture.Types["STUCCI"]:
                 luxProp(mat, dot(name)+"texture", "").set("blender_stucci")
                 luxProp(mat, dot(name)+"mtype", "").set(mapConstDict(texture.stype, Texture.STypes, {"STC_PLASTIC":"Plastic", "MSTC_WALLIN":"Wall In", "STC_WALLOUT":"Wall Out"}, ""))
                 luxProp(mat, dot(name)+"noisetype", "").set({"soft":"soft_noise", "hard":"hard_noise"}[texture.noiseType])
                 luxProp(mat, dot(name)+"noisesize", 0.25).set(texture.noiseSize)
-                luxProp(mat, dot(name)+"turbulance", 0.25).set(texture.turbulence)
+                luxProp(mat, dot(name)+"turbulence", 0.25).set(texture.turbulence)
                 luxProp(mat, dot(name)+"noisebasis", "").set(mapConstDict(texture.noiseBasis, Texture.Noise, noiseDict, ""))
             elif texture.type == Texture.Types["BLEND"]:
                 luxProp(mat, dot(name)+"texture", "").set("blender_blend")
