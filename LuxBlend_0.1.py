@@ -329,7 +329,7 @@ class luxExport:
     def analyseScene(self):
         light = False
         for obj in self.scene.objects:
-            if ((obj.Layers & self.scene.Layers) > 0):
+            if ((obj.Layers & self.scene.Layers) > 0) and not obj.restrictRender:
                 if self.analyseObject(obj, obj.getMatrix(), obj.getName()): light = True
         return light
 
@@ -531,9 +531,9 @@ class luxExport:
         instancing_threshold = luxProp(scn, "instancing_threshold", 2).get()
         mesh_optimizing = luxProp(scn, "mesh_optimizing", True).get()
         mesh = Mesh.New('')
-        pb = exportProgressBar(len(self.meshes), self.mpb)
+        #pb = exportProgressBar(len(self.meshes), self.mpb)
         for (mesh_name, objs) in self.meshes.items():
-            pb.counter('Exporting Meshes')
+            #pb.counter('Exporting Meshes')
             allow_instancing = True
             mats = getMaterials(objs[0]) # mats = obj.getData().getMaterials()
             for mat in mats: # don't instance if one of the materials is emissive
