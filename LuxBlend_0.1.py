@@ -540,9 +540,9 @@ class luxExport:
         instancing_threshold = luxProp(scn, "instancing_threshold", 2).get()
         mesh_optimizing = luxProp(scn, "mesh_optimizing", "true")
         mesh = Mesh.New('')
-        pb = exportProgressBar(len(self.meshes), self.mpb)
+        #pb = exportProgressBar(len(self.meshes), self.mpb)
         for (mesh_name, objs) in self.meshes.items():
-            pb.counter('Exporting Meshes')
+            #pb.counter('Exporting Meshes')
             allow_instancing = True
             mats = getMaterials(objs[0]) # mats = obj.getData().getMaterials()
             for mat in mats: # don't instance if one of the materials is emissive
@@ -578,9 +578,9 @@ class luxExport:
         usemblur = luxProp(cam, "usemblur", "false")
         mesh_optimizing = luxProp(scn, "mesh_optimizing", "true")
         mesh = Mesh.New('')
-        pb = exportProgressBar(len(self.objects), self.mpb)
+        #pb = exportProgressBar(len(self.objects), self.mpb)
         for [obj, matrix] in self.objects:
-            pb.counter('Exporting Objects')
+            #pb.counter('Exporting Objects')
             print("object: %s"%(obj.getName()))
             mesh_name = obj.getData(name_only=True)
 
