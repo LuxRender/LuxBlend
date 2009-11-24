@@ -356,9 +356,9 @@ class luxExport:
     # exports materials to the file
     #-------------------------------------------------
     def exportMaterials(self, file):
-        pb = exportProgressBar(len(self.materials), self.mpb)
+        #pb = exportProgressBar(len(self.materials), self.mpb)
         for mat in self.materials:
-            pb.counter('Exporting Materials')
+            #pb.counter('Exporting Materials')
             self.exportMaterial(file, mat)
 
     #-------------------------------------------------
@@ -569,9 +569,9 @@ class luxExport:
         usemblur = luxProp(cam, "usemblur", "false")
         mesh_optimizing = luxProp(scn, "mesh_optimizing", True).get()
         mesh = Mesh.New('')
-        pb = exportProgressBar(len(self.objects), self.mpb)
+        #pb = exportProgressBar(len(self.objects), self.mpb)
         for [obj, matrix] in self.objects:
-            pb.counter('Exporting Objects')
+            #pb.counter('Exporting Objects')
             print("object: %s"%(obj.getName()))
             mesh_name = obj.getData(name_only=True)
 
@@ -721,9 +721,9 @@ class luxExport:
     # exports volumes to the file
     #-------------------------------------------------
     def exportVolumes(self, file):
-        pb = exportProgressBar(len(self.volumes), self.mpb)
+        #pb = exportProgressBar(len(self.volumes), self.mpb)
         for [obj, matrix] in self.volumes:
-            pb.counter('Exporting Volumes')
+            #pb.counter('Exporting Volumes')
             print("volume: %s"%(obj.getName()))
             file.write("# Volume: %s\n"%(obj.getName()))
 
