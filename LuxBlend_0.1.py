@@ -329,7 +329,7 @@ class luxExport:
     def analyseScene(self):
         light = False
         for obj in self.scene.objects:
-            if ((obj.Layers & self.scene.Layers) > 0):
+            if ((obj.Layers & self.scene.Layers) > 0) and not obj.restrictRender:
                 if self.analyseObject(obj, obj.getMatrix(), obj.getName()): light = True
         return light
 
@@ -356,9 +356,9 @@ class luxExport:
     # exports materials to the file
     #-------------------------------------------------
     def exportMaterials(self, file):
-        pb = exportProgressBar(len(self.materials), self.mpb)
+        #pb = exportProgressBar(len(self.materials), self.mpb)
         for mat in self.materials:
-            pb.counter('Exporting Materials')
+            #pb.counter('Exporting Materials')
             self.exportMaterial(file, mat)
 
     #-------------------------------------------------
@@ -531,9 +531,9 @@ class luxExport:
         instancing_threshold = luxProp(scn, "instancing_threshold", 2).get()
         mesh_optimizing = luxProp(scn, "mesh_optimizing", True).get()
         mesh = Mesh.New('')
-        pb = exportProgressBar(len(self.meshes), self.mpb)
+        #pb = exportProgressBar(len(self.meshes), self.mpb)
         for (mesh_name, objs) in self.meshes.items():
-            pb.counter('Exporting Meshes')
+            #pb.counter('Exporting Meshes')
             allow_instancing = True
             mats = getMaterials(objs[0]) # mats = obj.getData().getMaterials()
             for mat in mats: # don't instance if one of the materials is emissive
@@ -569,9 +569,9 @@ class luxExport:
         usemblur = luxProp(cam, "usemblur", "false")
         mesh_optimizing = luxProp(scn, "mesh_optimizing", True).get()
         mesh = Mesh.New('')
-        pb = exportProgressBar(len(self.objects), self.mpb)
+        #pb = exportProgressBar(len(self.objects), self.mpb)
         for [obj, matrix] in self.objects:
-            pb.counter('Exporting Objects')
+            #pb.counter('Exporting Objects')
             print("object: %s"%(obj.getName()))
             mesh_name = obj.getData(name_only=True)
 
@@ -721,9 +721,9 @@ class luxExport:
     # exports volumes to the file
     #-------------------------------------------------
     def exportVolumes(self, file):
-        pb = exportProgressBar(len(self.volumes), self.mpb)
+        #pb = exportProgressBar(len(self.volumes), self.mpb)
         for [obj, matrix] in self.volumes:
-            pb.counter('Exporting Volumes')
+            #pb.counter('Exporting Volumes')
             print("volume: %s"%(obj.getName()))
             file.write("# Volume: %s\n"%(obj.getName()))
 
@@ -824,15 +824,16 @@ class exportProgressBar(object):
 # EXPORT
 ######################################################
 
+
+
 def save_lux(filename, unindexedname, anim_progress=None):
+    global meshlist, matnames, lxs_filename, geom_filename, geom_pfilename, mat_filename, mat_pfilename, vol_filename, vol_pfilename, LuxIsGUI
     
     if LuxIsGUI:
         pb = exportProgressBar(12, anim_progress)
     else:
         pb = None
     
-    global meshlist, matnames, lxs_filename, geom_filename, geom_pfilename, mat_filename, mat_pfilename, vol_filename, vol_pfilename, LuxIsGUI
-
     global render_status_text
     global render_status
     render_status_text = 'Exporting...'
@@ -2708,7 +2709,7 @@ def luxFilm(scn, gui=None):
                 str += luxFloat("linear_sensitivity", luxProp(scn, "film.linear.sensitivity", 50.0), 0.0, 1000.0, "sensitivity", "Adaption/Sensitivity", gui)
                 str += luxFloat("linear_exposure", luxProp(scn, "film.linear.exposure", 1.0), 0.001, 1.0, "exposure", "Exposure duration in seconds", gui)
                 str += luxFloat("linear_fstop", luxProp(scn, "film.linear.fstop", 2.8), 0.1, 64.0, "Fstop", "F-Stop", gui)
-                str += luxFloat("linear_gamma", luxProp(scn, "film.linear.gamma", 1.0), 0.0, 8.0, "gamma", "Tonemap operator gamma correction", gui)
+                str += luxFloat("linear_gamma", luxProp(scn, "film.gamma", 2.2), 0.0, 8.0, "gamma", "Film gamma correction", None)
             elif tonemapkernel.get() == "contrast":
                 str += luxFloat("contrast_ywa", luxProp(scn, "film.contrast.ywa", 0.1), 0.001, 1.0, "Ywa", "Display/World Adaption Luminance", gui)
 
@@ -6675,8 +6676,8 @@ except: pyargs = []
 
 if (pyargs != []) and (batchindex != 0):
     print("\n\nLuxBlend v0.6 - BATCH mode\n")
+    
     LuxIsGUI = False
-
     scene = Scene.GetCurrent()
     context = scene.getRenderingContext()
 
