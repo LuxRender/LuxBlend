@@ -2,14 +2,14 @@
 # -*- coding: utf-8 -*-
 # coding=utf-8
 """Registration info for Blender menus:
-Name: 'LuxBlend v0.6 Exporter'
+Name: 'LuxBlend v0.6.xDevel Exporter'
 Blender: 248
 Group: 'Render'
-Tooltip: 'Export/Render to LuxRender v0.6 scene format (.lxs)'
+Tooltip: 'Export/Render to LuxRender v0.7Devel scene format (.lxs)'
 """
 
 __author__ = "radiance, zuegs, ideasman42, luxblender, dougal2"
-__version__ = "0.6"
+__version__ = "0.7Devel"
 __url__ = [
 	"http://www.luxrender.net/",
 	"http://www.luxrender.net/forum/viewforum.php?f=11",
@@ -34,7 +34,7 @@ Please check the lux tutorials & forums for more information.
 # ***** BEGIN GPL LICENSE BLOCK *****
 #
 # --------------------------------------------------------------------------
-# LuxBlend v0.6 exporter
+# LuxBlend v0.7Devel exporter
 # --------------------------------------------------------------------------
 #
 # Authors:
@@ -390,40 +390,48 @@ class luxExport:
     # exports mesh to the file without any optimization
     #-------------------------------------------------
     def exportMesh(self, file, mesh, mats, name, portal=False):
+        print("    exporting mesh")
         if mats == []:
             mats = [dummyMat]
+        usedmats = [f.mat for f in mesh.faces]
         for matIndex in range(len(mats)):
-            if (mats[matIndex] != None):
-                mesh_str = getMeshType(len(mesh.verts), mats[matIndex])
-                if (portal):
-                    file.write("\tShape %s \"integer indices\" [\n"% mesh_str)
-                else:
-                    self.exportMaterialLink(file, mats[matIndex])
-                    file.write("\tPortalShape %s \"integer indices\" [\n"% mesh_str)
-                index = 0
-                ffaces = [f for f in mesh.faces if f.mat == matIndex]
+            if not matIndex in usedmats:
+                continue
+            if not(portal):
+                mat = mats[matIndex]
+                if not mat:
+                   mat = dummyMat
+                self.exportMaterialLink(file, mat)
+            mesh_str = self.getMeshType(len(mesh.verts), mats[matIndex])
+            if not(portal):
+                file.write("\tShape %s \"integer indices\" [\n"% mesh_str)
+            else:
+                self.exportMaterialLink(file, mats[matIndex])
+                file.write("\tPortalShape %s \"integer indices\" [\n"% mesh_str)
+            index = 0
+            ffaces = [f for f in mesh.faces if f.mat == matIndex]
+            for face in ffaces:
+                file.write("%d %d %d\n"%(index, index+1, index+2))
+                if (len(face)==4):
+                    file.write("%d %d %d\n"%(index, index+2, index+3))
+                index += len(face.verts)
+            file.write("\t] \"point P\" [\n")
+            for face in ffaces:
+                for vertex in face:
+                    file.write("%f %f %f\n"% tuple(vertex.co))
+            file.write("\t] \"normal N\" [\n")
+            for face in ffaces:
+                normal = face.no
+                for vertex in face:
+                    if (face.smooth):
+                        normal = vertex.no
+                    file.write("%f %f %f\n"% tuple(normal))
+            if (mesh.faceUV):
+                file.write("\t] \"float uv\" [\n")
                 for face in ffaces:
-                    file.write("%d %d %d\n"%(index, index+1, index+2))
-                    if (len(face)==4):
-                        file.write("%d %d %d\n"%(index, index+2, index+3))
-                    index += len(face.verts)
-                file.write("\t] \"point P\" [\n")
-                for face in ffaces:
-                    for vertex in face:
-                        file.write("%f %f %f\n"% tuple(vertex.co))
-                file.write("\t] \"normal N\" [\n")
-                for face in ffaces:
-                    normal = face.no
-                    for vertex in face:
-                        if (face.smooth):
-                            normal = vertex.no
-                        file.write("%f %f %f\n"% tuple(normal))
-                if (mesh.faceUV):
-                    file.write("\t] \"float uv\" [\n")
-                    for face in ffaces:
-                        for uv in face.uv:
-                            file.write("%f %f\n"% tuple(uv))
-                file.write("\t]\n")
+                    for uv in face.uv:
+                        file.write("%f %f\n"% tuple(uv))
+            file.write("\t]\n")
 
     #-------------------------------------------------
     # exportMeshOpt(self, file, mesh, mats, name, portal, optNormals)
@@ -432,6 +440,7 @@ class luxExport:
     # optNormals: speed and filesize optimization, flat faces get exported without normals
     #-------------------------------------------------
     def exportMeshOpt(self, file, mesh, mats, name, portal=False, optNormals=True):
+        print("    exporting optimized mesh")
         shapeList, smoothFltr, shapeText = [0], [[0,1]], [""]
         if portal:
             normalFltr, uvFltr, shapeText = [0], [0], ["portal"] # portal, no normals, no UVs
@@ -491,7 +500,7 @@ class luxExport:
                     exportFaces.append(exportVIndices)
                 if (len(exportVerts)>0):
                     mesh_str = self.getMeshType(len(exportVerts), mats[matIndex])
-                    if (portal):
+                    if portal:
                         file.write("\tPortalShape %s \"integer indices\" [\n"% mesh_str)
                     else:
                         file.write("\tShape %s \"integer indices\" [\n"% mesh_str)
@@ -529,7 +538,7 @@ class luxExport:
     def exportMeshes(self, file):
         scn = Scene.GetCurrent()
         instancing_threshold = luxProp(scn, "instancing_threshold", 2).get()
-        mesh_optimizing = luxProp(scn, "mesh_optimizing", True).get()
+        mesh_optimizing = luxProp(scn, "mesh_optimizing", "true")
         mesh = Mesh.New('')
         #pb = exportProgressBar(len(self.meshes), self.mpb)
         for (mesh_name, objs) in self.meshes.items():
@@ -551,7 +560,7 @@ class luxExport:
                 print("blender-mesh: %s (%d vertices, %d faces)"%(mesh_name, len(mesh.verts), len(mesh.faces)))
                 file.write("ObjectBegin \"%s\"\n"%mesh_name)
 
-                if (mesh_optimizing):
+                if (mesh_optimizing.get() == "true"):
                     self.exportMeshOpt(file, mesh, mats, mesh_name)
                 else:
                     self.exportMesh(file, mesh, mats, mesh_name)
@@ -567,7 +576,7 @@ class luxExport:
         cam = scn.getCurrentCamera().data
         objectmblur = luxProp(cam, "objectmblur", "true")
         usemblur = luxProp(cam, "usemblur", "false")
-        mesh_optimizing = luxProp(scn, "mesh_optimizing", True).get()
+        mesh_optimizing = luxProp(scn, "mesh_optimizing", "true")
         mesh = Mesh.New('')
         #pb = exportProgressBar(len(self.objects), self.mpb)
         for [obj, matrix] in self.objects:
@@ -593,7 +602,7 @@ class luxExport:
                     mats = getMaterials(obj)
                     print("  blender-mesh: %s (%d vertices, %d faces)"%(mesh_name, len(mesh.verts), len(mesh.faces)))
                     file.write("ObjectBegin \"%s\"\n"%mesh_name)
-                    if (mesh_optimizing):
+                    if (mesh_optimizing.get() == "true"):
                         self.exportMeshOpt(file, mesh, mats, mesh_name)
                     else:
                         self.exportMesh(file, mesh, mats, mesh_name)
@@ -619,7 +628,7 @@ class luxExport:
                 mesh.getFromObject(obj, 0, 1)
                 mats = getMaterials(obj)
                 print("  blender-mesh: %s (%d vertices, %d faces)"%(mesh_name, len(mesh.verts), len(mesh.faces)))
-                if (mesh_optimizing):
+                if (mesh_optimizing.get() == "true"):
                     self.exportMeshOpt(file, mesh, mats, mesh_name)
                 else:
                     self.exportMesh(file, mesh, mats, mesh_name)
@@ -638,7 +647,7 @@ class luxExport:
     #-------------------------------------------------
     def exportPortals(self, file):
         scn = Scene.GetCurrent()
-        mesh_optimizing = luxProp(scn, "mesh_optimizing", True).get()
+        mesh_optimizing = luxProp(scn, "mesh_optimizing", "true")
         mesh = Mesh.New('')
         for [obj, matrix] in self.portals:
             print("portal: %s"%(obj.getName()))
@@ -650,7 +659,7 @@ class luxExport:
             mesh_name = obj.getData(name_only=True)
             mesh.getFromObject(obj, 0, 1)
             mats = getMaterials(obj) # mats = obj.getData().getMaterials()
-            if (mesh_optimizing):
+            if (mesh_optimizing.get() == "true"):
                 self.exportMeshOpt(file, mesh, mats, mesh_name, True)
             else:
                 self.exportMesh(file, mesh, mats, mesh_name, True)
@@ -979,7 +988,7 @@ def save_lux(filename, unindexedname, anim_progress=None):
             file = file_output(filename)
 
         ##### Write Header ######
-        file.write("# Lux Render v0.6 Scene File\n")
+        file.write("# Lux Render v%s Scene File\n"%__version__)
         file.write("# Exported by LuxBlend Blender Exporter\n")
         file.write("\n")
     
@@ -6317,7 +6326,7 @@ def luxDraw():
 
     y = int(scrollbar.getTop()) # 420
     BGL.glColor3f(0.1,0.1,0.1); BGL.glRectf(0,0,440,y)
-    BGL.glColor3f(1.0,0.5,0.0); BGL.glRasterPos2i(130,y-21); Draw.Text("v0.6")
+    BGL.glColor3f(1.0,0.5,0.0); BGL.glRasterPos2i(130,y-21); Draw.Text("v%s"%__version__)
     BGL.glColor3f(0.9,0.9,0.9)
 
     drawLogo(icon_luxblend, 6, y-25)
@@ -6675,8 +6684,8 @@ try:
 except: pyargs = []
 
 if (pyargs != []) and (batchindex != 0):
-    print("\n\nLuxBlend v0.6 - BATCH mode\n")
-    
+    print("\n\nLuxBlend v%s - BATCH mode\n"%__version__)
+
     LuxIsGUI = False
     scene = Scene.GetCurrent()
     context = scene.getRenderingContext()
@@ -6751,7 +6760,7 @@ if (pyargs != []) and (batchindex != 0):
     osys.exit(0)
 
 else:
-    print("\n\nLuxBlend v0.6 - UI mode\n")
+    print("\n\nLuxBlend v%s - UI mode\n"%__version__)
     from Blender.Window import DrawProgressBar
     LuxIsGUI = True
     
