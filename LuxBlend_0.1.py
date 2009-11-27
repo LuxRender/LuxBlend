@@ -3901,7 +3901,13 @@ def luxTexture(name, parentkey, type, default, min, max, caption, hint, mat, gui
     else:
         texture = luxProp(mat, keyname+".texture", "blackbody")
 
-    textures = ["constant","blackbody", "lampspectrum", "equalenergy", "frequency", "gaussian", "regulardata", "irregulardata", "imagemap","mix","scale","bilerp","uv", "checkerboard","brick","dots","fbm","marble","wrinkled", "windy", "blender_marble", "blender_musgrave", "blender_wood", "blender_clouds", "blender_blend", "blender_distortednoise", "blender_noise", "blender_magic", "blender_stucci", "blender_voronoi", "harlequin"]
+    tex_all = ["constant", "imagemap","mix","scale","bilerp", "checkerboard","brick","dots","fbm","marble","wrinkled", "windy"]
+    tex_color = ["blackbody", "lampspectrum", "equalenergy", "frequency", "gaussian", "regulardata", "irregulardata", "uv", "harlequin"]
+    tex_float = ["blender_marble", "blender_musgrave", "blender_wood", "blender_clouds", "blender_blend", "blender_distortednoise", "blender_noise", "blender_magic", "blender_stucci", "blender_voronoi"]
+    textures = tex_all
+    if type=="color":
+        textures.extend(tex_color)
+    textures.extend(tex_float)
 
     if gui:
         if(overrideicon != ""):
@@ -3919,7 +3925,10 @@ def luxTexture(name, parentkey, type, default, min, max, caption, hint, mat, gui
         if (texlevel > 0): gui.newline(caption+":", -2, level, icon, scalelist([0.5,0.5,0.5],2.0/(level+2)))
         else: gui.newline("texture:", -2, level, icon, scalelist([0.5,0.5,0.5],2.0/(level+2)))
     luxOption("texture", texture, textures, "texture", "", gui, 2)
-    str = "Texture \"%s\" \"%s\" \"%s\""%(texname, type, texture.get())
+    if type!="float" and texture.get() in tex_float:
+        str = "Texture \"%s::amount\" \"float\" \"%s\""%(texname, texture.get())
+    else:
+        str = "Texture \"%s\" \"%s\" \"%s\""%(texname, type, texture.get())
 
     if gui: Draw.PushButton(">", evtLuxGui, gui.xmax+gui.h, gui.y-gui.h, gui.h, gui.h, "Menu", lambda e,v: showMatTexMenu(mat,keyname,True))
     if gui: # Draw Texture level Material preview
@@ -4207,11 +4216,14 @@ def luxTexture(name, parentkey, type, default, min, max, caption, hint, mat, gui
         str += luxFloat("bright", luxProp(mat, keyname+".bright", 1.0), 0.0, 2.0, "bright", "", gui, 1.0)
         str += luxFloat("contrast", luxProp(mat, keyname+".contrast", 1.0), 0.0, 10.0, "contrast", "", gui, 1.0)
 
+        str += lux3DMapping(keyname, mat, gui, level+1)
+
+        if type!="float":
+            str += "Texture \"%s\" \"%s\" \"mix\" \"texture amount\" [\"%s::amount\"]"%(texname, type, texname)
+
         (s, l) = c(("", ""), luxTexture("tex1", keyname, type, default, min, max, "tex1", "", mat, gui, matlevel, texlevel+1, lightsource))
         (s, l) = c((s, l), luxTexture("tex2", keyname, type, alternativedefault(type, default), min, max, "tex2", "", mat, gui, matlevel, texlevel+1, lightsource))
         str = s + str + l
-
-        str += lux3DMapping(keyname, mat, gui, level+1)
 
     if texture.get() == "blender_musgrave":
         if gui: gui.newline("type:", -2, level+1, icon_texparam)
@@ -4244,11 +4256,14 @@ def luxTexture(name, parentkey, type, default, min, max, caption, hint, mat, gui
         str += luxFloat("bright", luxProp(mat, keyname+".bright", 1.0), 0.0, 2.0, "bright", "", gui, 1.0)
         str += luxFloat("contrast", luxProp(mat, keyname+".contrast", 1.0), 0.0, 10.0, "contrast", "", gui, 1.0)
 
+        str += lux3DMapping(keyname, mat, gui, level+1)
+
+        if type!="float":
+            str += "Texture \"%s\" \"%s\" \"mix\" \"texture amount\" [\"%s::amount\"]"%(texname, type, texname)
+
         (s, l) = c(("", ""), luxTexture("tex1", keyname, type, default, min, max, "tex1", "", mat, gui, matlevel, texlevel+1, lightsource))
         (s, l) = c((s, l), luxTexture("tex2", keyname, type, alternativedefault(type, default), min, max, "tex2", "", mat, gui, matlevel, texlevel+1, lightsource))
         str = s + str + l
-
-        str += lux3DMapping(keyname, mat, gui, level+1)
 
     if texture.get() == "blender_wood":
         if gui: gui.newline("noise:", -2, level+1, icon_texparam)
@@ -4276,12 +4291,15 @@ def luxTexture(name, parentkey, type, default, min, max, caption, hint, mat, gui
         if gui: gui.newline("level:", -2, level+1, icon_texparam)
         str += luxFloat("bright", luxProp(mat, keyname+".bright", 1.0), 0.0, 2.0, "bright", "", gui, 1.0)
         str += luxFloat("contrast", luxProp(mat, keyname+".contrast", 1.0), 0.0, 10.0, "contrast", "", gui, 1.0)
+    
+        str += lux3DMapping(keyname, mat, gui, level+1)
+
+        if type!="float":
+            str += "Texture \"%s\" \"%s\" \"mix\" \"texture amount\" [\"%s::amount\"]"%(texname, type, texname)
 
         (s, l) = c(("", ""), luxTexture("tex1", keyname, type, default, min, max, "tex1", "", mat, gui, matlevel, texlevel+1, lightsource))
         (s, l) = c((s, l), luxTexture("tex2", keyname, type, alternativedefault(type, default), min, max, "tex2", "", mat, gui, matlevel, texlevel+1, lightsource))
         str = s + str + l
-    
-        str += lux3DMapping(keyname, mat, gui, level+1)
 
     if texture.get() == "blender_clouds":
         if gui: gui.newline("noise:", -2, level+1, icon_texparam)
@@ -4305,12 +4323,15 @@ def luxTexture(name, parentkey, type, default, min, max, caption, hint, mat, gui
         if gui: gui.newline("level:", -2, level+1, icon_texparam)
         str += luxFloat("bright", luxProp(mat, keyname+".bright", 1.0), 0.0, 2.0, "bright", "", gui, 1.0)
         str += luxFloat("contrast", luxProp(mat, keyname+".contrast", 1.0), 0.0, 10.0, "contrast", "", gui, 1.0)
+    
+        str += lux3DMapping(keyname, mat, gui, level+1)
+
+        if type!="float":
+            str += "Texture \"%s\" \"%s\" \"mix\" \"texture amount\" [\"%s::amount\"]"%(texname, type, texname)
 
         (s, l) = c(("", ""), luxTexture("tex1", keyname, type, default, min, max, "tex1", "", mat, gui, matlevel, texlevel+1, lightsource))
         (s, l) = c((s, l), luxTexture("tex2", keyname, type, alternativedefault(type, default), min, max, "tex2", "", mat, gui, matlevel, texlevel+1, lightsource))
         str = s + str + l
-    
-        str += lux3DMapping(keyname, mat, gui, level+1)
 
     if texture.get() == "blender_blend":
         if gui: gui.newline("type:", -2, level+1, icon_texparam)
@@ -4325,12 +4346,15 @@ def luxTexture(name, parentkey, type, default, min, max, caption, hint, mat, gui
         if gui: gui.newline("level:", -2, level+1, icon_texparam)
         str += luxFloat("bright", luxProp(mat, keyname+".bright", 1.0), 0.0, 2.0, "bright", "", gui, 1.0)
         str += luxFloat("contrast", luxProp(mat, keyname+".contrast", 1.0), 0.0, 10.0, "contrast", "", gui, 1.0)
+        
+        str += lux3DMapping(keyname, mat, gui, level+1)
+
+        if type!="float":
+            str += "Texture \"%s\" \"%s\" \"mix\" \"texture amount\" [\"%s::amount\"]"%(texname, type, texname)
 
         (s, l) = c(("", ""), luxTexture("tex1", keyname, type, default, min, max, "tex1", "", mat, gui, matlevel, texlevel+1, lightsource))
         (s, l) = c((s, l), luxTexture("tex2", keyname, type, alternativedefault(type, default), min, max, "tex2", "", mat, gui, matlevel, texlevel+1, lightsource))
         str = s + str + l
-        
-        str += lux3DMapping(keyname, mat, gui, level+1)
 
     if texture.get() == "blender_distortednoise":
         if gui: gui.newline("noise:", -2, level+1, icon_texparam)
@@ -4352,23 +4376,29 @@ def luxTexture(name, parentkey, type, default, min, max, caption, hint, mat, gui
         if gui: gui.newline("level:", -2, level+1, icon_texparam)
         str += luxFloat("bright", luxProp(mat, keyname+".bright", 1.0), 0.0, 2.0, "bright", "", gui, 1.0)
         str += luxFloat("contrast", luxProp(mat, keyname+".contrast", 1.0), 0.0, 10.0, "contrast", "", gui, 1.0)
+        
+        str += lux3DMapping(keyname, mat, gui, level+1)
+
+        if type!="float":
+            str += "Texture \"%s\" \"%s\" \"mix\" \"texture amount\" [\"%s::amount\"]"%(texname, type, texname)
 
         (s, l) = c(("", ""), luxTexture("tex1", keyname, type, default, min, max, "tex1", "", mat, gui, matlevel, texlevel+1, lightsource))
         (s, l) = c((s, l), luxTexture("tex2", keyname, type, alternativedefault(type, default), min, max, "tex2", "", mat, gui, matlevel, texlevel+1, lightsource))
         str = s + str + l
-        
-        str += lux3DMapping(keyname, mat, gui, level+1)
 
     if texture.get() == "blender_noise":        
         if gui: gui.newline("level:", -2, level+1, icon_texparam)
         str += luxFloat("bright", luxProp(mat, keyname+".bright", 1.0), 0.0, 2.0, "bright", "", gui, 1.0)
         str += luxFloat("contrast", luxProp(mat, keyname+".contrast", 1.0), 0.0, 10.0, "contrast", "", gui, 1.0)
+        
+        str += lux3DMapping(keyname, mat, gui, level+1)
+
+        if type!="float":
+            str += "Texture \"%s\" \"%s\" \"mix\" \"texture amount\" [\"%s::amount\"]"%(texname, type, texname)
 
         (s, l) = c(("", ""), luxTexture("tex1", keyname, type, default, min, max, "tex1", "", mat, gui, matlevel, texlevel+1, lightsource))
         (s, l) = c((s, l), luxTexture("tex2", keyname, type, alternativedefault(type, default), min, max, "tex2", "", mat, gui, matlevel, texlevel+1, lightsource))
         str = s + str + l
-        
-        str += lux3DMapping(keyname, mat, gui, level+1)
         
     if texture.get() == "blender_magic":
         if gui: gui.newline("noise:", -2, level+1, icon_texparam)
@@ -4379,12 +4409,15 @@ def luxTexture(name, parentkey, type, default, min, max, caption, hint, mat, gui
         if gui: gui.newline("level:", -2, level+1, icon_texparam)
         str += luxFloat("bright", luxProp(mat, keyname+".bright", 1.0), 0.0, 2.0, "bright", "", gui, 1.0)
         str += luxFloat("contrast", luxProp(mat, keyname+".contrast", 1.0), 0.0, 10.0, "contrast", "", gui, 1.0)
+        
+        str += lux3DMapping(keyname, mat, gui, level+1)
+
+        if type!="float":
+            str += "Texture \"%s\" \"%s\" \"mix\" \"texture amount\" [\"%s::amount\"]"%(texname, type, texname)
 
         (s, l) = c(("", ""), luxTexture("tex1", keyname, type, default, min, max, "tex1", "", mat, gui, matlevel, texlevel+1, lightsource))
         (s, l) = c((s, l), luxTexture("tex2", keyname, type, alternativedefault(type, default), min, max, "tex2", "", mat, gui, matlevel, texlevel+1, lightsource))
         str = s + str + l
-        
-        str += lux3DMapping(keyname, mat, gui, level+1)
         
     if texture.get() == "blender_stucci":
         if gui: gui.newline("noise:", -2, level+1, icon_texparam)
@@ -4407,11 +4440,14 @@ def luxTexture(name, parentkey, type, default, min, max, caption, hint, mat, gui
         str += luxFloat("bright", luxProp(mat, keyname+".bright", 1.0), 0.0, 2.0, "bright", "", gui, 1.0)
         str += luxFloat("contrast", luxProp(mat, keyname+".contrast", 1.0), 0.0, 10.0, "contrast", "", gui, 1.0)
 
+        str += lux3DMapping(keyname, mat, gui, level+1)
+
+        if type!="float":
+            str += "Texture \"%s\" \"%s\" \"mix\" \"texture amount\" [\"%s::amount\"]"%(texname, type, texname)
+
         (s, l) = c(("", ""), luxTexture("tex1", keyname, type, default, min, max, "tex1", "", mat, gui, matlevel, texlevel+1, lightsource))
         (s, l) = c((s, l), luxTexture("tex2", keyname, type, alternativedefault(type, default), min, max, "tex2", "", mat, gui, matlevel, texlevel+1, lightsource))
         str = s + str + l
-
-        str += lux3DMapping(keyname, mat, gui, level+1)
 
     if texture.get() == "blender_voronoi":
         #if gui: gui.newline("distmetric:", -2, level+1, icon_texparam)
@@ -4434,13 +4470,14 @@ def luxTexture(name, parentkey, type, default, min, max, caption, hint, mat, gui
         str += luxFloat("bright", luxProp(mat, keyname+".bright", 1.0), 0.0, 2.0, "bright", "", gui, 1.0)
         str += luxFloat("contrast", luxProp(mat, keyname+".contrast", 1.0), 0.0, 10.0, "contrast", "", gui, 1.0)
 
+        str += lux3DMapping(keyname, mat, gui, level+1)
+
+        if type!="float":
+            str += "Texture \"%s\" \"%s\" \"mix\" \"texture amount\" [\"%s::amount\"]"%(texname, type, texname)
+
         (s, l) = c(("", ""), luxTexture("tex1", keyname, type, default, min, max, "tex1", "", mat, gui, matlevel, texlevel+1, lightsource))
         (s, l) = c((s, l), luxTexture("tex2", keyname, type, alternativedefault(type, default), min, max, "tex2", "", mat, gui, matlevel, texlevel+1, lightsource))
         str = s + str + l
-
-        str += lux3DMapping(keyname, mat, gui, level+1)
-
-
 
     return (str+"\n", " \"texture %s\" [\"%s\"]"%(name, texname))
 
