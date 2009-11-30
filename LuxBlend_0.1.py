@@ -804,15 +804,16 @@ def save_lux(filename, unindexedname):
     class pipe_output(output_proxy, Thread):
         combine_all_output = True
         
-        def __init__(self, xr,yr, haltspp, filename):
+        def __init__(self, xr,yr, haltspp, halttime, filename):
             Thread.__init__(self)
             
             self.filename = filename
             self.haltspp = haltspp
+            self.halttime = halttime
             self.xr = xr
             self.yr = yr
             
-            if self.haltspp > 0:
+            if self.haltspp > 0 or self.halttime > 0:
                 bintype = "luxconsole"
                 self.load_result = True
             else:
@@ -862,7 +863,7 @@ def save_lux(filename, unindexedname):
             global render_status
             render_status = False
             render_status_text = "Rendering complete"
-            if self.haltspp>0: render_status_text += ", check Image Editor window"
+            if self.haltspp > 0 or self.halttime > 0: render_status_text += ", check Image Editor window"
             Blender.Window.QRedrawAll()
             
     use_pipe_output = luxProp(scn, "pipe", "false").get() == "true" and luxProp(scn, "run", "true").get() == "true"
@@ -877,6 +878,7 @@ def save_lux(filename, unindexedname):
             xr,yr = get_render_resolution(scn)
             file = pipe_output(xr, yr,
                 luxProp(scn, "haltspp", 0).get(),
+                luxProp(scn, "halttime", 0).get(),
                 os.path.join(filepath, filebase + ".png")
             )
         else:
@@ -1220,8 +1222,9 @@ def save_anim(filename, as_thread=False):
 
     if Run == "true":
         haltspp = luxProp(scn, "haltspp", 0).get()
-        if haltspp == 0:
-            Draw.PupMenu("ERROR: You must set a limit for spp (Output->halt) when doing animation and the 'run' flag is switched on")
+        halttime = luxProp(scn, "halttime", 0).get()
+        if haltspp == 0 and halttime == 0:
+            Draw.PupMenu("ERROR: You must set a limit for spp (Output->halt) or for time (Output->time) when doing animation and the 'run' flag is switched on")
             if LuxIsGUI:
                 Draw.Redraw()
             return
@@ -1511,6 +1514,7 @@ def getScenePresets():
     presets['0 Preview - Direct Lighting'] = {
     'film.displayinterval': 4,
     'haltspp': 0,
+    'halttime': 0,
     'useparamkeys': 'false',
     'sampler.showadvanced': 'false',
     'sintegrator.showadvanced': 'false',
@@ -1532,6 +1536,7 @@ def getScenePresets():
     presets['1 Final - MLT/Bidir Path Tracing (interior) (recommended)'] =  {
     'film.displayinterval': 8,
     'haltspp': 0,
+    'halttime': 0,
     'useparamkeys': 'false',
     'sampler.showadvanced': 'false',
     'sintegrator.showadvanced': 'false',
@@ -1558,6 +1563,7 @@ def getScenePresets():
     presets['2 Final - MLT/Path Tracing (exterior)'] =  {
     'film.displayinterval': 8,
     'haltspp': 0,
+    'halttime': 0,
     'useparamkeys': 'false',
     'sampler.showadvanced': 'false',
     'sintegrator.showadvanced': 'false',
@@ -1585,6 +1591,7 @@ def getScenePresets():
     presets['5 Progressive - Bidir Path Tracing (interior)'] =  {
     'film.displayinterval': 8,
     'haltspp': 0,
+    'halttime': 0,
     'useparamkeys': 'false',
     'sampler.showadvanced': 'false',
     'sintegrator.showadvanced': 'false',
@@ -1608,6 +1615,7 @@ def getScenePresets():
     presets['6 Progressive - Path Tracing (exterior)'] =  {
     'film.displayinterval': 8,
     'haltspp': 0,
+    'halttime': 0,
     'useparamkeys': 'false',
     'sampler.showadvanced': 'false',
     'sintegrator.showadvanced': 'false',
@@ -1632,6 +1640,7 @@ def getScenePresets():
     presets['8 Bucket - Bidir Path Tracing (interior)'] =  {
     'film.displayinterval': 8,
     'haltspp': 0,
+    'halttime': 0,
     'useparamkeys': 'false',
     'sampler.showadvanced': 'false',
     'sintegrator.showadvanced': 'false',
@@ -1655,6 +1664,7 @@ def getScenePresets():
     presets['9 Bucket - Path Tracing (exterior)'] =  {
     'film.displayinterval': 8,
     'haltspp': 0,
+    'halttime': 0,
     'useparamkeys': 'false',
     'sampler.showadvanced': 'false',
     'sintegrator.showadvanced': 'false',
@@ -1679,6 +1689,7 @@ def getScenePresets():
     presets['B Anim - Distributed/GI low Q'] =  {
     'film.displayinterval': 8,
     'haltspp': 1,
+    'halttime': 0,
     'useparamkeys': 'false',
     'sampler.showadvanced': 'false',
     'sintegrator.showadvanced': 'false',
@@ -1720,6 +1731,7 @@ def getScenePresets():
     presets['C Anim - Distributed/GI medium Q'] =  {
     'film.displayinterval': 8,
     'haltspp': 1,
+    'halttime': 0,
     'useparamkeys': 'false',
     'sampler.showadvanced': 'false',
     'sintegrator.showadvanced': 'false',
@@ -1761,6 +1773,7 @@ def getScenePresets():
     presets['D Anim - Distributed/GI high Q'] =  {
     'film.displayinterval': 8,
     'haltspp': 1,
+    'halttime': 0,
     'useparamkeys': 'false',
     'sampler.showadvanced': 'false',
     'sintegrator.showadvanced': 'false',
@@ -1802,6 +1815,7 @@ def getScenePresets():
     presets['E Anim - Distributed/GI very high Q'] =  {
     'film.displayinterval': 8,
     'haltspp': 1,
+    'halttime': 0,
     'useparamkeys': 'false',
     'sampler.showadvanced': 'false',
     'sintegrator.showadvanced': 'false',
@@ -2583,6 +2597,7 @@ def luxFilm(scn, gui=None):
 
             if gui: gui.newline("  Halt:")
             str += luxInt("haltspp", luxProp(scn, "haltspp", 0), 0, 32768, "haltspp", "Stop rendering after specified amount of samples per pixel / 0 = never halt", gui)
+            str += luxInt("halttime", luxProp(scn, "halttime", 0), 0, 86400, "halttime", "Stop rendering after specified number of seconds / 0 = never halt", gui)
             palpha = luxProp(scn, "film.premultiplyalpha", "false")
             str += luxBool("premultiplyalpha", palpha, "premultiplyalpha", "Pre multiply film alpha channel during normalization", gui)
     
