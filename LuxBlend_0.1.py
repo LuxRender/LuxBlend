@@ -3850,7 +3850,7 @@ def luxSystem(scn, gui=None):
                     #gui.newline("")
                     luxString("Servers",luxProp(scn,"network_servers",""),"servers","coma separated list of servers",gui,1.0)
                 #gui.newline("")
-                luxInt("network_interval",luxProp(scn,"newtork_interval",180),0,300,"update interval","interval between network refresh",gui)
+                luxInt("network_interval",luxProp(scn,"newtork_interval",180),0,9999,"update interval","interval between network refresh",gui)
 
 
 def scalelist(list, factor):
