@@ -348,7 +348,7 @@ class luxExport:
     # exports material. LuxRender "Texture" 
     #-------------------------------------------------
     def exportMaterial(self, file, mat):
-        print("material %s"%(mat.getName()))
+        #print("material %s"%(mat.getName()))
         file.write("\t%s"%exportMaterial(mat)) # use original methode        
     
     #-------------------------------------------------
@@ -390,7 +390,7 @@ class luxExport:
     # exports mesh to the file without any optimization
     #-------------------------------------------------
     def exportMesh(self, file, mesh, mats, name, portal=False):
-        print("    exporting mesh")
+        #print("    exporting mesh")
         if mats == []:
             mats = [dummyMat]
         usedmats = [f.mat for f in mesh.faces]
@@ -440,7 +440,7 @@ class luxExport:
     # optNormals: speed and filesize optimization, flat faces get exported without normals
     #-------------------------------------------------
     def exportMeshOpt(self, file, mesh, mats, name, portal=False, optNormals=True):
-        print("    exporting optimized mesh")
+        #print("    exporting optimized mesh")
         shapeList, smoothFltr, shapeText = [0], [[0,1]], [""]
         if portal:
             normalFltr, uvFltr, shapeText = [0], [0], ["portal"] # portal, no normals, no UVs
@@ -529,7 +529,7 @@ class luxExport:
 #                                    file.write("%f %f\n"%(vertex[3], vertex[4]))
                             file.write("".join(["%f %f\n"%tuple(vertex[1]) for vertex in exportVerts])) 
                     file.write("\t]\n")
-                    print("  shape(%s): %d vertices, %d faces"%(shapeText[shape], len(exportVerts), len(exportFaces)))
+                    #print("  shape(%s): %d vertices, %d faces"%(shapeText[shape], len(exportVerts), len(exportFaces)))
     
     #-------------------------------------------------
     # exportMeshes(self, file)
@@ -557,7 +557,7 @@ class luxExport:
             if allow_instancing and (len(objs) > instancing_threshold):
                 del self.meshes[mesh_name]
                 mesh.getFromObject(objs[0], 0, 1)
-                print("blender-mesh: %s (%d vertices, %d faces)"%(mesh_name, len(mesh.verts), len(mesh.faces)))
+                #print("blender-mesh: %s (%d vertices, %d faces)"%(mesh_name, len(mesh.verts), len(mesh.faces)))
                 file.write("ObjectBegin \"%s\"\n"%mesh_name)
 
                 if (mesh_optimizing.get() == "true"):
@@ -581,7 +581,7 @@ class luxExport:
         #pb = exportProgressBar(len(self.objects), self.mpb)
         for [obj, matrix] in self.objects:
             #pb.counter('Exporting Objects')
-            print("object: %s"%(obj.getName()))
+            #print("object: %s"%(obj.getName()))
             mesh_name = obj.getData(name_only=True)
 
             motion = None
@@ -592,7 +592,7 @@ class luxExport:
                 m1 = 1.0*matrix # multiply by 1.0 to get a copy of orignal matrix (will be frame-independant) 
                 Blender.Set('curframe', frame)
                 if m1 != matrix:
-                    print("  motion blur")
+                    #print("  motion blur")
                     motion = m1
     
             if motion: # motion-blur only works with instances, so ensure mesh is exported as instance first
@@ -600,7 +600,7 @@ class luxExport:
                     del self.meshes[mesh_name]
                     mesh.getFromObject(obj, 0, 1)
                     mats = getMaterials(obj)
-                    print("  blender-mesh: %s (%d vertices, %d faces)"%(mesh_name, len(mesh.verts), len(mesh.faces)))
+                    #print("  blender-mesh: %s (%d vertices, %d faces)"%(mesh_name, len(mesh.verts), len(mesh.faces)))
                     file.write("ObjectBegin \"%s\"\n"%mesh_name)
                     if (mesh_optimizing.get() == "true"):
                         self.exportMeshOpt(file, mesh, mats, mesh_name)
@@ -627,13 +627,13 @@ class luxExport:
             if mesh_name in self.meshes:
                 mesh.getFromObject(obj, 0, 1)
                 mats = getMaterials(obj)
-                print("  blender-mesh: %s (%d vertices, %d faces)"%(mesh_name, len(mesh.verts), len(mesh.faces)))
+                #print("  blender-mesh: %s (%d vertices, %d faces)"%(mesh_name, len(mesh.verts), len(mesh.faces)))
                 if (mesh_optimizing.get() == "true"):
                     self.exportMeshOpt(file, mesh, mats, mesh_name)
                 else:
                     self.exportMesh(file, mesh, mats, mesh_name)
             else:
-                print("  instance %s"%(mesh_name))
+                #print("  instance %s"%(mesh_name))
                 if motion:
                     file.write("\tMotionInstance \"%s\" 0.0 1.0 \"%s\"\n"%(mesh_name, obj.getName()+"_motion"))
                 else:
@@ -650,7 +650,7 @@ class luxExport:
         mesh_optimizing = luxProp(scn, "mesh_optimizing", "true")
         mesh = Mesh.New('')
         for [obj, matrix] in self.portals:
-            print("portal: %s"%(obj.getName()))
+            #print("portal: %s"%(obj.getName()))
             file.write("\tTransform [%s %s %s %s  %s %s %s %s  %s %s %s %s  %s %s %s %s]\n"\
                 %(matrix[0][0], matrix[0][1], matrix[0][2], matrix[0][3],\
                   matrix[1][0], matrix[1][1], matrix[1][2], matrix[1][3],\
@@ -673,7 +673,7 @@ class luxExport:
         for [obj, matrix] in self.lights:
             ltype = obj.getData(mesh=1).getType() # data
             if (ltype == Lamp.Types["Lamp"]) or (ltype == Lamp.Types["Spot"]) or (ltype == Lamp.Types["Area"]):
-                print("light: %s"%(obj.getName()))
+                #print("light: %s"%(obj.getName()))
                 if ltype == Lamp.Types["Area"]:
                     (str, link) = luxLight("", "", obj, None, 0)
                     file.write(str)
@@ -733,7 +733,7 @@ class luxExport:
         #pb = exportProgressBar(len(self.volumes), self.mpb)
         for [obj, matrix] in self.volumes:
             #pb.counter('Exporting Volumes')
-            print("volume: %s"%(obj.getName()))
+            #print("volume: %s"%(obj.getName()))
             file.write("# Volume: %s\n"%(obj.getName()))
 
             # trickery to obtain objectspace boundingbox AABB
