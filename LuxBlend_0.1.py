@@ -2,14 +2,14 @@
 # -*- coding: utf-8 -*-
 # coding=utf-8
 """Registration info for Blender menus:
-Name: 'LuxBlend v0.6.xDevel Exporter'
+Name: 'LuxBlend v0.6.1 Exporter'
 Blender: 248
 Group: 'Render'
-Tooltip: 'Export/Render to LuxRender v0.6.xDevel scene format (.lxs)'
+Tooltip: 'Export/Render to LuxRender v0.6.1 scene format (.lxs)'
 """
 
 __author__ = "radiance, zuegs, ideasman42, luxblender, dougal2"
-__version__ = "0.6.xDevel"
+__version__ = "0.6.1"
 __url__ = [
 	"http://www.luxrender.net/",
 	"http://www.luxrender.net/forum/viewforum.php?f=11",
@@ -34,7 +34,7 @@ Please check the lux tutorials & forums for more information.
 # ***** BEGIN GPL LICENSE BLOCK *****
 #
 # --------------------------------------------------------------------------
-# LuxBlend v0.6.xDevel exporter
+# LuxBlend v0.6.1 exporter
 # --------------------------------------------------------------------------
 #
 # Authors:
