@@ -1224,7 +1224,7 @@ def get_lux_args(filename, extra_args=[], anim=False):
     luxnice = luxProp(scn, "luxnice", 0).get()
     noopengl = luxProp(scn, "noopengl", "false").get()
     
-    if noopengl == "true":
+    if noopengl == "true" and not anim:
         extra_args.append("--noopengl")
     
     lux_args = "\"%s\" " % ic
@@ -1278,6 +1278,9 @@ def get_lux_pipe(scn, buf = 1024, type="luxconsole"):
         extra_args=['-b'] if type=="luxconsole" else []
     )
     
+    # dirty hack to filter "noopengl" option from luxconsole args
+    raw_args = raw_args.replace('--noopengl', '')
+
     return subprocess.Popen(bin + raw_args, shell=True, bufsize=buf, stdin=PIPE, stdout=PIPE, stderr=PIPE)
 
 def launchLux(filename):
