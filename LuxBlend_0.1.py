@@ -1514,7 +1514,49 @@ def getScenePresets():
 
     # radiance's hardcoded render presets:
 
-    presets['0 Preview - Direct Lighting'] = {
+    presets['0 Preview - Global Illumination'] = {
+    'film.displayinterval': 4,
+    'haltspp': 0,
+    'halttime': 0,
+    'useparamkeys': 'false',
+    'sampler.showadvanced': 'false',
+    'sintegrator.showadvanced': 'false',
+    'pixelfilter.showadvanced': 'false',
+
+    'sampler.type': 'lowdiscrepancy',
+    'sampler.lowdisc.pixelsamples': 1,
+    'sampler.lowdisc.pixelsampler': 'lowdiscrepancy',
+
+    'sintegrator.type': 'distributedpath',
+    'sintegrator.distributedpath.directsampleall': 'true',
+    'sintegrator.distributedpath.directsamples': 1,
+    'sintegrator.distributedpath.directdiffuse': 'true',
+    'sintegrator.distributedpath.directglossy': 'true',
+    'sintegrator.distributedpath.indirectsampleall': 'false',
+    'sintegrator.distributedpath.indirectsamples': 1,
+    'sintegrator.distributedpath.indirectdiffuse': 'true',
+    'sintegrator.distributedpath.indirectglossy': 'true',
+    'sintegrator.distributedpath.diffusereflectdepth': 1,
+    'sintegrator.distributedpath.diffusereflectsamples': 4,
+    'sintegrator.distributedpath.diffuserefractdepth': 4,
+    'sintegrator.distributedpath.diffuserefractsamples': 1,
+    'sintegrator.distributedpath.glossyreflectdepth': 1,
+    'sintegrator.distributedpath.glossyreflectsamples': 2,
+    'sintegrator.distributedpath.glossyrefractdepth': 4,
+    'sintegrator.distributedpath.glossyrefractsamples': 1,
+    'sintegrator.distributedpath.specularreflectdepth': 2,
+    'sintegrator.distributedpath.specularrefractdepth': 4,
+    'sintegrator.distributedpath.causticsonglossy': 'true',
+    'sintegrator.distributedpath.causticsondiffuse': 'false',
+    'sintegrator.distributedpath.strategy': 'auto',
+
+    'pixelfilter.type': 'mitchell',
+    'pixelfilter.mitchell.sharp': 0.250, 
+    'pixelfilter.mitchell.xwidth': 2.0, 
+    'pixelfilter.mitchell.ywidth': 2.0, 
+    'pixelfilter.mitchell.optmode': "slider" }
+
+    presets['0b Preview - Direct Lighting'] = {
     'film.displayinterval': 4,
     'haltspp': 0,
     'halttime': 0,
