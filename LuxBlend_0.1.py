@@ -6171,7 +6171,7 @@ def saveMatTex(mat, fn, basekey='', tex=False):
 
 def loadMatTex(mat, fn, basekey='', tex=None):
     global LuxIsGUI
-    file = open(fn, 'r')
+    file = open(fn, 'rU')
     data = file.read()
     file.close()
     data = str2MatTex(data, tex)
