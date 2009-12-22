@@ -3167,10 +3167,10 @@ def luxSurfaceIntegrator(scn, gui=None):
 
             if showadvanced.get()=="true":
                 # Advanced parameters
-                str += luxOption("strategy", luxProp(scn, "sintegrator.dlighting.strategy", "auto"), ["one", "all", "auto"], "strategy", "select directlighting strategy", gui)
                 if gui: gui.newline("  Depth:")
                 str += luxInt("maxdepth", luxProp(scn, "sintegrator.dlighting.maxdepth", 8), 0, 2048, "max-depth", "The maximum recursion depth for ray casting", gui)
-                if gui: gui.newline()
+                str += luxOption("lightstrategy", luxProp(scn, "sintegrator.dlighting.lightstrategy", "auto"), ["one", "all", "auto", "importance", "powerimp", "allpowerimp", "logpowerimp"], "light strategy", "select directlighting strategy", gui)
+                str += luxInt("shadowraycount", luxProp(scn, "sintegrator.dlighting.shadowraycount", 1), 1, 512, "shadow ray count", "Number of shadow rays traced per sample", gui, 2.0)
 
         if integratortype.get() == "path":
             if showadvanced.get()=="false":
@@ -3184,7 +3184,7 @@ def luxSurfaceIntegrator(scn, gui=None):
                 # Advanced parameters
                 if gui: gui.newline("  Depth:")
                 str += luxInt("maxdepth", luxProp(scn, "sintegrator.path.maxdepth", 10), 0, 2048, "maxdepth", "The maximum recursion depth for ray casting", gui)
-                str += luxOption("strategy", luxProp(scn, "sintegrator.path.strategy", "auto"), ["one", "all", "auto"], "strategy", "select directlighting strategy", gui)
+                str += luxOption("lightstrategy", luxProp(scn, "sintegrator.path.lightstrategy", "auto"), ["one", "all", "auto", "importance", "powerimp", "allpowerimp", "logpowerimp"], "light strategy", "select directlighting strategy", gui)
                 if gui: gui.newline("  RR:")
                 rrstrat = luxProp(scn, "sintegrator.path.rrstrategy", "efficiency")
                 str += luxOption("rrstrategy", rrstrat, ["efficiency", "probability", "none"], "RR strategy", "select Russian Roulette path termination strategy", gui)
@@ -3192,6 +3192,7 @@ def luxSurfaceIntegrator(scn, gui=None):
                     str += luxFloat("rrcontinueprob", luxProp(scn, "sintegrator.path.rrcontinueprob", 0.65), 0.0, 1.0, "rrprob", "Russian roulette continue probability", gui)
                 ienv = luxProp(scn, "sintegrator.path.ienvironment", "true")
                 str += luxBool("includeenvironment", ienv, "Include Environment", "Enable/Disable rendering of environment lightsources", gui)
+                str += luxInt("shadowraycount", luxProp(scn, "sintegrator.dlighting.shadowraycount", 1), 1, 512, "shadow ray count", "Number of shadow rays traced per sample", gui, 2.0)
 
         if integratortype.get() == "bidirectional":
             if showadvanced.get()=="false":
@@ -3215,7 +3216,8 @@ def luxSurfaceIntegrator(scn, gui=None):
         if integratortype.get() == "exphotonmap":
             if gui: gui.newline("  Render:")
             str += luxOption("renderingmode", luxProp(scn, "sintegrator.photonmap.renderingmode", "directlighting"), ["directlighting", "path"], "renderingmode", "select rendering mode", gui)
-            str += luxOption("strategy", luxProp(scn, "sintegrator.photonmap.strategy", "auto"), ["one", "all", "auto"], "strategy", "select directlighting strategy", gui)
+            str += luxOption("lightstrategy", luxProp(scn, "sintegrator.photonmap.lightstrategy", "auto"), ["one", "all", "auto", "importance", "powerimp", "allpowerimp", "logpowerimp"], "light strategy", "select directlighting strategy", gui)
+            str += luxInt("shadowraycount", luxProp(scn, "sintegrator.dlighting.shadowraycount", 1), 1, 512, "shadow ray count", "Number of shadow rays traced per sample", gui, 2.0)
             str += luxInt("maxphotondepth", luxProp(scn, "sintegrator.photonmap.maxphotondepth", 10), 1, 1024, "maxphotondepth", "The maximum recursion depth of photon tracing", gui)
             str += luxInt("maxdepth", luxProp(scn, "sintegrator.photonmap.maxdepth", 6), 1, 1024, "maxdepth", "The maximum recursion depth of specular reflection and refraction", gui)
             str += luxFloat("maxphotondist", luxProp(scn, "sintegrator.photonmap.maxphotondist", 0.1), 0.0, 10.0, "maxphotondist", "The maximum distance between a point being shaded and a photon that can contribute to that point", gui)
@@ -4765,6 +4767,13 @@ def luxLight(name, kn, mat, gui, level):
             map = luxProp(mat, kn+"light.pmiesname", "")
             link += luxFile("iesname", map, "ies-file", "filename of the IES photometric data file", gui, 1.4)
 
+    if gui: gui.newline("Hints")
+    hints = luxProp(mat, kn+"light.usehints", "false")
+    luxCollapse("hints", hints, "Rendering Hints", "Enable Rendering Hints options", gui, 2.0)
+
+    if(hints.get()=="true"):
+        link += luxFloat("importance", luxProp(mat, kn+"light.hints.importance", 1.0), 0.0, 100.0, "Importance", "User defined light importance for Light Strategies", gui, 2.0)
+
     has_bump_options = 0
     has_object_options = 1
     return (str, link)
@@ -4797,6 +4806,13 @@ def luxLamp(name, kn, mat, gui, level):
 
         link += luxBool("flipz", luxProp(mat, kn+"light.flipZ", "true"), "Flip Z", "Flip Z direction in mapping", gui, 2.0)
 
+    if gui: gui.newline("Hints")
+    hints = luxProp(mat, kn+"light.usehints", "false")
+    luxCollapse("hints", hints, "Rendering Hints", "Enable Rendering Hints options", gui, 2.0)
+
+    if(hints.get()=="true"):
+        link += luxFloat("importance", luxProp(mat, kn+"light.hints.importance", 1.0), 0.0, 100.0, "Importance", "User defined light importance for Light Strategies", gui, 2.0)
+
     return (str, link)
 
 def luxSpot(name, kn, mat, gui, level):
@@ -4817,6 +4833,13 @@ def luxSpot(name, kn, mat, gui, level):
     if(proj.get() == "true"):
         map = luxProp(mat, kn+"light.pmmapname", "")
         link += luxFile("mapname", map, "map-file", "filename of the photometric map", gui, 2.0)
+
+    if gui: gui.newline("Hints")
+    hints = luxProp(mat, kn+"light.usehints", "false")
+    luxCollapse("hints", hints, "Rendering Hints", "Enable Rendering Hints options", gui, 2.0)
+
+    if(hints.get()=="true"):
+        link += luxFloat("importance", luxProp(mat, kn+"light.hints.importance", 1.0), 0.0, 100.0, "Importance", "User defined light importance for Light Strategies", gui, 2.0)
 
     return (str, link)
 
