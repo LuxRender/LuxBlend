@@ -8,7 +8,7 @@ Group: 'Render'
 Tooltip: 'Export/Render to LuxRender v0.7Devel scene format (.lxs)'
 """
 
-__author__ = "radiance, zuegs, ideasman42, luxblender, dougal2"
+__author__ = "radiance, zuegs, ideasman42, luxblender, dougal2, SATtva"
 __version__ = "0.7Devel"
 __url__ = [
 	"http://www.luxrender.net/",
@@ -871,13 +871,17 @@ def save_lux(filename, unindexedname, anim_progress=None):
 
     # check if a light is present
     envtype = luxProp(scn, "env.type", "infinite").get()
+    skycomponent = luxProp(scn, "env.sunsky.skycomponent", "true").get()
+    suncomponent = luxProp(scn, "env.sunsky.suncomponent", "true").get()
     if envtype == "sunsky":
         sun = None
         for obj in scn.objects:
             if (obj.getType() == "Lamp") and ((obj.Layers & scn.Layers) > 0):
                 if obj.getData(mesh=1).getType() == 1: # sun object # data
                     sun = obj
-    if not(export.analyseScene()) and not(envtype == "infinite") and not(envtype == "infinitesample") and not((envtype == "sunsky") and (sun != None)):
+    if not(export.analyseScene()) and not(envtype == "infinite") and not(envtype == "infinitesample") \
+     and not (envtype == "sunsky" and sun != None and suncomponent == "true") \
+     and not (envtype == "sunsky" and skycomponent == "true"):
         print("ERROR: No light source found")
         Draw.PupMenu("ERROR: No light source found%t|OK%x1")
         render_status_text = ''
@@ -3340,36 +3344,39 @@ def luxEnvironment(scn, gui=None):
         envtype = luxProp(scn, "env.type", "infinite")
         lsstr = luxIdentifier("LightSource", envtype, ["none", "infinite", "infinitesample", "sunsky"], "ENVIRONMENT", "select environment light type", gui, icon_c_environment)
         if gui: gui.newline()
+        suncomponent = 0
+        sunhalo = 0
         str = ""
+        sunstr = ""
+        skystr = ""
         
         if envtype.get() != "none":
             
-            if envtype.get() in ["infinite", "infinitesample", "sunsky"]:
+            rotZ = luxProp(scn, "env.rotation", 0.0)
+            rotY = luxProp(scn, "env.rotationY", 0.0)
+            rotX = luxProp(scn, "env.rotationX", 0.0)
+            luxFloat("rotation", rotX, 0.0, 360.0, "rot X", "environment rotation X", gui, 0.66)
+            luxFloat("rotation", rotY, 0.0, 360.0, "rot Y", "environment rotation Y", gui, 0.66)
+            luxFloat("rotation", rotZ, 0.0, 360.0, "rot Z", "environment rotation Z", gui, 0.66)
+            if rotZ.get() != 0 or rotY.get() != 0 or rotX.get() != 0:
+                str += "\tRotate %d 1 0 0\n"%(rotX.get())
+                str += "\tRotate %d 0 1 0\n"%(rotY.get())
+                str += "\tRotate %d 0 0 1\n"%(rotZ.get())
+            if gui: gui.newline()
+            
+            if envtype.get() in ("infinite", "infinitesample"):
                 env_lg = luxProp(scn, "env.lightgroup", "default")
                 luxString("env.lightgroup", env_lg, "lightgroup", "Environment light group", gui)
                 if luxProp(scn, "nolg", "false").get()!="true":
                     lsstr = '\nLightGroup "' + env_lg.get() + '"' + lsstr
-                rotZ = luxProp(scn, "env.rotation", 0.0)
-                rotY = luxProp(scn, "env.rotationY", 0.0)
-                rotX = luxProp(scn, "env.rotationX", 0.0)
-                if gui: gui.newline()
-                luxFloat("rotation", rotX, 0.0, 360.0, "rot X", "environment rotation X", gui, 0.66)
-                luxFloat("rotation", rotY, 0.0, 360.0, "rot Y", "environment rotation Y", gui, 0.66)
-                luxFloat("rotation", rotZ, 0.0, 360.0, "rot Z", "environment rotation Z", gui, 0.66)
-                if rotZ.get() != 0 or rotY.get() != 0 or rotX.get() != 0:
-                    str += "\tRotate %d 1 0 0\n"%(rotX.get())
-                    str += "\tRotate %d 0 1 0\n"%(rotY.get())
-                    str += "\tRotate %d 0 0 1\n"%(rotZ.get())
-            str += "\t"+lsstr
-
-            infinitehassun = 0
-            if envtype.get() in ["infinite", "infinitesample"]:
+                str += "\t"+lsstr
+                mapstr = luxFloat("gain", luxProp(scn, "env.infinite.gain", 1.0), 0.0001, 100.0, "gain", "Infinite Env Gain", gui, 1.0)
                 mapping = luxProp(scn, "env.infinite.mapping", "latlong")
                 mappings = ["latlong","angular","vcross"]
-                mapstr = luxOption("mapping", mapping, mappings, "mapping", "Select mapping type", gui, 0.5)
-                map = luxProp(scn, "env.infinite.mapname", "")
-                mapstr += luxFile("mapname", map, "map-file", "filename of the environment map", gui, 1.5)
+                mapstr += luxOption("mapping", mapping, mappings, "mapping", "Select mapping type", gui, 1.0)
                 mapstr += luxFloat("gamma", luxProp(scn, "env.infinite.gamma", 1.0), 0.0, 6.0, "gamma", "", gui, 1.0)
+                map = luxProp(scn, "env.infinite.mapname", "")
+                mapstr += luxFile("mapname", map, "map-file", "filename of the environment map", gui, 2.0)
                 
                 if map.get() != "":
                     str += mapstr
@@ -3379,34 +3386,59 @@ def luxEnvironment(scn, gui=None):
                         str += "\n   \"color L\" [%g %g %g]" %(worldcolor[0], worldcolor[1], worldcolor[2])
                     except: pass
 
-                str += luxFloat("gain", luxProp(scn, "env.infinite.gain", 1.0), 0.0001, 100.0, "gain", "Infinite Env Gain", gui, 1.0)
+            if envtype.get() == "sunsky":
+                skycomponentProp = luxProp(scn, "env.sunsky.skycomponent", "true")
+                luxCollapse("skycomponent", skycomponentProp, "Sky Component", "Add Skydome Light Component", gui, 2.0)
+                if skycomponentProp.get() == "true":
+                    sun_lg = luxProp(scn, "env.sky_lightgroup", "default")
+                    luxString("env.lightgroup", sun_lg, "lightgroup", "Sky component light group", gui)
+                    if luxProp(scn, "nolg", "false").get() != "true":
+                        skystr += '\nLightGroup "' + sun_lg.get() + '"'
+                    skystr += "\nLightSource \"sky\" "
+                    skystr += luxFloat("gain", luxProp(scn, "env.sunsky.sky_gain", 1.0), 0.0001, 100.0, "gain", "Sun light gain", gui)
+                    sunhaloProp = luxProp(scn, "env.sunsky.halo", "true")
+                    luxBool("sunhalo", sunhaloProp, "Sun Halo", "Atmospheric halo around sun disk", gui)
+                    skystr += luxFloat("turbidity", luxProp(scn, "env.sunsky.sky_turbidity", 2.2), 2.0, 50.0, "turbidity", "Atmospheric turbidity", gui)
+                    if sunhaloProp.get() == "true":
+                        sunhalo = 1
 
-                infinitesun = luxProp(scn, "env.infinite.hassun", "false")
-                luxCollapse("infinitesun", infinitesun, "Sun Component", "Add Sunlight Component", gui, 2.0)
-                if(infinitesun.get() == "true"):
+                suncomponentProp = luxProp(scn, "env.sunsky.suncomponent", envtype.get() == "sunsky" and "true" or "false")
+                luxCollapse("suncomponent", suncomponentProp, "Sun Component", "Add Sunlight Component", gui, 2.0)
+                if suncomponentProp.get() == "true":
                     sun_lg = luxProp(scn, "env.sun_lightgroup", "default")
                     luxString("env.lightgroup", sun_lg, "lightgroup", "Sun component light group", gui)
-                    if luxProp(scn, "nolg", "false").get()!="true":
-                        str += '\nLightGroup "' + sun_lg.get() + '"'
-                    str += "\nLightSource \"sun\" "
-                    infinitehassun = 1
+                    if luxProp(scn, "nolg", "false").get() != "true":
+                        sunstr += '\nLightGroup "' + sun_lg.get() + '"'
+                    sunstr += "\nLightSource \"sun\" "
+                    suncomponent = 1
 
+            if envtype.get() in ("infinite", "infinitesample"):
+                infinitesunProp = luxProp(scn, "env.infinite.suncomponent", "false")
+                luxCollapse("infinitesun", infinitesunProp, "Sun Component", "Add Sunlight Component", gui, 2.0)
+                if infinitesunProp.get() == "true":
+                    sun_lg = luxProp(scn, "env.sun_lightgroup", "default")
+                    luxString("env.lightgroup", sun_lg, "lightgroup", "Sun component light group", gui)
+                    if luxProp(scn, "nolg", "false").get() != "true":
+                        sunstr += '\nLightGroup "' + sun_lg.get() + '"'
+                    sunstr += "\nLightSource \"sun\" "
+                    suncomponent = 1
 
-            if envtype.get() == "sunsky" or infinitehassun == 1:
-                
-                
+            if suncomponent == 1:
                 sun = None
                 for obj in scn.objects:
                     if (obj.getType() == "Lamp") and ((obj.Layers & scn.Layers) > 0):
                         if obj.getData(mesh=1).getType() == 1: # sun object # data
                             sun = obj
                 if sun:
-                    str += luxFloat("gain", luxProp(scn, "env.sunsky.gain", 1.0), 0.0001, 100.0, "gain", "Sky gain", gui)
+                    sunstr += luxFloat("gain", luxProp(scn, "env.sunsky.sun_gain", 1.0), 0.0001, 100.0, "gain", "Sun light gain", gui)
                     
                     invmatrix = Mathutils.Matrix(sun.getInverseMatrix())
-                    str += "\n   \"vector sundir\" [%f %f %f]\n" %(invmatrix[0][2], invmatrix[1][2], invmatrix[2][2])
-                    str += luxFloat("relsize", luxProp(scn, "env.sunsky.relsize", 1.0), 0.0, 100.0, "rel.size", "relative sun size", gui)
-                    str += luxFloat("turbidity", luxProp(scn, "env.sunsky.turbidity", 2.2), 2.0, 50.0, "turbidity", "Sky turbidity", gui)
+                    sunstr += "\n   \"vector sundir\" [%f %f %f]" %(invmatrix[0][2], invmatrix[1][2], invmatrix[2][2])
+                    sunstr += luxFloat("relsize", luxProp(scn, "env.sunsky.sun_relsize", 1.0), 0.0, 100.0, "rel.size", "Relative sun disk size", gui)
+                    sunstr += luxFloat("turbidity", luxProp(scn, "env.sunsky.sun_turbidity", 2.2), 2.0, 50.0, "turbidity", "Atmospheric turbidity", gui)
+                    
+                    if sunhalo == 1 and skystr != "":
+                        skystr += "\n   \"vector sundir\" [%f %f %f]" %(invmatrix[0][2], invmatrix[1][2], invmatrix[2][2])
                     
                     showGeo = luxProp(sun, 'sc.show', 'false')
                     if gui:
@@ -3436,13 +3468,15 @@ def luxEnvironment(scn, gui=None):
                         
                         r = gui.getRect(2,1)
                         Draw.Button("Calculate", 0, r[0], r[1], r[2], r[3], "Calculate sun's position", lambda e,v: sc.compute())
-                    
                 else:
+                    sunstr = ""
                     if gui:
                         gui.newline(); r = gui.getRect(2,1); BGL.glRasterPos2i(r[0],r[1]+5) 
                         Draw.Text("create a blender Sun Lamp")
-
-
+            
+            if skystr != "": str += skystr
+            if sunstr != "": str += sunstr
+            
             str += "\n"
         #if gui: gui.newline("GLOBAL:", 8, 0, None, [0.75,0.5,0.25])
         #luxFloat("scale", luxProp(scn, "global.scale", 1.0), 0.0, 10.0, "scale", "global world scale", gui)
@@ -5143,6 +5177,9 @@ def luxMaterialBlock(name, luxname, key, mat, gui=None, level=0, str_opt=""):
 
         if mattype.get() == "mix":
             (str,link) = c((str,link), luxFloatTexture("amount", keyname, 0.5, 0.0, 1.0, "amount", "The degree of mix between the two materials", mat, gui, level+1))
+            if gui:
+                r = gui.getRect(2, 1)
+                Draw.Button("Flip material slots", evtLuxGui, r[0], r[1], r[2], r[3], "Flip mat1 and mat2 contents", lambda e,v: flipMixMat(mat,keyname))
             (str,link) = c((str,link), luxMaterialBlock("mat1", "namedmaterial1", keyname, mat, gui, level+1))
             (str,link) = c((str,link), luxMaterialBlock("mat2", "namedmaterial2", keyname, mat, gui, level+1))
             has_bump_options = 0
@@ -6374,6 +6411,39 @@ def loadMatTex(mat, fn, basekey='', tex=None):
     data = str2MatTex(data, tex)
     putMatTex(mat, data, basekey, tex) 
     if LuxIsGUI: Draw.Redraw()
+
+
+def flipMixMat(mat, basekey):
+    # flip mix material slots
+    if basekey != '': basekey = basekey+':'
+    if luxProp(mat, 'type', '').get() == 'mix':
+        s = [{}, {}]  # we'll store slots property items here for later processing
+        d = mat.properties['luxblend']
+        for k, v in d.convert_to_pyobject().items():
+            kn = k
+            if k[:7] == '__hash:':
+                l = v.split(' = ')
+                kn = l[0]
+            # select required slot properties at the appropriate level
+            for i in range(0, 2):
+                if kn[:len(basekey)+4] == basekey+'mat'+str(i+1):
+                    #print 'slot'+str(i+1)+' (saved to dict '+str(i^1)+'):', k, '=', v
+                    s[i^1][k] = str(v)
+                    del mat.properties['luxblend'][k]  # remove original item
+        # renaming mat keys
+        for i in range(0, 2):
+            for k, v in s[i].items():
+                if k[:7] == '__hash:':
+                    l = v.split(' = ')
+                    newkey = l[0].replace(basekey+'mat'+str((i+1)^3), basekey+'mat'+str(i+1), 1)
+                    hexkey = '__hash:'+hex(newkey.__hash__()).replace('0x', '')
+                    v = l[1]
+                    #print k, '>>>', hexkey, '=', newkey, '=', v
+                    mat.properties['luxblend'][hexkey] = newkey+' = '+str(v)
+                else:
+                    newkey = k.replace(basekey+'mat'+str((i+1)^3), basekey+'mat'+str(i+1), 1)
+                    #print k, '>>>', newkey, '=', v
+                    mat.properties['luxblend'][newkey] = str(v)
 
 
 activemat = None
