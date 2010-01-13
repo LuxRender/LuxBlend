@@ -1343,6 +1343,7 @@ def save_anim(filename, as_thread=False):
 
     v_frame = Blender.Get('curframe')
     
+    pb = None
     if LuxIsGUI: pb = exportProgressBar(endF-startF +1)
 
     for i in range (startF, endF+1):
