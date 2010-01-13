@@ -1343,10 +1343,10 @@ def save_anim(filename, as_thread=False):
 
     v_frame = Blender.Get('curframe')
     
-    pb = exportProgressBar(endF-startF +1)
+    if LuxIsGUI: pb = exportProgressBar(endF-startF +1)
 
     for i in range (startF, endF+1):
-        pb.next('Exporting frame %d\n'%i)
+        if LuxIsGUI: pb.next('Exporting frame %d\n'%i)
         # Seems to get stuck unless we redraw the UI
 #        if LuxIsGUI:
 #            Window.QRedrawAll()
@@ -1368,6 +1368,8 @@ def save_anim(filename, as_thread=False):
         # Seems to get stuck unless we redraw the UI
 #        if LuxIsGUI:
 #            Window.QRedrawAll()
+
+    if LuxIsGUI: pb.finished()
             
     Blender.Set('curframe', v_frame)
 
