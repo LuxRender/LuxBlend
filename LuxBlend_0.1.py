@@ -5146,7 +5146,7 @@ def luxMaterialBlock(name, luxname, key, mat, gui=None, level=0, str_opt=""):
             mattype.set("glossy")
 
         # this is reverse order than in shown in the dropdown list
-        materials = ["null","mix","mirror","shinymetal","metal","mattetranslucent","matte","glossy","roughglass","glass","carpaint"]
+        materials = ["null","mix","mirror","shinymetal","metal","mattetranslucent","matte","glossy_lossy","glossy","roughglass","glass","carpaint"]
         
         if level == 0: materials = ["portal","light","boundvolume"]+materials
         if gui:
@@ -5414,7 +5414,7 @@ def luxMaterialBlock(name, luxname, key, mat, gui=None, level=0, str_opt=""):
             has_emission_options = 1
             has_compositing_options = 1
             
-        if mattype.get() == "glossy":
+        if mattype.get() in ("glossy", "glossy_lossy"):
             (str,link) = c((str,link), luxSpectrumTexture("Kd", keyname, "1.0 1.0 1.0", 1.0, "diffuse", "", mat, gui, level+1))
             useior = luxProp(mat, keyname+".useior", "false")
             if gui:
