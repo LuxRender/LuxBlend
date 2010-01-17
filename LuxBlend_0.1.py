@@ -889,7 +889,17 @@ def save_lux(filename, unindexedname, anim_progress=None):
         Blender.Window.QRedrawAll()
         del export
         return False
-
+    
+    # check render region dimensions > 0
+    border = scn.getRenderingContext().border
+    if (border[0]==border[2]) or (border[1]==border[3]):
+        Draw.PupMenu("ERROR: Empty render region, use SHIFT-B to set render region in Blender%t|OK%x1")
+        render_status_text = ''
+        render_status = False
+        Blender.Window.QRedrawAll()
+        del export
+        return False
+    
     if LuxIsGUI: pb.next('Setting up Scene file')
     
     class output_proxy():
@@ -2744,6 +2754,72 @@ def get_render_resolution(scn, gui = None):
     
     return xr, yr
 
+def borderResize(scn, xr, yr):
+    # update border region dimensions
+    
+    context = scn.getRenderingContext()
+    t = (yr - luxProp(scn, "film.border.T", yr-yr*context.border[3]).get()) / float(yr)
+    l = luxProp(scn, "film.border.L", xr*context.border[0]).get() / float(xr)
+    b = (yr - luxProp(scn, "film.border.B", yr-yr*context.border[1]).get()) / float(yr)
+    r = luxProp(scn, "film.border.R", xr*context.border[2]).get() / float(xr)
+    luxProp(scn, "film.border.T", 0).delete()
+    luxProp(scn, "film.border.L", 0).delete()
+    luxProp(scn, "film.border.B", yr).delete()
+    luxProp(scn, "film.border.R", xr).delete()
+    context.setBorder(l, b, r, t)
+
+def borderAspectReset(scn, xr, yr):
+    # recalculate border region coordinates according to the image
+    # aspect ratio. resize the region relative to its center.
+    
+    context = scn.getRenderingContext()
+    # unpack border proportions
+    (l, b, r, t) = context.border
+    # recalculate border edges pixel positions relative to image's left/top
+    l = xr*l
+    b = yr-yr*b
+    r = xr*r
+    t = yr-yr*t
+    # border region width/height
+    w = r-l
+    h = b-t
+    # center of the border region (relative to the image)
+    hc = l+w/2
+    vc = t+h/2
+    # image aspect ratio
+    aspect = float(xr) / float(yr)
+    # calculate new dimensions for the border region. silly ugly code -__-
+    if xr >= yr:
+        nw = w>h and w or h
+        nh = (w>h and w or h) / aspect
+    else:
+        nw = w<h and w or h
+        nh = (w<h and w or h) / aspect
+    # set new border edges pixel positions from the region's
+    # center and move it if we got out off the image boundaries
+    nl = int(hc-nw/2)
+    nb = int(vc+nh/2)
+    nr = int(hc+nw/2)
+    nt = int(vc-nh/2)
+    if nb > yr:
+        nt = nt-(nb-yr)
+        nb = yr
+    elif nt < 0:
+        nb = nb+(-1*nt)
+        nt = 0
+    if nr > xr:
+        nl = nl-(nr-xr)
+        nr = xr
+    elif nl < 0:
+        nr = nr+(-1*nl)
+        nl = 0
+    # update properties
+    luxProp(scn, "film.border.T", nt).set(nt)
+    luxProp(scn, "film.border.L", nl).set(nl)
+    luxProp(scn, "film.border.B", nb).set(nb)
+    luxProp(scn, "film.border.R", nr).set(nr)
+    borderResize(scn, xr, yr)
+
 def luxFilm(scn, gui=None):
     str = ""
     if scn:
@@ -2763,11 +2839,41 @@ def luxFilm(scn, gui=None):
                 
                 # render region option
                 if context.borderRender:
+                    if gui: gui.newline("  Border:")
+                    borderzoom = luxProp(scn, "film.border.zoom", "false")
+                    luxBool("borderzoom", borderzoom, "Zoom", "Zoom in to the border region", gui, borderzoom.get() == "true" and 1.0 or 2.0)
+                    if borderzoom.get() == "true" and gui:
+                        r = gui.getRect(1, 1)
+                        Draw.Button("aspect ratio", evtLuxGui, r[0], r[1], r[2], r[3], "Reset border dimensions to the image aspect ratio (relative to the region center)", lambda e,v: borderAspectReset(scn,xr,yr))
+                    
+                    borderprecise = luxProp(scn, "film.border.precise", "false")
+                    luxCollapse("borderprecise", borderprecise, "Precise border dimensions", "Manually configure border region dimensions", gui, 2.0)
+                    if borderprecise.get() == "true" and gui:
+                        luxInt("borderleft", luxProp(scn, "film.border.L", xr*context.border[0]), 0, xr*context.border[2], "L", "Left edge of the border region", gui, 0.5)
+                        luxInt("borderright", luxProp(scn, "film.border.R", xr*context.border[2]), xr*context.border[0], xr, "R", "Right edge of the border region", gui, 0.5)
+                        luxInt("bordertop", luxProp(scn, "film.border.T", yr-yr*context.border[3]), 0, yr-yr*context.border[1], "T", "Top edge of the border region", gui, 0.5)
+                        luxInt("borderbottom", luxProp(scn, "film.border.B", yr-yr*context.border[1]), yr-yr*context.border[3], yr, "B", "Bottom edge of the border region", gui, 0.5)
+                        borderResize(scn,xr,yr)
+                    
                     (x1,y1,x2,y2) = context.border
-                    if (x1==x2) and (y1==y2): print("WARNING: empty render-region, use SHIFT-B to set render region in Blender.")
-                    str += "\n   \"integer xresolution\" [%d] \n   \"integer yresolution\" [%d]"%(xr*(x2-x1), yr*(y2-y1))
+                    if (x1==x2) or (y1==y2): print("WARNING: Empty render region, use SHIFT-B to set render region in Blender.")
+                    if borderzoom.get() != "true":
+                        w = xr*(x2-x1)
+                        h = yr*(y2-y1)
+                        str += "\n   \"integer xresolution\" [%d] \n   \"integer yresolution\" [%d]"%(w, h)
+                    else:
+                        w = xr*(x2-x1)
+                        h = yr*(y2-y1)
+                        aspect = float(xr>yr and xr or yr) / float(w>h and w or h)
+                        w = w*aspect
+                        h = h*aspect
+                        str += "\n   \"integer xresolution\" [%d] \n   \"integer yresolution\" [%d]"%(w, h)
                 else:
                     str += "\n   \"integer xresolution\" [%d] \n   \"integer yresolution\" [%d]"%(xr, yr)
+                    luxProp(scn, "film.border.T", 0).delete()
+                    luxProp(scn, "film.border.L", 0).delete()
+                    luxProp(scn, "film.border.B", yr).delete()
+                    luxProp(scn, "film.border.R", xr).delete()
 
             if gui: gui.newline("  Halt:")
             str += luxInt("haltspp", luxProp(scn, "haltspp", 0), 0, 32768, "haltspp", "Stop rendering after specified amount of samples per pixel / 0 = never halt", gui)
