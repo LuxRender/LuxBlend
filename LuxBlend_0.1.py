@@ -1089,6 +1089,11 @@ def save_lux(filename, unindexedname, anim_progress=None):
         ##### Write World Background, Sunsky or Env map ######
         env = luxEnvironment(scn)
         if env != "":
+            # switch env type from infinite to infinitesample if there are no portals in the scene
+            if luxProp(scn, "env.type", "infinite").get() == "infinite" and not export.portals:
+                luxProp(scn, "env.type", "infinite").set("infinitesample")
+                env = luxEnvironment(scn)
+            
             file.write("AttributeBegin\n")
             file.write(env)
             export.exportPortals(file)
@@ -3345,7 +3350,7 @@ def luxEnvironment(scn, gui=None):
     str = ""
     if scn:
         envtype = luxProp(scn, "env.type", "infinite")
-        lsstr = luxIdentifier("LightSource", envtype, ["none", "infinite", "infinitesample", "sunsky"], "ENVIRONMENT", "select environment light type", gui, icon_c_environment)
+        lsstr = luxIdentifier("LightSource", envtype, ["none", "infinite", "sunsky"], "ENVIRONMENT", "select environment light type", gui, icon_c_environment)
         if gui: gui.newline()
         suncomponent = 0
         sunhalo = 0
