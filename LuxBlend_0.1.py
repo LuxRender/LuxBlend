@@ -891,14 +891,15 @@ def save_lux(filename, unindexedname, anim_progress=None):
         return False
     
     # check render region dimensions > 0
-    border = scn.getRenderingContext().border
-    if (border[0]==border[2]) or (border[1]==border[3]):
-        Draw.PupMenu("ERROR: Empty render region, use SHIFT-B to set render region in Blender%t|OK%x1")
-        render_status_text = ''
-        render_status = False
-        Blender.Window.QRedrawAll()
-        del export
-        return False
+    if scn.getRenderingContext().borderRender:
+        border = scn.getRenderingContext().border
+        if (border[0]==border[2]) or (border[1]==border[3]):
+            Draw.PupMenu("ERROR: Empty render region, use SHIFT-B to set render region in Blender%t|OK%x1")
+            render_status_text = ''
+            render_status = False
+            Blender.Window.QRedrawAll()
+            del export
+            return False
     
     if LuxIsGUI: pb.next('Setting up Scene file')
     
