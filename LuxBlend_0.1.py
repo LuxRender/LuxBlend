@@ -307,7 +307,8 @@ class luxExport:
                         for mat in mats:
                             if (mat!=None) and (mat not in self.materials):
                                 self.materials.append(mat)
-                            if (mat!=None) and ((luxProp(mat, "type", "").get()=="light") or (luxProp(mat, "emission", "false").get()=="true")):
+                            if (mat!=None) and ((luxProp(mat, "type", "").get()=="light") or (luxProp(mat, "emission", "false").get()=="true")) \
+                             and luxProp(Scene.GetCurrent(), "lightgroup.disable."+luxProp(mat, "light.lightgroup", "default").get(), "false").get() != "true":
                                 light = True
                         mesh_name = obj.getData(name_only=True)
                         try:
@@ -318,8 +319,9 @@ class luxExport:
             elif (obj_type == "Lamp"):
                 ltype = obj.getData(mesh=1).getType() # data
                 if (ltype == Lamp.Types["Lamp"]) or (ltype == Lamp.Types["Spot"]) or (ltype == Lamp.Types["Area"]):
-                    self.lights.append([obj, matrix])
-                    light = True
+                    if luxProp(Scene.GetCurrent(), "lightgroup.disable."+luxProp(obj, "light.lightgroup", "default").get(), "false").get() != "true":
+                        self.lights.append([obj, matrix])
+                        light = True
         return light
 
     #-------------------------------------------------
@@ -673,6 +675,9 @@ class luxExport:
         for [obj, matrix] in self.lights:
             ltype = obj.getData(mesh=1).getType() # data
             if (ltype == Lamp.Types["Lamp"]) or (ltype == Lamp.Types["Spot"]) or (ltype == Lamp.Types["Area"]):
+                lightgroup = luxProp(obj, "light.lightgroup", "default")
+                if luxProp(Scene.GetCurrent(), "lightgroup.disable."+lightgroup.get(), "false").get() == "true":
+                    continue
                 #print("light: %s"%(obj.getName()))
                 if ltype == Lamp.Types["Area"]:
                     (str, link) = luxLight("", "", obj, None, 0)
@@ -687,7 +692,6 @@ class luxExport:
                 col = obj.getData(mesh=1).col # data
                 energy = obj.getData(mesh=1).energy # data
                 if ltype == Lamp.Types["Lamp"]:
-                    lightgroup = luxProp(obj, "light.lightgroup", "default")
                     if luxProp(Scene.GetCurrent(), "nolg", "false").get()!="true":
                         file.write("LightGroup \"%s\"\n"%lightgroup.get())
                     (str, link) = luxLamp("", "", obj, None, 0)
@@ -697,7 +701,6 @@ class luxExport:
                     file.write(str)
                     proj = luxProp(obj, "light.usetexproj", "false")
                     if luxProp(Scene.GetCurrent(), "nolg", "false").get()!="true":
-                        lightgroup = luxProp(obj, "light.lightgroup", "default")
                         file.write("LightGroup \"%s\"\n"%lightgroup.get())
                     if(proj.get() == "true"):
                         file.write("Rotate 180 0 1 0\n")
@@ -707,7 +710,6 @@ class luxExport:
                             %(obj.getData(mesh=1).spotSize*0.5, obj.getData(mesh=1).spotSize*0.5*obj.getData(mesh=1).spotBlend)) # data
                     file.write(link+"\n")
                 if ltype == Lamp.Types["Area"]:
-                    lightgroup = luxProp(obj, "light.lightgroup", "default")
                     if luxProp(Scene.GetCurrent(), "nolg", "false").get()!="true":
                         file.write("LightGroup \"%s\"\n"%lightgroup.get())
                     file.write("\tAreaLightSource \"area\"")
@@ -4899,7 +4901,11 @@ def luxLight(name, kn, mat, gui, level):
     if gui: gui.newline("")
     link += luxFloat("gain", luxProp(mat, kn+"light.gain", 1.0), 0.0, 100.0, "gain", "Gain/scale multiplier", gui)
     lightgroup = luxProp(mat, kn+"light.lightgroup", "default")
-    luxString("lightgroup", lightgroup, "group", "assign light to a named light-group", gui, 1.0)
+    luxString("lightgroup", lightgroup, "group", "assign light to a named light-group", gui, 0.8)
+    lg_disable = luxProp(Scene.GetCurrent(), "lightgroup.disable."+lightgroup.get(), "false")
+    luxBool("lg_disable", lg_disable, "D", "Disable lightgroup during export", gui, 0.2)
+    if lg_disable.get() == "true":
+        link = ""
 
     if gui: gui.newline("Photometric")
     pm = luxProp(mat, kn+"light.usepm", "false")
@@ -4936,7 +4942,9 @@ def luxLamp(name, kn, mat, gui, level):
     if gui: gui.newline("")
     link += luxFloat("gain", luxProp(mat, kn+"light.gain", 1.0), 0.0, 100.0, "gain", "Gain/scale multiplier", gui)
     lightgroup = luxProp(mat, kn+"light.lightgroup", "default")
-    luxString("lightgroup", lightgroup, "group", "assign light to a named light-group", gui, 1.0)
+    luxString("lightgroup", lightgroup, "group", "assign light to a named light-group", gui, 0.8)
+    lg_disable = luxProp(Scene.GetCurrent(), "lightgroup.disable."+lightgroup.get(), "false")
+    luxBool("lg_disable", lg_disable, "D", "Disable lightgroup during export", gui, 0.2)
 
     if gui: gui.newline("Photometric")
     pm = luxProp(mat, kn+"light.usepm", "false")
@@ -4973,7 +4981,9 @@ def luxSpot(name, kn, mat, gui, level):
     if gui: gui.newline("")
     link += luxFloat("gain", luxProp(mat, kn+"light.gain", 1.0), 0.0, 100.0, "gain", "Gain/scale multiplier", gui)
     lightgroup = luxProp(mat, kn+"light.lightgroup", "default")
-    luxString("lightgroup", lightgroup, "group", "assign light to a named light-group", gui, 1.0)
+    luxString("lightgroup", lightgroup, "group", "assign light to a named light-group", gui, 0.8)
+    lg_disable = luxProp(Scene.GetCurrent(), "lightgroup.disable."+lightgroup.get(), "false")
+    luxBool("lg_disable", lg_disable, "D", "Disable lightgroup during export", gui, 0.2)
 
     if gui: gui.newline("Projection")
     proj = luxProp(mat, kn+"light.usetexproj", "false")
@@ -5303,12 +5313,16 @@ def luxMaterialBlock(name, luxname, key, mat, gui=None, level=0, str_opt=""):
             has_compositing_options = 0
 
         if mattype.get() == "light":
-            if luxProp(Scene.GetCurrent(), "nolg", "false").get()!="true":
-                lightgroup = luxProp(mat, kn+"light.lightgroup", "default")
-                link = "LightGroup \"%s\"\n"%lightgroup.get()
+            lightgroup = luxProp(mat, kn+"light.lightgroup", "default")
+            if luxProp(Scene.GetCurrent(), "lightgroup.disable."+lightgroup.get(), "false").get() == "true":
+                # pass dummy mat instead of light material if lightgroup is disabled
+                link = "Material \"matte\" # dummy material\n"
             else:
-                link = ''
-            link += "AreaLightSource \"area\""
+                if luxProp(Scene.GetCurrent(), "nolg", "false").get()!="true":
+                    link = "LightGroup \"%s\"\n"%lightgroup.get()
+                else:
+                    link = ''
+                link += "AreaLightSource \"area\""
             (str,link) = c((str,link), luxLight("", kn, mat, gui, level))
             has_bump_options = 0
             has_object_options = 1
@@ -5678,12 +5692,16 @@ def luxMaterial(mat, gui=None):
         useemission = luxProp(mat, "emission", "false")
         if useemission.get() == "true":
             lightgroup = luxProp(mat, "light.lightgroup", "default")
-            if luxProp(Scene.GetCurrent(), "nolg", "false").get()!="true":
-                link += "\n\tLightGroup \"%s\"\n"%lightgroup.get()
-            
-            (estr, elink) = luxLight("", "", mat, None, 0)
-            str += estr
-            link += "\n\tAreaLightSource \"area\" "+elink 
+            if luxProp(Scene.GetCurrent(), "lightgroup.disable."+lightgroup.get(), "false").get() == "true":
+                # skip export of emission component if lightgroup is disabled
+                pass
+            else:
+                if luxProp(Scene.GetCurrent(), "nolg", "false").get()!="true":
+                    link += "\n\tLightGroup \"%s\"\n"%lightgroup.get()
+                
+                (estr, elink) = luxLight("", "", mat, None, 0)
+                str += estr
+                link += "\n\tAreaLightSource \"area\" "+elink 
             
         luxProp(mat, "link", "").set("".join(link))
         
