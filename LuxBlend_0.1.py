@@ -6530,9 +6530,17 @@ def loadMatTex(mat, fn, basekey='', tex=None):
 
 def flipMixMat(mat, basekey):
     # flip mix material slots
-    if basekey != '': basekey = basekey+':'
     if luxProp(mat, 'type', '').get() == 'mix':
+        import re
+        global previewCache
+        if basekey != '':
+            r = re.compile(basekey+r'(\:mat[12])+')
+            basekey = basekey+':'
+        else:
+            r = re.compile(r'mat[12](\:mat[12])*')
+        
         s = [{}, {}]  # we'll store slots property items here for later processing
+        p = [{}, {}]  # and this is for cached preview images
         d = mat.properties['luxblend']
         for k, v in d.convert_to_pyobject().items():
             kn = k
@@ -6542,11 +6550,23 @@ def flipMixMat(mat, basekey):
             # select required slot properties at the appropriate level
             for i in range(0, 2):
                 if kn[:len(basekey)+4] == basekey+'mat'+str(i+1):
+                    # mat property
                     #print 'slot'+str(i+1)+' (saved to dict '+str(i^1)+'):', k, '=', v
                     s[i^1][k] = str(v)
                     del mat.properties['luxblend'][k]  # remove original item
-        # renaming mat keys
+                    # preview image
+                    try:
+                        pk = k[0:r.match(k).end()]
+                        hashkey = (mat.name+':'+pk+'.').__hash__()
+                        if not p[i^1].has_key(pk) and previewCache.has_key(hashkey):
+                            #print 'preview for slot'+str(i+1)+' key:  ', pk, '(saved to dict '+str(i^1)+')'
+                            p[i^1][pk] = previewCache[hashkey]
+                            del previewCache[hashkey]  # remove original item
+                    except AttributeError:
+                        pass
+        # processing items
         for i in range(0, 2):
+            # renaming mat keys
             for k, v in s[i].items():
                 if k[:7] == '__hash:':
                     l = v.split(' = ')
@@ -6559,6 +6579,13 @@ def flipMixMat(mat, basekey):
                     newkey = k.replace(basekey+'mat'+str((i+1)^3), basekey+'mat'+str(i+1), 1)
                     #print k, '>>>', newkey, '=', v
                     mat.properties['luxblend'][newkey] = str(v)
+            # renaming cached previews keys
+            for k, v in p[i].items():
+                pk = mat.name+':'+k+'.'
+                newpk = k.replace(basekey+'mat'+str((i+1)^3), basekey+'mat'+str(i+1), 1)
+                newpk = mat.name+':'+newpk+'.'
+                #print pk, '('+str(pk.__hash__())+')', '>>>', newpk, '('+str(newpk.__hash__())+')'
+                previewCache[newpk.__hash__()] = v
 
 
 activemat = None
