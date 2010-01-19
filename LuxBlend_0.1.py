@@ -5065,7 +5065,7 @@ def Preview_Update(mat, kn, defLarge, defType, texName, name, level):
         p.stdin.write('LookAt 0.0 -3.0 0.5 0.0 -2.0 0.5 0.0 0.0 1.0\nCamera "perspective" "float fov" [22.5]\n')
     # Fleximage
     p.stdin.write('Film "fleximage" "integer xresolution" [%i] "integer yresolution" [%i] "integer displayinterval" [3] "integer ldr_writeinterval" [3600] "string tonemapkernel" ["linear"] "integer haltspp" [1] "integer reject_warmup" [64] "bool write_tonemapped_tga" ["false"] "bool write_untonemapped_exr" ["false"] "bool write_tonemapped_exr" ["false"] "bool write_untonemapped_igi" ["false"] "bool write_tonemapped_igi" ["false"] "bool write_png" ["false"] "string filename" ["luxblend-preview"] \n'%(thumbres, thumbres))
-    p.stdin.write('PixelFilter "sinc"\n')
+    p.stdin.write('PixelFilter "mitchell" "float xwidth" [1.500000] "float ywidth" [1.500000] "float B" [0.333330] "float C" [0.333330] "bool supersample" ["true"]\n')
     # Quality
     scn = Scene.GetCurrent()
     defprevmat = luxProp(scn, "defprevmat", "high")
