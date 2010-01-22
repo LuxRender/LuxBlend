@@ -4617,7 +4617,7 @@ def luxTexture(name, parentkey, type, default, min, max, caption, hint, mat, gui
         if gui: gui.newline("noise:", -2, level+1, icon_texparam)
         
         str += luxInt("noisedepth", luxProp(mat, keyname+".noisedepth", 2), 0.0, 10.0, "noisedepth", "", gui, 1.0)
-        str += luxFloat("turbulence", luxProp(mat, keyname+".turbulence", 5.0), 0.0, 2.0, "turbulence", "", gui, 1.0)
+        str += luxFloat("turbulence", luxProp(mat, keyname+".turbulence", 5.0), 0.0, 200.0, "turbulence", "", gui, 1.0)
 
         if gui: gui.newline("level:", -2, level+1, icon_texparam)
         str += luxFloat("bright", luxProp(mat, keyname+".bright", 1.0), 0.0, 2.0, "bright", "", gui, 1.0)
@@ -5769,7 +5769,17 @@ def convertMaterial(mat):
             if (v == value) and (lux_dict.has_key(k)):
                 return lux_dict[k]
         return default
-
+    def getTexFlags(value, constant_dict):
+        constant_dict = sorted(constant_dict, lambda x,y: cmp(y[1], x[1]))
+        flags_dict = []
+        for f, v in constant_dict:
+            if value < v:
+                continue
+            else:
+                value = value-v
+                flags_dict.append(f)
+        return flags_dict
+    
     def convertMapping(name, tex):
         if tex.texco == Texture.TexCo["UV"]:
             luxProp(mat, dot(name)+"mapping","").set("uv")
@@ -5875,8 +5885,8 @@ def convertMaterial(mat):
                 luxProp(mat, dot(name)+"texture", "").set("blender_distortednoise")
                 luxProp(mat, dot(name)+"distamount", 1.0).set(texture.distAmnt)
                 luxProp(mat, dot(name)+"noisesize", 0.25).set(texture.noiseSize)
-                luxProp(mat, dot(name)+"noisebasis", "").set(mapConstDict(texture.noiseBasis, Texture.Noise, noiseDict, ""))
-                luxProp(mat, dot(name)+"noisebasis2", "").set(mapConstDict(texture.noiseBasis2, Texture.Noise, noiseDict, ""))
+                luxProp(mat, dot(name)+"type", "").set(mapConstDict(texture.noiseBasis, Texture.Noise, noiseDict, ""))
+                luxProp(mat, dot(name)+"noisebasis", "").set(mapConstDict(texture.noiseBasis2, Texture.Noise, noiseDict, ""))
             elif texture.type == Texture.Types["MAGIC"]:
                 luxProp(mat, dot(name)+"texture", "").set("blender_magic")
                 luxProp(mat, dot(name)+"turbulence", 0.25).set(texture.turbulence)
@@ -5890,8 +5900,8 @@ def convertMaterial(mat):
                 luxProp(mat, dot(name)+"noisebasis", "").set(mapConstDict(texture.noiseBasis, Texture.Noise, noiseDict, ""))
             elif texture.type == Texture.Types["BLEND"]:
                 luxProp(mat, dot(name)+"texture", "").set("blender_blend")
-                luxProp(mat, dot(name)+"type", "").set(mapConstDict(texture.stype, Texture.STypes, {"BLN_LIN":"lin", "BLN_QUAD":"quad", "BLN_EASE":"ease", "BLN_DIAG":"diag", "BLN_SPHERE":"sphere", "BLN_HALO":"halo", "BLN_RADIAL":"radial"}, ""))
-                luxProp(mat, dot(name)+"flipXY", "false").set({0:"false", 1:"true"}[texture.rot90])
+                luxProp(mat, dot(name)+"mtype", "").set(mapConstDict(texture.stype, Texture.STypes, {"BLN_LIN":"lin", "BLN_QUAD":"quad", "BLN_EASE":"ease", "BLN_DIAG":"diag", "BLN_SPHERE":"sphere", "BLN_HALO":"halo", "BLN_RADIAL":"radial"}, ""))
+                luxProp(mat, dot(name)+"flag", "false").set(str('FLIPBLEND' in getTexFlags(texture.flags, Texture.Flags.items())).lower())
             else:
                 print("Material Conversion Warning: SORRY, this procedural texture isn\'t implemented in conversion\n")
 
