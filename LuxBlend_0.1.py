@@ -71,7 +71,7 @@ import sys as osys
 import types
 import subprocess
 import Blender
-from Blender import Mesh, Scene, Object, Material, Texture, Window, sys, Draw, BGL, Mathutils, Lamp, Image, Particle
+from Blender import Mesh, Scene, Object, Material, Texture, Window, sys, Draw, BGL, Mathutils, Lamp, Image, Particle, Curve
 
 
 
@@ -191,8 +191,11 @@ def getMaterials(obj, compress=False):
         try:
             dataMats = data.getMaterials(1)
         except:
-            dataMats = []
-            colbits = 0xffff
+            try:
+                dataMats = Curve.Get(obj.getData().getName()).getMaterials()
+            except:
+                dataMats = []
+                colbits = 0xffff
     m = max(len(objMats), len(dataMats))
     if m>0:
         objMats.extend([None]*16)
