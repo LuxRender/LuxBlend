@@ -5233,7 +5233,7 @@ def luxPreview(mat, name, defType=0, defEnabled=False, defLarge=False, texName=N
 
             # Object width
             obwidth = luxProp(mat, kn+"prev_obwidth", 1.0)
-            Draw.Number("Width:", evtLuxGui, r[0]+66, r[1]+78+voffset, 129, 18, obwidth.get(), 0.001, 10, "The width of the preview object in blender/lux 1m units", lambda e,v: obwidth.set(v))
+            Draw.Number("Width:", evtLuxGui, r[0]+66, r[1]+78+voffset, 129, 18, float(obwidth.get()), 0.001, 10, "The width of the preview object in blender/lux 1m units", lambda e,v: obwidth.set(v))
 
             # large/small size
             Draw.Toggle("large", evtLuxGui, r[0]+200, r[1]+78+voffset, 88, 18, large.get()=="true", "Large", lambda e,v: large.set(["false","true"][bool(v)]))
