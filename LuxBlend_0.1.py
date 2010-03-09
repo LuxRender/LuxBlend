@@ -4387,18 +4387,32 @@ def luxTexture(name, parentkey, type, default, min, max, caption, hint, mat, gui
         str += lux3DMapping(keyname, mat, gui, level+1)
 
     if texture.get() == "brick":
+        bonds = ["stacked","running", "flemish", "english", "herringbone", "basket", "chain link"]
+        bond = luxProp(mat, keyname+".brickbond", "running")
+        running = ["running","flemish"]
+        defaultrun = {"running":0.5,"flemish":0.75}
+        pavers = ["basket","herringbone"]
+        
         if gui: gui.newline("brick:", -2, level+1, icon_texparam)
 
         str += luxFloat("brickwidth", luxProp(mat, keyname+".brickwidth", 0.3), 0.0, 10.0, "brickwidth (X)", "", gui, 1.0)
         str += luxFloat("brickheight", luxProp(mat, keyname+".brickheight", 0.1), 0.0, 10.0, "brickheight (Z)", "", gui, 1.0)
-        str += luxFloat("brickdepth", luxProp(mat, keyname+".brickdepth", 0.15), 0.0, 10.0, "brickdepth (Y)", "", gui, 1.0)
-
+        str += luxFloat("brickdepth", luxProp(mat, keyname+".brickdepth", 0.15), 0.0, 10.0, "brickdepth (Y)", "", gui, 1.0)  
+        
         if gui: gui.newline("mortar:", -2, level+1, icon_texparam)
 
         str += luxFloat("mortarsize", luxProp(mat, keyname+".mortarsize", 0.01), 0.0, 1.0, "mortarsize", "", gui, 1.0)
 
+        if gui: gui.newline("bond:", -2, level+1, icon_texparam)
+        str += luxOption("brickbond", bond, bonds, "bond", "", gui, 0.5)
+        if bond.get() in running:
+            str += luxFloat("brickrun", luxProp(mat, keyname+".brickrun", defaultrun[bond.get()]), -10.0, 10.0, "brickrun", "", gui, 1.0)
+        if bond.get() in pavers and gui:
+            gui.newline("This paving bond is only mapped to xy",-2,level+7);
+            
         (s, l) = c(("", ""), luxTexture("bricktex", keyname, type, default, min, max, "bricktex", "", mat, gui, matlevel, texlevel+1, lightsource))
         (s, l) = c((s, l), luxTexture("mortartex", keyname, type, alternativedefault(type, default), min, max, "mortartex", "", mat, gui, matlevel, texlevel+1, lightsource))
+        (s, l) = c((s, l), luxTexture("brickmodtex", keyname, type, default, min, max, "modulation", "", mat, gui, matlevel, texlevel+1, lightsource))
         str = s + str + l
 
         str += lux3DMapping(keyname, mat, gui, level+1)
@@ -4780,7 +4794,7 @@ def luxExponentTexture(name, key, default, min, max, caption, hint, mat, gui, le
 #    link = luxFloat(name, value, min, max, "", hint, gui, 2.0)
     if gui:
         r = gui.getRect(2.0, 1)
-        Draw.Number("", evtLuxGui, r[0], r[1], r[2], r[3], float(2.0/(value.getFloat() ** 2)-2.0), 1.0, 1000000.0, hint, lambda e,v: value.set(sqrt(2.0/(v+2.0))))
+        Draw.Number("", evtLuxGui, r[0], r[1], r[2], r[3], float(1.0/value.getFloat()), 1.0, 1000000.0, hint, lambda e,v: value.set(1.0/v))
     link = " \"float %s\" [%f]"%(name, value.getFloat())
 
     tex = luxProp(mat, keyname+".textured", False)
