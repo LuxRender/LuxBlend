@@ -5174,9 +5174,10 @@ def Preview_Update(mat, kn, defLarge, defType, texName, name, level):
     # Checkerboard floor
     if(prev_plane.get()=="false"):
         p.stdin.write('AttributeBegin\nTransform [5.0 0.0 0.0 0.0  0.0 5.0 0.0 0.0  0.0 0.0 5.0 0.0  0.0 0.0 0.0 1.0]\n')
-        p.stdin.write('Texture "checks" "color" "checkerboard"')
-        p.stdin.write('"integer dimension" [2] "string aamode" ["supersample"] "color tex1" [0.9 0.9 0.9] "color tex2" [0.0 0.0 0.0]')
+	p.stdin.write('Texture "checks::pattern" "float" "checkerboard"')
+        p.stdin.write('"integer dimension" [2] "string aamode" ["supersample"]')
         p.stdin.write('"string mapping" ["uv"] "float uscale" [36.8] "float vscale" [36.0]\n')
+	p.stdin.write('Texture "checks" "color" "mix" "texture amount" ["checks::pattern"] "color tex1" [0.9 0.9 0.9] "color tex2" [0.0 0.0 0.0]\n')
         p.stdin.write('Material "matte" "texture Kd" ["checks"]\n')
         p.stdin.write('Shape "loopsubdiv" "integer nlevels" [3] "bool dmnormalsmooth" ["true"] "bool dmsharpboundary" ["false"] ')
         p.stdin.write('"integer indices" [ 0 1 2 0 2 3 1 0 4 1 4 5 5 4 6 5 6 7 ]')
