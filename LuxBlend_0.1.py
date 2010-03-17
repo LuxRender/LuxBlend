@@ -4118,7 +4118,7 @@ def luxTexture(name, parentkey, type, default, min, max, caption, hint, mat, gui
         texture = luxProp(mat, keyname+".texture", "blackbody")
 
     tex_all = ["constant", "imagemap", "mix", "scale", "bilerp", "brick"]
-    tex_color = ["blackbody", "lampspectrum", "equalenergy", "frequency", "gaussian", "regulardata", "irregulardata", "uv", "harlequin", "marble"]
+    tex_color = ["blackbody", "lampspectrum", "equalenergy", "frequency", "gaussian", "regulardata", "irregulardata", "tabulateddata", "uv", "harlequin", "marble"]
     tex_float = ["blender_marble", "blender_musgrave", "blender_wood", "blender_clouds", "blender_blend", "blender_distortednoise", "blender_noise", "blender_magic", "blender_stucci", "blender_voronoi", "checkerboard", "dots", "fbm", "windy", "wrinkled"]
     textures = tex_all
     if type=="color":
@@ -4133,7 +4133,7 @@ def luxTexture(name, parentkey, type, default, min, max, caption, hint, mat, gui
             if texture.get() in ["mix", "scale", "checkerboard", "dots"]:
                 if type=="color": icon = icon_texmixcol
                 else: icon = icon_texmix
-            elif texture.get() in ["constant", "blackbody", "equalenergy", "frequency", "gaussian", "regulardata", "irregulardata"]:
+            elif texture.get() in ["constant", "blackbody", "equalenergy", "frequency", "gaussian", "regulardata", "irregulardata", "tabulateddata"]:
                 icon = icon_spectex
             else:
                 if type=="color": icon = icon_texcol
@@ -4211,6 +4211,10 @@ def luxTexture(name, parentkey, type, default, min, max, caption, hint, mat, gui
         str += luxFloat("wavelength", luxProp(mat, keyname+".wavelength", 550.0), 380.0, 720.0, "wavelength", "Mean Wavelength in visible spectrum in nm", gui, 2.0, 1)
         str += luxFloat("width", luxProp(mat, keyname+".width", 50.0), 20.0, 300.0, "width", "Width of gaussian distribution in nm", gui, 1.1, 1)
         str += luxFloat("energy", luxProp(mat, keyname+".energy", 1.0), 0.0, 1.0, "energy", "Amount of mean energy", gui, 0.9, 1)
+
+    if texture.get() == "tabulateddata":
+        if gui: gui.newline("data file:", -2, level)        
+        str += luxFile("filename", luxProp(mat, keyname+".filename", ""), "file", "data file path", gui, 2.0)        
 
     if texture.get() == "imagemap":
         if gui: gui.newline("IM-clip:", -2, level)
