@@ -3600,6 +3600,8 @@ def luxEnvironment(scn, gui=None):
             str += "\n"
         #if gui: gui.newline("GLOBAL:", 8, 0, None, [0.75,0.5,0.25])
         #luxFloat("scale", luxProp(scn, "global.scale", 1.0), 0.0, 10.0, "scale", "global world scale", gui)
+        if gui: gui.newline("WORLD MEDIUM:", 8, 0, None, [0.75,0.5,0.25])
+        luxNamedVolumeTexture('named_volumes:0.', gui)
         
     return str
 
@@ -4939,6 +4941,69 @@ def luxCauchyBFloatTexture(name, key, default, min, max, caption, hint, mat, gui
             link = " \"texture %s\" [\"%s\"]"%(name, texname+".scale")
     return (str, link)
 
+def listNamedVolumes():
+    # returns a dict of volumeName:volumeId pairs
+    d = {}
+    s = 'named_volumes:'
+    for k, v in Scene.GetCurrent().properties['luxblend'].convert_to_pyobject().items():
+        if k.startswith(s) and k[k.find('.')+1:] == 'name':
+            d[v] = int(k[len(s):k.find('.')])
+    if not d.has_key('0'):
+        d['world *'] = 0
+        luxProp(Scene.GetCurrent(), 'named_volumes:0.name', 0).set('world *')
+    return d
+            
+def getNamedVolume(id):
+    # returns a dict of volume properties' name:value pairs
+    d = {}
+    s = 'named_volumes:%s.' % id
+    for k, v in Scene.GetCurrent().properties['luxblend'].convert_to_pyobject().items():
+        if k.startswith(s):
+            d[k[len(s):]] = v
+    if not d:
+        d['name'] = 'world *'
+    d['id'] = int(id)
+    return d
+
+def luxNamedVolume(mat, volume_type, gui=None):
+    # Possible values for volume_type: 'Exterior', 'Interior'
+    #
+    # References to each volume are stored in two places. First, in regular
+    # material in ${volume_type}_vol_id Lux property which has an int index of
+    # the volume assigned to this mat. Second, volume and its texture proper-
+    # ties are stored in global scene properties "named_volumes" namespace
+    # in the form "namespace:volumeId.volumeProperty". We use ids instead of
+    # plane names to facilitate volume renaming.
+    str = link = ''
+    volumes = listNamedVolumes()
+    if gui: gui.newline('medium name:', 0, 1)
+    volumeId = luxProp(mat, '%s_vol_id' % (volume_type), 0)
+    volumeName = luxProp(mat, '%s_vol_name' % (volume_type), '')
+    if not volumes.has_key(volumeName.get()):
+        # seems selected volume was renamed, lets update name from id
+        volumeName.set(volumes.keys()[volumes.values().index(volumeId.get())])
+    luxOption('%s_vol_name'%(volume_type), volumeName, volumes.keys(), '  AVAILABLE MEDIUMS', 'Select medium from the list', gui, 1.5)
+    if volumeName.get(): volumeId.set(volumes[volumeName.get()])
+    else: volumeId.set(0)   # no volume was selected yet for that property
+    if gui:
+        r = gui.getRect(0.5, 1)
+        Draw.Button('Settings', evtLuxGui, r[0], r[1], r[2], r[3], 'Manage mediums', lambda e,v: showVolumesMenu(mat,volume_type))
+    
+    if volumeId.get() != 0:
+        luxNamedVolumeTexture('named_volumes:%s.'%volumeId.get(), gui)
+    elif gui:
+        gui.newline(); r = gui.getRect(2,1); BGL.glRasterPos2i(r[0],r[1]+5) 
+        Draw.Text("use Cam/Env tab to configure world medium")
+    
+    return "\n        %s \"%s\"" % (volume_type, getNamedVolume(volumeId.get())['name'])
+
+def luxNamedVolumeTexture(keyname, gui):
+    scn = Scene.GetCurrent()
+    if gui: gui.newline('texture:', 0, 1)
+    value = luxProp(scn, keyname+'index', 1.5)
+    luxFloat('index', value, 1.0, 6.0, "IOR", '', gui, 1.5, 1)
+    # XXX
+
 def luxLight(name, kn, mat, gui, level):
     if gui:
         if name != "": gui.newline(name+":", 10, level)
@@ -5320,7 +5385,7 @@ def luxMaterialBlock(name, luxname, key, mat, gui=None, level=0, str_opt=""):
         # this is reverse order than in shown in the dropdown list
         materials = ["null","mix","mirror","shinymetal","metal","mattetranslucent","matte","glossy_lossy","glossy","roughglass","glass","carpaint"]
         
-        if level == 0: materials = ["portal","light","boundvolume"]+materials
+        if level == 0: materials = ["portal", "light", "boundvolume", "glass2"]+materials
         if gui:
             icon = icon_mat
             if mattype.get() == "mix": icon = icon_matmix
@@ -5461,7 +5526,7 @@ def luxMaterialBlock(name, luxname, key, mat, gui=None, level=0, str_opt=""):
             (str,link) = c((str,link), luxSpectrumTexture("Kt", keyname, "1.0 1.0 1.0", 1.0, "transmission", "", mat, gui, level+1))
             (str,link) = c((str,link), luxIORFloatTexture("index", keyname, 1.5, 1.0, 6.0, "IOR", "", mat, gui, level+1))
             architectural = luxProp(mat, keyname+".architectural", "false")
-            link += luxBool("architectural", architectural, "architectural", "Enable architectural glass", gui, 2.0)
+            link += luxBool("architectural", architectural, "Architectural", "Enable architectural glass", gui, 2.0)
             if architectural.get() == "false":
                 chromadisp = luxProp(mat, keyname+".chromadisp", "false")
                 luxCollapse("chromadisp", chromadisp, "Dispersive Refraction", "Enable Chromatic Dispersion", gui, 2.0)
@@ -5472,6 +5537,18 @@ def luxMaterialBlock(name, luxname, key, mat, gui=None, level=0, str_opt=""):
                 if thinfilm.get() == "true":
                     (str,link) = c((str,link), luxFloatSliderTexture("film", keyname, 200.0, 1.0, 1500.0, "film", "thickness of film coating in nanometers", mat, gui, level+1))
                     (str,link) = c((str,link), luxIORFloatTexture("filmindex", keyname, 1.5, 1.0, 6.0, "film IOR", "film coating index of refraction", mat, gui, level+1))
+            has_bump_options = 1
+            has_object_options = 1
+            has_emission_options = 1
+            has_compositing_options = 1
+            
+        if mattype.get() == 'glass2':
+            for volume_type in ['Exterior', 'Interior']:
+                volume_used = luxProp(mat, '%s_vol_used'%(volume_type), 'false')   # volume_type == 'Interior' and 'true' or 'false')
+                if gui: gui.newline('', 2, level, None, [0.4,0.4,0.6])
+                luxCollapse('%s_vol_used'%(volume_type), volume_used, "%s medium"%(volume_type), "%s medium settings"%(volume_type), gui, 2.0)
+                if volume_used.get() == "true":
+                    luxNamedVolume(mat, volume_type, gui)
             has_bump_options = 1
             has_object_options = 1
             has_emission_options = 1
@@ -5738,6 +5815,11 @@ def luxMaterial(mat, gui=None):
         (str, link) = luxMaterialBlock("", "", "", mat, gui, 0)
         if luxProp(mat, "type", "matte").get() != "light":
             link = "NamedMaterial \"%s\""%(mat.getName())
+            # volume properties
+            if luxProp(mat, "type", "matte").get() == "glass2":
+                for volume_type in ['Exterior', 'Interior']:
+                    if luxProp(mat, '%s_vol_used'%(volume_type), 'false').get() == 'true':
+                        link += luxNamedVolume(mat, volume_type)
         # export emission options (no gui)
         useemission = luxProp(mat, "emission", "false")
         if useemission.get() == "true":
@@ -6664,6 +6746,49 @@ def flipMixMat(mat, basekey):
                 newpk = mat.name+':'+newpk+'.'
                 #print pk, '('+str(pk.__hash__())+')', '>>>', newpk, '('+str(newpk.__hash__())+')'
                 previewCache[newpk.__hash__()] = v
+
+def showVolumesMenu(mat, volume_type):
+    active_volume = getNamedVolume(luxProp(mat, '%s_vol_id' % (volume_type), 0).get())
+    menu = "Manage mediums:%t|Create new medium%x1"
+    if active_volume['name'] != 'world *':
+        menu += "|Rename selected%x2|Delete selected%x3"
+    
+    r = Draw.PupMenu(menu)
+    if r==1:
+        # create new volume
+        name = Draw.PupStrInput('medium name: ', '')
+        vols = listNamedVolumes()
+        if vols.has_key(name) or name == 'world *':
+            Draw.PupMenu('ERROR: Medium name already exists%t|OK%x1')
+            Blender.Window.QRedrawAll()
+            return False
+        elif name != '':
+            scn = Scene.GetCurrent()
+            newId = vols and max(vols.values())+1 or 1
+            luxProp(scn, 'named_volumes:%s.name' % newId, 0).set(name)
+            luxProp(mat, '%s_vol_id' % (volume_type), 0).set(newId)
+            luxProp(mat, '%s_vol_name' % (volume_type), '').set(name)
+            Blender.Window.QRedrawAll()
+            return True
+    elif r == 2:
+        # rename existing volume
+        name = Draw.PupStrInput('new name: ', active_volume['name'])
+        vols = listNamedVolumes()
+        if vols.has_key(name) or name == 'world *':
+            Draw.PupMenu('ERROR: Medium name already exists%t|OK%x1')
+            Blender.Window.QRedrawAll()
+            return False
+        elif name != active_volume['name'] and name != '':
+            scn = Scene.GetCurrent()
+            luxProp(scn, 'named_volumes:%s.name' % active_volume['id'], 0).set(name)
+            Blender.Window.QRedrawAll()
+            return True
+    elif r == 3:
+        # delete existing volume
+        Draw.PupMenu('NOT IMPLEMENTED YET%t|OK%x1')
+        Blender.Window.QRedrawAll()
+        return False
+        # XXX
 
 
 activemat = None
