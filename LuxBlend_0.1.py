@@ -4878,7 +4878,7 @@ def luxExponentTexture(name, key, default, min, max, caption, hint, mat, gui, le
     if gui:
         r = gui.getRect(2.0, 1)
         Draw.Number("", evtLuxGui, r[0], r[1], r[2], r[3], float(2.0/(value.getFloat() ** 2)-2.0), 1.0, 1000000.0, hint, lambda e,v: value.set(math.sqrt(2.0/(v+2.0))))
-    link = " \"float %s\" [%f]"%(name, value.get1Float())
+    link = " \"float %s\" [%f]"%(name, value.getFloat())
 
     tex = luxProp(mat, keyname+".textured", False)
     if gui: Draw.Toggle("T", evtLuxGui, gui.x, gui.y-gui.h, gui.h, gui.h, tex.get()=="true", "use texture", lambda e,v:tex.set(["false","true"][bool(v)]))
