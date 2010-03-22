@@ -4877,7 +4877,7 @@ def luxExponentTexture(name, key, default, min, max, caption, hint, mat, gui, le
 #    link = luxFloat(name, value, min, max, "", hint, gui, 2.0)
     if gui:
         r = gui.getRect(2.0, 1)
-        Draw.Number("", evtLuxGui, r[0], r[1], r[2], r[3], float(1.0/value.getFloat()), 1.0, 1000000.0, hint, lambda e,v: value.set(1.0/v))
+        Draw.Number("", evtLuxGui, r[0], r[1], r[2], r[3], float(2.0/(value.getFloat() ** 2)-2.0), 1.0, 1000000.0, hint, lambda e,v: value.set(sqrt(2.0/(v+2.0))))
     link = " \"float %s\" [%f]"%(name, value.getFloat())
 
     tex = luxProp(mat, keyname+".textured", False)
