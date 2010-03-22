@@ -38,7 +38,7 @@ Please check the lux tutorials & forums for more information.
 # --------------------------------------------------------------------------
 #
 # Authors:
-# radiance, zuegs, ideasman42, luxblender, dougal2
+# radiance, zuegs, ideasman42, luxblender, dougal2, SATtva
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -238,6 +238,7 @@ class luxExport:
         self.objects = []
         self.portals = []
         self.volumes = []
+        self.namedVolumes = []
         self.meshes = {}
         self.materials = []
         self.lights = []
@@ -310,6 +311,12 @@ class luxExport:
                         for mat in mats:
                             if (mat!=None) and (mat not in self.materials):
                                 self.materials.append(mat)
+                                # collect used named volumes ids
+                                for volume_prop in ['Exterior', 'Interior']:
+                                    if luxProp(mat, '%s_vol_used'%(volume_prop), 'false').get() == 'true':
+                                        volumeId = luxProp(mat, '%s_vol_id' % (volume_prop), 0).get()
+                                        if volumeId not in self.namedVolumes:
+                                            self.namedVolumes.append(volumeId)
                             if (mat!=None) and ((luxProp(mat, "type", "").get()=="light") or (luxProp(mat, "emission", "false").get()=="true")) \
                              and luxProp(Scene.GetCurrent(), "lightgroup.disable."+luxProp(mat, "light.lightgroup", "default").get(), "false").get() != "true":
                                 light = True
@@ -365,6 +372,24 @@ class luxExport:
         for mat in self.materials:
             #pb.counter('Exporting Materials')
             self.exportMaterial(file, mat)
+
+    #-------------------------------------------------
+    # exportNamedVolumes(self, file)
+    # exports named volumes to the file
+    #-------------------------------------------------
+    def exportNamedVolumes(self, file):
+        #pb = exportProgressBar(len(self.namedVolumes), self.mpb)
+        output = ''
+        volumes = listNamedVolumes()
+        for volume in volumes.values():
+            if volume in self.namedVolumes:
+                #pb.counter('Exporting Mediums Definitions')
+                data = getNamedVolume(volume)
+                output = "\t# Volume '%s'\n" % data['name']
+                tex = luxNamedVolumeTexture(volume)
+                output += "%s\nMakeNamedVolume \"%s\" %s" % (tex[0], data['name'], tex[1])
+                output += "\n\n"
+                file.write(output)
 
     #-------------------------------------------------
     # getMeshType(self, vertcount, mat)
@@ -1137,6 +1162,8 @@ def save_lux(filename, unindexedname, anim_progress=None):
         mat_file = open(mat_filename, 'w') if not file.combine_all_output else file
         mat_file.write("")
         export.exportMaterials(mat_file)
+        mat_file.write("")
+        export.exportNamedVolumes(mat_file)
         mat_file.write("")
         if not file.combine_all_output: mat_file.close()
     
@@ -3601,7 +3628,7 @@ def luxEnvironment(scn, gui=None):
         #if gui: gui.newline("GLOBAL:", 8, 0, None, [0.75,0.5,0.25])
         #luxFloat("scale", luxProp(scn, "global.scale", 1.0), 0.0, 10.0, "scale", "global world scale", gui)
         if gui: gui.newline("WORLD MEDIUM:", 8, 0, None, [0.75,0.5,0.25])
-        luxNamedVolumeTexture('named_volumes:0.', gui)
+        luxNamedVolumeTexture(0, gui)
         
     return str
 
@@ -4122,10 +4149,13 @@ def luxTexture(name, parentkey, type, default, min, max, caption, hint, mat, gui
     tex_all = ["constant", "imagemap", "mix", "scale", "bilerp", "brick"]
     tex_color = ["blackbody", "lampspectrum", "equalenergy", "frequency", "gaussian", "regulardata", "irregulardata", "tabulateddata", "uv", "harlequin", "marble"]
     tex_float = ["blender_marble", "blender_musgrave", "blender_wood", "blender_clouds", "blender_blend", "blender_distortednoise", "blender_noise", "blender_magic", "blender_stucci", "blender_voronoi", "checkerboard", "dots", "fbm", "windy", "wrinkled"]
+    tex_fresnel = ['constant', 'cauchy', 'sellmeier', 'sopra', 'luxpop', 'preset']   # XXX implement all textures
     textures = tex_all
     if type=="color":
         textures.extend(tex_color)
     textures.extend(tex_float)
+    if type == 'fresnel':
+        textures = tex_fresnel
 
     if gui:
         if(overrideicon != ""):
@@ -4159,6 +4189,25 @@ def luxTexture(name, parentkey, type, default, min, max, caption, hint, mat, gui
         value = luxProp(mat, keyname+".value", default)
         if type == "float": luxFloat("value", value, min, max, "", "", gui, 1.1)
         elif type == "color": luxRGB("value", value, max, "", "", gui, 2)
+        elif type == 'fresnel':
+            # rude copy&paste from luxIORFloatTexture() with slight modifications
+            iorusepreset = luxProp(mat, keyname+".iorusepreset", "true")
+            luxBool("iorusepreset", iorusepreset, "Preset", "Select from a list of predefined presets", gui, 0.4)
+            if(iorusepreset.get() == "true"):
+                iortree = [ ("Liquids", [("Acetone", 1), ("Alcohol, Ethyl (grain)", 2), ("Alcohol, Methyl (wood)", 3), ("Beer", 4), ("Benzene", 5), ("Carbon tetrachloride", 6), ("Carbon disulfide", 7), ("Carbonated Beverages", 8), ("Chlorine (liq)", 9), ("Cranberry Juice (25%)", 10), ("Glycerin", 11), ("Honey, 13% water content", 12), ("Honey, 17% water content", 13), ("Honey, 21% water content", 14), ("Ice", 15), ("Milk", 16), ("Oil, Clove", 17), ("Oil, Lemon", 18), ("Oil, Neroli", 19), ("Oil, Orange", 20), ("Oil, Safflower", 21), ("Oil, vegetable (50 C)", 22), ("Oil of Wintergreen", 23), ("Rum, White", 24), ("Shampoo", 25), ("Sugar Solution 30%", 26), ("Sugar Solution 80%", 27), ("Turpentine", 28), ("Vodka", 29), ("Water (0 C)", 30), ("Water (100 C)", 31), ("Water (20 C)", 32), ("Whisky", 33) ] ), ("Gases", [("Vacuum", 101), ("Air @ STP", 102), ("Air", 103), ("Helium", 104), ("Hydrogen", 105), ("Carbon dioxide", 106) ]), ("Transparent\x20", [("Eye, Aqueous humor", 201), ("Eye, Cornea", 202), ("Eye, Lens", 203), ("Eye, Vitreous humor", 204), ("Glass, Arsenic Trisulfide", 205), ("Glass, Crown (common)", 206), ("Glass, Flint, 29% lead", 207), ("Glass, Flint, 55% lead", 208), ("Glass, Flint, 71% lead", 209), ("Glass, Fused Silica", 210), ("Glass, Pyrex", 211), ("Lucite", 212), ("Nylon", 213), ("Obsidian", 214), ("Plastic", 215), ("Plexiglas", 216), ("Salt", 217)  ]), ("Gemstones", [("Agate", 301), ("Alexandrite", 302), ("Almandine", 303), ("Amber", 304), ("Amethyst", 305), ("Ammolite", 306), ("Andalusite", 307), ("Apatite", 308), ("Aquamarine", 309), ("Axenite", 310), ("Beryl", 311), ("Beryl, Red", 312), ("Chalcedony", 313), ("Chrome Tourmaline", 314), ("Citrine", 315), ("Clinohumite", 316), ("Coral", 317), ("Crystal", 318), ("Crysoberyl, Catseye", 319), ("Danburite", 320), ("Diamond", 321), ("Emerald", 322), ("Emerald Catseye", 323), ("Flourite", 324), ("Garnet, Grossular", 325), ("Garnet, Andradite", 326), ("Garnet, Demantiod", 327), ("Garnet, Mandarin", 328), ("Garnet, Pyrope", 329), ("Garnet, Rhodolite", 330), ("Garnet, Tsavorite", 331), ("Garnet, Uvarovite", 332), ("Hauyn", 333), ("Iolite", 334), ("Jade, Jadeite", 335), ("Jade, Nephrite", 336), ("Jet", 337), ("Kunzite", 338), ("Labradorite", 339), ("Lapis Lazuli", 340), ("Moonstone", 341), ("Morganite", 342), ("Obsidian", 343), ("Opal, Black", 344), ("Opal, Fire", 345), ("Opal, White", 346), ("Oregon Sunstone", 347), ("Padparadja", 348), ("Pearl", 349), ("Peridot", 350), ("Quartz", 351), ("Ruby", 352), ("Sapphire", 353), ("Sapphire, Star", 354), ("Spessarite", 355), ("Spinel", 356), ("Spinel, Blue", 357), ("Spinel, Red", 358), ("Star Ruby", 359), ("Tanzanite", 360), ("Topaz", 361), ("Topaz, Imperial", 362), ("Tourmaline", 363), ("Tourmaline, Blue", 364), ("Tourmaline, Catseye", 365), ("Tourmaline, Green", 366), ("Tourmaline, Paraiba", 367), ("Tourmaline, Red", 368), ("Zircon", 369), ("Zirconia, Cubic", 370) ] ), ("Other ", [("Pyrex (Borosilicate glass)", 401), ("Ruby", 402), ("Water ice", 403), ("Cryolite", 404), ("Acetone", 405), ("Ethanol", 406), ("Teflon", 407), ("Glycerol", 408), ("Acrylic glass", 409), ("Rock salt", 410), ("Crown glass (pure)", 411), ("Salt (NaCl)", 412), ("Polycarbonate", 413), ("PMMA", 414), ("PETg", 415), ("PET", 416), ("Flint glass (pure)", 417), ("Crown glass (impure)", 418), ("Fused Quartz", 419), ("Bromine", 420), ("Flint glass (impure)", 421), ("Cubic zirconia", 422), ("Moissanite", 423), ("Cinnabar (Mercury sulfide)", 424), ("Gallium(III) prosphide", 425), ("Gallium(III) arsenide", 426), ("Silicon", 427) ] ) ]
+                iordict = {1:1.36, 2:1.36, 3:1.329, 4:1.345, 5:1.501, 6:1.000132, 7:1.00045, 8:1.34, 9:1.385, 10:1.351, 11:1.473, 12:1.504, 13:1.494, 14:1.484, 15:1.309, 16:1.35, 17:1.535, 18:1.481, 19:1.482, 20:1.473, 21:1.466, 22:1.47, 23:1.536, 24:1.361, 25:1.362, 26:1.38, 27:1.49, 28:1.472, 29:1.363, 30:1.33346, 31:1.31766, 32:1.33283, 33:1.356, 101:1.0, 102:1.0002926, 103:1.000293, 104:1.000036, 105:1.000132, 106:1.00045, 201:1.33, 202:1.38, 203:1.41, 204:1.34, 205:2.04, 206:1.52, 207:1.569, 208:1.669, 209:1.805, 210:1.459, 211:1.474, 212:1.495, 213:1.53, 214:1.50, 215:1.460, 216:1.488, 217:1.516, 301:1.544, 302:1.746, 303:1.75, 304:1.539, 305:1.532, 306:1.52, 307:1.629, 308:1.632, 309:1.567, 310:1.674, 311:1.57, 312:1.570, 313:1.544, 314:1.61, 315:1.532, 316:1.625, 317:1.486, 318:2.000, 319:1.746, 320:1.627, 321:2.417, 322:1.560, 323:1.560, 324:1.434, 325:1.72, 326:1.88, 327:1.880, 328:1.790, 329:1.73, 330:1.740, 331:1.739, 332:1.74, 333:1.490, 334:1.522, 335:1.64, 336:1.600, 337:1.660, 338:1.660, 339:1.560, 340:1.50, 341:1.518, 342:1.585, 343:1.50, 344:1.440, 345:1.430, 346:1.440, 347:1.560, 348:1.760, 349:1.53, 350:1.635, 351:1.544, 352:1.757, 353:1.757, 354:1.760, 355:1.79, 356:1.712, 357:1.712, 358:1.708, 359:1.76, 360:1.690, 361:1.607, 362:1.605, 363:1.603, 364:1.61, 365:1.61, 366:1.61, 367:1.61, 368:1.61, 369:1.777, 370:2.173, 401:1.47, 402:1.76, 403:1.31, 404:1.388, 405:1.36, 406:1.36, 407:1.35, 408:1.4729, 409:1.49, 410:1.516, 411:1.5, 412:1.544, 413:1.584, 414:1.4893, 415:1.57, 416:1.575, 417:1.6, 418:1.485, 419:1.46, 420:1.661, 421:1.523, 422:2.15, 423:2.419, 424:2.65, 425:3.02, 426:3.5, 427:3.927}
+                iorpreset = luxProp(mat, keyname+".iorpreset", "Glass, Fused Silica" if parentkey != 'named_volumes:0.tex' else "Air @ STP")
+                if gui:
+                    def setIor(i, value, preset, tree, dict): # callback function to set ior value after selection              
+                        if i >= 0:
+                            value.set(dict[i])
+                            preset.set(getTreeNameById(tree, i))
+                    r = gui.getRect(1.6, 1)
+                    Draw.Button(iorpreset.get(), evtLuxGui, r[0], r[1], r[2], r[3], "select IOR preset", lambda e,v: setIor(Draw.PupTreeMenu(iortree), value, iorpreset, iortree, iordict))
+                str += luxFloat(name, value, min, max, "IOR", hint, None, 1.6)
+            else:
+                str += luxFloat(name, value, min, max, "IOR", hint, gui, 1.6, 1)
+            return str, ' "texture %s" ["%s"]' % (type, texname)
 # direct version
         if type == "color": return ("", " \"%s %s\" [%s]"%(type, name, value.getRGC()))
         return ("", " \"%s %s\" [%s]"%(type, name, value.get()))
@@ -4883,7 +4932,7 @@ def luxIORFloatTexture(name, key, default, min, max, caption, hint, mat, gui, le
     luxBool("iorusepreset", iorusepreset, "Preset", "Select from a list of predefined presets", gui, 0.4)
 
     if(iorusepreset.get() == "true"):
-        iorpreset = luxProp(mat, keyname+".iorpreset", "24 - Fused silica glass")
+        iorpreset = luxProp(mat, keyname+".iorpreset", "Glass, Fused Silica")
         if gui:
             def setIor(i, value, preset, tree, dict): # callback function to set ior value after selection                
                 if i >= 0:
@@ -4941,6 +4990,18 @@ def luxCauchyBFloatTexture(name, key, default, min, max, caption, hint, mat, gui
             link = " \"texture %s\" [\"%s\"]"%(name, texname+".scale")
     return (str, link)
 
+def luxScaleUnits(keyname, default, mat, width, gui):
+    # Length units widget for bumps, absorption and such.
+    # @default can be passed as unit str or scale float
+    units = ('m', 'cm', 'mm', 'cm^-1')
+    scales = (1, 0.01, 0.001, 100)
+    if type(default) is not str:
+        try: default = units[scales.index(default)]
+        except ValueError: default = 'm'
+    scaleunits = luxProp(mat, keyname+'.scaleunits', default)
+    luxOption('scaleunits', scaleunits, units, '  LENGTH UNITS', 'Select units from the list', gui, width)
+    return scales[units.index(scaleunits.get())]
+
 def listNamedVolumes():
     # returns a dict of volumeName:volumeId pairs
     d = {}
@@ -4950,7 +5011,8 @@ def listNamedVolumes():
             d[v] = int(k[len(s):k.find('.')])
     if not d.has_key('0'):
         d['world *'] = 0
-        luxProp(Scene.GetCurrent(), 'named_volumes:0.name', 0).set('world *')
+        luxProp(Scene.GetCurrent(), 'named_volumes:0.id', 0).set(0)
+        luxProp(Scene.GetCurrent(), 'named_volumes:0.name', '').set('world *')
     return d
             
 def getNamedVolume(id):
@@ -4961,48 +5023,84 @@ def getNamedVolume(id):
         if k.startswith(s):
             d[k[len(s):]] = v
     if not d:
+        d['id'] = 0
         d['name'] = 'world *'
+    else:
     d['id'] = int(id)
     return d
 
-def luxNamedVolume(mat, volume_type, gui=None):
-    # Possible values for volume_type: 'Exterior', 'Interior'
+def luxNamedVolume(mat, volume_prop, gui=None):
+    # Possible values for volume_prop: 'Exterior', 'Interior'
     #
     # References to each volume are stored in two places. First, in regular
-    # material in ${volume_type}_vol_id Lux property which has an int index of
+    # material in ${volume_prop}_vol_id Lux property which has an int index of
     # the volume assigned to this mat. Second, volume and its texture proper-
     # ties are stored in global scene properties "named_volumes" namespace
     # in the form "namespace:volumeId.volumeProperty". We use ids instead of
     # plane names to facilitate volume renaming.
-    str = link = ''
     volumes = listNamedVolumes()
-    if gui: gui.newline('medium name:', 0, 1)
-    volumeId = luxProp(mat, '%s_vol_id' % (volume_type), 0)
-    volumeName = luxProp(mat, '%s_vol_name' % (volume_type), '')
+    if gui: gui.newline('Medium name:', 0, 0, None, [0.4,0.4,0.6])
+    volumeId = luxProp(mat, '%s_vol_id' % (volume_prop), 0)
+    volumeName = luxProp(mat, '%s_vol_name' % (volume_prop), '')
     if not volumes.has_key(volumeName.get()):
-        # seems selected volume was renamed, lets update name from id
+        # seems selected volume was renamed or deleted.
+        # lets try to update its name from id (if it still exists)
+        try:
         volumeName.set(volumes.keys()[volumes.values().index(volumeId.get())])
-    luxOption('%s_vol_name'%(volume_type), volumeName, volumes.keys(), '  AVAILABLE MEDIUMS', 'Select medium from the list', gui, 1.5)
+        except ValueError:
+            warn = 'Volume previously selected for material "' + mat.getName() + '" was deleted, switching to default'
+            print 'WARNING: ' + warn
+            Draw.PupMenu(warn + '%t|OK%x1')
+            volumeId.set(0)
+            Blender.Window.QRedrawAll()
+    luxOption('%s_vol_name'%(volume_prop), volumeName, volumes.keys(), '  AVAILABLE MEDIUMS', 'Select medium from the list', gui, 1.5)
+    try:
     if volumeName.get(): volumeId.set(volumes[volumeName.get()])
     else: volumeId.set(0)   # no volume was selected yet for that property
+    except KeyError:
+        volumeId.set(0)
     if gui:
         r = gui.getRect(0.5, 1)
-        Draw.Button('Settings', evtLuxGui, r[0], r[1], r[2], r[3], 'Manage mediums', lambda e,v: showVolumesMenu(mat,volume_type))
+        Draw.Button('Options', evtLuxGui, r[0], r[1], r[2], r[3], 'Manage mediums', lambda e,v: showVolumesMenu(mat,volume_prop))
     
-    if volumeId.get() != 0:
-        luxNamedVolumeTexture('named_volumes:%s.'%volumeId.get(), gui)
+    volId = volumeId.get()
+    if volId != 0:
+        luxNamedVolumeTexture(volId, gui)
     elif gui:
         gui.newline(); r = gui.getRect(2,1); BGL.glRasterPos2i(r[0],r[1]+5) 
         Draw.Text("use Cam/Env tab to configure world medium")
     
-    return "\n        %s \"%s\"" % (volume_type, getNamedVolume(volumeId.get())['name'])
+    return "\n\t%s \"%s\"" % (volume_prop, getNamedVolume(volId)['name'])
 
-def luxNamedVolumeTexture(keyname, gui):
+def luxNamedVolumeTexture(volId, gui=None):
+    def c(t1, t2):
+       return (t1[0]+t2[0], t1[1]+t2[1])
     scn = Scene.GetCurrent()
-    if gui: gui.newline('texture:', 0, 1)
-    value = luxProp(scn, keyname+'index', 1.5)
-    luxFloat('index', value, 1.0, 6.0, "IOR", '', gui, 1.5, 1)
-    # XXX
+    keyname = 'named_volumes:%s.' % volId
+    s = l = ''
+    volume_types = ('clear',)
+    volume_type = luxProp(scn, keyname+'type', volume_types[0])
+    if gui: gui.newline('type:', 0, 0)
+    luxOption(keyname+'type', volume_type, volume_types, '  MEDIUM TYPES', 'Select medium type from the list', gui, 2.0)
+    t = '"%s"' % volume_type.get()
+    
+    if volume_type.get() == 'clear':
+        (s, l) = c((s, l), luxTexture('value', keyname+'tex', 'fresnel', 1.459 if volId != 0 else 1.0002926, 1.0, 6.0, 'IOR', 'ior', scn, gui, 0, 1))
+        (s1, l1) = luxSpectrumTexture('absorption', keyname+'absorption', '0.0 0.0 0.0', 1000.0, 'absorption:', '', scn, gui, 1)
+        usedepth = luxProp(scn, keyname+'usedepth', 'true')
+        luxBool('usedepth', usedepth, 'Color at depth', 'Calculate absorption to produce selected color at fixed depth of the medium', gui, 1.0)
+        if usedepth.get() == 'true':
+            depth = luxProp(scn, keyname+'depth', 1.0)
+            luxFloat('depth', depth, 0.001, 1000.0, 'depth', 'Depth of the fixed point inside the medium', gui, 0.5)
+            scale = luxScaleUnits(keyname+'scale', 'm', scn, 0.5, gui)
+            if l1[l1.find('"')+1:].startswith('color'):
+                rgb = l1[l1.find('[')+1:l1.rfind(']')].split(' ')
+                # XXX special case for 0? not looks right
+                rgb = [ float(i)>0 and -math.log(float(i))/(depth.get()*scale) or float(i) for i in rgb ]
+                l1 = l1[:l1.find('[')] + '[%s %s %s]' % (rgb[0], rgb[1], rgb[2])
+        (s, l) = c((s, l), (s1, l1))
+    
+    return s, t+l
 
 def luxLight(name, kn, mat, gui, level):
     if gui:
@@ -5292,7 +5390,7 @@ def Preview_Update(mat, kn, defLarge, defType, texName, name, level):
 
 def luxPreview(mat, name, defType=0, defEnabled=False, defLarge=False, texName=None, gui=None, level=0, color=None):
     
-
+    # XXX volumes
     if gui:
         kn = name
         if texName: kn += ":"+texName
@@ -5383,9 +5481,9 @@ def luxMaterialBlock(name, luxname, key, mat, gui=None, level=0, str_opt=""):
             mattype.set("glossy")
 
         # this is reverse order than in shown in the dropdown list
-        materials = ["null","mix","mirror","shinymetal","metal","mattetranslucent","matte","glossy_lossy","glossy","roughglass","glass","carpaint"]
+        materials = ["null","mix","mirror","shinymetal","metal","mattetranslucent","matte","glossy_lossy","glossy","roughglass","glass","glass2","carpaint"]
         
-        if level == 0: materials = ["portal", "light", "boundvolume", "glass2"]+materials
+        if level == 0: materials = ["portal", "light", "boundvolume"]+materials
         if gui:
             icon = icon_mat
             if mattype.get() == "mix": icon = icon_matmix
@@ -5411,6 +5509,7 @@ def luxMaterialBlock(name, luxname, key, mat, gui=None, level=0, str_opt=""):
 
         if gui: gui.newline()
         has_object_options   = 0 # disable object options by default
+        has_volume_options   = 0 # disable named volume options by default
         has_bump_options     = 0 # disable bump mapping options by default
         has_emission_options = 0 # disable emission options by default
         has_compositing_options = 0 # disable compositing options by default
@@ -5422,6 +5521,7 @@ def luxMaterialBlock(name, luxname, key, mat, gui=None, level=0, str_opt=""):
                 Draw.Button("Flip material slots", evtLuxGui, r[0], r[1], r[2], r[3], "Flip mat1 and mat2 contents", lambda e,v: flipMixMat(mat,keyname))
             (str,link) = c((str,link), luxMaterialBlock("mat1", "namedmaterial1", keyname, mat, gui, level+1))
             (str,link) = c((str,link), luxMaterialBlock("mat2", "namedmaterial2", keyname, mat, gui, level+1))
+            has_volume_options = 1
             has_bump_options = 0
             has_object_options = 1
             has_emission_options = 1
@@ -5439,6 +5539,7 @@ def luxMaterialBlock(name, luxname, key, mat, gui=None, level=0, str_opt=""):
                     link = ''
                 link += "AreaLightSource \"area\""
             (str,link) = c((str,link), luxLight("", kn, mat, gui, level))
+            has_volume_options = 1
             has_bump_options = 0
             has_object_options = 1
             has_emission_options = 0
@@ -5516,6 +5617,7 @@ def luxMaterialBlock(name, luxname, key, mat, gui=None, level=0, str_opt=""):
             if absorption.get() == "true":
                 (str,link) = c((str,link), luxSpectrumTexture("Ka", keyname, "0.2 0.2 0.2", 1.0, "absorption", "", mat, gui, level+1))
                 (str,link) = c((str,link), luxFloatTexture("d", keyname, 5.0, 0.0, 15.0, "depth", "", mat, gui, level+1))
+            has_volume_options = 1
             has_bump_options = 1
             has_object_options = 1
             has_emission_options = 1
@@ -5537,18 +5639,19 @@ def luxMaterialBlock(name, luxname, key, mat, gui=None, level=0, str_opt=""):
                 if thinfilm.get() == "true":
                     (str,link) = c((str,link), luxFloatSliderTexture("film", keyname, 200.0, 1.0, 1500.0, "film", "thickness of film coating in nanometers", mat, gui, level+1))
                     (str,link) = c((str,link), luxIORFloatTexture("filmindex", keyname, 1.5, 1.0, 6.0, "film IOR", "film coating index of refraction", mat, gui, level+1))
+            has_volume_options = 1
             has_bump_options = 1
             has_object_options = 1
             has_emission_options = 1
             has_compositing_options = 1
             
         if mattype.get() == 'glass2':
-            for volume_type in ['Exterior', 'Interior']:
-                volume_used = luxProp(mat, '%s_vol_used'%(volume_type), 'false')   # volume_type == 'Interior' and 'true' or 'false')
-                if gui: gui.newline('', 2, level, None, [0.4,0.4,0.6])
-                luxCollapse('%s_vol_used'%(volume_type), volume_used, "%s medium"%(volume_type), "%s medium settings"%(volume_type), gui, 2.0)
-                if volume_used.get() == "true":
-                    luxNamedVolume(mat, volume_type, gui)
+            architectural = luxProp(mat, keyname+".architectural", "false")
+            link += luxBool("architectural", architectural, "Architectural", "Enable architectural glass", gui, 2.0)
+            if architectural.get() == "false":
+                chromadisp = luxProp(mat, keyname+".dispersion", "false")
+                link += luxBool("dispersion", chromadisp, "Dispersive Refraction", "Enable Chromatic Dispersion", gui, 2.0)
+            has_volume_options = 1
             has_bump_options = 1
             has_object_options = 1
             has_emission_options = 1
@@ -5560,6 +5663,7 @@ def luxMaterialBlock(name, luxname, key, mat, gui=None, level=0, str_opt=""):
             luxCollapse("orennayar", orennayar, "Oren-Nayar", "Enable Oren-Nayar BRDF", gui, 2.0)
             if orennayar.get() == "true":
                 (str,link) = c((str,link), luxFloatTexture("sigma", keyname, 0.0, 0.0, 100.0, "sigma", "sigma value for Oren-Nayar BRDF", mat, gui, level+1))
+            has_volume_options = 1
             has_bump_options = 1
             has_object_options = 1
             has_emission_options = 1
@@ -5572,6 +5676,7 @@ def luxMaterialBlock(name, luxname, key, mat, gui=None, level=0, str_opt=""):
             luxCollapse("orennayar", orennayar, "Oren-Nayar", "Enable Oren-Nayar BRDF", gui, 2.0)
             if orennayar.get() == "true":
                 (str,link) = c((str,link), luxFloatTexture("sigma", keyname, 0.0, 0.0, 100.0, "sigma", "", mat, gui, level+1))
+            has_volume_options = 1
             has_bump_options = 1
             has_object_options = 1
             has_emission_options = 1
@@ -5598,7 +5703,7 @@ def luxMaterialBlock(name, luxname, key, mat, gui=None, level=0, str_opt=""):
                 (s, l) = luxExponentTexture("uroughness", keyname, 0.002, 0.0, 1.0, "exponent", "", mat, gui, level+1)
                 (str,link) = c((str,link), (s, l))
                 link += l.replace("uroughness", "vroughness", 1)
-                
+            has_volume_options = 1
             has_bump_options = 1
             has_object_options = 1
             has_emission_options = 1
@@ -5611,7 +5716,7 @@ def luxMaterialBlock(name, luxname, key, mat, gui=None, level=0, str_opt=""):
             if thinfilm.get() == "true":
                 (str,link) = c((str,link), luxFloatSliderTexture("film", keyname, 200.0, 1.0, 1500.0, "film", "thickness of film coating in nanometers", mat, gui, level+1))
                 (str,link) = c((str,link), luxIORFloatTexture("filmindex", keyname, 1.5, 1.0, 6.0, "film IOR", "film coating index of refraction", mat, gui, level+1))
-
+            has_volume_options = 1
             has_bump_options = 1
             has_object_options = 1
             has_emission_options = 1
@@ -5636,6 +5741,7 @@ def luxMaterialBlock(name, luxname, key, mat, gui=None, level=0, str_opt=""):
             luxCollapse("chromadisp", chromadisp, "Dispersive Refraction", "Enable Chromatic Dispersion", gui, 2.0)
             if chromadisp.get() == "true":
                 (str,link) = c((str,link), luxCauchyBFloatTexture("cauchyb", keyname, 0.0, 0.0, 1.0, "cauchyb", "", mat, gui, level+1))
+            has_volume_options = 1
             has_bump_options = 1
             has_object_options = 1
             has_emission_options = 1
@@ -5661,7 +5767,7 @@ def luxMaterialBlock(name, luxname, key, mat, gui=None, level=0, str_opt=""):
             if thinfilm.get() == "true":
                 (str,link) = c((str,link), luxFloatSliderTexture("film", keyname, 200.0, 1.0, 1500.0, "film", "thickness of film coating in nanometers", mat, gui, level+1))
                 (str,link) = c((str,link), luxIORFloatTexture("filmindex", keyname, 1.5, 1.0, 6.0, "film IOR", "film coating index of refraction", mat, gui, level+1))
-
+            has_volume_options = 1
             has_bump_options = 1
             has_object_options = 1
             has_emission_options = 1
@@ -5696,6 +5802,7 @@ def luxMaterialBlock(name, luxname, key, mat, gui=None, level=0, str_opt=""):
             if absorption.get() == "true":
                 (str,link) = c((str,link), luxSpectrumTexture("Ka", keyname, "0.2 0.2 0.2", 1.0, "absorption", "", mat, gui, level+1))
                 (str,link) = c((str,link), luxFloatTexture("d", keyname, 0.15, 0.0, 15.0, "depth", "", mat, gui, level+1))
+            has_volume_options = 1
             has_bump_options = 1
             has_object_options = 1
             has_emission_options = 1
@@ -5710,6 +5817,15 @@ def luxMaterialBlock(name, luxname, key, mat, gui=None, level=0, str_opt=""):
             luxCollapse("usebump", usebump, "Bump Map", "Enable Bump Mapping options", gui, 2.0)
             if usebump.get() == "true":
                 (str,link) = c((str,link), luxFloatTexture("bumpmap", keyname, 0.0, -1.0, 1.0, "bumpmap", "bumpmap scale in meters - i.e. 0.01 = 1 cm", mat, gui, level+1))
+
+        # volume options (common)
+        if has_volume_options == 1 and level == 0:
+            for volume_prop in ['Exterior', 'Interior']:
+                volume_used = luxProp(mat, '%s_vol_used'%(volume_prop), 'false')
+                if gui: gui.newline('', 2, level, None, [0.4,0.4,0.6])
+                luxCollapse('%s_vol_used'%(volume_prop), volume_used, "%s Medium"%(volume_prop), "%s medium settings"%(volume_prop), gui, 2.0)
+                if volume_used.get() == "true":
+                    luxNamedVolume(mat, volume_prop, gui)
 
         # emission options (common)
         if (level == 0):
@@ -5816,10 +5932,9 @@ def luxMaterial(mat, gui=None):
         if luxProp(mat, "type", "matte").get() != "light":
             link = "NamedMaterial \"%s\""%(mat.getName())
             # volume properties
-            if luxProp(mat, "type", "matte").get() == "glass2":
-                for volume_type in ['Exterior', 'Interior']:
-                    if luxProp(mat, '%s_vol_used'%(volume_type), 'false').get() == 'true':
-                        link += luxNamedVolume(mat, volume_type)
+            for volume_prop in ['Exterior', 'Interior']:
+                if luxProp(mat, '%s_vol_used'%(volume_prop), 'false').get() == 'true':
+                    link += luxNamedVolume(mat, volume_prop)
         # export emission options (no gui)
         useemission = luxProp(mat, "emission", "false")
         if useemission.get() == "true":
@@ -6747,8 +6862,9 @@ def flipMixMat(mat, basekey):
                 #print pk, '('+str(pk.__hash__())+')', '>>>', newpk, '('+str(newpk.__hash__())+')'
                 previewCache[newpk.__hash__()] = v
 
-def showVolumesMenu(mat, volume_type):
-    active_volume = getNamedVolume(luxProp(mat, '%s_vol_id' % (volume_type), 0).get())
+def showVolumesMenu(mat, volume_prop):
+    scn = Scene.GetCurrent()
+    active_volume = getNamedVolume(luxProp(mat, '%s_vol_id' % (volume_prop), 0).get())
     menu = "Manage mediums:%t|Create new medium%x1"
     if active_volume['name'] != 'world *':
         menu += "|Rename selected%x2|Delete selected%x3"
@@ -6763,11 +6879,10 @@ def showVolumesMenu(mat, volume_type):
             Blender.Window.QRedrawAll()
             return False
         elif name != '':
-            scn = Scene.GetCurrent()
             newId = vols and max(vols.values())+1 or 1
             luxProp(scn, 'named_volumes:%s.name' % newId, 0).set(name)
-            luxProp(mat, '%s_vol_id' % (volume_type), 0).set(newId)
-            luxProp(mat, '%s_vol_name' % (volume_type), '').set(name)
+            luxProp(mat, '%s_vol_id' % (volume_prop), 0).set(newId)
+            luxProp(mat, '%s_vol_name' % (volume_prop), '').set(name)
             Blender.Window.QRedrawAll()
             return True
     elif r == 2:
@@ -6779,16 +6894,24 @@ def showVolumesMenu(mat, volume_type):
             Blender.Window.QRedrawAll()
             return False
         elif name != active_volume['name'] and name != '':
-            scn = Scene.GetCurrent()
             luxProp(scn, 'named_volumes:%s.name' % active_volume['id'], 0).set(name)
             Blender.Window.QRedrawAll()
             return True
     elif r == 3:
         # delete existing volume
-        Draw.PupMenu('NOT IMPLEMENTED YET%t|OK%x1')
+        r = Draw.PupMenu('  OK?%t|Delete selected volume%x1')
+        if r == 1:
+            for n in active_volume.keys():
+                luxProp(scn, 'named_volumes:%s.%s'%(active_volume['id'],n), '').delete()
+                # switch to the newest volume
+                vols = listNamedVolumes()
+                newId = vols and max(vols.values()) or 0
+                luxProp(mat, '%s_vol_id' % (volume_prop), 0).set(newId)
+            Blender.Window.QRedrawAll()
+            return True
+        else:
         Blender.Window.QRedrawAll()
         return False
-        # XXX
 
 
 activemat = None
