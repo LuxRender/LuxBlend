@@ -4993,8 +4993,8 @@ def luxCauchyBFloatTexture(name, key, default, min, max, caption, hint, mat, gui
 def luxScaleUnits(keyname, default, mat, width, gui):
     # Length units widget for bumps, absorption and such.
     # @default can be passed as unit str or scale float
-    units = ('m', 'cm', 'mm', 'cm^-1')
-    scales = (1, 0.01, 0.001, 100)
+    units = ['m', 'cm', 'mm', 'cm^-1']
+    scales = [1, 0.01, 0.001, 100]
     if type(default) is not str:
         try: default = units[scales.index(default)]
         except ValueError: default = 'm'
@@ -5078,7 +5078,7 @@ def luxNamedVolumeTexture(volId, gui=None):
     scn = Scene.GetCurrent()
     keyname = 'named_volumes:%s.' % volId
     s = l = ''
-    volume_types = ('clear',)
+    volume_types = ['clear']
     volume_type = luxProp(scn, keyname+'type', volume_types[0])
     if gui: gui.newline('type:', 0, 0)
     luxOption(keyname+'type', volume_type, volume_types, '  MEDIUM TYPES', 'Select medium type from the list', gui, 2.0)
@@ -5086,7 +5086,7 @@ def luxNamedVolumeTexture(volId, gui=None):
     
     if volume_type.get() == 'clear':
         (s, l) = c((s, l), luxTexture('value', keyname+'tex', 'fresnel', 1.459 if volId != 0 else 1.0002926, 1.0, 6.0, 'IOR', 'ior', scn, gui, 0, 1))
-        (s1, l1) = luxSpectrumTexture('absorption', keyname+'absorption', '0.0 0.0 0.0', 1000.0, 'absorption:', '', scn, gui, 1)
+        (s1, l1) = luxSpectrumTexture('absorption', keyname+'absorption', '1.0 1.0 1.0', 1000.0, 'absorption:', '', scn, gui, 1)
         usedepth = luxProp(scn, keyname+'usedepth', 'true')
         luxBool('usedepth', usedepth, 'Color at depth', 'Calculate absorption to produce selected color at fixed depth of the medium', gui, 1.0)
         if usedepth.get() == 'true':
@@ -5095,8 +5095,7 @@ def luxNamedVolumeTexture(volId, gui=None):
             scale = luxScaleUnits(keyname+'scale', 'm', scn, 0.5, gui)
             if l1[l1.find('"')+1:].startswith('color'):
                 rgb = l1[l1.find('[')+1:l1.rfind(']')].split(' ')
-                # XXX special case for 0? not looks right
-                rgb = [ float(i)>0 and -math.log(float(i))/(depth.get()*scale) or float(i) for i in rgb ]
+                rgb = [ (-math.log(max([float(i),1e-30]))/(depth.get()*scale)) * (float(i)==1.0 and -1 or 1) for i in rgb ]
                 l1 = l1[:l1.find('[')] + '[%s %s %s]' % (rgb[0], rgb[1], rgb[2])
         (s, l) = c((s, l), (s1, l1))
     
