@@ -4270,8 +4270,8 @@ def luxTexture(name, parentkey, type, default, min, max, caption, hint, mat, gui
     if texture.get() == "imagemap":
         if gui: gui.newline("IM-clip:", -2, level)
         str += luxOption("wrap", luxProp(mat, keyname+".wrap", "repeat"), ["repeat","black","clamp"], "repeat", "", gui, 1.0)
-	if type=="float":
-	    str += luxOption("channel", luxProp(mat, keyname+".channel", "mean"), ["red", "green", "blue", "alpha", "mean", "colored_mean"], "channel", "Image channel", gui, 1.0)
+        if type=="float":
+            str += luxOption("channel", luxProp(mat, keyname+".channel", "mean"), ["red", "green", "blue", "alpha", "mean", "colored_mean"], "channel", "Image channel", gui, 1.0)
 
         if gui: gui.newline("IM-source:", -2, level)
 
@@ -5026,7 +5026,7 @@ def getNamedVolume(id):
         d['id'] = 0
         d['name'] = 'world *'
     else:
-    d['id'] = int(id)
+        d['id'] = int(id)
     return d
 
 def luxNamedVolume(mat, volume_prop, gui=None):
@@ -5046,7 +5046,7 @@ def luxNamedVolume(mat, volume_prop, gui=None):
         # seems selected volume was renamed or deleted.
         # lets try to update its name from id (if it still exists)
         try:
-        volumeName.set(volumes.keys()[volumes.values().index(volumeId.get())])
+            volumeName.set(volumes.keys()[volumes.values().index(volumeId.get())])
         except ValueError:
             warn = 'Volume previously selected for material "' + mat.getName() + '" was deleted, switching to default'
             print 'WARNING: ' + warn
@@ -5055,8 +5055,8 @@ def luxNamedVolume(mat, volume_prop, gui=None):
             Blender.Window.QRedrawAll()
     luxOption('%s_vol_name'%(volume_prop), volumeName, volumes.keys(), '  AVAILABLE MEDIUMS', 'Select medium from the list', gui, 1.5)
     try:
-    if volumeName.get(): volumeId.set(volumes[volumeName.get()])
-    else: volumeId.set(0)   # no volume was selected yet for that property
+        if volumeName.get(): volumeId.set(volumes[volumeName.get()])
+        else: volumeId.set(0)   # no volume was selected yet for that property
     except KeyError:
         volumeId.set(0)
     if gui:
@@ -5341,10 +5341,10 @@ def Preview_Update(mat, kn, defLarge, defType, texName, name, level):
     # Checkerboard floor
     if(prev_plane.get()=="false"):
         p.stdin.write('AttributeBegin\nTransform [5.0 0.0 0.0 0.0  0.0 5.0 0.0 0.0  0.0 0.0 5.0 0.0  0.0 0.0 0.0 1.0]\n')
-	p.stdin.write('Texture "checks::pattern" "float" "checkerboard"')
+        p.stdin.write('Texture "checks::pattern" "float" "checkerboard"')
         p.stdin.write('"integer dimension" [2] "string aamode" ["supersample"]')
         p.stdin.write('"string mapping" ["uv"] "float uscale" [36.8] "float vscale" [36.0]\n')
-	p.stdin.write('Texture "checks" "color" "mix" "texture amount" ["checks::pattern"] "color tex1" [0.9 0.9 0.9] "color tex2" [0.0 0.0 0.0]\n')
+        p.stdin.write('Texture "checks" "color" "mix" "texture amount" ["checks::pattern"] "color tex1" [0.9 0.9 0.9] "color tex2" [0.0 0.0 0.0]\n')
         p.stdin.write('Material "matte" "texture Kd" ["checks"]\n')
         p.stdin.write('Shape "loopsubdiv" "integer nlevels" [3] "bool dmnormalsmooth" ["true"] "bool dmsharpboundary" ["false"] ')
         p.stdin.write('"integer indices" [ 0 1 2 0 2 3 1 0 4 1 4 5 5 4 6 5 6 7 ]')
@@ -6910,8 +6910,8 @@ def showVolumesMenu(mat, volume_prop):
             Blender.Window.QRedrawAll()
             return True
         else:
-        Blender.Window.QRedrawAll()
-        return False
+            Blender.Window.QRedrawAll()
+            return False
 
 
 activemat = None
