@@ -4149,7 +4149,7 @@ def luxTexture(name, parentkey, type, default, min, max, caption, hint, mat, gui
     tex_all = ["constant", "imagemap", "mix", "scale", "bilerp", "brick"]
     tex_color = ["blackbody", "lampspectrum", "equalenergy", "frequency", "gaussian", "regulardata", "irregulardata", "tabulateddata", "uv", "harlequin", "marble"]
     tex_float = ["blender_marble", "blender_musgrave", "blender_wood", "blender_clouds", "blender_blend", "blender_distortednoise", "blender_noise", "blender_magic", "blender_stucci", "blender_voronoi", "checkerboard", "dots", "fbm", "windy", "wrinkled"]
-    tex_fresnel = ['constant', 'cauchy', 'sellmeier', 'sopra', 'luxpop', 'preset']   # XXX implement all textures
+    tex_fresnel = ['constant', 'cauchy', 'sellmeier', 'sopra', 'luxpop', 'preset']
     textures = tex_all
     if type=="color":
         textures.extend(tex_color)
@@ -4165,6 +4165,8 @@ def luxTexture(name, parentkey, type, default, min, max, caption, hint, mat, gui
             if texture.get() in ["mix", "scale", "checkerboard", "dots"]:
                 if type=="color": icon = icon_texmixcol
                 else: icon = icon_texmix
+            elif type == 'fresnel':
+                icon = icon_tex
             elif texture.get() in ["constant", "blackbody", "equalenergy", "frequency", "gaussian", "regulardata", "irregulardata", "tabulateddata"]:
                 icon = icon_spectex
             else:
@@ -4193,7 +4195,7 @@ def luxTexture(name, parentkey, type, default, min, max, caption, hint, mat, gui
             # rude copy&paste from luxIORFloatTexture() with slight modifications
             iorusepreset = luxProp(mat, keyname+".iorusepreset", "true")
             luxBool("iorusepreset", iorusepreset, "Preset", "Select from a list of predefined presets", gui, 0.4)
-            if(iorusepreset.get() == "true"):
+            if iorusepreset.get() == "true":
                 iortree = [ ("Liquids", [("Acetone", 1), ("Alcohol, Ethyl (grain)", 2), ("Alcohol, Methyl (wood)", 3), ("Beer", 4), ("Benzene", 5), ("Carbon tetrachloride", 6), ("Carbon disulfide", 7), ("Carbonated Beverages", 8), ("Chlorine (liq)", 9), ("Cranberry Juice (25%)", 10), ("Glycerin", 11), ("Honey, 13% water content", 12), ("Honey, 17% water content", 13), ("Honey, 21% water content", 14), ("Ice", 15), ("Milk", 16), ("Oil, Clove", 17), ("Oil, Lemon", 18), ("Oil, Neroli", 19), ("Oil, Orange", 20), ("Oil, Safflower", 21), ("Oil, vegetable (50 C)", 22), ("Oil of Wintergreen", 23), ("Rum, White", 24), ("Shampoo", 25), ("Sugar Solution 30%", 26), ("Sugar Solution 80%", 27), ("Turpentine", 28), ("Vodka", 29), ("Water (0 C)", 30), ("Water (100 C)", 31), ("Water (20 C)", 32), ("Whisky", 33) ] ), ("Gases", [("Vacuum", 101), ("Air @ STP", 102), ("Air", 103), ("Helium", 104), ("Hydrogen", 105), ("Carbon dioxide", 106) ]), ("Transparent\x20", [("Eye, Aqueous humor", 201), ("Eye, Cornea", 202), ("Eye, Lens", 203), ("Eye, Vitreous humor", 204), ("Glass, Arsenic Trisulfide", 205), ("Glass, Crown (common)", 206), ("Glass, Flint, 29% lead", 207), ("Glass, Flint, 55% lead", 208), ("Glass, Flint, 71% lead", 209), ("Glass, Fused Silica", 210), ("Glass, Pyrex", 211), ("Lucite", 212), ("Nylon", 213), ("Obsidian", 214), ("Plastic", 215), ("Plexiglas", 216), ("Salt", 217)  ]), ("Gemstones", [("Agate", 301), ("Alexandrite", 302), ("Almandine", 303), ("Amber", 304), ("Amethyst", 305), ("Ammolite", 306), ("Andalusite", 307), ("Apatite", 308), ("Aquamarine", 309), ("Axenite", 310), ("Beryl", 311), ("Beryl, Red", 312), ("Chalcedony", 313), ("Chrome Tourmaline", 314), ("Citrine", 315), ("Clinohumite", 316), ("Coral", 317), ("Crystal", 318), ("Crysoberyl, Catseye", 319), ("Danburite", 320), ("Diamond", 321), ("Emerald", 322), ("Emerald Catseye", 323), ("Flourite", 324), ("Garnet, Grossular", 325), ("Garnet, Andradite", 326), ("Garnet, Demantiod", 327), ("Garnet, Mandarin", 328), ("Garnet, Pyrope", 329), ("Garnet, Rhodolite", 330), ("Garnet, Tsavorite", 331), ("Garnet, Uvarovite", 332), ("Hauyn", 333), ("Iolite", 334), ("Jade, Jadeite", 335), ("Jade, Nephrite", 336), ("Jet", 337), ("Kunzite", 338), ("Labradorite", 339), ("Lapis Lazuli", 340), ("Moonstone", 341), ("Morganite", 342), ("Obsidian", 343), ("Opal, Black", 344), ("Opal, Fire", 345), ("Opal, White", 346), ("Oregon Sunstone", 347), ("Padparadja", 348), ("Pearl", 349), ("Peridot", 350), ("Quartz", 351), ("Ruby", 352), ("Sapphire", 353), ("Sapphire, Star", 354), ("Spessarite", 355), ("Spinel", 356), ("Spinel, Blue", 357), ("Spinel, Red", 358), ("Star Ruby", 359), ("Tanzanite", 360), ("Topaz", 361), ("Topaz, Imperial", 362), ("Tourmaline", 363), ("Tourmaline, Blue", 364), ("Tourmaline, Catseye", 365), ("Tourmaline, Green", 366), ("Tourmaline, Paraiba", 367), ("Tourmaline, Red", 368), ("Zircon", 369), ("Zirconia, Cubic", 370) ] ), ("Other ", [("Pyrex (Borosilicate glass)", 401), ("Ruby", 402), ("Water ice", 403), ("Cryolite", 404), ("Acetone", 405), ("Ethanol", 406), ("Teflon", 407), ("Glycerol", 408), ("Acrylic glass", 409), ("Rock salt", 410), ("Crown glass (pure)", 411), ("Salt (NaCl)", 412), ("Polycarbonate", 413), ("PMMA", 414), ("PETg", 415), ("PET", 416), ("Flint glass (pure)", 417), ("Crown glass (impure)", 418), ("Fused Quartz", 419), ("Bromine", 420), ("Flint glass (impure)", 421), ("Cubic zirconia", 422), ("Moissanite", 423), ("Cinnabar (Mercury sulfide)", 424), ("Gallium(III) prosphide", 425), ("Gallium(III) arsenide", 426), ("Silicon", 427) ] ) ]
                 iordict = {1:1.36, 2:1.36, 3:1.329, 4:1.345, 5:1.501, 6:1.000132, 7:1.00045, 8:1.34, 9:1.385, 10:1.351, 11:1.473, 12:1.504, 13:1.494, 14:1.484, 15:1.309, 16:1.35, 17:1.535, 18:1.481, 19:1.482, 20:1.473, 21:1.466, 22:1.47, 23:1.536, 24:1.361, 25:1.362, 26:1.38, 27:1.49, 28:1.472, 29:1.363, 30:1.33346, 31:1.31766, 32:1.33283, 33:1.356, 101:1.0, 102:1.0002926, 103:1.000293, 104:1.000036, 105:1.000132, 106:1.00045, 201:1.33, 202:1.38, 203:1.41, 204:1.34, 205:2.04, 206:1.52, 207:1.569, 208:1.669, 209:1.805, 210:1.459, 211:1.474, 212:1.495, 213:1.53, 214:1.50, 215:1.460, 216:1.488, 217:1.516, 301:1.544, 302:1.746, 303:1.75, 304:1.539, 305:1.532, 306:1.52, 307:1.629, 308:1.632, 309:1.567, 310:1.674, 311:1.57, 312:1.570, 313:1.544, 314:1.61, 315:1.532, 316:1.625, 317:1.486, 318:2.000, 319:1.746, 320:1.627, 321:2.417, 322:1.560, 323:1.560, 324:1.434, 325:1.72, 326:1.88, 327:1.880, 328:1.790, 329:1.73, 330:1.740, 331:1.739, 332:1.74, 333:1.490, 334:1.522, 335:1.64, 336:1.600, 337:1.660, 338:1.660, 339:1.560, 340:1.50, 341:1.518, 342:1.585, 343:1.50, 344:1.440, 345:1.430, 346:1.440, 347:1.560, 348:1.760, 349:1.53, 350:1.635, 351:1.544, 352:1.757, 353:1.757, 354:1.760, 355:1.79, 356:1.712, 357:1.712, 358:1.708, 359:1.76, 360:1.690, 361:1.607, 362:1.605, 363:1.603, 364:1.61, 365:1.61, 366:1.61, 367:1.61, 368:1.61, 369:1.777, 370:2.173, 401:1.47, 402:1.76, 403:1.31, 404:1.388, 405:1.36, 406:1.36, 407:1.35, 408:1.4729, 409:1.49, 410:1.516, 411:1.5, 412:1.544, 413:1.584, 414:1.4893, 415:1.57, 416:1.575, 417:1.6, 418:1.485, 419:1.46, 420:1.661, 421:1.523, 422:2.15, 423:2.419, 424:2.65, 425:3.02, 426:3.5, 427:3.927}
                 iorpreset = luxProp(mat, keyname+".iorpreset", "Glass, Fused Silica" if parentkey != 'named_volumes:0.tex' else "Air @ STP")
@@ -4206,7 +4208,7 @@ def luxTexture(name, parentkey, type, default, min, max, caption, hint, mat, gui
                     Draw.Button(iorpreset.get(), evtLuxGui, r[0], r[1], r[2], r[3], "select IOR preset", lambda e,v: setIor(Draw.PupTreeMenu(iortree), value, iorpreset, iortree, iordict))
                 str += luxFloat(name, value, min, max, "IOR", hint, None, 1.6)
             else:
-                str += luxFloat(name, value, min, max, "IOR", hint, gui, 1.6, 1)
+                str += luxFloat(name, value, min, max, "IOR", 'Uniform index of refraction', gui, 1.6, 1)
             return str, ' "texture %s" ["%s"]' % (type, texname)
 # direct version
         if type == "color": return ("", " \"%s %s\" [%s]"%(type, name, value.getRGC()))
@@ -4214,6 +4216,78 @@ def luxTexture(name, parentkey, type, default, min, max, caption, hint, mat, gui
 # indirect version
 #        if type == "color": str += " \"%s value\" [%s]"%(type, value.getRGC())
 #        else: str += " \"%s value\" [%s]"%(type, value.get())
+
+    if texture.get() == 'cauchy':
+        cauchya = luxProp(mat, keyname+'.cauchya.value', 1.4580)
+        cauchyb = luxProp(mat, keyname+'.cauchyb.value', 0.00354)
+        # copy&paste from luxCauchyBFloatTexture() with some modifications
+        cauchynames = ["01 - Fused silica glass", "02 - Borosilicate glass BK7", "03 - Hard crown glass K5", "04 - Barium crown glass BaK4", "05 - Barium flint glass BaF10", "06 - Dense flint glass SF10" ]
+        cauchyvals = [ (1.4580, 0.00354), (1.5046, 0.00420), (1.5220, 0.00459), (1.5690, 0.00531), (1.6700, 0.00743), (1.7280, 0.01342) ]
+        cauchyusepreset = luxProp(mat, keyname+".cauchyusepreset", "true")
+        luxBool("cauchyusepreset", cauchyusepreset, "Preset", "Select from a list of predefined presets", gui, 0.4)
+        
+        if cauchyusepreset.get() == "true":
+            cauchypreset = luxProp(mat, keyname+".cauchypreset", "01 - Fused silica glass")
+            luxOption("cauchypreset", cauchypreset, cauchynames, "  PRESET", "Select Cauchy preset", gui, 1.6)
+            idx = cauchynames.index(cauchypreset.get())
+            cauchya.set(cauchyvals[idx][0])
+            cauchyb.set(cauchyvals[idx][1])
+            str += luxFloat('cauchya', cauchya, min, max, 'cauchy a', hint, None)
+            str += luxFloat('cauchyb', cauchyb, 0.0, 1.0, 'cauchy b', hint, None)
+        else:
+            str += luxFloat('cauchya', cauchya, min, max, 'cauchy a', 'Cauchy\'s A parameter', gui, 0.8)
+            str += luxFloat('cauchyb', cauchyb, 0.0, 1.0, 'cauchy b', 'Cauchy\'s B parameter', gui, 0.8)
+        return str, ' "texture %s" ["%s"]' % (type, texname)
+
+    if texture.get() == 'sellmeier':
+        def sellmeierStrToFloats(s, min, max):
+            f = []
+            for i in s.split(' '):
+                try:
+                    if len(i): f.append(sorted([float(i),min,max])[1])
+                except ValueError:
+                    print 'WARNING: Illegal value dropped from sellmeier texture: only floats are allowed'
+            return f
+        sellmeiernames = [ '01 - Fused silica', '02 - Borosilicate glass BK7', '03 - Sapphire (ordinary wave)', '04 - Sapphire (extraordinary wave)' ]
+        sellmeiervals = [ (1.0, '0.696166300 0.407942600 0.897479400', '4.67914826e-3 1.35120631e-2 97.9340025'), (1.0, '1.03961212 0.231792344 1.01046945', '6.00069867e-3 2.00179144e-2 1.03560653e2'), (1.0, '1.43134930 0.65054713 5.3414021', '5.2799261e-3 1.42382647e-2 3.25017834e2'), (1.0, '1.5039759 0.55069141 6.5927379', '5.48041129e-3 1.47994281e-2 4.0289514e2') ]
+        sellmeiera = luxProp(mat, keyname+'.sellmeiera.value', sellmeiervals[0][0])
+        sellmeierb = luxProp(mat, keyname+'.sellmeierb.value', sellmeiervals[0][1])
+        sellmeierc = luxProp(mat, keyname+'.sellmeierc.value', sellmeiervals[0][2])
+        sellmeierusepreset = luxProp(mat, keyname+'.sellmeierusepreset', 'true')
+        luxBool('sellmeierusepreset', sellmeierusepreset, 'Preset', 'Select from a list of predefined presets', gui, 0.4)
+        
+        if sellmeierusepreset.get() == 'true':
+            sellmeierpreset = luxProp(mat, keyname+'.sellmeierpreset', sellmeiernames[0])
+            luxOption('sellmeierpreset', sellmeierpreset, sellmeiernames, '  PRESET', 'Select Sellmeier preset', gui, 1.6)
+            idx = sellmeiernames.index(sellmeierpreset.get())
+            sellmeiera.set(sellmeiervals[idx][0])
+            sellmeierb.set(sellmeiervals[idx][1])
+            sellmeierc.set(sellmeiervals[idx][2])
+            str += luxFloat('A', sellmeiera, 0.001, 10.0, 'sellmeier a', 'Sellmeier\'s A parameter (constant, usually 1.0)', None)
+        else:
+            str += luxFloat('A', sellmeiera, 0.001, 10.0, 'sellmeier a', 'Sellmeier\'s A parameter (constant, usually 1.0)', gui, 1.6)
+            luxString('sellmeierb', sellmeierb, 'sellmeier b', 'Sellmeier\'s B parameter (space-separated list of floats)', gui,2.0)
+            luxString('sellmeierc', sellmeierc, 'sellmeier c', 'Sellmeier\'s C parameter (space-separated list of floats; same number of floats as in B above)', gui,2.0)
+        
+        listb = sellmeierStrToFloats(sellmeierb.get(), 0, 10000.0)
+        listc = sellmeierStrToFloats(sellmeierc.get(), 0, 10000.0)
+        if len(listc) != len(listb):
+            Draw.PupMenu('WARNING: Number of floats in B and C lists must be equal. Navigate between fields using (Shift)+Tab%t|OK%x1')
+            print 'WARNING: Number of floats in Sellmeier\'s C list must be equal to that of B'
+            Blender.Window.QRedrawAll()
+        
+        # XXX is there a better way to handle len(B) != len(C) situations than chopping off excessive floats?
+        sellmeierb.set(' '.join(map(lambda x: types.StringType(x), listb[:__builtins__['min'](len(listb),len(listc))])))
+        sellmeierc.set(' '.join(map(lambda x: types.StringType(x), listc[:__builtins__['min'](len(listb),len(listc))])))
+        str += "\n   \"float B\" [%s]" % sellmeierb.get()
+        str += "\n   \"float C\" [%s]" % sellmeierc.get()
+        return str, ' "texture %s" ["%s"]' % (type, texname)
+
+    if texture.get() == 'preset':
+        preset = luxProp(mat, keyname+'.preset', '')
+        presets = ['aluminium', 'amorphous carbon', 'silver', 'gold', 'copper']
+        str += luxOption('name', preset, presets, '  PRESET', 'Select preset from the list', gui, 2.0)
+        return str, ' "texture %s" ["%s"]' % (type, texname)
 
     if texture.get() == "blackbody":
         if gui:
@@ -4263,9 +4337,11 @@ def luxTexture(name, parentkey, type, default, min, max, caption, hint, mat, gui
         str += luxFloat("width", luxProp(mat, keyname+".width", 50.0), 20.0, 300.0, "width", "Width of gaussian distribution in nm", gui, 1.1, 1)
         str += luxFloat("energy", luxProp(mat, keyname+".energy", 1.0), 0.0, 1.0, "energy", "Amount of mean energy", gui, 0.9, 1)
 
-    if texture.get() == "tabulateddata":
+    if texture.get() in ["tabulateddata", "sopra", "luxpop"]:
         if gui: gui.newline("data file:", -2, level)        
-        str += luxFile("filename", luxProp(mat, keyname+".filename", ""), "file", "data file path", gui, 2.0)        
+        str += luxFile("filename", luxProp(mat, keyname+".filename", ""), "file", "data file path", gui, 2.0)
+        if type == 'fresnel':
+            return str, ' "texture %s" ["%s"]' % (type, texname)
 
     if texture.get() == "imagemap":
         if gui: gui.newline("IM-clip:", -2, level)
@@ -5088,6 +5164,7 @@ def luxNamedVolumeTexture(volId, gui=None):
         (s, l) = c((s, l), luxTexture('value', keyname+'tex', 'fresnel', 1.459 if volId != 0 else 1.0002926, 1.0, 6.0, 'IOR', 'ior', scn, gui, 0, 1))
         (s1, l1) = luxSpectrumTexture('absorption', keyname+'absorption', '1.0 1.0 1.0', 1000.0, 'absorption:', '', scn, gui, 1)
         usedepth = luxProp(scn, keyname+'usedepth', 'true')
+        # XXX add texture to depth: http://www.luxrender.net/forum/viewtopic.php?p=34569#p34569
         luxBool('usedepth', usedepth, 'Color at depth', 'Calculate absorption to produce selected color at fixed depth of the medium', gui, 1.0)
         if usedepth.get() == 'true':
             depth = luxProp(scn, keyname+'depth', 1.0)
@@ -5265,6 +5342,7 @@ def Preview_Update(mat, kn, defLarge, defType, texName, name, level):
 
     # Unremark to write debugging output to file
     # p.stdin = open('c:\preview.lxs', 'w')
+    # p.stdin = open('/home/blender/renders/preview.lxs', 'w')
 
     if defType == 0:    
         prev_sphere = luxProp(mat, kn+"prev_sphere", "true")
@@ -5323,6 +5401,12 @@ def Preview_Update(mat, kn, defLarge, defType, texName, name, level):
         p.stdin.write(str+"\n")
         p.stdin.write("Material \"matte\" "+link+"\n") 
     else:
+        # named volumes
+        for volume_prop in ['Exterior', 'Interior']:
+            if luxProp(mat, '%s_vol_used'%(volume_prop), 'false').get() == 'true':
+                volData = getNamedVolume(luxProp(mat, '%s_vol_id'%(volume_prop), 'false').get())
+                volTex = luxNamedVolumeTexture(volData['id'])
+                p.stdin.write("%s\nMakeNamedVolume \"%s\" %s\n" % (volTex[0], volData['name'], volTex[1]))
         # Material
         p.stdin.write(luxMaterial(mat))
         link = luxProp(mat,"link","").get()
@@ -5389,7 +5473,6 @@ def Preview_Update(mat, kn, defLarge, defType, texName, name, level):
 
 def luxPreview(mat, name, defType=0, defEnabled=False, defLarge=False, texName=None, gui=None, level=0, color=None):
     
-    # XXX volumes
     if gui:
         kn = name
         if texName: kn += ":"+texName
