@@ -5096,8 +5096,11 @@ def getNamedVolume(id):
     d = {}
     s = 'named_volumes:%s.' % id
     for k, v in Scene.GetCurrent().properties['luxblend'].convert_to_pyobject().items():
-        if k.startswith(s):
-            d[k[len(s):]] = v
+        (kn, vl) = (k, v)
+        if k[:7] == '__hash:':
+            (kn, vl) = v.split(' = ')
+        if kn[:len(s)] == s:
+            d[kn[len(s):]] = vl
     if not d:
         d['id'] = 0
         d['name'] = 'world *'
@@ -5162,7 +5165,7 @@ def luxNamedVolumeTexture(volId, gui=None):
     
     if volume_type.get() == 'clear':
         (s, l) = c((s, l), luxTexture('value', keyname+'tex', 'fresnel', 1.459 if volId != 0 else 1.0002926, 1.0, 6.0, 'IOR', 'ior', scn, gui, 0, 1))
-        (s1, l1) = luxSpectrumTexture('absorption', keyname+'absorption', '1.0 1.0 1.0', 1000.0, 'absorption:', '', scn, gui, 1)
+        (s1, l1) = luxSpectrumTexture('value', keyname+'absorption', '1.0 1.0 1.0', 1000.0, 'absorption:', '', scn, gui, 1)
         usedepth = luxProp(scn, keyname+'usedepth', 'true')
         # XXX add texture to depth: http://www.luxrender.net/forum/viewtopic.php?p=34569#p34569
         luxBool('usedepth', usedepth, 'Color at depth', 'Calculate absorption to produce selected color at fixed depth of the medium', gui, 1.0)
@@ -6625,7 +6628,10 @@ def getMatTex(mat, basekey='', tex=False):
     global usedproperties, usedpropertiesfilterobj
     usedproperties = {}
     usedpropertiesfilterobj = mat
-    luxMaterial(mat)
+    if basekey.startswith('named_volumes:'):
+        luxNamedVolumeTexture(basekey[basekey.find(':')+1:basekey.find('.')])
+    else:
+        luxMaterial(mat)
     dict = {}
     for k,v in usedproperties.items():
         if k[:len(basekey)]==basekey:
@@ -6947,9 +6953,9 @@ def flipMixMat(mat, basekey):
 def showVolumesMenu(mat, volume_prop):
     scn = Scene.GetCurrent()
     active_volume = getNamedVolume(luxProp(mat, '%s_vol_id' % (volume_prop), 0).get())
-    menu = "Manage mediums:%t|Create new medium%x1"
+    menu = "Manage mediums:%t|Create new medium%x1|Copy selected%x2"
     if active_volume['name'] != 'world *':
-        menu += "|Rename selected%x2|Delete selected%x3"
+        menu += "|Rename selected%x3|Delete selected%x4"
     
     r = Draw.PupMenu(menu)
     if r==1:
@@ -6968,6 +6974,32 @@ def showVolumesMenu(mat, volume_prop):
             Blender.Window.QRedrawAll()
             return True
     elif r == 2:
+        # copy existing volume
+        name = Draw.PupStrInput('copy to name: ', '')
+        vols = listNamedVolumes()
+        if name == active_volume['name'] or name == '':
+            Blender.Window.QRedrawAll()
+            return False
+        if vols.has_key(name):
+            r = Draw.PupMenu('  OK?%t|Replace existing medium%x1')
+            if r == 1:
+                volProps = getNamedVolume(vols[name])
+                volId = vols[name]
+                for n in volProps.keys():
+                    if not n in ['name', 'id']:
+                        luxProp(scn, 'named_volumes:%s.%s'%(volId,n), '').delete()
+            else:
+                Blender.Window.QRedrawAll()
+                return False
+        else:
+            volId = vols and max(vols.values())+1 or 1
+            luxProp(scn, 'named_volumes:%s.name' % volId, 0).set(name)
+        for k, v in active_volume.items():
+            if not k in ['name', 'id']:
+                luxProp(scn, 'named_volumes:%s.%s'%(volId,k), '').set(v)
+        Blender.Window.QRedrawAll()
+        return True
+    elif r == 3:
         # rename existing volume
         name = Draw.PupStrInput('new name: ', active_volume['name'])
         vols = listNamedVolumes()
@@ -6979,9 +7011,9 @@ def showVolumesMenu(mat, volume_prop):
             luxProp(scn, 'named_volumes:%s.name' % active_volume['id'], 0).set(name)
             Blender.Window.QRedrawAll()
             return True
-    elif r == 3:
+    elif r == 4:
         # delete existing volume
-        r = Draw.PupMenu('  OK?%t|Delete selected volume%x1')
+        r = Draw.PupMenu('  OK?%t|Delete selected medium%x1')
         if r == 1:
             for n in active_volume.keys():
                 luxProp(scn, 'named_volumes:%s.%s'%(active_volume['id'],n), '').delete()
