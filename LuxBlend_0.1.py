@@ -4253,6 +4253,13 @@ def luxTexture(name, parentkey, type, default, min, max, caption, hint, mat, gui
         sellmeiera = luxProp(mat, keyname+'.sellmeiera.value', sellmeiervals[0][0])
         sellmeierb = luxProp(mat, keyname+'.sellmeierb.value', sellmeiervals[0][1])
         sellmeierc = luxProp(mat, keyname+'.sellmeierc.value', sellmeiervals[0][2])
+        sellmeierb1 = luxProp(mat, keyname+'.sellmeierb1.value', float(sellmeiervals[0][1].split(' ')[0]))
+        sellmeierb2 = luxProp(mat, keyname+'.sellmeierb2.value', float(sellmeiervals[0][1].split(' ')[1]))
+        sellmeierb3 = luxProp(mat, keyname+'.sellmeierb3.value', float(sellmeiervals[0][1].split(' ')[2]))
+        sellmeierc1 = luxProp(mat, keyname+'.sellmeierc1.value', float(sellmeiervals[0][2].split(' ')[0]))
+        sellmeierc2 = luxProp(mat, keyname+'.sellmeierc2.value', float(sellmeiervals[0][2].split(' ')[1]))
+        sellmeierc3 = luxProp(mat, keyname+'.sellmeierc3.value', float(sellmeiervals[0][2].split(' ')[2]))
+        sellmeieradvanced = luxProp(mat, keyname+'sellmeieradvanced', 'false')
         sellmeierusepreset = luxProp(mat, keyname+'.sellmeierusepreset', 'true')
         luxBool('sellmeierusepreset', sellmeierusepreset, 'Preset', 'Select from a list of predefined presets', gui, 0.4)
         
@@ -4263,11 +4270,29 @@ def luxTexture(name, parentkey, type, default, min, max, caption, hint, mat, gui
             sellmeiera.set(sellmeiervals[idx][0])
             sellmeierb.set(sellmeiervals[idx][1])
             sellmeierc.set(sellmeiervals[idx][2])
+            sellmeierb1.set(float(sellmeiervals[idx][1].split(' ')[0]))
+            sellmeierb2.set(float(sellmeiervals[idx][1].split(' ')[1]))
+            sellmeierb3.set(float(sellmeiervals[idx][1].split(' ')[2]))
+            sellmeierc1.set(float(sellmeiervals[idx][2].split(' ')[0]))
+            sellmeierc2.set(float(sellmeiervals[idx][2].split(' ')[1]))
+            sellmeierc3.set(float(sellmeiervals[idx][2].split(' ')[2]))
             str += luxFloat('A', sellmeiera, 0.001, 10.0, 'sellmeier a', 'Sellmeier\'s A parameter (constant, usually 1.0)', None)
         else:
-            str += luxFloat('A', sellmeiera, 0.001, 10.0, 'sellmeier a', 'Sellmeier\'s A parameter (constant, usually 1.0)', gui, 1.6)
-            luxString('sellmeierb', sellmeierb, 'sellmeier b', 'Sellmeier\'s B parameter (space-separated list of floats)', gui,2.0)
-            luxString('sellmeierc', sellmeierc, 'sellmeier c', 'Sellmeier\'s C parameter (space-separated list of floats; same number of floats as in B above)', gui,2.0)
+            luxBool('sellmeieradvanced', sellmeieradvanced, 'Advanced', 'Advanced parameters', gui, 1.6 if sellmeieradvanced.get() == 'false' else 0.6)
+            if sellmeieradvanced.get() == 'false':
+                str += luxFloat('A', sellmeiera, 0.001, 10.0, 'sellmeier a', 'Sellmeier\'s A parameter (constant, usually 1.0)', None)
+                luxFloat('B1', sellmeierb1, 0, 99.9, 'b', 'Sellmeier\'s first B parameter', gui, 0.66)
+                luxFloat('B2', sellmeierb2, 0, 99.9, 'b', 'Sellmeier\'s second B parameter', gui, 0.66)
+                luxFloat('B3', sellmeierb3, 0, 99.9, 'b', 'Sellmeier\'s third B parameter', gui, 0.66)
+                luxFloat('C1', sellmeierc1, 0, 9.9, 'c', 'Sellmeier\'s first C parameter', gui, 0.66)
+                luxFloat('C2', sellmeierc2, 0, 9.9, 'c', 'Sellmeier\'s second C parameter', gui, 0.66)
+                luxFloat('C3', sellmeierc3, 0, 999.9, 'c', 'Sellmeier\'s third C parameter', gui, 0.66)
+                sellmeierb.set(' '.join([__builtins__['str'](sellmeierb1.get()), __builtins__['str'](sellmeierb2.get()), __builtins__['str'](sellmeierb3.get())]))
+                sellmeierc.set(' '.join([__builtins__['str'](sellmeierc1.get()), __builtins__['str'](sellmeierc2.get()), __builtins__['str'](sellmeierc3.get())]))
+            else:
+                str += luxFloat('A', sellmeiera, 0.001, 10.0, 'sellmeier a', 'Sellmeier\'s A parameter (constant, usually 1.0)', gui, 1.0)
+                luxString('sellmeierb', sellmeierb, 'sellmeier b', 'Sellmeier\'s B parameter (space-separated list of floats)', gui,2.0)
+                luxString('sellmeierc', sellmeierc, 'sellmeier c', 'Sellmeier\'s C parameter (space-separated list of floats; same number of floats as in B above)', gui,2.0)
         
         listb = sellmeierStrToFloats(sellmeierb.get(), 0, 10000.0)
         listc = sellmeierStrToFloats(sellmeierc.get(), 0, 10000.0)
@@ -4276,7 +4301,6 @@ def luxTexture(name, parentkey, type, default, min, max, caption, hint, mat, gui
             print 'WARNING: Number of floats in Sellmeier\'s C list must be equal to that of B'
             Blender.Window.QRedrawAll()
         
-        # XXX is there a better way to handle len(B) != len(C) situations than chopping off excessive floats?
         sellmeierb.set(' '.join(map(lambda x: types.StringType(x), listb[:__builtins__['min'](len(listb),len(listc))])))
         sellmeierc.set(' '.join(map(lambda x: types.StringType(x), listc[:__builtins__['min'](len(listb),len(listc))])))
         str += "\n   \"float B\" [%s]" % sellmeierb.get()
@@ -5165,7 +5189,7 @@ def luxNamedVolumeTexture(volId, gui=None):
     
     if volume_type.get() == 'clear':
         (s, l) = c((s, l), luxTexture('value', keyname+'tex', 'fresnel', 1.459 if volId != 0 else 1.0002926, 1.0, 6.0, 'IOR', 'ior', scn, gui, 0, 1))
-        (s1, l1) = luxSpectrumTexture('value', keyname+'absorption', '1.0 1.0 1.0', 1000.0, 'absorption:', '', scn, gui, 1)
+        (s1, l1) = luxSpectrumTexture('absorption', keyname+'absorption', '1.0 1.0 1.0', 1000.0, 'absorption:', '', scn, gui, 1)
         usedepth = luxProp(scn, keyname+'usedepth', 'true')
         # XXX add texture to depth: http://www.luxrender.net/forum/viewtopic.php?p=34569#p34569
         luxBool('usedepth', usedepth, 'Color at depth', 'Calculate absorption to produce selected color at fixed depth of the medium', gui, 1.0)
