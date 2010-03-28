@@ -4240,14 +4240,21 @@ def luxTexture(name, parentkey, type, default, min, max, caption, hint, mat, gui
         return str, ' "texture %s" ["%s"]' % (type, texname)
 
     if texture.get() == 'sellmeier':
-        def sellmeierStrToFloats(s, min, max):
-            f = []
-            for i in s.split(' '):
-                try:
-                    if len(i): f.append(sorted([float(i),min,max])[1])
-                except ValueError:
-                    print 'WARNING: Illegal value dropped from sellmeier texture: only floats are allowed'
-            return f
+        def sellmeierStrToFloats(sb, sc, min, max):
+            n = ['c', 'b']
+            fb, fc = [], []
+            for s in [sb, sc]:
+                l = n.pop()
+                for i in s.split(' '):
+                    try:
+                        if len(i): vars()['f'+l].append(sorted([float(i),min,max])[1])
+                    except ValueError:
+                        print 'WARNING: Illegal value dropped from sellmeier texture: only floats are allowed'
+            if len(fb) > len(fc):
+                fc.extend([0.0] * (len(fb) - len(fc)))
+            elif len(fc) > len(fb):
+                fc = fc[:len(fb)]
+            return fb, fc
         sellmeiernames = [ '01 - Fused silica', '02 - Borosilicate glass BK7', '03 - Sapphire (ordinary wave)', '04 - Sapphire (extraordinary wave)' ]
         sellmeiervals = [ (1.0, '0.696166300 0.407942600 0.897479400', '4.67914826e-3 1.35120631e-2 97.9340025'), (1.0, '1.03961212 0.231792344 1.01046945', '6.00069867e-3 2.00179144e-2 1.03560653e2'), (1.0, '1.43134930 0.65054713 5.3414021', '5.2799261e-3 1.42382647e-2 3.25017834e2'), (1.0, '1.5039759 0.55069141 6.5927379', '5.48041129e-3 1.47994281e-2 4.0289514e2') ]
         sellmeiera = luxProp(mat, keyname+'.sellmeiera.value', sellmeiervals[0][0])
@@ -4287,22 +4294,16 @@ def luxTexture(name, parentkey, type, default, min, max, caption, hint, mat, gui
                 luxFloat('C1', sellmeierc1, 0, 9.9, 'c', 'Sellmeier\'s first C parameter', gui, 0.66)
                 luxFloat('C2', sellmeierc2, 0, 9.9, 'c', 'Sellmeier\'s second C parameter', gui, 0.66)
                 luxFloat('C3', sellmeierc3, 0, 999.9, 'c', 'Sellmeier\'s third C parameter', gui, 0.66)
-                sellmeierb.set(' '.join([__builtins__['str'](sellmeierb1.get()), __builtins__['str'](sellmeierb2.get()), __builtins__['str'](sellmeierb3.get())]))
-                sellmeierc.set(' '.join([__builtins__['str'](sellmeierc1.get()), __builtins__['str'](sellmeierc2.get()), __builtins__['str'](sellmeierc3.get())]))
+                sellmeierb.set(' '.join([__builtins__['str'](sellmeierb1.get()), types.StringType(sellmeierb2.get()), types.StringType(sellmeierb3.get())]))
+                sellmeierc.set(' '.join([__builtins__['str'](sellmeierc1.get()), types.StringType(sellmeierc2.get()), types.StringType(sellmeierc3.get())]))
             else:
                 str += luxFloat('A', sellmeiera, 0.001, 10.0, 'sellmeier a', 'Sellmeier\'s A parameter (constant, usually 1.0)', gui, 1.0)
                 luxString('sellmeierb', sellmeierb, 'sellmeier b', 'Sellmeier\'s B parameter (space-separated list of floats)', gui,2.0)
                 luxString('sellmeierc', sellmeierc, 'sellmeier c', 'Sellmeier\'s C parameter (space-separated list of floats; same number of floats as in B above)', gui,2.0)
         
-        listb = sellmeierStrToFloats(sellmeierb.get(), 0, 10000.0)
-        listc = sellmeierStrToFloats(sellmeierc.get(), 0, 10000.0)
-        if len(listc) != len(listb):
-            Draw.PupMenu('WARNING: Number of floats in B and C lists must be equal. Navigate between fields using (Shift)+Tab%t|OK%x1')
-            print 'WARNING: Number of floats in Sellmeier\'s C list must be equal to that of B'
-            Blender.Window.QRedrawAll()
-        
-        sellmeierb.set(' '.join(map(lambda x: types.StringType(x), listb[:__builtins__['min'](len(listb),len(listc))])))
-        sellmeierc.set(' '.join(map(lambda x: types.StringType(x), listc[:__builtins__['min'](len(listb),len(listc))])))
+        (listb, listc) = sellmeierStrToFloats(sellmeierb.get(), sellmeierc.get(), 0, 10000.0)
+        sellmeierb.set(' '.join(map(lambda x: types.StringType(x), listb)))
+        sellmeierc.set(' '.join(map(lambda x: types.StringType(x), listc)))
         str += "\n   \"float B\" [%s]" % sellmeierb.get()
         str += "\n   \"float C\" [%s]" % sellmeierc.get()
         return str, ' "texture %s" ["%s"]' % (type, texname)
