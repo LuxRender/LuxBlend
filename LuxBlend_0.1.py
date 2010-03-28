@@ -2931,7 +2931,7 @@ def luxFilm(scn, gui=None):
                 str += luxFloat("linear_fstop", luxProp(scn, "film.linear.fstop", 2.8), 0.1, 64.0, "Fstop", "F-Stop", gui)
                 str += luxFloat("linear_gamma", luxProp(scn, "film.gamma", 2.2), 0.0, 8.0, "gamma", "Film gamma correction", None)
             elif tonemapkernel.get() == "contrast":
-                str += luxFloat("contrast_ywa", luxProp(scn, "film.contrast.ywa", 0.1), 0.001, 1.0, "Ywa", "Display/World Adaption Luminance", gui)
+                str += luxFloat("contrast_ywa", luxProp(scn, "film.contrast.ywa", 0.1), 0.001, 10000.0, "Ywa", "Display/World Adaption Luminance", gui)
 
             if gui: gui.newline("  Display:")
             str += luxInt("displayinterval", luxProp(scn, "film.displayinterval", 12), 4, 3600, "interval", "Set display Interval (seconds)", gui)
