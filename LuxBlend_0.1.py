@@ -5200,8 +5200,8 @@ def luxNamedVolumeTexture(volId, gui=None):
             texkey = 'named_volumes:%s.absorption:absorption' % volId
             usetex = luxProp(scn, texkey+'.textured', None)
             depth = luxProp(scn, keyname+'depth', 1.0)
-            scale = luxScaleUnits(keyname+'scale', 'm', scn, 0.5, gui)
             luxFloat('depth', depth, 0.001, 1000.0, 'depth', 'Depth of the fixed point inside the medium', gui, 0.5)
+            scale = luxScaleUnits(keyname+'scale', 'm', scn, 0.5, gui)
             if usecolor.get() == 'true':
                 factor = lambda rgb: [ (-math.log(max([float(i),1e-30]))/(depth.get()*scale)) * (float(i)==1.0 and -1 or 1) for i in rgb ]
             else:
@@ -6697,6 +6697,26 @@ def putMatTex(mat, dict, basekey='', tex=None):
                 if kn[:len(basekey)]==basekey:
                     del mat.properties['luxblend'][k]
         except: print("error") # pass
+        # volume properties
+        if not basekey:
+            for k, v in dict.items():
+                if k == '__volumes__':
+                    scn = Scene.GetCurrent()
+                    for volume_prop, volume_data in v.items():
+                        volumes = listNamedVolumes()
+                        # new id and name if existing are occupied
+                        newId = max(volumes.values())+1 if volumes else 1
+                        newName = volume_data['name'] if not volumes.has_key(volume_data['name']) else volume_data['name']+'_new'
+                        volPrefix = 'named_volumes:%s.' % newId
+                        # replacing dict items for the next pass ('assign loaded' below)
+                        dict['%s_vol_id' % volume_prop] = newId
+                        dict['%s_vol_name' % volume_prop] = newName
+                        # assigning global properties
+                        luxProp(scn, volPrefix+'id', 0).set(newId)
+                        luxProp(scn, volPrefix+'name', '').set(newName)
+                        for volKey, volVal in volume_data.items():
+                            if not volKey in ['id', 'name']:
+                                luxProp(scn, volPrefix+volKey, None).set(volVal)
         # assign loaded properties
         for k,v in dict.items():
             try:
@@ -6727,35 +6747,42 @@ def MatTex2dict(d, tex = None):
         return d
     
     elif LBX_VERSION == '0.7':
-        definition = []
-        for k in d.keys():
-            if type(d[k]) == types.IntType:
-                t = 'integer'
-            if type(d[k]) == types.FloatType:
-                t = 'float'
-            if type(d[k]) == types.BooleanType:
-                t = 'bool'
-            if type(d[k]) == types.StringType:
-                l=None
-                try:
-                    l = d[k].split(" ")
-                except: pass
-                if l==None or len(l)!=3:
-                    t = 'string'
-                else:
-                    t = 'vector'
-                
-            definition.append([ t, k, d[k] ])
-        
+        def makeDefinition(d):
+            o = []
+            for k in d.keys():
+                if type(d[k]) == types.IntType:
+                    t = 'integer'
+                if type(d[k]) == types.FloatType:
+                    t = 'float'
+                if type(d[k]) == types.BooleanType:
+                    t = 'bool'
+                if type(d[k]) == types.StringType:
+                    l=None
+                    try:
+                        l = d[k].split(" ")
+                    except: pass
+                    if l==None or len(l)!=3:
+                        t = 'string'
+                    else:
+                        t = 'vector'
+                    
+                o.append([ t, k, d[k] ])
+            return o
         
         lbx = {
             'type': d['__type__'],
             'version': '0.7',
-            'definition': definition,
+            'definition': makeDefinition(d),
+            'volumes': [],
             'metadata': [
                 ['string', 'generator', 'luxblend'],
             ]
         }
+        
+        for volume_prop in ['Exterior', 'Interior']:
+            if d.has_key('%s_vol_id' % volume_prop):
+                volume = makeDefinition(getNamedVolume(d['%s_vol_id' % volume_prop]))
+                lbx['volumes'].append({'type': volume_prop, 'definition': volume})
         
         return lbx
 
@@ -6830,14 +6857,15 @@ def str2MatTex(s, tex = None):    # todo: this is not absolutely save from attac
                 if   ('version' in d.keys() and d['version'] in ['0.6', '0.7']) \
                 and  ('type' in d.keys() and d['type'] in ['material', 'texture']) \
                 and  ('definition' in d.keys()):
-                    
-                    
                     try:
                         definition = lb_list_to_dict(d['definition'])
                         
                         if 'metadata' in d.keys():
                             definition.update( lb_list_to_dict(d['metadata']) )
-                        
+                        if 'volumes' in d.keys():
+                            definition['__volumes__'] = {}
+                            for volume in d['volumes']:
+                                definition['__volumes__'][volume['type']] = lb_list_to_dict(volume['definition'])
                         return definition
                     except:
                         reason = 'Incorrect LBX definition data'
@@ -6870,7 +6898,8 @@ def showMatTexMenu(mat, basekey='', tex=False):
         menu += "|Load LBM%x3|Save LBM%x4"
     if  ConnectLrmdb:
         menu += "|Download from DB%x5" #not(tex) and
-        menu += "|Upload to DB%x6"
+        # XXX temporarily disabling for glass2
+        if luxProp(mat, basekey+'type', '').get() != 'glass2': menu += "|Upload to DB%x6"
 
 #    menu += "|%l|dump material%x99|dump clipboard%x98"
     r = Draw.PupMenu(menu)
