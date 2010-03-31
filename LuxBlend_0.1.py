@@ -6440,7 +6440,7 @@ try:
         if id.isalnum():
             DrawProgressBar(0.0,'Getting Material #'+id)
             try:
-                HOST = 'www.luxrender.net'
+                HOST = 'webserver' #'www.luxrender.net'
                 GET = '/lrmdb/en/material/download/'+id+'/'+LBX_VERSION
                 PORT = 80
                 sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -6458,7 +6458,7 @@ try:
                 str = (str.split("\r\n\r\n")[1]).strip()
                 if (str[0]=="{") and (str[-1]=="}"):
                     return str2MatTex(str)
-                print("ERROR: downloaded data is not a material or texture")
+                print("ERROR: downloaded data is not a material or texture:\n%s"%str)
             except:
                 print("ERROR: download failed")
                 
@@ -6575,7 +6575,7 @@ try:
     # LRMDB Integration
     #===========================================================================
     class lrmdb:
-        host              = 'http://www.luxrender.net/lrmdb/ixr'
+        host              = 'http://webserver/lrmdb/ixr' #'http://www.luxrender.net/lrmdb/ixr'
         
         username          = ""
         password          = ""
@@ -6620,11 +6620,13 @@ try:
                     MatTex2dict( getMatTex(mat, basekey, tex), tex )
                 )
                 if result is not True:
-                    raise
+                    raise Exception()
                 else:
                     return True
-            except:
+            except Exception, err:
                 self.last_error_str = 'Submit failed: %s' % result
+                print (result)
+                print str(err)
                 return False
         
         def check_creds(self):
@@ -6783,7 +6785,11 @@ def MatTex2dict(d, tex = None):
             for volume_prop in ['Exterior', 'Interior']:
                 if d.has_key('%s_vol_id' % volume_prop):
                     volume = makeDefinition(getNamedVolume(d['%s_vol_id' % volume_prop]))
-                    lbx['volumes'].append({'type': volume_prop, 'definition': volume})
+                    lbx['volumes'].append({
+                        'type': volume_prop,
+                        'definition': volume,
+                        'version': LBX_VERSION
+                    })
         
         elif LBX_VERSION == '0.7':
             lbx = {
