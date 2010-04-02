@@ -5194,8 +5194,8 @@ def luxNamedVolumeTexture(volId, gui=None):
         usecolor = luxProp(scn, keyname+'usecolor', 'true')
         usedepth = luxProp(scn, keyname+'usedepth', 'true')
         if usedepth.get() == 'true':
-            luxBool('usecolor', usecolor, 'Color', 'Resulting light color at fixed depth of the medium', gui, 0.5)
-        luxBool('usedepth', usedepth, 'at depth' if usedepth.get() == 'true' else 'Color at depth', 'Resulting light color at fixed depth of the medium' if usecolor.get() == 'true' else 'Amount of light absorbed at fixed depth of the medium', gui, 0.5 if usedepth.get() == 'true' else 1.0)
+            luxBool('usecolor', usecolor, 'Color', 'Resulting light color at given depth of the medium', gui, 0.5)
+        luxBool('usedepth', usedepth, 'at depth' if usedepth.get() == 'true' else 'Color at depth', 'Resulting light color at given depth of the medium' if usecolor.get() == 'true' else 'Amount of light absorbed at given depth of the medium', gui, 0.5 if usedepth.get() == 'true' else 1.0)
         if usedepth.get() == 'true':
             texkey = 'named_volumes:%s.absorption:absorption' % volId
             usetex = luxProp(scn, texkey+'.textured', None)
@@ -5203,9 +5203,9 @@ def luxNamedVolumeTexture(volId, gui=None):
             luxFloat('depth', depth, 0.001, 1000.0, 'depth', 'Depth of the fixed point inside the medium', gui, 0.5)
             scale = luxScaleUnits(keyname+'scale', 'm', scn, 0.5, gui)
             if usecolor.get() == 'true':
-                factor = lambda rgb: [ (-math.log(max([float(i),1e-30]))/(depth.get()*scale)) * (float(i)==1.0 and -1 or 1) for i in rgb ]
+                factor = lambda rgb: [ (-math.log(max([rg(float(i)),1e-30]))/(depth.get()*scale)) * (rg(float(i))==1.0 and -1 or 1) for i in rgb ]
             else:
-                factor = lambda rgb: [ float(i) * (1/(depth.get()*scale)) for i in rgb ]
+                factor = lambda rgb: [ rg(float(i)) * (1/(depth.get()*scale)) for i in rgb ]
             if l1[l1.find('"')+1:].startswith('color'):
                 rgb = factor(l1[l1.find('[')+1:l1.rfind(']')].split(' '))
                 l1 = l1[:l1.find('[')] + '[%s %s %s]' % (rgb[0], rgb[1], rgb[2])
