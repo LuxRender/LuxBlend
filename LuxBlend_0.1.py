@@ -5186,7 +5186,7 @@ def luxNamedVolumeTexture(volId, gui=None):
     volume_type = luxProp(scn, keyname+'type', volume_types[0])
     if gui: gui.newline('type:', 0, 0)
     luxOption(keyname+'type', volume_type, volume_types, '  MEDIUM TYPES', 'Select medium type from the list', gui, 2.0)
-    t = '"%s"' % volume_type.get()
+    volType = '"%s"' % volume_type.get()
     
     if volume_type.get() == 'clear':
         (s, l) = c((s, l), luxTexture('value', keyname+'tex', 'fresnel', 1.459 if volId != 0 else 1.0002926, 1.0, 6.0, 'IOR', 'ior', scn, gui, 0, 1))
@@ -5218,7 +5218,7 @@ def luxNamedVolumeTexture(volId, gui=None):
                 s1 = "\n".join(tex)
         (s, l) = c((s, l), (s1, l1))
     
-    return s, t+l
+    return s, volType+l
 
 def luxLight(name, kn, mat, gui, level):
     if gui:
