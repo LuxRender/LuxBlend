@@ -3023,7 +3023,7 @@ def luxFilm(scn, gui=None):
             str += "\n   \"string filename\" [\"%s\"]"%(filename)
         else:
             fn = luxProp(scn, "filename", "default-%05d" %  (Blender.Get('curframe')))
-            str += luxString("filename", fn, "File name", "save file name", None)
+            str += "\n   \"string filename\" [\"%s\"]" % luxFilePath(fn.get())
     
         if gui: gui.newline("  Resume:")
         resumeflm = luxProp(scn, "film.write_resume_flm", "false")
@@ -4015,7 +4015,9 @@ def luxSystem(scn, gui=None):
 #        luxFile("GUI filename", luxProp(scn, "lux", ""), "lux-file", "filename and path of the lux GUI executable", gui, 2.0)
 #        luxFile("Console filename", luxProp(scn, "luxconsole", ""), "lux-file-console", "filename and path of the lux console executable", gui, 2.0)
         if gui: gui.newline()
-        luxFile("datadir", luxProp(scn, "datadir", ""), "default out dir", "default.lxs save path", gui, 2.0)
+        datadir = luxProp(scn, "datadir", "")
+        luxFile("datadir", datadir, "default out dir", "default.lxs save path", gui, 2.0)
+        datadir.set(datadir.get().rstrip(os.sep))
 
         if gui: gui.newline()
         pm = ["absolute","relative","flat"]
