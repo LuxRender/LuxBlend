@@ -5722,6 +5722,16 @@ def luxMaterialBlock(name, luxname, key, mat, gui=None, level=0, str_opt=""):
             return (str, link)
 
         if mattype.get() == "carpaint":
+            carpaintData = {        #        Kd RGB                    Ks1 RGB                   Ks2 RGB                   Ks3 RGB            R1      R2      R3      M1      M2      M3
+                "ford f8":        [ [0.0012, 0.0015, 0.0018], [0.0049, 0.0076, 0.0120], [0.0100, 0.0130, 0.0180], [0.0070, 0.0065, 0.0077], 0.1500, 0.0870, 0.9000, 0.3200, 0.1100, 0.0130 ],
+                "polaris silber": [ [0.0550, 0.0630, 0.0710], [0.0650, 0.0820, 0.0880], [0.1100, 0.1100, 0.1300], [0.0080, 0.0130, 0.0150], 1.0000, 0.9200, 0.9000, 0.3800, 0.1700, 0.0130 ],
+                "opel titan":     [ [0.0110, 0.0130, 0.0150], [0.0570, 0.0660, 0.0780], [0.1100, 0.1200, 0.1300], [0.0095, 0.0140, 0.0160], 0.8500, 0.8600, 0.9000, 0.3800, 0.1700, 0.0140 ],
+                "bmw339":         [ [0.0120, 0.0150, 0.0160], [0.0620, 0.0760, 0.0800], [0.1100, 0.1200, 0.1200], [0.0083, 0.0150, 0.0160], 0.9200, 0.8700, 0.9000, 0.3900, 0.1700, 0.0130 ],
+                "2k acrylack":    [ [0.4200, 0.3200, 0.1000], [0.0000, 0.0000, 0.0000], [0.0280, 0.0260, 0.0060], [0.0170, 0.0075, 0.0041], 1.0000, 0.9000, 0.1700, 0.8800, 0.8000, 0.0150 ],
+                "white":          [ [0.6100, 0.6300, 0.5500], [2.6e-6, 3.1e-4, 3.1e-8], [0.0130, 0.0110, 0.0083], [0.0490, 0.0420, 0.0370], 0.0490, 0.4500, 0.1700, 1.0000, 0.1500, 0.0150 ],
+                "blue":           [ [0.0079, 0.0230, 0.1000], [0.0011, 0.0015, 0.0019], [0.0250, 0.0300, 0.0430], [0.0590, 0.0740, 0.0820], 1.0000, 0.0940, 0.1700, 0.1500, 0.0430, 0.0200 ],
+                "blue matte":     [ [0.0099, 0.0360, 0.1200], [0.0032, 0.0045, 0.0059], [0.1800, 0.2300, 0.2800], [0.0400, 0.0490, 0.0510], 1.0000, 0.0460, 0.1700, 0.1600, 0.0750, 0.0340 ]
+                }
             if gui: gui.newline("Preset:", 0, level+1)
             carname = luxProp(mat, kn+"carpaint.name", "Custom")
             cars = ["Custom","ford f8","polaris silber","opel titan","bmw339","2k acrylack","white","blue","blue matte"]
@@ -5737,7 +5747,18 @@ def luxMaterialBlock(name, luxname, key, mat, gui=None, level=0, str_opt=""):
                 (str,link) = c((str,link), luxFloatTexture("M1", keyname, 1.0, 0.0, 1.0, "M1", "", mat, gui, level+1))
                 (str,link) = c((str,link), luxFloatTexture("M2", keyname, 1.0, 0.0, 1.0, "M2", "", mat, gui, level+1))
                 (str,link) = c((str,link), luxFloatTexture("M3", keyname, 1.0, 0.0, 1.0, "M3", "", mat, gui, level+1))
-            else: link += carlink
+            else:
+                luxProp(mat, keyname+':Kd', '1.0 1.0 1.0').set(' '.join(map(__builtins__['str'], carpaintData[carname.get()][0])))
+                luxProp(mat, keyname+':Ks1', '1.0 1.0 1.0').set(' '.join(map(__builtins__['str'], carpaintData[carname.get()][1])))
+                luxProp(mat, keyname+':Ks2', '1.0 1.0 1.0').set(' '.join(map(__builtins__['str'], carpaintData[carname.get()][2])))
+                luxProp(mat, keyname+':Ks3', '1.0 1.0 1.0').set(' '.join(map(__builtins__['str'], carpaintData[carname.get()][3])))
+                luxProp(mat, keyname+':R1', 1.0).set(carpaintData[carname.get()][4])
+                luxProp(mat, keyname+':R2', 1.0).set(carpaintData[carname.get()][5])
+                luxProp(mat, keyname+':R3', 1.0).set(carpaintData[carname.get()][6])
+                luxProp(mat, keyname+':M1', 1.0).set(carpaintData[carname.get()][7])
+                luxProp(mat, keyname+':M2', 1.0).set(carpaintData[carname.get()][8])
+                luxProp(mat, keyname+':M3', 1.0).set(carpaintData[carname.get()][9])
+                link += carlink
             absorption = luxProp(mat, keyname+".useabsorption", "false")
             luxCollapse("absorption", absorption, "Absorption", "Enable Coating Absorption", gui, 2.0)
             if absorption.get() == "true":
