@@ -6954,6 +6954,7 @@ def showMatTexMenu(mat, basekey='', tex=False):
         menu += "|Download from DB%x5" #not(tex) and
         # XXX temporarily disabling for glass2
         if luxProp(mat, basekey+'type', '').get() != 'glass2': menu += "|Upload to DB%x6"
+	menu += '|Reset%x7'
 
 #    menu += "|%l|dump material%x99|dump clipboard%x98"
     r = Draw.PupMenu(menu)
@@ -6984,14 +6985,24 @@ def showMatTexMenu(mat, basekey='', tex=False):
             msg = lrmdb_connector.last_error()
         else:
             msg = 'OK'
-            
         Draw.PupMenu("Upload: "+msg+".%t|OK")
+    elif r == 7:
+        resetMatTex(mat, basekey)
 #    elif r==99:
 #        for k,v in mat.properties['luxblend'].convert_to_pyobject().items(): print(k+"="+repr(v))
 #    elif r==98:
 #        for k,v in luxclipboard.items(): print(k+"="+repr(v))
 #    prin()
     Draw.Redraw()
+
+
+def resetMatTex(mat, basekey=''):
+    for k, v in mat.properties['luxblend'].convert_to_pyobject().items():
+        kn = k
+        if k[:7] == '__hash:':
+            kn = v.split(' = ')[0]
+        if kn.startswith(basekey) and kn != basekey:
+            del mat.properties['luxblend'][k]
 
 
 def saveMatTex(mat, fn, basekey='', tex=False):
