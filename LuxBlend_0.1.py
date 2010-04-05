@@ -878,7 +878,7 @@ def save_lux(filename, unindexedname, anim_progress=None):
     render_status_text = 'Exporting...'
     render_status = True
 
-    print("Lux Render Export started...\n")
+    print("LuxRender Export started...\n")
     time1 = Blender.sys.time()
     scn = Scene.GetCurrent()
 
@@ -1035,7 +1035,7 @@ def save_lux(filename, unindexedname, anim_progress=None):
             file = file_output(filename)
 
         ##### Write Header ######
-        file.write("# Lux Render v%s Scene File\n"%__version__)
+        file.write("# LuxRender v%s Scene File\n"%__version__)
         file.write("# Exported by LuxBlend Blender Exporter\n")
         file.write("\n")
     
@@ -1264,12 +1264,12 @@ def get_lux_args(filename, extra_args=[], anim=False):
     ic = get_lux_exec(scn, type=(anim and 'luxconsole' or 'luxrender'))
     
     servers_string = networkstring(scn)
-    update_int=luxProp(scn,"newtork_interval",180).get()
+    update_int=luxProp(scn,"network_interval",180).get()
     
     checkluxpath = luxProp(scn, "checkluxpath", True).get()
     if checkluxpath:
         if sys.exists(ic) != 1:
-            Draw.PupMenu("Error: Lux renderer not found. Please set path on System page.%t|OK")
+            Draw.PupMenu("Error: LuxRender not found. Please set path on System page.%t|OK")
             return
     autothreads = luxProp(scn, "autothreads", "true").get()
     threads = luxProp(scn, "threads", 1).get()
@@ -1322,7 +1322,7 @@ def get_lux_args(filename, extra_args=[], anim=False):
 def get_lux_pipe(scn, buf = 1024, type="luxconsole"):
     bin = "\"%s\"" % get_lux_exec(scn, type)
     
-    print("piping to lux binary: " + bin)
+    print("piping to LuxRender binary: " + bin)
     
     PIPE = subprocess.PIPE
     
@@ -1337,7 +1337,7 @@ def get_lux_pipe(scn, buf = 1024, type="luxconsole"):
 
 def launchLux(filename):
     cmd, raw_args = get_lux_args(filename, extra_args=[])
-    print("Running Luxrender:\n"+cmd)
+    print("Running LuxRender:\n"+cmd)
     os.system(cmd)
 
 def launchLuxWait(filename, anim=False):
@@ -2908,15 +2908,18 @@ def luxFilm(scn, gui=None):
                     luxProp(scn, "film.border.B", yr).delete()
                     luxProp(scn, "film.border.R", xr).delete()
 
+            if gui: gui.newline("  Output:")
+            str += luxInt("displayinterval", luxProp(scn, "film.displayinterval", 12), 4, 3600, "display interval", "Set display interval (seconds)", gui)
+            str += luxInt("writeinterval", luxProp(scn, "film.writeinterval", 120), 12, 3600, "write interval", "Set display interval (seconds)", gui)
+
             if gui: gui.newline("  Halt:")
-            str += luxInt("haltspp", luxProp(scn, "haltspp", 0), 0, 32768, "haltspp", "Stop rendering after specified amount of samples per pixel / 0 = never halt", gui)
-            str += luxInt("halttime", luxProp(scn, "halttime", 0), 0, 86400, "halttime", "Stop rendering after specified number of seconds / 0 = never halt", gui)
-            palpha = luxProp(scn, "film.premultiplyalpha", "false")
-            str += luxBool("premultiplyalpha", palpha, "premultiplyalpha", "Pre multiply film alpha channel during normalization", gui)
+            str += luxInt("haltspp", luxProp(scn, "haltspp", 0), 0, 32768, "halt at spp", "Stop rendering after specified amount of samples per pixel (0 = never halt)", gui)
+            str += luxInt("halttime", luxProp(scn, "halttime", 0), 0, 86400, "halt at time", "Stop rendering after specified number of seconds (0 = never halt)", gui)
     
             if gui: gui.newline("  Tonemap:")
             tonemapkernel =    luxProp(scn, "film.tonemapkernel", "reinhard")
-            str += luxOption("tonemapkernel", tonemapkernel, ["reinhard", "linear", "contrast", "maxwhite"], "Tonemapping Kernel", "Select the tonemapping kernel to use", gui, 2.0)
+            str += luxOption("tonemapkernel", tonemapkernel, ["reinhard", "linear", "contrast", "maxwhite"], "Tonemapping Kernel", "Select the tonemapping kernel to use", gui, 1.2)
+            str += luxBool("premultiplyalpha", luxProp(scn, "film.premultiplyalpha", "false"), "Premultiply Alpha", "Premultiply film alpha channel during normalization", gui, 0.8)
             if tonemapkernel.get() == "reinhard":
                 autoywa = luxProp(scn, "film.reinhard.autoywa", "true")
                 #str += luxBool("reinhard_autoywa", autoywa, "auto Ywa", "Automatically determine World Adaption Luminance", gui)
@@ -2933,12 +2936,6 @@ def luxFilm(scn, gui=None):
             elif tonemapkernel.get() == "contrast":
                 str += luxFloat("contrast_ywa", luxProp(scn, "film.contrast.ywa", 0.1), 0.001, 10000.0, "Ywa", "Display/World Adaption Luminance", gui)
 
-            if gui: gui.newline("  Display:")
-            str += luxInt("displayinterval", luxProp(scn, "film.displayinterval", 12), 4, 3600, "interval", "Set display Interval (seconds)", gui)
-            
-            if gui: gui.newline("  Write:")
-            str += luxInt("writeinterval", luxProp(scn, "film.writeinterval", 120), 12, 3600, "interval", "Set display Interval (seconds)", gui)
-
         # Image File Outputs
 
         # LDR clamping method
@@ -2948,12 +2945,11 @@ def luxFilm(scn, gui=None):
         if gui: gui.newline()
 
         # OpenEXR Output
+        if gui: gui.newline("  OpenEXR:")
         saveexr = luxProp(scn, "film.write_exr", "false")
         str += luxCollapse("write_exr", saveexr, "OpenEXR Output", "Enable OpenEXR output", gui, 2.0)
 
         if saveexr.get() == "true":
-            if gui: gui.newline("  OpenEXR:")
-
             exrchannels = luxProp(scn, "film.write_exr_channels", "RGBA")
             str += luxOption("write_exr_channels", exrchannels, ["Y", "YA", "RGB", "RGBA"], "Channels", "Select channels type to write", gui, 0.5)
             exrres = luxProp(scn, "film.write_exr_halftype", "true")
@@ -2977,11 +2973,11 @@ def luxFilm(scn, gui=None):
                 str += luxOption("write_exr_zbuf_normalizationtype", exrZNormalize, ["Camera Start/End clip", "Min/Max", "None"], "ZBuf Normalization", "Select type of normalization to use for Zbuf Depth Map", gui, 1.2)
 
         # PNG Output
+        if gui: gui.newline("  PNG:")
         savepng = luxProp(scn, "film.write_png", "true")
         str += luxCollapse("write_png", savepng, "PNG Output", "Enable PNG (Portable Network Graphics) output", gui, 2.0)
 
         if savepng.get() == "true":
-            if gui: gui.newline("  PNG:")
             pngchannels = luxProp(scn, "film.write_png_channels", "RGB")
             str += luxOption("write_png_channels", pngchannels, ["Y", "YA", "RGB", "RGBA"], "Channels", "Select channels type to write", gui, 0.5)
             png16bit = luxProp(scn, "film.write_png_16bit", "false")
@@ -2997,11 +2993,11 @@ def luxFilm(scn, gui=None):
         #    str += luxOption("write_png_zbuf_normalizationtype", pngZNormalize, ["Camera Start/End clip", "Min/Max", "None"], "ZBuf Normalization", "Select type of normalization to use for Zbuf Depth Map", gui, 1.2)
 
         # TGA Output
+        if gui: gui.newline("  TGA:")
         savetga = luxProp(scn, "film.write_tga", "false")
         str += luxCollapse("write_tga", savetga, "TGA Output", "Enable TGA output", gui, 2.0)
 
         if savetga.get() == "true":
-            if gui: gui.newline("  TGA:")
             tgachannels = luxProp(scn, "film.write_tga_channels", "RGB")
             str += luxOption("write_tga_channels", tgachannels, ["Y", "RGB", "RGBA"], "Channels", "Select channels type to write", gui, 0.5)
             tgagamutclamp = luxProp(scn, "film.write_tga_gamutclamp", "true")
@@ -4010,7 +4006,7 @@ def luxSystem(scn, gui=None):
         if gui: gui.newline("PATHS:", 10)
         lp = luxProp(scn, "lux", "")
         lp.set(Blender.sys.dirname(lp.get())+os.sep)
-        luxPath("LUX dir", lp, "lux binary dir", "Lux installation path", gui, 2.0)
+        luxPath("LUX dir", lp, "lux binary dir", "LuxRender installation path", gui, 2.0)
 
 #        luxFile("GUI filename", luxProp(scn, "lux", ""), "lux-file", "filename and path of the lux GUI executable", gui, 2.0)
 #        luxFile("Console filename", luxProp(scn, "luxconsole", ""), "lux-file-console", "filename and path of the lux console executable", gui, 2.0)
@@ -4042,7 +4038,7 @@ def luxSystem(scn, gui=None):
 
         if gui: gui.newline("ANIM:", 10)
         useparamkeys = luxProp(scn, "useparamkeys", "false")
-        luxBool("useparamkeys", useparamkeys, "Enable Parameter IPO Keyframing", "Enables keyframing of luxblend parameters", gui, 2.0)
+        luxBool("useparamkeys", useparamkeys, "Enable Parameter IPO Keyframing", "Enables keyframing of LuxBlend parameters", gui, 2.0)
 
         if gui: gui.newline("PARAMS:", 10)
         parammodeadvanced = luxProp(scn, "parammodeadvanced", "false")
@@ -4057,12 +4053,12 @@ def luxSystem(scn, gui=None):
         luxBool("RGC", luxProp(scn, "RGC", "true"), "RGC", "use reverse gamma correction", gui)
         luxBool("ColClamp", luxProp(scn, "colorclamp", "false"), "ColClamp", "clamp all colors to 0.0-0.9", gui)
         if gui: gui.newline("MESH:", 10)
-        luxBool("mesh_optimizing", luxProp(scn, "mesh_optimizing", "true"), "optimize meshes", "Optimize meshes during export", gui, 2.0)
+        luxBool("mesh_optimizing", luxProp(scn, "mesh_optimizing", "true"), "Optimize meshes", "Optimize meshes during export", gui, 2.0)
         #luxInt("trianglemesh thr", luxProp(scn, "trianglemesh_thr", 0), 0, 10000000, "trianglemesh threshold", "Vertex threshold for exporting (wald) trianglemesh object(s)", gui, 2.0)
         #if gui: gui.newline()
         #luxInt("barytrianglemesh thr", luxProp(scn, "barytrianglemesh_thr", 300000), 0, 100000000, "barytrianglemesh threshold", "Vertex threshold for exporting barytrianglemesh object(s) (slower but uses less memory)", gui, 2.0)
         if gui: gui.newline("INSTANCING:", 10)
-        luxInt("instancing_threshold", luxProp(scn, "instancing_threshold", 2), 0, 1000000, "object instancing threshold", "Threshold to created instanced objects", gui, 2.0)
+        luxInt("instancing_threshold", luxProp(scn, "instancing_threshold", 2), 0, 1000000, "Object instancing threshold", "Threshold to created instanced objects", gui, 2.0)
         
         # dougal2 packed images, enable this when implemented in Lux itself
         #if gui: gui.newline('TEXTURES:',10)
@@ -4072,17 +4068,15 @@ def luxSystem(scn, gui=None):
         if gui: 
             network=luxProp(scn,"network","false")
             gui.newline("NETWORK:", 10)
-            luxCollapse("network",network, "network", "enable network option", gui, 2.0)
+            luxCollapse("network",network, "Network", "enable network option", gui, 2.0)
             if(network.get() == "true"):
                 network_use_file=luxProp(scn,"network_use_file","false")
-                luxBool ("use file",network_use_file,"use file", "get list of servers from file; one per line",gui,2.0)
+                luxBool ("use file",network_use_file,"use file", "load servers list from a file (one server per line)",gui,2.0)
                 if (network_use_file.get() == "true"):
-                    luxFile("file", luxProp(scn, "network_file_path", ""), "file", "file where servers are defined", gui, 1.0)         
-                else :     
-                    #gui.newline("")
-                    luxString("Servers",luxProp(scn,"network_servers",""),"servers","coma separated list of servers",gui,1.0)
-                #gui.newline("")
-                luxInt("network_interval",luxProp(scn,"newtork_interval",180),0,9999,"update interval","interval between network refresh",gui)
+                    luxFile("file", luxProp(scn, "network_file_path", ""), "file", "file with servers list (one server per line)", gui, 1.0)         
+                else:
+                    luxString("servers",luxProp(scn,"network_servers",""),"servers","comma-separated list of servers",gui,1.0)
+                luxInt("network_interval",luxProp(scn,"network_interval",180),15,86400,"update interval","interval between network refresh (in seconds)",gui)
 
 
 def scalelist(list, factor):
@@ -5562,27 +5556,27 @@ def luxPreview(mat, name, defType=0, defEnabled=False, defLarge=False, texName=N
 
             # Zoom toggle
             zoom = luxProp(mat, kn+"prev_zoom", "false")
-            Draw.Toggle("Zoom", evtLuxGui, r[0]+66, r[1]+100+voffset, 50, 18, zoom.get()=="true", "Zoom", lambda e,v: zoom.set(["false","true"][bool(v)]))
+            Draw.Toggle("Zoom", evtLuxGui, r[0]+66, r[1]+100+voffset, 62, 18, zoom.get()=="true", "Zoom in to preview object", lambda e,v: zoom.set(["false","true"][bool(v)]))
 
             area = luxProp(mat, kn+"prev_arealight", "false")
-            Draw.Toggle("Area", evtLuxGui, r[0]+66, r[1]+5, 50, 18, area.get()=="true", "Area", lambda e,v: area.set(["false","true"][bool(v)]))
+            Draw.Toggle("Area", evtLuxGui, r[0]+133, r[1]+100+voffset, 62, 18, area.get()=="true", "Use area lightsource instead of point light", lambda e,v: area.set(["false","true"][bool(v)]))
 
             # Object width
             obwidth = luxProp(mat, kn+"prev_obwidth", 1.0)
-            Draw.Number("Width:", evtLuxGui, r[0]+66, r[1]+78+voffset, 129, 18, float(obwidth.get()), 0.001, 10, "The width of the preview object in blender/lux 1m units", lambda e,v: obwidth.set(v))
+            Draw.Number("Width:", evtLuxGui, r[0]+66, r[1]+78+voffset, 129, 18, float(obwidth.get()), 0.001, 10, "The width of the preview object in Blender/LuxRender 1m units", lambda e,v: obwidth.set(v))
 
             # large/small size
-            Draw.Toggle("large", evtLuxGui, r[0]+200, r[1]+78+voffset, 88, 18, large.get()=="true", "Large", lambda e,v: large.set(["false","true"][bool(v)]))
+            Draw.Toggle("Large", evtLuxGui, r[0]+200, r[1]+78+voffset, 88, 18, large.get()=="true", "Show larger preview image", lambda e,v: large.set(["false","true"][bool(v)]))
 
             # Preview Quality
             qs = ["low","medium","high","very high"]
             scn = Scene.GetCurrent()
             defprevmat = luxProp(scn, "defprevmat", "high")
             quality = luxProp(mat, kn+"prev_quality", defprevmat.get())
-            luxOptionRect("quality", quality, qs, "  Quality", "select preview quality", gui, r[0]+200, r[1]+100+voffset, 88, 18)
+            luxOptionRect("quality", quality, qs, "  Quality", "Select preview quality (higher quality > less noise > longer update)", gui, r[0]+200, r[1]+100+voffset, 88, 18)
 
             # Update preview
-            Draw.Button("Update Preview", evtLuxGui, r[0]+120, r[1]+5, 167, 18, "Update Material Preview", lambda e,v: Preview_Update(mat, kn, defLarge, defType, texName, name, level))
+            Draw.Button("Update Preview", evtLuxGui, r[0]+133, r[1]+5, 154, 18, "Update Material Preview", lambda e,v: Preview_Update(mat, kn, defLarge, defType, texName, name, level))
 
             # Reset depths after getRect()
             gui.y -= 92+voffset
@@ -6071,7 +6065,7 @@ def luxMaterial(mat, gui=None):
     str = ""
     if mat:
         if luxProp(mat, "type", "").get()=="": # lux material not defined yet
-            print("Blender material \"%s\" has no lux material definition, converting..."%(mat.getName()))
+            print("Blender material \"%s\" has no LuxRender material definition, converting..."%(mat.getName()))
             try:
                 convertMaterial(mat) # try converting the blender material to a lux material
             except: pass
@@ -6416,7 +6410,7 @@ def convertMaterial(mat):
         convertMirrorTexture(name+":Kr")
         convertDiffuseTexture(name+":Kt")
         convertBumpTexture(name)
-    print("convert Blender material \"%s\" to lux material"%(mat.name))
+    print("convert Blender material \"%s\" to LuxRender material"%(mat.name))
     mat.properties['luxblend'] = {}
     if mat.emit > 0.0001:
         luxProp(mat, "type", "").set("light")
@@ -7292,7 +7286,7 @@ def luxDraw():
                     for i, v in enumerate(matnames): menustr = "%s %%x%d|%s"%(v, i, menustr)
                     gui.newline("MATERIAL:", 8) 
                     r = gui.getRect(1.1, 1)
-                    Draw.Button("C", evtConvertMaterial, r[0]-gui.h, gui.y-gui.h, gui.h, gui.h, "convert blender material to lux material")
+                    Draw.Button("C", evtConvertMaterial, r[0]-gui.h, gui.y-gui.h, gui.h, gui.h, "convert blender material to LuxRender material")
                     Draw.Menu(menustr, evtLuxGui, r[0], r[1], r[2], r[3], matindex, "", lambda e,v: setactivemat(mats[v]))
                     luxBool("", matfilter, "filter", "only show active object materials", gui, 0.5)
 
@@ -7331,10 +7325,10 @@ def luxDraw():
             luxAccelerator(scn, gui)
             gui.newline("MATERIALS:", 10)
             r = gui.getRect(2,1)
-            Draw.Button("convert all blender materials", 0, r[0], r[1], r[2], r[3], "convert all blender-materials to lux-materials", lambda e,v:convertAllMaterials())
+            Draw.Button("Convert all Blender materials", 0, r[0], r[1], r[2], r[3], "Convert all Blender materials in the scene to LuxRender materials", lambda e,v:convertAllMaterials())
             gui.newline("SETTINGS:", 10)
             r = gui.getRect(2,1)
-            Draw.Button("save defaults", 0, r[0], r[1], r[2], r[3], "save current settings as defaults", lambda e,v:saveluxdefaults())
+            Draw.Button("Save defaults", 0, r[0], r[1], r[2], r[3], "Save current settings as defaults", lambda e,v:saveluxdefaults())
         y = gui.y - 80
         if y > 0: y = 0 # bottom align of render button
         run = luxProp(scn, "run", "true")
@@ -7372,30 +7366,30 @@ def luxDraw():
                         dlt.set('false')
             
             if (run.get()=="true"):
-                Draw.Button("Render", 0, 10, y+20, 100, 36, "Render with Lux", lambda e,v:CBluxExport(dlt.get()=="true" or pipe.get()=="true", True))
-                Draw.Button("Render Anim", 0, 110, y+20, 100, 36, "Render animation with Lux", lambda e,v:CBluxAnimExport(dlt.get()=="true" or pipe.get()=="true", True))
+                Draw.Button("Render", 0, 10, y+20, 100, 36, "Render image with LuxRender", lambda e,v:CBluxExport(dlt.get()=="true" or pipe.get()=="true", True))
+                Draw.Button("Render Anim", 0, 110, y+20, 100, 36, "Render animation with LuxRender", lambda e,v:CBluxAnimExport(dlt.get()=="true" or pipe.get()=="true", True))
             else:
                 Draw.Button("Export", 0, 10, y+20, 100, 36, "Export", lambda e,v:CBluxExport(dlt.get()=="true" or pipe.get()=="true", False))
                 Draw.Button("Export Anim", 0, 110, y+20, 100, 36, "Export animation", lambda e,v:CBluxAnimExport(dlt.get()=="true" or pipe.get()=="true", False))
             
-            Draw.Toggle("run", evtLuxGui, 265, y+40, 30, 16, run.get()=="true", "start Lux after export", lambda e,v: run.set(["false","true"][bool(v)]))
+            Draw.Toggle("run", evtLuxGui, 265, y+40, 30, 16, run.get()=="true", "Start LuxRender after export", lambda e,v: run.set(["false","true"][bool(v)]))
             
             if (pipe.get() == 'false' and dlt.get() == 'true') or run.get()=='false':
-                Draw.Toggle("def", evtLuxGui, 295, y+40, 55, 16, dlt.get()=="true", "write to default lxs file", lambda e,v: check_pipe_def_exclusion('d',v))
+                Draw.Toggle("def", evtLuxGui, 295, y+40, 55, 16, dlt.get()=="true", "Write to default lxs file", lambda e,v: check_pipe_def_exclusion('d',v))
             elif pipe.get() == 'true' and dlt.get() == 'false':
-                Draw.Toggle("pipe", evtLuxGui, 295, y+40, 55, 16, pipe.get()=="true", "do not write any lxs file", lambda e,v: check_pipe_def_exclusion('p',v))
+                Draw.Toggle("pipe", evtLuxGui, 295, y+40, 55, 16, pipe.get()=="true", "Do not write any lxs file", lambda e,v: check_pipe_def_exclusion('p',v))
             else:
-                Draw.Toggle("def", evtLuxGui, 295, y+40, 25, 16, dlt.get()=="true", "write to default lxs file", lambda e,v: check_pipe_def_exclusion('d',v))
-                Draw.Toggle("pipe", evtLuxGui, 320, y+40, 30, 16, pipe.get()=="true", "do not write any lxs file", lambda e,v: check_pipe_def_exclusion('p',v))
+                Draw.Toggle("def", evtLuxGui, 295, y+40, 25, 16, dlt.get()=="true", "Write to default lxs file", lambda e,v: check_pipe_def_exclusion('d',v))
+                Draw.Toggle("pipe", evtLuxGui, 320, y+40, 30, 16, pipe.get()=="true", "Do not write any lxs file", lambda e,v: check_pipe_def_exclusion('p',v))
             
-            Draw.Toggle("clay", evtLuxGui, 350, y+40, 30, 16, clay.get()=="true", "all materials are rendered as white-matte", lambda e,v: clay.set(["false","true"][bool(v)]))
-            Draw.Toggle("noLG", evtLuxGui, 380, y+40, 35, 16, nolg.get()=="true", "disables all light groups", lambda e,v: nolg.set(["false","true"][bool(v)]))
+            Draw.Toggle("clay", evtLuxGui, 350, y+40, 30, 16, clay.get()=="true", "All materials are rendered as white-matte", lambda e,v: clay.set(["false","true"][bool(v)]))
+            Draw.Toggle("noLG", evtLuxGui, 380, y+40, 35, 16, nolg.get()=="true", "Disables all light groups", lambda e,v: nolg.set(["false","true"][bool(v)]))
             
             if pipe.get() == "false":
-                Draw.Toggle(".lxs", 0, 265, y+20, 37, 16, lxs.get()=="true", "export .lxs scene file", lambda e,v: lxs.set(["false","true"][bool(v)]))
-                Draw.Toggle(".lxo", 0, 302, y+20, 38, 16, lxo.get()=="true", "export .lxo geometry file", lambda e,v: lxo.set(["false","true"][bool(v)]))
-                Draw.Toggle(".lxm", 0, 340, y+20, 37, 16, lxm.get()=="true", "export .lxm material file", lambda e,v: lxm.set(["false","true"][bool(v)]))
-                Draw.Toggle(".lxv", 0, 377, y+20, 38, 16, lxv.get()=="true", "export .lxv volume file", lambda e,v: lxv.set(["false","true"][bool(v)]))
+                Draw.Toggle(".lxs", 0, 265, y+20, 37, 16, lxs.get()=="true", "Export .lxs scene file", lambda e,v: lxs.set(["false","true"][bool(v)]))
+                Draw.Toggle(".lxo", 0, 302, y+20, 38, 16, lxo.get()=="true", "Export .lxo geometry file", lambda e,v: lxo.set(["false","true"][bool(v)]))
+                Draw.Toggle(".lxm", 0, 340, y+20, 37, 16, lxm.get()=="true", "Export .lxm material file", lambda e,v: lxm.set(["false","true"][bool(v)]))
+                Draw.Toggle(".lxv", 0, 377, y+20, 38, 16, lxv.get()=="true", "Export .lxv volume file", lambda e,v: lxv.set(["false","true"][bool(v)]))
     
     BGL.glColor3f(0.9, 0.9, 0.9)
     
@@ -7628,13 +7622,13 @@ if (pyargs != []) and (batchindex != 0):
     else:
         print("Error: End frame not supplied (-e)"); osys.exit(1)
     if opts.has_key('-l'):
-        print("Path to lux binary: %s" %opts['-l'])
+        print("Path to LuxRender binary: %s" %opts['-l'])
         luxbatchconsolemode = luxProp(scene, "luxbatchc", "false")
         luxbatchconsolemode.set("true")
         luxpathprop = luxProp(scene, "lux", "")
         luxpathprop.set(opts['-l'])
     else:
-        print("Error: path to lux binary not supplied (-l)"); osys.exit(1)
+        print("Error: path to LuxRender binary not supplied (-l)"); osys.exit(1)
     if opts.has_key('-o'):
         print("Image output path: %s" %opts['-o'])
         luxProp(scene, "overrideoutputpath", "").set(opts['-o'])
@@ -7693,15 +7687,15 @@ else:
                     saveluxdefaults()
             
             if (luxpath is None) or (sys.exists(luxpath)<=0):
-                print("WARNING: LuxPath \"%s\" is not valid\n"%(luxpath))
+                print("WARNING: LuxRender path \"%s\" is not valid\n"%(luxpath))
                 scn = Scene.GetCurrent()
                 if scn:
-                    r = Draw.PupMenu("Installation: Set path to the lux render software?%t|Yes%x1|No%x0|Never%x2")
+                    r = Draw.PupMenu("Installation: Set path to the LuxRender software?%t|Yes%x1|No%x0|Never%x2")
                     if r == 1:
-                        Window.FileSelector(lambda s:luxProp(scn, "lux", "").set(Blender.sys.dirname(s)+os.sep), "Select file in Lux path")
+                        Window.FileSelector(lambda s:luxProp(scn, "lux", "").set(Blender.sys.dirname(s)+os.sep), "Select file in LuxRender path")
                         saveluxdefaults()
                     if r == 2:
                         newluxdefaults["checkluxpath"] = False
                         saveluxdefaults()
     else    :
-        print("Lux path check disabled\n")
+        print("LuxRender path check disabled\n")
