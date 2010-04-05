@@ -2913,9 +2913,19 @@ def luxFilm(scn, gui=None):
             str += luxInt("writeinterval", luxProp(scn, "film.writeinterval", 120), 12, 3600, "write interval", "Set display interval (seconds)", gui)
 
             if gui: gui.newline("  Halt:")
-            str += luxInt("haltspp", luxProp(scn, "haltspp", 0), 0, 32768, "halt at spp", "Stop rendering after specified amount of samples per pixel (0 = never halt)", gui)
-            str += luxInt("halttime", luxProp(scn, "halttime", 0), 0, 86400, "halt at time", "Stop rendering after specified number of seconds (0 = never halt)", gui)
-    
+            if luxProp(scn, 'useparamkeys', 'false').get() == 'false':
+                str += luxInt("haltspp", luxProp(scn, "haltspp", 0), 0, 32768, "halt at spp", "Stop rendering after specified amount of samples per pixel (0 = never halt)", gui)
+                str += luxInt("halttime", luxProp(scn, "halttime", 0), 0, 86400, "halt at time", "Stop rendering after specified number of seconds (0 = never halt)", gui)
+            else:
+                haltspp = luxProp(scn, 'haltspp', 0)
+                halttime = luxProp(scn, 'halttime', 0)
+                luxFloat("haltspp", haltspp, 0, 32768.0, "halt at spp", "Stop rendering after specified amount of samples per pixel (0 = never halt)", gui)
+                luxFloat("halttime", halttime, 0, 86400.0, "halt at time", "Stop rendering after specified number of seconds (0 = never halt)", gui)
+                haltspp.set(math.ceil(float(haltspp.get())))
+                halttime.set(math.ceil(float(halttime.get())))
+                str += luxInt('haltspp', haltspp, 0, 32768, '', '', None)
+                str += luxInt('halttime', halttime, 0, 86400, '', '', None)
+            
             if gui: gui.newline("  Tonemap:")
             tonemapkernel =    luxProp(scn, "film.tonemapkernel", "reinhard")
             str += luxOption("tonemapkernel", tonemapkernel, ["reinhard", "linear", "contrast", "maxwhite"], "Tonemapping Kernel", "Select the tonemapping kernel to use", gui, 1.2)
