@@ -3029,7 +3029,7 @@ def luxFilm(scn, gui=None):
             str += "\n   \"string filename\" [\"%s\"]"%(filename)
         else:
             fn = luxProp(scn, "filename", "default-%05d" %  (Blender.Get('curframe')))
-            str += "\n   \"string filename\" [\"%s\"]" % luxFilePath(fn.get())
+            str += "\n   \"string filename\" [\"%s\"]" % luxFilePath(fn.get()).replace('\\', '\\\\')
     
         if gui: gui.newline("  Resume:")
         resumeflm = luxProp(scn, "film.write_resume_flm", "false")
