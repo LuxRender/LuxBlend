@@ -5113,9 +5113,12 @@ def listNamedVolumes():
     # returns a dict of volumeName:volumeId pairs
     d = {}
     s = 'named_volumes:'
-    for k, v in Scene.GetCurrent().properties['luxblend'].convert_to_pyobject().items():
-        if k.startswith(s) and k[k.find('.')+1:] == 'name':
-            d[v] = int(k[len(s):k.find('.')])
+    try:
+        for k, v in Scene.GetCurrent().properties['luxblend'].convert_to_pyobject().items():
+            if k.startswith(s) and k[k.find('.')+1:] == 'name':
+                d[v] = int(k[len(s):k.find('.')])
+    except KeyError:
+        pass
     if not d.has_key('0'):
         d['world *'] = 0
         luxProp(Scene.GetCurrent(), 'named_volumes:0.id', 0).set(0)
