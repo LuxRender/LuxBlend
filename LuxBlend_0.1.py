@@ -458,9 +458,17 @@ class luxExport:
                     file.write("%f %f %f\n"% tuple(normal))
             if (mesh.faceUV):
                 file.write("\t] \"float uv\" [\n")
+                # Check if there is a render specific UV layer and make it active for export.
+                activeUVLayer_orig = mesh.activeUVLayer
+                renderUVLayer = mesh.renderUVLayer
+                if renderUVLayer != activeUVLayer_orig:
+                    mesh.activeUVLayer = renderUVLayer
                 for face in ffaces:
                     for uv in face.uv:
                         file.write("%f %f\n"% tuple(uv))
+                # If we changed the active UV layer: reset it to the original.
+                if renderUVLayer != activeUVLayer_orig:
+                    mesh.activeUVLayer = activeUVLayer_orig 
             file.write("\t]\n")
 
     #-------------------------------------------------
@@ -481,6 +489,11 @@ class luxExport:
         if mats == []:
             mats = [dummyMat]
         usedmats = [f.mat for f in mesh.faces]
+        # Check if there is a render specific UV layer and make it active for export.
+        activeUVLayer_orig = mesh.activeUVLayer
+        renderUVLayer = mesh.renderUVLayer
+        if renderUVLayer != activeUVLayer_orig:
+            mesh.activeUVLayer = renderUVLayer
         for matIndex in range(len(mats)):
             if not matIndex in usedmats:
                 continue
@@ -560,6 +573,10 @@ class luxExport:
                             file.write("".join(["%f %f\n"%tuple(vertex[1]) for vertex in exportVerts])) 
                     file.write("\t]\n")
                     #print("  shape(%s): %d vertices, %d faces"%(shapeText[shape], len(exportVerts), len(exportFaces)))
+        # If we changed the active UV layer: reset it to the original.
+        if renderUVLayer != activeUVLayer_orig:
+            mesh.activeUVLayer = activeUVLayer_orig 
+
     
     #-------------------------------------------------
     # exportMeshes(self, file)
