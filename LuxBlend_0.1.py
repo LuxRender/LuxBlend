@@ -2556,6 +2556,30 @@ def luxVectorUniform(name, lux, min, max, caption, hint, gui, width=2.0):
             drawZ = Draw.Number("z:", evtLuxGui, r[0]+2*w+gui.h, r[1], w, r[3], drawZ.val, min, max, "", lambda e,v: lux.setVector((drawX.val,drawY.val,v)))
     return "\n   \"vector %s\" [%s]"%(name, lux.getVectorStr())
 
+# property translator for lux<->blender camera types
+class luxCameraLinker:
+    def __init__(self, cam, luxCams, blendCams):
+        self.id = luxProp(cam, 'camera.type.id', 0)
+        self.prop = luxProp(cam, 'camera.type', 'perspective')
+        self.cam = cam
+        self.default = cam.type
+        self.luxCams = luxCams
+        self.blendCams = blendCams
+    def get(self):
+        if self.blendCams[self.id.get()] is None:
+            n = self.luxCams[self.id.get()]
+        else:
+            n = self.luxCams[self.blendCams.index(self.cam.type)]
+        self.prop.set(n)
+        return n
+    def set(self, value):
+        self.id.set(self.luxCams.index(value))
+        try:
+            self.cam.type = self.blendCams[self.luxCams.index(value)]
+        except ValueError:
+            pass
+        self.prop.set(value)
+        Window.QRedrawAll()
 
 # lux individual identifiers
 def luxCamera(cam, context, gui=None):
@@ -2563,10 +2587,14 @@ def luxCamera(cam, context, gui=None):
     str = ""
     if cam:
         camtype = luxProp(cam, "camera.type", "perspective")
+        # camera types for lux<->blender property linking. make sure the number of elements are equal
+        camlist = ['perspective', 'orthographic', 'environment']
+        camvals = ['persp', 'ortho', None]
         # Radiance - remarked 'realistic' for v0.6 release
         #str = luxIdentifier("Camera", camtype, ["perspective","orthographic","environment","realistic"], "CAMERA", "select camera type", gui, icon_c_camera)
-        str = luxIdentifier("Camera", camtype, ["perspective","orthographic","environment"], "CAMERA", "select camera type", gui, icon_c_camera)
+        str = luxIdentifier("Camera", luxCameraLinker(cam, camlist, camvals), camlist, "CAMERA", "select camera type", gui, icon_c_camera)
         scale = 1.0
+        
         if camtype.get() == "perspective":
             if gui: gui.newline("  View:")
             str += luxFloat("fov", luxAttr(cam, "angle"), 8.0, 170.0, "fov", "camera field-of-view angle", gui)
@@ -2577,13 +2605,12 @@ def luxCamera(cam, context, gui=None):
         if camtype.get() == "orthographic" :
             str += luxFloat("scale", luxAttr(cam, "scale"), 0.01, 1000.0, "scale", "orthographic camera scale", gui)
             scale = cam.scale / 2
-        if camtype.get() == "realistic":
             
+        if camtype.get() == "realistic":
             if gui: gui.newline("  View:")
             fov = luxAttr(cam, "angle")
             str += luxFloat("fov", fov, 8.0, 170.0, "fov", "camera field-of-view angle", gui)
             if gui: luxFloat("lens", luxAttr(cam, "lens"), 1.0, 250.0, "focallength", "camera focal length", gui)
-            
             
             if gui: gui.newline()
             str += luxFile("specfile", luxProp(cam, "camera.realistic.specfile", ""), "spec-file", "", gui, 1.0)
