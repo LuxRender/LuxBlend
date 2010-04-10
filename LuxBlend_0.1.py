@@ -2774,39 +2774,34 @@ def luxCamera(cam, context, gui=None):
             mblurpreset = luxProp(cam, "mblurpreset", "true")
             luxBool("mblurpreset", mblurpreset, "Preset", "Enable use of Shutter Presets", gui, 0.4)
             if(mblurpreset.get() == "true"):
-                shutterpresets = ["full frame", "half frame", "quarter frame", "1/25", "1/30", "1/45", "1/60", "1/85", "1/125", "1/250", "1/500"]        
-                shutterpreset = luxProp(cam, "camera.shutterspeedpreset", "full frame")
-                luxOption("shutterpreset", shutterpreset, shutterpresets, "shutterspeed", "Choose the Shutter speed preset.", gui, 1.0)
-
-                fpspresets = ["10 FPS", "12 FPS", "20 FPS", "25 FPS", "29.99 FPS", "30 FPS", "50 FPS", "60 FPS"]
+                mblurpresetstype = luxProp(cam, "mblurpresetstype", "still")
+                luxOption("mblurpresetstype", mblurpresetstype, ['still', 'cinema'], "camera type", "Choose whether to use still photographic or cinematographic camera presets", gui, 0.5)
+                if mblurpresetstype.get() == 'still':
+                    shutterpresets = ["1", "1/2", "1/4", "1/8", "1/15", "1/25", "1/30", "1/45", "1/60", "1/85", "1/125", "1/250", "1/500", "1/1000"]        
+                else:
+                    shutterpresets = ["90-degree", "180-degree", "270-degree"]        
+                
+                shutterpreset = luxProp(cam, "camera.shutterspeedpreset", "1/60" if mblurpresetstype.get() == "still" else "180-degree")
+                luxOption("shutterpreset", shutterpreset, shutterpresets, "shutter speed", "Choose the Shutter speed preset", gui, 0.6 if mblurpresetstype.get() == 'cinema' else 1.1)
+                
                 shutfps = luxProp(cam, "camera.shutfps", "25 FPS")
-                luxOption("shutfps", shutfps, fpspresets, "@", "Choose the number of frames per second as the time base.", gui, 0.6)
+                if mblurpresetstype.get() == 'cinema':
+                    fpspresets = ["10 FPS", "12 FPS", "20 FPS", "24 FPS", "25 FPS", "29.976 FPS", "30 FPS", "50 FPS", "60 FPS", "100 FPS", "200 FPS", "500 FPS"]
+                    luxOption("shutfps", shutfps, fpspresets, "@", "Choose the number of frames per second as the time base", gui, 0.5)
 
                 sfps = shutfps.get()
                 fps = 25
-                if sfps == "10 FPS": fps = 10
-                elif sfps == "12 FPS": fps = 12
-                elif sfps == "20 FPS": fps = 20
-                elif sfps == "25 FPS": fps = 25
-                elif sfps == "29.99 FPS": fps = 29.99
-                elif sfps == "30 FPS": fps = 30
-                elif sfps == "50 FPS": fps = 50
-                elif sfps == "60 FPS": fps = 60
+                if mblurpresetstype.get() == 'still': fps = 1
+                else: fps = float(sfps[:sfps.find(' ')])  # assuming fps are in form 'n FPS'
 
                 spre = shutterpreset.get()
                 open = 0.0
                 close = 1.0
-                if spre == "full frame": close = 1.0
-                elif spre == "half frame": close = 0.5
-                elif spre == "quarter frame": close = 0.25
-                elif spre == "1/25": close = 1.0 / 25.0 * fps
-                elif spre == "1/30": close = 1.0 / 30.0 * fps
-                elif spre == "1/45": close = 1.0 / 45.0 * fps
-                elif spre == "1/60": close = 1.0 / 60.0 * fps
-                elif spre == "1/85": close = 1.0 / 85.0 * fps
-                elif spre == "1/125": close = 1.0 / 125.0 * fps
-                elif spre == "1/250": close = 1.0 / 250.0 * fps
-                elif spre == "1/500": close = 1.0 / 500.0 * fps
+                if spre == "90-degree": close = 1.0/fps * 0.75
+                elif spre == "180-degree": close = 1.0/fps * 0.5
+                elif spre == "270-degree": close = 1.0/fps * 0.25
+                elif spre == "1": close = 1.0
+                else: close = 1.0 / float(spre[2:])  # assuming still camera shutterspeed is in form '1/n'
 
                 str += "\n   \"float shutteropen\" [%f]\n   \"float shutterclose\" [%f] "%(open,close)
 
@@ -2814,7 +2809,7 @@ def luxCamera(cam, context, gui=None):
                 str += luxFloat("shutteropen", luxProp(cam, "camera.shutteropen", 0.0), 0.0, 100.0, "open", "time in seconds when shutter opens", gui, 0.8)
                 str += luxFloat("shutterclose", luxProp(cam, "camera.shutterclose", 1.0), 0.0, 100.0, "close", "time in seconds when shutter closes", gui, 0.8)
 
-            str += luxOption("shutterdistribution", luxProp(cam, "camera.shutterdistribution", "uniform"), ["uniform", "gaussian"], "distribution", "Choose the shutter sampling distribution.", gui, 2.0)
+            str += luxOption("shutterdistribution", luxProp(cam, "camera.shutterdistribution", "gaussian"), ["uniform", "gaussian"], "distribution", "Choose the shutter sampling distribution", gui, 2.0)
             objectmblur = luxProp(cam, "objectmblur", "true")
             luxBool("objectmblur", objectmblur, "Object", "Enable Motion Blur for scene object motions", gui, 1.0)
             cammblur = luxProp(cam, "cammblur", "true")
