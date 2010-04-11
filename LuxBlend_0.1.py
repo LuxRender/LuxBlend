@@ -5448,10 +5448,23 @@ def Preview_Update(mat, kn, defLarge, defType, texName, name, level):
         prev_torus = luxProp(mat, kn+"prev_torus", "true")
 
     # Zoom
-    if luxProp(mat, kn+"prev_zoom", "false").get() == "true":
-        p.stdin.write('LookAt 0.250000 -1.500000 0.750000 0.250000 -0.500000 0.750000 0.000000 0.000000 1.000000\nCamera "perspective" "float fov" [22.5]\n')
+    if prev_plane.get() != "true":
+        if luxProp(mat, kn+"prev_zoom", "false").get() == "true":
+            p.stdin.write('LookAt 0.250000 -1.500000 0.750000 0.250000 -0.500000 0.750000 0.000000 0.000000 1.000000\nCamera "perspective" "float fov" [22.5]\n')
+        else:
+            p.stdin.write('LookAt 0.0 -3.0 0.5 0.0 -2.0 0.5 0.0 0.0 1.0\nCamera "perspective" "float fov" [22.5]\n')
     else:
-        p.stdin.write('LookAt 0.0 -3.0 0.5 0.0 -2.0 0.5 0.0 0.0 1.0\nCamera "perspective" "float fov" [22.5]\n')
+        orientation = luxProp(mat, kn+"prev_orientation", "XY")
+        if orientation.get() == "XY":
+            p.stdin.write('LookAt 0.0 0.0 1.0  0.0 0.0 0.0  0.0 1.0 0.0\n')
+        elif orientation.get() == "XZ":
+            p.stdin.write('LookAt 0.0 1.0 0.0  0.0 0.0 0.0  0.0 0.0 1.0\n')
+        else:
+            p.stdin.write('LookAt 1.0 0.0 0.0  0.0 0.0 0.0  0.0 0.0 1.0\n')
+        if luxProp(mat, kn+"prev_zoom", "false").get() == "true":
+            p.stdin.write('Camera "orthographic" "float screenwindow" [0.0 0.5 0.0 0.5]\n')
+        else:
+            p.stdin.write('Camera "orthographic" "float screenwindow" [-0.5 0.5 -0.5 0.5]\n')
     # Fleximage
     p.stdin.write('Film "fleximage" "integer xresolution" [%i] "integer yresolution" [%i] "integer displayinterval" [3] "integer ldr_writeinterval" [3600] "string tonemapkernel" ["linear"] "integer haltspp" [1] "integer reject_warmup" [64] "bool write_tonemapped_tga" ["false"] "bool write_untonemapped_exr" ["false"] "bool write_tonemapped_exr" ["false"] "bool write_untonemapped_igi" ["false"] "bool write_tonemapped_igi" ["false"] "bool write_png" ["false"] "string filename" ["luxblend-preview"] \n'%(thumbres, thumbres))
     p.stdin.write('PixelFilter "mitchell" "float xwidth" [1.500000] "float ywidth" [1.500000] "float B" [0.333330] "float C" [0.333330] "bool supersample" ["true"]\n')
@@ -5477,7 +5490,7 @@ def Preview_Update(mat, kn, defLarge, defType, texName, name, level):
     if(prev_sphere.get()=="true"):
         p.stdin.write('AttributeBegin\nTransform [0.5 0.0 0.0 0.0  0.0 0.5 0.0 0.0  0.0 0.0 0.5 0.0  0.0 0.0 0.5 1.0]\n')
     elif (prev_plane.get()=="true"):
-        p.stdin.write('AttributeBegin\nTransform [0.649999976158 0.0 0.0 0.0  0.0 4.90736340453e-008 0.649999976158 0.0  0.0 -0.649999976158 4.90736340453e-008 0.0  0.0 0.0 0.5 1.0]\n')
+        pass
     else:
         p.stdin.write('AttributeBegin\nTransform [0.35 -0.35 0.0 0.0  0.25 0.25 0.35 0.0  -0.25 -0.25 0.35 0.0  0.0 0.0 0.5 1.0]\n')
     obwidth = luxProp(mat, kn+"prev_obwidth", 1.0)
@@ -5507,7 +5520,14 @@ def Preview_Update(mat, kn, defLarge, defType, texName, name, level):
     if(prev_sphere.get()=="true"):
         p.stdin.write('Shape "sphere" "float radius" [1.0]\n')
     elif (prev_plane.get()=="true"):
-        p.stdin.write('    Shape "trianglemesh" "integer indices" [ 0 1 2 0 2 3 ] "point P" [ 1.0 1.0 0.0 -1.0 1.0 0.0 -1.0 -1.0 -0.0 1.0 -1.0 -0.0 ] "float uv" [ 1.0 1.0     0.0 1.0     0.0 0.0       1.0 0.0 ]\n')
+        #p.stdin.write('    Shape "trianglemesh" "integer indices" [ 0 1 2 0 2 3 ] "point P" [ 1.0 1.0 0.0 -1.0 1.0 0.0 -1.0 -1.0 -0.0 1.0 -1.0 -0.0 ] "float uv" [ 1.0 1.0     0.0 1.0     0.0 0.0       1.0 0.0 ]\n')
+        _points = "%(p)s %(p)s %(p)s %(p)s" % {'p': "%(x)s %(y)s %(z)s"} % \
+            {
+                'x': '%.1f' if 'X' in orientation.get() else '0.0',
+                'y': '%.1f' if 'Y' in orientation.get() else '0.0',
+                'z': '%.1f' if 'Z' in orientation.get() else '0.0'
+            } % (0.5,0.5,0.5,-0.5,-0.5,-0.5,-0.5,0.5)
+        p.stdin.write('Shape "trianglemesh" "integer indices" [ 0 1 2 0 2 3 ] "point P" [%s] "float uv" [ 1.0 1.0  0.0 1.0  0.0 0.0  1.0 0.0 ]\n' % _points)
     elif (prev_torus.get()=="true"):
         p.stdin.write('Shape "torus" "float radius" [1.0]\n')
     p.stdin.write('AttributeEnd\n')
@@ -5526,11 +5546,14 @@ def Preview_Update(mat, kn, defLarge, defType, texName, name, level):
         p.stdin.write('] "float uv" [ 0.333334 0.000000 0.333334 0.333334 0.000000 0.333334 0.000000 0.000000 0.666667 0.000000 0.666667 0.333333 1.000000 0.000000 1.000000 0.333333 ]\n')
         p.stdin.write('AttributeEnd\n')
     # Lightsource
+    area = luxProp(mat, kn+"prev_arealight", "false")
     if(prev_plane.get()=="false"):
         p.stdin.write('AttributeBegin\nTransform [1.0 0.0 0.0 0.0  0.0 1.0 0.0 0.0  0.0 0.0 1.0 0.0  1.0 -1.0 4.0 1.0]\n')
     else:
         p.stdin.write('AttributeBegin\nTransform [1.0 0.0 0.0 0.0  0.0 1.0 0.0 0.0  0.0 0.0 1.0 0.0  1.0 -4.0 1.0 1.0]\n')
-    area = luxProp(mat, kn+"prev_arealight", "false")
+        _m = Mathutils.TranslationMatrix(Mathutils.Vector(0.5,0.5,3.5 if area.get() == "false" else 6.0))*Mathutils.RotationMatrix({'XY':0,'XZ':-90,'YZ':90}[orientation.get()],4,'x' if orientation.get() == "XZ" else 'y')
+        _s = ' '.join(['%.5f' % b for a in _m for b in a])
+        p.stdin.write('AttributeBegin\nTransform [%s]\n'%_s)
     if(area.get() == "false"):
         p.stdin.write('Texture "pL" "color" "blackbody" "float temperature" [6500.0]\n')
         p.stdin.write('LightSource "point" "texture L" ["pL"] "float gain" [0.002]')
@@ -5609,7 +5632,7 @@ def luxPreview(mat, name, defType=0, defEnabled=False, defLarge=False, texName=N
             # Zoom toggle
             zoom = luxProp(mat, kn+"prev_zoom", "false")
             Draw.Toggle("Zoom", evtLuxGui, r[0]+66, r[1]+100+voffset, 62, 18, zoom.get()=="true", "Zoom in to preview object", lambda e,v: zoom.set(["false","true"][bool(v)]))
-
+            
             area = luxProp(mat, kn+"prev_arealight", "false")
             Draw.Toggle("Area", evtLuxGui, r[0]+133, r[1]+100+voffset, 62, 18, area.get()=="true", "Use area lightsource instead of point light", lambda e,v: area.set(["false","true"][bool(v)]))
 
@@ -5617,6 +5640,13 @@ def luxPreview(mat, name, defType=0, defEnabled=False, defLarge=False, texName=N
             obwidth = luxProp(mat, kn+"prev_obwidth", 1.0)
             Draw.Number("Width:", evtLuxGui, r[0]+66, r[1]+78+voffset, 129, 18, float(obwidth.get()), 0.001, 10, "The width of the preview object in Blender/LuxRender 1m units", lambda e,v: obwidth.set(v))
 
+            # Orientation controls for plane obj
+            if prev_plane.get() == "true":
+                orientation = luxProp(mat, kn+"prev_orientation", "XY")
+                Draw.Toggle("XY", evtLuxGui, r[0]+66,  r[1]+56+voffset, 41, 18, orientation.get()=="XY", "Position plane over XY axes ('top' view)", lambda e,v: orientation.set("XY"))
+                Draw.Toggle("XZ", evtLuxGui, r[0]+110, r[1]+56+voffset, 41, 18, orientation.get()=="XZ", "Position plane over XZ axes ('front' view)", lambda e,v: orientation.set("XZ"))
+                Draw.Toggle("YZ", evtLuxGui, r[0]+154, r[1]+56+voffset, 41, 18, orientation.get()=="YZ", "Position plane over YZ axes ('side' view)", lambda e,v: orientation.set("YZ"))
+            
             # large/small size
             Draw.Toggle("Large", evtLuxGui, r[0]+200, r[1]+78+voffset, 88, 18, large.get()=="true", "Show larger preview image", lambda e,v: large.set(["false","true"][bool(v)]))
 
