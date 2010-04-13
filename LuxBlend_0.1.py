@@ -240,6 +240,7 @@ class luxExport:
         self.volumes = []
         self.namedVolumes = []
         self.meshes = {}
+        self.instances = {}
         self.materials = []
         self.lights = []
         self.duplis = set()
@@ -595,12 +596,14 @@ class luxExport:
             for mat in mats: # don't instance if one of the materials is emissive
                 if (mat!=None) and (luxProp(mat, "type", "").get()=="light"):
                     allow_instancing = False
-            for obj in objs: # don't instance if the objects with same mesh uses different materials
+            for obj in objs:
                 ms = getMaterials(obj)
                 if ms != mats:
+                    # if an instance overrides mesh's materials, copy them
+                    self.instances[obj] = ms
+                # XXX make instances of different meshes according to modifiers used (if possible)
+                if obj.modifiers.__len__() > 0:
                     allow_instancing = False
-            if obj.modifiers.__len__() > 0:
-                allow_instancing = False
             if allow_instancing and (len(objs) > instancing_threshold):
                 del self.meshes[mesh_name]
                 mesh.getFromObject(objs[0], 0, 1)
@@ -684,6 +687,9 @@ class luxExport:
                 if motion:
                     file.write("\tMotionInstance \"%s\" 0.0 1.0 \"%s\"\n"%(mesh_name, obj.getName()+"_motion"))
                 else:
+                    # XXX redefined instance material; only first one until the situation is clear
+                    if obj in self.instances:
+                        file.write("\tNamedMaterial \"%s\"\n" % self.instances[obj][0].name)
                     file.write("\tObjectInstance \"%s\"\n"%mesh_name)
             file.write("AttributeEnd\n\n")
         mesh.verts = None
