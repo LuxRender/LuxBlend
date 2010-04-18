@@ -7143,6 +7143,67 @@ def loadMatTex(mat, fn, basekey='', tex=None):
     if LuxIsGUI: Draw.Redraw()
 
 
+def batchRenamePaths(scn):
+    dryrun = luxProp(scn, 'batch_rename_dryrun', False)
+    searchSaved = luxProp(scn, 'batch_rename_search', '')
+    search = Draw.PupStrInput('path substring to search for: ', searchSaved.get(), 100)
+    searchSaved.set(search)
+    
+    if search == '':
+        Blender.Window.QRedrawAll()
+        return False
+    else:
+        collection = []
+        misses = []
+        metals = ['aluminium', 'amorphous carbon', 'silver', 'gold', 'copper']
+        for item in [scn] + Material.Get():
+            if item.properties.has_key('luxblend'):
+                for k, v in item.properties['luxblend'].convert_to_pyobject().items():
+                    kn = k
+                    if k[:7] == '__hash:':
+                        kn, v = v.split(' = ')
+                    if type(v) is str and kn.endswith(('.filename', '.name')) and not (kn.endswith('.name') and v in metals) \
+                     and not (kn.endswith('.name') and kn.startswith('named_volumes:')):
+                        if v.find(search) < 0: misses.append([item, kn])
+                        else: collection.append([item, kn])
+    
+    if not len(collection):
+        Draw.PupMenu('Search substring not found in resources paths%t|OK%x1')
+        Blender.Window.QRedrawAll()
+        return False
+    
+    replaceSaved = luxProp(scn, 'batch_rename_replace', '')
+    replace = Draw.PupStrInput('replace with: ', replaceSaved.get(), 100)
+    replaceSaved.set(replace)
+    
+    r = Draw.PupMenu('  OK?%t|Replace "'+search+'" substring with "'+replace+'" in '+str(len(collection))+' of '+str(len(collection)+len(misses))+' path properties%x1')
+    if r == 1:
+        print
+        if dryrun.get() == 'true':
+            print '--------------- DRY RUN ---------------'
+        print 'Begin batch search & replace in paths:'
+        print '("%s" to "%s" in %s properties)' % (search, replace, len(collection))
+        for item, kn in collection:
+            v_old = luxProp(item, kn, '').get()
+            v_new = v_old.replace(search, replace)
+            print '%s, %s' % (item, kn)
+            print "\told:", v_old
+            print "\tnew:", v_new
+            if dryrun.get() != 'true':
+                luxProp(item, kn, '').set(v_new)
+        if len(misses):
+            print '---------------------------------------'
+            print '%s properties not affected:' % len(misses)
+            for item, kn in misses:
+                print '%s, %s' % (item, kn)
+        if dryrun.get() == 'true':
+            print '--------------- DRY RUN ---------------'
+        return True
+    else:
+        Blender.Window.QRedrawAll()
+        return False
+
+
 def flipMixMat(mat, basekey):
     # flip mix material slots
     if luxProp(mat, 'type', '').get() == 'mix':
@@ -7451,6 +7512,9 @@ def luxDraw():
             gui.newline("MATERIALS:", 10)
             r = gui.getRect(2,1)
             Draw.Button("Convert all Blender materials", 0, r[0], r[1], r[2], r[3], "Convert all Blender materials in the scene to LuxRender materials", lambda e,v:convertAllMaterials())
+            r = gui.getRect(1.5,1)
+            Draw.Button('Batch replace of resources paths', 0, r[0], r[1], r[2], r[3], 'Batch search & replace of paths to imagemaps and other external resources', lambda e,v:batchRenamePaths(scn))
+            luxBool('batch_rename_dryrun', luxProp(scn, 'batch_rename_dryrun', False), 'dry run', 'Print all normal output to the Blender console without actually replacing any path properties', gui, 0.5)
             gui.newline("SETTINGS:", 10)
             r = gui.getRect(2,1)
             Draw.Button("Save defaults", 0, r[0], r[1], r[2], r[3], "Save current settings as defaults", lambda e,v:saveluxdefaults())
