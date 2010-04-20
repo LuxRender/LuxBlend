@@ -366,11 +366,16 @@ class luxExport:
         return light
 
     #-------------------------------------------------
-    # exportInstanceObjName(self, mesh_name, matId)
+    # exportInstanceObjName(self, mesh_name, matId, shapeId)
     # format instanced material-separated mesh name
     #-------------------------------------------------
-    def exportInstanceObjName(self, mesh_name, matId):
-        return '%s:luxInstancedObj:matId%s' % (mesh_name, matId)
+    def exportInstanceObjName(self, mesh_name, matId=None, shapeId=None):
+        s = mesh_name
+        if matId is not None or shapeId is not None:
+            s += ':luxInstancedObj'
+            if matId is not None: s += ':matId%s' % matId
+            if shapeId is not None: s += ':shapeId%s' % shapeId
+        return s
 
     #-------------------------------------------------
     # exportMaterialLink(self, file, mat)
@@ -419,12 +424,12 @@ class luxExport:
                 file.write(output)
 
     #-------------------------------------------------
-    # getMeshType(self, vertcount, mat, instanced)
+    # getMeshType(self, vertcount, mat, instancedMats)
     # returns type of mesh as string to use depending on thresholds
     #-------------------------------------------------
-    def getMeshType(self, vertcount, mat, instanced=None):
+    def getMeshType(self, vertcount, mat, instancedMats=None):
         scn = Scene.GetCurrent()
-        if mat != dummyMat and not instanced:
+        if mat != dummyMat and not instancedMats:
             usesubdiv = luxProp(mat, "subdiv", "false")
             usedisp = luxProp(mat, "dispmap", "false")
             sharpbound = luxProp(mat, "sharpbound", "false")
@@ -443,10 +448,10 @@ class luxExport:
         return "\"trianglemesh\""
 
     #-------------------------------------------------
-    # exportMesh(self, file, mesh, mats, name, portal, instanced)
+    # exportMesh(self, file, mesh, mats, name, portal, instancedMats, instancedShapes)
     # exports mesh to the file without any optimization
     #-------------------------------------------------
-    def exportMesh(self, file, mesh, mats, name, portal=False, instanced=None):
+    def exportMesh(self, file, mesh, mats, name, portal=False, instancedMats=None, instancedShapes=None):
         #print("    exporting mesh")
         if mats == []:
             mats = [dummyMat]
@@ -459,10 +464,10 @@ class luxExport:
                 mat = mats[matIndex]
                 if not mat:
                    mat = dummyMat
-                if instanced:
-                    file.write("ObjectBegin \"%s\"\n" % self.exportInstanceObjName(instanced, i))
+                if instancedMats:
+                    file.write("ObjectBegin \"%s\"\n" % self.exportInstanceObjName(instancedMats, i, instancedShapes))
                 self.exportMaterialLink(file, mat)
-            mesh_str = self.getMeshType(len(mesh.verts), mats[matIndex], instanced)
+            mesh_str = self.getMeshType(len(mesh.verts), mats[matIndex], instancedMats)
             if not(portal):
                 file.write("\tShape %s \"integer indices\" [\n"% mesh_str)
             else:
@@ -500,17 +505,17 @@ class luxExport:
                 if renderUVLayer != activeUVLayer_orig:
                     mesh.activeUVLayer = activeUVLayer_orig 
             file.write("\t]\n")
-            if instanced:
-                file.write("ObjectEnd # %s\n\n" % self.exportInstanceObjName(instanced, i))
+            if instancedMats:
+                file.write("ObjectEnd # %s\n\n" % self.exportInstanceObjName(instancedMats, i, instancedShapes))
             i += 1
 
     #-------------------------------------------------
-    # exportMeshOpt(self, file, mesh, mats, name, portal, optNormals, instanced)
+    # exportMeshOpt(self, file, mesh, mats, name, portal, optNormals, instancedMats, instancedShapes)
     # exports mesh to the file with optimization.
     # portal: export without normals and UVs
     # optNormals: speed and filesize optimization, flat faces get exported without normals
     #-------------------------------------------------
-    def exportMeshOpt(self, file, mesh, mats, name, portal=False, optNormals=True, instanced=None):
+    def exportMeshOpt(self, file, mesh, mats, name, portal=False, optNormals=True, instancedMats=None, instancedShapes=None):
         #print("    exporting optimized mesh")
         shapeList, smoothFltr, shapeText = [0], [[0,1]], [""]
         if portal:
@@ -535,8 +540,8 @@ class luxExport:
                 mat = mats[matIndex]
                 if not mat:
                    mat = dummyMat
-                if instanced:
-                    file.write("ObjectBegin \"%s\"\n" % self.exportInstanceObjName(instanced, i))
+                if instancedMats:
+                    file.write("ObjectBegin \"%s\"\n" % self.exportInstanceObjName(instancedMats, i, instancedShapes))
                 self.exportMaterialLink(file, mat)
             for shape in shapeList:
                 blenderExportVertexMap = []
@@ -578,7 +583,7 @@ class luxExport:
                         index += 1
                     exportFaces.append(exportVIndices)
                 if (len(exportVerts)>0):
-                    mesh_str = self.getMeshType(len(exportVerts), mats[matIndex], instanced)
+                    mesh_str = self.getMeshType(len(exportVerts), mats[matIndex], instancedMats)
                     if portal:
                         file.write("\tPortalShape %s \"integer indices\" [\n"% mesh_str)
                     else:
@@ -608,8 +613,8 @@ class luxExport:
 #                                    file.write("%f %f\n"%(vertex[3], vertex[4]))
                             file.write("".join(["%f %f\n"%tuple(vertex[1]) for vertex in exportVerts])) 
                     file.write("\t]\n")
-                    if instanced:
-                        file.write("ObjectEnd # %s\n\n" % self.exportInstanceObjName(instanced, i))
+                    if instancedMats:
+                        file.write("ObjectEnd # %s\n\n" % self.exportInstanceObjName(instancedMats, i, instancedShapes))
                     #print("  shape(%s): %d vertices, %d faces"%(shapeText[shape], len(exportVerts), len(exportFaces)))
             i += 1
         # If we changed the active UV layer: reset it to the original.
@@ -645,28 +650,29 @@ class luxExport:
                         self.instances[mesh_name]['mesh_mats_used'] = getMaterials(objs[0], True)
                 obj_mods = getModifiers(obj)
                 # collect modifier configurations to export all possible shapes later
-                if not obj_mods in self.instances[mesh_name]['obj_mods']:
-                    self.instances[mesh_name]['obj_mods'][obj_mods] = [obj]
-                else:
+                try:
                     self.instances[mesh_name]['obj_mods'][obj_mods].append(obj)
-                # XXX don't forget to remove when instancing with modifiers is complete
-                if obj_mods: allow_instancing = False
+                except KeyError:
+                    self.instances[mesh_name]['obj_mods'][obj_mods] = [obj]
             if allow_instancing and (len(objs) > instancing_threshold):
                 del self.meshes[mesh_name]
-                mesh.getFromObject(objs[0], 0, 1)
-                #print("blender-mesh: %s (%d vertices, %d faces)"%(mesh_name, len(mesh.verts), len(mesh.faces)))
-                if not self.instances[mesh_name].has_key('mesh_mats_used'):
-                    file.write("ObjectBegin \"%s\"\n"%mesh_name)
-                    if (mesh_optimizing.get() == "true"):
-                        self.exportMeshOpt(file, mesh, mats, mesh_name)
+                j = 0 if len(self.instances[mesh_name]['obj_mods']) > 1 else None
+                for shape in self.instances[mesh_name]['obj_mods'].values():
+                    mesh.getFromObject(shape[0], 0, 1)
+                    #print("blender-mesh: %s (%d vertices, %d faces)"%(mesh_name, len(mesh.verts), len(mesh.faces)))
+                    if not self.instances[mesh_name].has_key('mesh_mats_used'):
+                        file.write("ObjectBegin \"%s\"\n" % self.exportInstanceObjName(mesh_name, shapeId=j))
+                        if (mesh_optimizing.get() == "true"):
+                            self.exportMeshOpt(file, mesh, mats, mesh_name, instancedShapes=j)
+                        else:
+                            self.exportMesh(file, mesh, mats, mesh_name, instancedShapes=j)
+                        file.write("ObjectEnd # %s\n\n" % self.exportInstanceObjName(mesh_name, shapeId=j))
                     else:
-                        self.exportMesh(file, mesh, mats, mesh_name)
-                    file.write("ObjectEnd # %s\n\n"%mesh_name)
-                else:
-                    if (mesh_optimizing.get() == "true"):
-                        self.exportMeshOpt(file, mesh, mats, mesh_name, instanced=mesh_name)
-                    else:
-                        self.exportMesh(file, mesh, mats, mesh_name, instanced=mesh_name)
+                        if (mesh_optimizing.get() == "true"):
+                            self.exportMeshOpt(file, mesh, mats, mesh_name, instancedMats=mesh_name, instancedShapes=j)
+                        else:
+                            self.exportMesh(file, mesh, mats, mesh_name, instancedMats=mesh_name, instancedShapes=j)
+                    if j is not None: j += 1
         mesh.verts = None
 
     #-------------------------------------------------
@@ -700,58 +706,67 @@ class luxExport:
             if motion: # motion-blur only works with instances, so ensure mesh is exported as instance first
                 if mesh_name in self.meshes:
                     del self.meshes[mesh_name]
-                    mesh.getFromObject(obj, 0, 1)
-                    mats = getMaterials(obj)
-                    #print("  blender-mesh: %s (%d vertices, %d faces)"%(mesh_name, len(mesh.verts), len(mesh.faces)))
-                    if not self.instances[mesh_name].has_key('mesh_mats_used'):
-                        file.write("ObjectBegin \"%s\"\n"%mesh_name)
+                    j = 0 if len(self.instances[mesh_name]['obj_mods']) > 1 else None
+                    for shape in self.instances[mesh_name]['obj_mods'].values():
+                        mesh.getFromObject(shape[0], 0, 1)
+                        mats = getMaterials(obj)
+                        #print("  blender-mesh: %s (%d vertices, %d faces)"%(mesh_name, len(mesh.verts), len(mesh.faces)))
+                        if not self.instances[mesh_name].has_key('mesh_mats_used'):
+                            file.write("ObjectBegin \"%s\"\n" % self.exportInstanceObjName(mesh_name, shapeId=j))
+                            if (mesh_optimizing.get() == "true"):
+                                self.exportMeshOpt(file, mesh, mats, mesh_name, instancedShapes=j)
+                            else:
+                                self.exportMesh(file, mesh, mats, mesh_name, instancedShapes=j)
+                            file.write("ObjectEnd # %s\n\n" % self.exportInstanceObjName(mesh_name, shapeId=j))
+                        else:
+                            if (mesh_optimizing.get() == "true"):
+                                self.exportMeshOpt(file, mesh, mats, mesh_name, instancedMats=mesh_name, instancedShapes=j)
+                            else:
+                                self.exportMesh(file, mesh, mats, mesh_name, instancedMats=mesh_name, instancedShapes=j)
+                        if j is not None: j += 1
+
+            j = 0 if len(self.instances[mesh_name]['obj_mods']) > 1 else None
+            for shape in self.instances[mesh_name]['obj_mods'].values():
+                if not obj in shape:
+                    j += 1
+                    continue
+                i = 0 if self.instances[mesh_name].has_key('mesh_mats_used') else None
+                for mat in self.instances[mesh_name]['mesh_mats_used'] if self.instances[mesh_name].has_key('mesh_mats_used') else [None]:
+                    file.write("AttributeBegin # %s\n" % self.exportInstanceObjName(obj.getName(), i, j))
+                    file.write("\tTransform [%s %s %s %s  %s %s %s %s  %s %s %s %s  %s %s %s %s]\n"\
+                        %(matrix[0][0], matrix[0][1], matrix[0][2], matrix[0][3],\
+                          matrix[1][0], matrix[1][1], matrix[1][2], matrix[1][3],\
+                          matrix[2][0], matrix[2][1], matrix[2][2], matrix[2][3],\
+                            matrix[3][0], matrix[3][1], matrix[3][2], matrix[3][3]))
+                    if motion:
+                        file.write("\tTransformBegin\n")
+                        file.write("\t\tIdentity\n")
+                        file.write("\t\tTransform [%s %s %s %s  %s %s %s %s  %s %s %s %s  %s %s %s %s]\n"\
+                            %(motion[0][0], motion[0][1], motion[0][2], motion[0][3],\
+                              motion[1][0], motion[1][1], motion[1][2], motion[1][3],\
+                              motion[2][0], motion[2][1], motion[2][2], motion[2][3],\
+                                motion[3][0], motion[3][1], motion[3][2], motion[3][3]))
+                        file.write("\t\tCoordinateSystem \"%s\"\n" % (self.exportInstanceObjName(obj.getName(), i, j)+'_motion'))
+                        file.write("\tTransformEnd\n")
+                    if mesh_name in self.meshes:
+                        mesh.getFromObject(obj, 0, 1)
+                        mats = getMaterials(obj)
+                        #print("  blender-mesh: %s (%d vertices, %d faces)"%(mesh_name, len(mesh.verts), len(mesh.faces)))
                         if (mesh_optimizing.get() == "true"):
                             self.exportMeshOpt(file, mesh, mats, mesh_name)
                         else:
                             self.exportMesh(file, mesh, mats, mesh_name)
-                        file.write("ObjectEnd # %s\n\n"%mesh_name)
                     else:
-                        if (mesh_optimizing.get() == "true"):
-                            self.exportMeshOpt(file, mesh, mats, mesh_name, instanced=mesh_name)
+                        #print("  instance %s"%(mesh_name))
+                        if mat is not None and obj in self.instances[mesh_name]['obj_mats'] and self.instances[mesh_name]['mesh_mats'] != getMaterials(obj):
+                            file.write("\tNamedMaterial \"%s\"\n" % self.instances[mesh_name]['obj_mats'][obj][i].name)
+                        if motion:
+                            file.write("\tMotionInstance \"%s\" 0.0 1.0 \"%s\"\n" % (self.exportInstanceObjName(mesh_name, i, j), self.exportInstanceObjName(obj.getName(), i, j)+'_motion'))
                         else:
-                            self.exportMesh(file, mesh, mats, mesh_name, instanced=mesh_name)
-
-            i = 0
-            for mat in self.instances[mesh_name]['mesh_mats_used'] if self.instances[mesh_name].has_key('mesh_mats_used') else [None]:
-                file.write("AttributeBegin # %s\n" % (obj.getName() if mat is None else self.exportInstanceObjName(obj.getName(), i)))
-                file.write("\tTransform [%s %s %s %s  %s %s %s %s  %s %s %s %s  %s %s %s %s]\n"\
-                    %(matrix[0][0], matrix[0][1], matrix[0][2], matrix[0][3],\
-                      matrix[1][0], matrix[1][1], matrix[1][2], matrix[1][3],\
-                      matrix[2][0], matrix[2][1], matrix[2][2], matrix[2][3],\
-                        matrix[3][0], matrix[3][1], matrix[3][2], matrix[3][3]))
-                if motion:
-                    file.write("\tTransformBegin\n")
-                    file.write("\t\tIdentity\n")
-                    file.write("\t\tTransform [%s %s %s %s  %s %s %s %s  %s %s %s %s  %s %s %s %s]\n"\
-                        %(motion[0][0], motion[0][1], motion[0][2], motion[0][3],\
-                          motion[1][0], motion[1][1], motion[1][2], motion[1][3],\
-                          motion[2][0], motion[2][1], motion[2][2], motion[2][3],\
-                            motion[3][0], motion[3][1], motion[3][2], motion[3][3]))
-                    file.write("\t\tCoordinateSystem \"%s\"\n" % (obj.getName()+'_motion' if mat is None else self.exportInstanceObjName(obj.getName(), i)+'_motion'))
-                    file.write("\tTransformEnd\n")
-                if mesh_name in self.meshes:
-                    mesh.getFromObject(obj, 0, 1)
-                    mats = getMaterials(obj)
-                    #print("  blender-mesh: %s (%d vertices, %d faces)"%(mesh_name, len(mesh.verts), len(mesh.faces)))
-                    if (mesh_optimizing.get() == "true"):
-                        self.exportMeshOpt(file, mesh, mats, mesh_name)
-                    else:
-                        self.exportMesh(file, mesh, mats, mesh_name)
-                else:
-                    #print("  instance %s"%(mesh_name))
-                    if mat is not None and obj in self.instances[mesh_name]['obj_mats'] and self.instances[mesh_name]['mesh_mats'] != getMaterials(obj):
-                        file.write("\tNamedMaterial \"%s\"\n" % self.instances[mesh_name]['obj_mats'][obj][i].name)
-                    if motion:
-                        file.write("\tMotionInstance \"%s\" 0.0 1.0 \"%s\"\n" % (mesh_name if mat is None else self.exportInstanceObjName(mesh_name, i), obj.getName()+'_motion' if mat is None else self.exportInstanceObjName(obj.getName(), i)+'_motion'))
-                    else:
-                        file.write("\tObjectInstance \"%s\"\n" % (mesh_name if mat is None else self.exportInstanceObjName(mesh_name, i)))
-                file.write("AttributeEnd\n\n")
-                i += 1
+                            file.write("\tObjectInstance \"%s\"\n" % self.exportInstanceObjName(mesh_name, i, j))
+                    file.write("AttributeEnd\n\n")
+                    if i is not None: i += 1
+                if j is not None: j += 1
         mesh.verts = None
 
     #-------------------------------------------------
