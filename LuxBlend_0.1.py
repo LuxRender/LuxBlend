@@ -214,11 +214,17 @@ def getMaterials(obj, compress=False):
         mats = []
     # clay option
     if luxProp(Scene.GetCurrent(), "clay", "false").get()=="true":
-        if clayMat==None: clayMat = Material.New("lux_clayMat")
+        if clayMat==None:
+            clayMat = Material.New("lux_clayMat")
+            resetMatTex(clayMat)
+            # resetting clay material to diffuse 0.6
+            luxProp(clayMat, 'type', '').set('matte')
+            luxProp(clayMat, ':Kd', '').set(' '.join([str(rg(0.6))]*3))
         for i in range(len(mats)):
             if mats[i]:
                 mattype = luxProp(mats[i], "type", "").get()
                 if (mattype not in ["portal","light","boundvolume"]): mats[i] = clayMat
+        if not mats and clayMat is not None: mats.append(clayMat)
     return mats
 
 
@@ -7164,6 +7170,7 @@ def showMatTexMenu(mat, basekey='', tex=False):
 
 
 def resetMatTex(mat, basekey=''):
+    if not mat.properties.has_key('luxblend'): return
     for k, v in mat.properties['luxblend'].convert_to_pyobject().items():
         kn = k
         if k[:7] == '__hash:':
