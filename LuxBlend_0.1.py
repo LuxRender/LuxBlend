@@ -1401,6 +1401,7 @@ def get_lux_args(filename, extra_args=[], anim=False):
         
     lux_args += lux_args2
     
+    
     if ostype == "win32":
         prio = ""
         if luxnice > 15: prio = "/low"
@@ -1412,7 +1413,8 @@ def get_lux_args(filename, extra_args=[], anim=False):
         if not anim:
             cmd = "start /b %s \"\" %s" % (prio, lux_args)
         else:
-            cmd = "start /WAIT %s \"\" %s" % (prio, lux_args)
+            # if animation/luxconsole, start minimised and wait for completion
+            cmd = "start /WAIT /MIN %s \"\" %s" % (prio, lux_args)
         
 #    if ostype == "linux2" or ostype == "darwin":
     else:
