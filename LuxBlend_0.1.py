@@ -660,7 +660,7 @@ class luxExport:
                     self.instances[mesh_name]['obj_mods'][obj_mods].append(obj)
                 except KeyError:
                     self.instances[mesh_name]['obj_mods'][obj_mods] = [obj]
-            if allow_instancing and (len(objs) > instancing_threshold):
+            if allow_instancing and (len(objs) >= instancing_threshold):
                 del self.meshes[mesh_name]
                 j = 0 if len(self.instances[mesh_name]['obj_mods']) > 1 else None
                 for shape in self.instances[mesh_name]['obj_mods'].values():
@@ -4194,7 +4194,7 @@ def luxSystem(scn, gui=None):
         #if gui: gui.newline()
         #luxInt("barytrianglemesh thr", luxProp(scn, "barytrianglemesh_thr", 300000), 0, 100000000, "barytrianglemesh threshold", "Vertex threshold for exporting barytrianglemesh object(s) (slower but uses less memory)", gui, 2.0)
         if gui: gui.newline("INSTANCING:", 10)
-        luxInt("instancing_threshold", luxProp(scn, "instancing_threshold", 2), 0, 1000000, "Object instancing threshold", "Threshold to created instanced objects", gui, 2.0)
+        luxInt("instancing_threshold", luxProp(scn, "instancing_threshold", 2), 2, 1000000, "Object instancing threshold", "Minimum number of objects to export as instances", gui, 2.0)
         
         # dougal2 packed images, enable this when implemented in Lux itself
         #if gui: gui.newline('TEXTURES:',10)
