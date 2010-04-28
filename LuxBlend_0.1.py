@@ -442,13 +442,16 @@ class luxExport:
     #-------------------------------------------------
     def exportHairSystems(self, file):
         #pb = exportProgressBar(len(self.hair), self.mpb)
+        clay_export = (luxProp(self.scene, 'clay', 'false').get() != 'true')
+        ob_moblur = (luxProp(self.camera.data, 'objectmblur', 'true').get() == 'true' and luxProp(self.camera.data, 'usemblur', 'false').get() == 'true')
+        frame = Blender.Get('curframe')
         for obj in self.hair['obj']:
             #pb.counter('Exporting Hair Particles')
             for psys in obj.getParticleSystems():
                 psysname = psys.getName()
                 if not psysname in self.hair['sys']: continue
                 
-                if luxProp(self.scene, 'clay', 'false').get() != 'true':
+                if clay_export:
                     mat = psys.getMat() or dummyMat
                 else:
                     mat = getMaterials(obj, True)[0]
@@ -468,9 +471,8 @@ class luxExport:
                     file.write("ObjectEnd # %s\n\n" % name)
                 # collecting segment objects (instanced)
                 self.luxCollectHairObjs(psys, jointname, legname, size)
-                if luxProp(self.camera.data, 'objectmblur', 'true').get() == 'true' and luxProp(self.camera.data, 'usemblur', 'false').get() == 'true':
+                if ob_moblur:
                     # to make motion blur work we must also get transform matrices from the following frame
-                    frame = Blender.Get('curframe')
                     Blender.Set('curframe', frame+1)
                     self.luxCollectHairObjs(psys, jointname, legname, size, True)
                     Blender.Set('curframe', frame)
@@ -485,18 +487,18 @@ class luxExport:
         # list for the first time
         segmentsLoc = psys.getLoc()
         segmentsLoc = psys.getLoc()  # sic
-        i = 0
-        for strand in segmentsLoc:
+        for i, strand in enumerate(segmentsLoc):
             for j in range(0, len(strand)*2-1):
-                if (j/2) == (float(j)/2):
+            	j_over_2 = j/2
+                if j%2 == 0:
                     name = jointname
-                    matrix = Mathutils.Matrix([1.0, 0.0, 0.0, 0.0], [0.0, 1.0, 0.0, 0.0], [0.0, 0.0, 1.0, 0.0], [strand[j/2][0], strand[j/2][1], strand[j/2][2], 1.0])
+                    matrix = Mathutils.Matrix([1.0, 0.0, 0.0, 0.0], [0.0, 1.0, 0.0, 0.0], [0.0, 0.0, 1.0, 0.0], [strand[j_over_2][0], strand[j_over_2][1], strand[j_over_2][2], 1.0])
                 else:
                     name = legname
-                    m = self.getHairSegmentTransform(segmentsLoc[i][j/2], segmentsLoc[i][j/2+1])
+                    m = self.getHairSegmentTransform(strand[j_over_2], strand[j_over_2+1])
                     #f = lambda m,s: map((lambda x,y: x*y), m, s)
                     matrix = Mathutils.Matrix(m[0], m[1], m[2], m[3])
-                obj = self.luxHair(name+'_strand%s_segment%s' % (i,j), name)
+                obj = self.luxHair('%s_strand%s_segment%s' % (name,i,j), name)
                 if not motion:
                     self.objects.append([obj, matrix])
                     try:
@@ -508,7 +510,6 @@ class luxExport:
                             self.instances[name] = {'obj_mods': {'': [obj]}}
                 else:
                     self.hair['motion'][obj] = matrix
-            i += 1
 
     # minimalistic Blender-like object for holding strand obj properties
     class luxHair:
@@ -840,7 +841,7 @@ class luxExport:
                 except KeyError:
                     frame = Blender.Get('curframe')
                     Blender.Set('curframe', frame+1)
-                    m1 = 1.0*matrix # multiply by 1.0 to get a copy of orignal matrix (will be frame-independant) 
+                    m1 = matrix.copy() 
                     Blender.Set('curframe', frame)
                     if m1 != matrix:
                         #print("  motion blur")
