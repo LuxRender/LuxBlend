@@ -180,6 +180,9 @@ clayMat = None
 # helper function to get the material list of an object in respect of obj.colbits
 #-------------------------------------------------
 def getMaterials(obj, compress=False):
+    if obj.type != 'Mesh':
+    	return []
+    
     global clayMat
     mats = [None]*16
     colbits = obj.colbits
@@ -822,7 +825,8 @@ class luxExport:
     #-------------------------------------------------
     def exportObjects(self, file):
         scn = Scene.GetCurrent()
-        cam = scn.getCurrentCamera().data
+        #cam = scn.getCurrentCamera().data
+        cam = scn.objects.camera.data
         objectmblur = luxProp(cam, "objectmblur", "true")
         usemblur = luxProp(cam, "usemblur", "false")
         mesh_optimizing = luxProp(scn, "mesh_optimizing", "true")
@@ -1282,7 +1286,8 @@ def save_lux(filename, unindexedname, anim_progress=None):
         file.write("\n")
     
         ##### Write camera ######
-        camObj = scn.getCurrentCamera()
+        #camObj = scn.getCurrentCamera()
+        camObj = scn.objects.camera
 
         if LuxIsGUI: pb.next('Exporting Camera')
         if camObj:
@@ -7682,7 +7687,8 @@ def luxDraw():
                         luxMaterial(activemat, gui)
         if luxpage.get() == 1:
             BGL.glColor3f(1.0,0.5,0.0);BGL.glRectf(90,y-74,170,y-70);BGL.glColor3f(0.9,0.9,0.9)
-            cam = scn.getCurrentCamera()
+            #cam = scn.getCurrentCamera()
+            cam = scn.objects.camera
             if cam:
                 r = gui.getRect(1.1, 1)
                 luxCamera(cam.data, scn.getRenderingContext(), gui)
