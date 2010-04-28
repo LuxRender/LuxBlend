@@ -264,6 +264,7 @@ class luxExport:
         self.portals = []
         self.volumes = []
         self.namedVolumes = []
+        self.hair = {'obj':[], 'sys':[], 'motion':{}}
         self.meshes = {}
         self.instances = {}  # only for instances with quirks: redefined materials and modifiers
         self.materials = []
@@ -297,7 +298,7 @@ class luxExport:
                         print("ERROR: Please bake particle systems before rendering")
                         Draw.PupMenu("ERROR: Please bake particle systems before rendering%t|OK%x1")
                         break
-    
+                    
                     for i in range(len(locs)) :
                         part_rotation_quat = Mathutils.Quaternion(rots[i])
                         part_rotation_mat = part_rotation_quat.toMatrix()
@@ -318,7 +319,12 @@ class luxExport:
                         #print "combined_matrix = ", combined_matrix
                         self.analyseObject(dup_obj, combined_matrix, "%s.%s"%(obj.getName(), dup_obj.getName()), False, True)
                         #if self.analyseObject(dup_obj, combined_matrix, "%s.%s"%(obj.getName(), dup_obj.getName()), True, True): light = True
-
+                elif psys.type == Particle.TYPE['HAIR'] and psys.drawAs == Particle.DRAWAS['PATH']:
+                    if not obj in self.hair['obj']: self.hair['obj'].append(obj)
+                    if not psys.getName() in self.hair['sys']: self.hair['sys'].append(psys.getName())
+                    for mat in getMaterials(obj, True):
+                        if not mat in self.materials: self.materials.append(mat)
+            
             if (obj.enableDupFrames and isOriginal):
                 for o, m in obj.DupObjects:
                     self.analyseObject(o, m, "%s.%s"%(name, o.getName()), False)    
@@ -428,6 +434,134 @@ class luxExport:
                 output += "%s\nMakeNamedVolume \"%s\" %s" % (tex[0], data['name'], tex[1])
                 output += "\n\n"
                 file.write(output)
+
+    #-------------------------------------------------
+    # exportHairSystems(self, file)
+    # collects hair particles and exports hair systems
+    # primitives to the file
+    #-------------------------------------------------
+    def exportHairSystems(self, file):
+        #pb = exportProgressBar(len(self.hair), self.mpb)
+        for obj in self.hair['obj']:
+            #pb.counter('Exporting Hair Particles')
+            for psys in obj.getParticleSystems():
+                psysname = psys.getName()
+                if not psysname in self.hair['sys']: continue
+                
+                if luxProp(self.scene, 'clay', 'false').get() != 'true':
+                    mat = psys.getMat() or dummyMat
+                else:
+                    mat = getMaterials(obj, True)[0]
+                
+                size = luxProp(mat, 'hair_thickness', 0.5).get() * luxScaleUnits('hair_thickness', 'mm', mat)
+                legname = '%s:luxHairPrimitive:leg' % psysname
+                jointname = '%s:luxHairPrimitive:joint' % psysname
+                primitives = {
+                  legname: "\tShape \"cylinder\" \"float radius\" %f \"float zmin\" 0.0 \"float zmax\" 1.0\n" % (0.5*size),
+                  jointname: "\tShape \"sphere\" \"float radius\" %f\n" % (0.5*size)
+                }
+                # exporting primitive objects
+                for name, shape in primitives.items():
+                    file.write("ObjectBegin \"%s\"\n" % name)
+                    self.exportMaterialLink(file, mat)
+                    file.write(shape)
+                    file.write("ObjectEnd # %s\n\n" % name)
+                # collecting segment objects (instanced)
+                self.luxCollectHairObjs(psys, jointname, legname, size)
+                if luxProp(self.camera.data, 'objectmblur', 'true').get() == 'true' and luxProp(self.camera.data, 'usemblur', 'false').get() == 'true':
+                    # to make motion blur work we must also get transform matrices from the following frame
+                    frame = Blender.Get('curframe')
+                    Blender.Set('curframe', frame+1)
+                    self.luxCollectHairObjs(psys, jointname, legname, size, True)
+                    Blender.Set('curframe', frame)
+                # removing psys from the list to avoid multiple exports
+                self.hair['sys'].remove(psysname)
+
+    # collect hair strand segment objects/matrices pairs
+    def luxCollectHairObjs(self, psys, jointname, legname, size, motion=False):
+        # it seams to be a bug in Blender Python API here -- if an object
+        # has more than one particle system, then beginning from the
+        # second system the call to Particles.getLoc() results in an empty
+        # list for the first time
+        segmentsLoc = psys.getLoc()
+        segmentsLoc = psys.getLoc()  # sic
+        i = 0
+        for strand in segmentsLoc:
+            for j in range(0, len(strand)*2-1):
+                if (j/2) == (float(j)/2):
+                    name = jointname
+                    matrix = Mathutils.Matrix([1.0, 0.0, 0.0, 0.0], [0.0, 1.0, 0.0, 0.0], [0.0, 0.0, 1.0, 0.0], [strand[j/2][0], strand[j/2][1], strand[j/2][2], 1.0])
+                else:
+                    name = legname
+                    m = self.getHairSegmentTransform(segmentsLoc[i][j/2], segmentsLoc[i][j/2+1])
+                    #f = lambda m,s: map((lambda x,y: x*y), m, s)
+                    matrix = Mathutils.Matrix(m[0], m[1], m[2], m[3])
+                obj = self.luxHair(name+'_strand%s_segment%s' % (i,j), name)
+                if not motion:
+                    self.objects.append([obj, matrix])
+                    try:
+                        self.instances[name]['obj_mods'][''].append(obj)
+                    except KeyError:
+                        try:
+                            self.instances[name]['obj_mods'][''] = [obj]
+                        except KeyError:
+                            self.instances[name] = {'obj_mods': {'': [obj]}}
+                else:
+                    self.hair['motion'][obj] = matrix
+            i += 1
+
+    # minimalistic Blender-like object for holding strand obj properties
+    class luxHair:
+        def __init__(self, objName, parentName):
+            self.objName = objName
+            self.parentName = parentName
+        def __cmp__(self, other):
+            return cmp(self.__repr__(), other)
+        def __hash__(self):
+            return hash(self.__repr__())
+        def __repr__(self):
+            return '[Object "%s"]' % self.objName
+        def __str__(self):
+            return self.__repr__()
+        def getData(self, **args):
+            return self.parentName
+        def getName(self):
+            return self.objName
+
+    # hair export helper function (by e_jackson)
+    def getHairSegmentTransform(self, p1, p2):
+        """
+        This function selects an orthogonal basis V_1 = (p2-p1), V_2, V_3 such that V_2 and V_3
+        have unit length and calculates a transformation matrix from standard orthnormal basis
+        to the selected one.
+        Arguments:
+            p1, p2 == coordinate triples of beginning and end points of a vector
+        Returns:
+            string which represents transformation matrix in a format compatible with Luxrender SDL
+        """
+        # standard orthonormal basis
+        Standard_basis = [Mathutils.Vector(1.0, 0.0, 0.0), Mathutils.Vector(0.0, 1.0, 0.0), Mathutils.Vector(0.0, 0.0, 1.0)]
+        
+        V = [(), (), ()]
+        V[2] = Mathutils.Vector(p2) - Mathutils.Vector(p1)
+        # we choose an ort which corresponds to the smallest absolute value of coordinate in V[0]
+        W = Standard_basis[0]
+        Length = abs(V[2].x)
+        for Node in zip([1, 2], [abs(V[2].y), abs(V[2].z)]) :
+            if Node[1] < Length :
+                Length = Node[1]
+                W = Standard_basis[Node[0]]
+        V[1] = V[2].cross(W)
+        V[1].normalize()
+        V[0] = V[1].cross(V[2])
+        V[0].normalize()
+        # transition matrix from standard basis to V
+        M = Mathutils.Matrix(V[0], V[1], V[2])
+        Result = []
+        for Count in range(3) :
+            Result.append([M[Count][0], M[Count][1], M[Count][2], 0.0])
+        Result.append([p1[0], p1[1], p1[2], 1.0])
+        return Result
 
     #-------------------------------------------------
     # getMeshType(self, vertcount, mat, instancedMats)
@@ -701,13 +835,16 @@ class luxExport:
             motion = None
             if(objectmblur.get() == "true" and usemblur.get() == "true"):
                 # motion blur
-                frame = Blender.Get('curframe')
-                Blender.Set('curframe', frame+1)
-                m1 = 1.0*matrix # multiply by 1.0 to get a copy of orignal matrix (will be frame-independant) 
-                Blender.Set('curframe', frame)
-                if m1 != matrix:
-                    #print("  motion blur")
-                    motion = m1
+                try:
+                    motion = self.hair['motion'][obj]
+                except KeyError:
+                    frame = Blender.Get('curframe')
+                    Blender.Set('curframe', frame+1)
+                    m1 = 1.0*matrix # multiply by 1.0 to get a copy of orignal matrix (will be frame-independant) 
+                    Blender.Set('curframe', frame)
+                    if m1 != matrix:
+                        #print("  motion blur")
+                        motion = m1
     
             if motion: # motion-blur only works with instances, so ensure mesh is exported as instance first
                 if mesh_name in self.meshes:
@@ -1280,6 +1417,7 @@ def save_lux(filename, unindexedname, anim_progress=None):
         geom_file.write("")
         export.exportLights(geom_file)
         export.exportMeshes(geom_file)
+        export.exportHairSystems(geom_file)
         export.exportObjects(geom_file)
         geom_file.write("")
         if not file.combine_all_output: geom_file.close()
@@ -1400,7 +1538,6 @@ def get_lux_args(filename, extra_args=[], anim=False):
         lux_args2 = lux_args2 + filename
         
     lux_args += lux_args2
-    
     
     if ostype == "win32":
         prio = ""
@@ -5235,7 +5372,7 @@ def luxCauchyBFloatTexture(name, key, default, min, max, caption, hint, mat, gui
             link = " \"texture %s\" [\"%s\"]"%(name, texname+".scale")
     return (str, link)
 
-def luxScaleUnits(keyname, default, mat, width, gui):
+def luxScaleUnits(keyname, default, mat, width=0.5, gui=None):
     # Length units widget for bumps, absorption and such.
     # @default can be passed as unit str or scale float
     units = ['m', 'cm', 'mm', 'cm^-1']
@@ -6234,6 +6371,9 @@ def luxMaterialBlock(name, luxname, key, mat, gui=None, level=0, str_opt=""):
                 (str,ll) = c((str,link), luxDispFloatTexture("dispmap", keyname, 0.1, -10, 10.0, "dispmap", "Displacement Mapping amount", mat, gui, level+1))
                 luxFloat("sdoffset",  luxProp(mat, "sdoffset", 0.0), 0.0, 1.0, "Offset", "Offset for displacement map", gui, 2.0)
                 usesubdiv.set("true")
+            if gui: gui.newline('Hair:', 2, level, None, [0.6,0.6,0.4])
+            luxFloat('hair_thickness',  luxProp(mat, 'hair_thickness', 0.5), 0.001, 100.0, 'hair thickness', 'Hair strand diameter', gui, 1.5)
+            luxScaleUnits('hair_thickness', 'mm', mat, 0.5, gui)
 
         if mattype.get() == "light":
             return (str, link)
@@ -7943,5 +8083,5 @@ else:
                     if r == 2:
                         newluxdefaults["checkluxpath"] = False
                         saveluxdefaults()
-    else    :
+    else:
         print("LuxRender path check disabled\n")
