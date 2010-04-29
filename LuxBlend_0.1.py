@@ -73,7 +73,29 @@ import subprocess
 import Blender
 from Blender import Mesh, Scene, Object, Material, Modifier, Texture, Window, sys, Draw, BGL, Mathutils, Lamp, Image, Particle, Curve
 
-
+# critical export function profiling
+if False:
+	import hotshot, hotshot.stats 
+	def profileit(printlines=1):
+	    def _my(func):
+	        def _func(*args, **kargs):
+	            prof = hotshot.Profile("profiling.data")
+	            res = prof.runcall(func, *args, **kargs)
+	            prof.close()
+	            stats = hotshot.stats.load("profiling.data")
+	            stats.strip_dirs()
+	            stats.sort_stats('time', 'calls')
+	            print ">>>---- Begin profiling print for %s" % func.__name__
+	            stats.print_stats(printlines)
+	            print ">>>---- End profiling print"
+	            return res
+	        return _func
+	    return _my
+else:
+	def profileit(arg=None):
+		def _my(func):
+			return func
+		return _my
 
 
 ######################################################
@@ -373,6 +395,7 @@ class luxExport:
     # analyseScene(self)
     # this function builds the lists of object, lights, meshes and materials before export
     #-------------------------------------------------
+    @profileit(15)
     def analyseScene(self):
         light = False
         for obj in self.scene.objects:
@@ -443,6 +466,7 @@ class luxExport:
     # collects hair particles and exports hair systems
     # primitives to the file
     #-------------------------------------------------
+    @profileit(15)
     def exportHairSystems(self, file):
         #pb = exportProgressBar(len(self.hair), self.mpb)
         clay_export = (luxProp(self.scene, 'clay', 'false').get() != 'true')
@@ -520,7 +544,7 @@ class luxExport:
             self.objName = objName
             self.parentName = parentName
         def __cmp__(self, other):
-            return cmp(self.__repr__(), other)
+            return (self.objName == other.objName) #cmp(self.__repr__(), other)
         def __hash__(self):
             return hash(self.__repr__())
         def __repr__(self):
@@ -823,6 +847,7 @@ class luxExport:
     # exportObjects(self, file)
     # exports objects to the file
     #-------------------------------------------------
+    @profileit(15)
     def exportObjects(self, file):
         scn = Scene.GetCurrent()
         #cam = scn.getCurrentCamera().data
@@ -830,20 +855,25 @@ class luxExport:
         objectmblur = luxProp(cam, "objectmblur", "true")
         usemblur = luxProp(cam, "usemblur", "false")
         mesh_optimizing = luxProp(scn, "mesh_optimizing", "true")
+        use_mesh_optimizing = (mesh_optimizing.get() == "true")
         mesh = Mesh.New('')
         #pb = exportProgressBar(len(self.objects), self.mpb)
+        object_motion_blur = (objectmblur.get() == "true")
+        use_motion_blur = (usemblur.get() == "true")
+        use_object_motion_blur = object_motion_blur and use_motion_blur
+        frame = Blender.Get('curframe')
+        
         for [obj, matrix] in self.objects:
             #pb.counter('Exporting Objects')
             #print("object: %s"%(obj.getName()))
             mesh_name = obj.getData(name_only=True)
 
             motion = None
-            if(objectmblur.get() == "true" and usemblur.get() == "true"):
+            if use_object_motion_blur:
                 # motion blur
                 try:
                     motion = self.hair['motion'][obj]
                 except KeyError:
-                    frame = Blender.Get('curframe')
                     Blender.Set('curframe', frame+1)
                     m1 = matrix.copy() 
                     Blender.Set('curframe', frame)
@@ -860,14 +890,15 @@ class luxExport:
                         mats = getMaterials(obj)
                         #print("  blender-mesh: %s (%d vertices, %d faces)"%(mesh_name, len(mesh.verts), len(mesh.faces)))
                         if not self.instances[mesh_name].has_key('mesh_mats_used'):
-                            file.write("ObjectBegin \"%s\"\n" % self.exportInstanceObjName(mesh_name, shapeId=j))
-                            if (mesh_optimizing.get() == "true"):
+                            instance_obj_name = self.exportInstanceObjName(mesh_name, shapeId=j)
+                            file.write("ObjectBegin \"%s\"\n" % instance_obj_name)
+                            if use_mesh_optimizing:
                                 self.exportMeshOpt(file, mesh, mats, mesh_name, instancedShapes=j)
                             else:
                                 self.exportMesh(file, mesh, mats, mesh_name, instancedShapes=j)
-                            file.write("ObjectEnd # %s\n\n" % self.exportInstanceObjName(mesh_name, shapeId=j))
+                            file.write("ObjectEnd")  # %s\n\n" % self.exportInstanceObjName(mesh_name, shapeId=j))
                         else:
-                            if (mesh_optimizing.get() == "true"):
+                            if use_mesh_optimizing:
                                 self.exportMeshOpt(file, mesh, mats, mesh_name, instancedMats=mesh_name, instancedShapes=j)
                             else:
                                 self.exportMesh(file, mesh, mats, mesh_name, instancedMats=mesh_name, instancedShapes=j)
@@ -880,7 +911,7 @@ class luxExport:
                     continue
                 i = 0 if self.instances[mesh_name].has_key('mesh_mats_used') else None
                 for mat in self.instances[mesh_name]['mesh_mats_used'] if self.instances[mesh_name].has_key('mesh_mats_used') else [None]:
-                    file.write("AttributeBegin # %s\n" % self.exportInstanceObjName(obj.getName(), i, j))
+                    file.write("AttributeBegin")  # %s\n" % self.exportInstanceObjName(obj.getName(), i, j))
                     file.write("\tTransform [%s %s %s %s  %s %s %s %s  %s %s %s %s  %s %s %s %s]\n"\
                         %(matrix[0][0], matrix[0][1], matrix[0][2], matrix[0][3],\
                           matrix[1][0], matrix[1][1], matrix[1][2], matrix[1][3],\
@@ -900,18 +931,19 @@ class luxExport:
                         mesh.getFromObject(obj, 0, 1)
                         mats = getMaterials(obj)
                         #print("  blender-mesh: %s (%d vertices, %d faces)"%(mesh_name, len(mesh.verts), len(mesh.faces)))
-                        if (mesh_optimizing.get() == "true"):
+                        if use_mesh_optimizing:
                             self.exportMeshOpt(file, mesh, mats, mesh_name)
                         else:
                             self.exportMesh(file, mesh, mats, mesh_name)
                     else:
                         #print("  instance %s"%(mesh_name))
+                        instance_obj_name = self.exportInstanceObjName(mesh_name, i, j)
                         if mat is not None and obj in self.instances[mesh_name]['obj_mats'] and self.instances[mesh_name]['mesh_mats'] != getMaterials(obj):
                             file.write("\tNamedMaterial \"%s\"\n" % self.instances[mesh_name]['obj_mats'][obj][i].name)
                         if motion:
-                            file.write("\tMotionInstance \"%s\" 0.0 1.0 \"%s\"\n" % (self.exportInstanceObjName(mesh_name, i, j), self.exportInstanceObjName(obj.getName(), i, j)+'_motion'))
+                            file.write("\tMotionInstance \"%s\" 0.0 1.0 \"%s_motion\"\n" % (instance_obj_name, instance_obj_name))
                         else:
-                            file.write("\tObjectInstance \"%s\"\n" % self.exportInstanceObjName(mesh_name, i, j))
+                            file.write("\tObjectInstance \"%s\"\n" % instance_obj_name)
                     file.write("AttributeEnd\n\n")
                     if i is not None: i += 1
                 if j is not None: j += 1
