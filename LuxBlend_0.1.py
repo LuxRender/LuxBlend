@@ -485,6 +485,13 @@ class luxExport:
 
     # collect hair strand segment objects/matrices pairs
     def luxCollectHairObjs(self, psys, jointname, legname, size, motion=False):
+        # matrix check helper function
+        def matrixHasNaN(m):
+            for i in range(len(m)):
+                for v in m[i]:
+                    if type(v) is not float: matrixHasNaN(v)
+                    elif str(v) == 'nan': return True
+                    else: return False
         # it seams to be a bug in Blender Python API here -- if an object
         # has more than one particle system, then beginning from the
         # second system the call to Particles.getLoc() results in an empty
@@ -501,6 +508,10 @@ class luxExport:
                     name = legname
                     m = self.getHairSegmentTransform(strand[j_over_2], strand[j_over_2+1])
                     matrix = Mathutils.Matrix(m[0], m[1], m[2], m[3])
+                # check to cull out point-sized strands
+                if j == 1 and not motion and matrixHasNaN(matrix[:2]) is True:
+                    self.objects.pop()
+                    break
                 obj = self.luxHair('%s_strand%s_segment%s' % (name,i,j), name)
                 if not motion:
                     self.objects.append([obj, matrix])
