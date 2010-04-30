@@ -73,7 +73,29 @@ import subprocess
 import Blender
 from Blender import Mesh, Scene, Object, Material, Modifier, Texture, Window, sys, Draw, BGL, Mathutils, Lamp, Image, Particle, Curve
 
-
+# critical export function profiling
+if False:
+    import hotshot, hotshot.stats 
+    def profileit(printlines=1):
+        def _my(func):
+            def _func(*args, **kargs):
+                prof = hotshot.Profile("profiling.data")
+                res = prof.runcall(func, *args, **kargs)
+                prof.close()
+                stats = hotshot.stats.load("profiling.data")
+                stats.strip_dirs()
+                stats.sort_stats('time', 'calls')
+                print ">>>---- Begin profiling print for %s" % func.__name__
+                stats.print_stats(printlines)
+                print ">>>---- End profiling print"
+                return res
+            return _func
+        return _my
+else:
+    def profileit(arg=None):
+        def _my(func):
+            return func
+        return _my
 
 
 ######################################################
@@ -528,7 +550,7 @@ class luxExport:
             self.objName = objName
             self.parentName = parentName
         def __cmp__(self, other):
-            return cmp(self.__repr__(), other)
+            return self.__repr__() == other.__repr__()
         def __hash__(self):
             return hash(self.__repr__())
         def __repr__(self):
