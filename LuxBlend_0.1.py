@@ -550,7 +550,7 @@ class luxExport:
             self.objName = objName
             self.parentName = parentName
         def __cmp__(self, other):
-            return self.__repr__() == other.__repr__()
+            return cmp(self.__repr__(), other.__repr__())
         def __hash__(self):
             return hash(self.__repr__())
         def __repr__(self):
@@ -855,6 +855,15 @@ class luxExport:
     # exports objects to the file
     #-------------------------------------------------
     def exportObjects(self, file):
+        # write transformation matrix without losing float precision
+        def preciseMatrix(m):
+            l = []
+            for i in range(len(m)):
+                for v in m[i]:
+                    if type(v) is not float: l.append(preciseMatrix(v))
+                    elif abs(v) in [0, 1.0]: l.append('%0.1f' % v)
+                    else: l.append('%0.18f' % v)
+            return ' '.join(l)
         scn = Scene.GetCurrent()
         #cam = scn.getCurrentCamera().data
         cam = scn.objects.camera.data
@@ -913,19 +922,11 @@ class luxExport:
                 i = 0 if self.instances[mesh_name].has_key('mesh_mats_used') else None
                 for mat in self.instances[mesh_name]['mesh_mats_used'] if self.instances[mesh_name].has_key('mesh_mats_used') else [None]:
                     file.write("AttributeBegin # %s\n" % self.exportInstanceObjName(obj_name, i, j))
-                    file.write("\tTransform [%s %s %s %s  %s %s %s %s  %s %s %s %s  %s %s %s %s]\n"\
-                        %(matrix[0][0], matrix[0][1], matrix[0][2], matrix[0][3],\
-                          matrix[1][0], matrix[1][1], matrix[1][2], matrix[1][3],\
-                          matrix[2][0], matrix[2][1], matrix[2][2], matrix[2][3],\
-                            matrix[3][0], matrix[3][1], matrix[3][2], matrix[3][3]))
+                    file.write("\tTransform [%s]\n" % preciseMatrix(matrix))
                     if motion:
                         file.write("\tTransformBegin\n")
                         file.write("\t\tIdentity\n")
-                        file.write("\t\tTransform [%s %s %s %s  %s %s %s %s  %s %s %s %s  %s %s %s %s]\n"\
-                            %(motion[0][0], motion[0][1], motion[0][2], motion[0][3],\
-                              motion[1][0], motion[1][1], motion[1][2], motion[1][3],\
-                              motion[2][0], motion[2][1], motion[2][2], motion[2][3],\
-                                motion[3][0], motion[3][1], motion[3][2], motion[3][3]))
+                        file.write("\t\tTransform [%s]\n" % preciseMatrix(motion))
                         file.write("\t\tCoordinateSystem \"%s\"\n" % (self.exportInstanceObjName(obj_name, i, j)+'_motion'))
                         file.write("\tTransformEnd\n")
                     if mesh_name in self.meshes:
