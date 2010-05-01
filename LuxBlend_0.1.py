@@ -5,7 +5,7 @@
 Name: 'LuxBlend v0.7RC2 Exporter'
 Blender: 248
 Group: 'Render'
-Tooltip: 'Export/Render to LuxRender v0.7Devel scene format (.lxs)'
+Tooltip: 'Export/Render to LuxRender v0.7RC2 scene format (.lxs)'
 """
 
 __author__ = "radiance, zuegs, ideasman42, luxblender, dougal2, SATtva"
