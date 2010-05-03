@@ -5,7 +5,7 @@
 Name: 'LuxBlend v0.7RC2 Exporter'
 Blender: 248
 Group: 'Render'
-Tooltip: 'Export/Render to LuxRender v0.7RC2 scene format (.lxs)'
+Tooltip: 'Export/Render to LuxRender v0.7Devel scene format (.lxs)'
 """
 
 __author__ = "radiance, zuegs, ideasman42, luxblender, dougal2, SATtva"
@@ -511,9 +511,9 @@ class luxExport:
         def matrixHasNaN(m):
             for i in range(len(m)):
                 for v in m[i]:
-                    if type(v) is not float: matrixHasNaN(v)
+                    if type(v) is not float and matrixHasNaN(v): return True
                     elif str(v) == 'nan': return True
-                    else: return False
+            return False
         # it seams to be a bug in Blender Python API here -- if an object
         # has more than one particle system, then beginning from the
         # second system the call to Particles.getLoc() results in an empty
@@ -531,7 +531,7 @@ class luxExport:
                     m = self.getHairSegmentTransform(strand[j_over_2], strand[j_over_2+1])
                     matrix = Mathutils.Matrix(m[0], m[1], m[2], m[3])
                 # check to cull out point-sized strands
-                if j == 1 and not motion and matrixHasNaN(matrix[:2]) is True:
+                if j == 1 and not motion and matrixHasNaN(matrix[:3]) is True:
                     self.objects.pop()
                     break
                 obj = self.luxHair('%s_strand%s_segment%s' % (name,i,j), name)
