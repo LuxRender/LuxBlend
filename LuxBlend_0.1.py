@@ -808,7 +808,7 @@ class luxExport:
         #pb = exportProgressBar(len(self.meshes), self.mpb)
         for (mesh_name, objs) in self.meshes.items():
             #pb.counter('Exporting Meshes')
-            self.instances[mesh_name] = {'obj_mats':{}, 'obj_mods':{}}
+            self.instances[mesh_name] = {'obj_mats':{}, 'obj_vols':{}, 'obj_mods':{}}
             allow_instancing = True
             mats = getMaterials(objs[0])
             for mat in mats: # don't instance if one of the materials is emissive
@@ -818,8 +818,19 @@ class luxExport:
                 obj_mats = getMaterials(obj)
                 obj_name = obj.getName()
                 if obj_mats != mats:
+                    obj_mats_used = getMaterials(obj, True)
                     # if an instance overrides mesh's materials, copy them
-                    self.instances[mesh_name]['obj_mats'][obj_name] = getMaterials(obj, True)
+                    self.instances[mesh_name]['obj_mats'][obj_name] = obj_mats_used
+                    # lets not forget volume definitions in overridden materials
+                    self.instances[mesh_name]['obj_vols'][obj_name] = {}
+                    for obj_mat in obj_mats_used:
+                        self.instances[mesh_name]['obj_vols'][obj_name][obj_mat.name] = {}
+                        for volume_prop in ['Exterior', 'Interior']:
+                            if luxProp(obj_mat, '%s_vol_used'%(volume_prop), 'false').get() == 'true':
+                                volId = luxProp(obj_mat, '%s_vol_id' % (volume_prop), 0).get()
+                            else:
+                                volId = ''
+                            self.instances[mesh_name]['obj_vols'][obj_name][obj_mat.name][volume_prop] = volId
                     if not 'mesh_mats' in self.instances[mesh_name]:
                         self.instances[mesh_name]['mesh_mats'] = getMaterials(objs[0])
                         self.instances[mesh_name]['mesh_mats_used'] = getMaterials(objs[0], True)
@@ -939,8 +950,11 @@ class luxExport:
                             self.exportMesh(file, mesh, mats, mesh_name)
                     else:
                         #print("  instance %s"%(mesh_name))
-                        if mat is not None and obj_name in self.instances[mesh_name]['obj_mats'] and self.instances[mesh_name]['mesh_mats'] != getMaterials(obj):
+                        if mat is not None and obj_name in self.instances[mesh_name]['obj_mats']:  #and self.instances[mesh_name]['mesh_mats'] != getMaterials(obj):
                             file.write("\tNamedMaterial \"%s\"\n" % self.instances[mesh_name]['obj_mats'][obj_name][i].name)
+                            for volume_prop in ['Exterior', 'Interior']:
+                                vol = self.instances[mesh_name]['obj_vols'][obj_name][self.instances[mesh_name]['obj_mats'][obj_name][i].name][volume_prop]
+                                file.write("\t%s \"%s\"\n" % (volume_prop, '' if type(vol) is str else getNamedVolume(vol)['name']))
                         if motion:
                             file.write("\tMotionInstance \"%s\" 0.0 1.0 \"%s\"\n" % (self.exportInstanceObjName(mesh_name, i, j), self.exportInstanceObjName(obj_name, i, j)+'_motion'))
                         else:
