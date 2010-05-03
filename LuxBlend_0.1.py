@@ -303,12 +303,15 @@ class luxExport:
     #-------------------------------------------------
     def analyseObject(self, obj, matrix, name, isOriginal=True, isDupli=False):
         light = False
+        export_emitter = False
+        export_emitter_mats = False
         if (obj.users > 0):
             obj_type = obj.getType()
 
             psystems = obj.getParticleSystems()
             for psys in psystems:
                 if ( (psys.type == Particle.TYPE['EMITTER'] or psys.type == Particle.TYPE['REACTOR']) and psys.drawAs == Particle.DRAWAS['OBJECT']):
+                    if psys.renderEmitter: export_emitter = True
                     dup_obj = psys.duplicateObject
                     self.duplis.add(dup_obj)
                     
@@ -345,10 +348,11 @@ class luxExport:
                         self.analyseObject(dup_obj, combined_matrix, "%s.%s"%(obj.getName(), dup_obj.getName()), False, True)
                         #if self.analyseObject(dup_obj, combined_matrix, "%s.%s"%(obj.getName(), dup_obj.getName()), True, True): light = True
                 elif psys.type == Particle.TYPE['HAIR'] and psys.drawAs == Particle.DRAWAS['PATH']:
+                    if psys.renderEmitter: export_emitter = True
                     if not obj in self.hair['obj']: self.hair['obj'].append(obj)
                     if not psys.getName() in self.hair['sys']: self.hair['sys'].append(psys.getName())
-                    for mat in getMaterials(obj, True):
-                        if not mat in self.materials: self.materials.append(mat)
+                    if not psys.renderEmitter:
+                        export_emitter_mats = True
             
             if (obj.enableDupFrames and isOriginal):
                 for o, m in obj.DupObjects:
@@ -358,7 +362,7 @@ class luxExport:
                 for o, m in obj.DupObjects:
                     self.analyseObject(o, m, "%s.%s"%(name, o.getName()), True, True)    
             elif ((isDupli or (not obj.getParent() in self.duplis)) and ((obj_type == "Mesh") or (obj_type == "Surf") or (obj_type == "Curve") or (obj_type == "Text"))):
-                if (len(psystems) == 0) or psystems[0].renderEmitter:
+                if (len(psystems) == 0) or export_emitter or export_emitter_mats:
                     mats = getMaterials(obj)
                     if (len(mats)>0) and (mats[0]!=None) and ((mats[0].name=="PORTAL") or (luxProp(mats[0], "type", "").get()=="portal")):
                         self.portals.append([obj, matrix])
@@ -377,12 +381,13 @@ class luxExport:
                             if (mat!=None) and ((luxProp(mat, "type", "").get()=="light") or (luxProp(mat, "emission", "false").get()=="true")) \
                              and luxProp(Scene.GetCurrent(), "lightgroup.disable."+luxProp(mat, "light.lightgroup", "default").get(), "false").get() != "true":
                                 light = True
-                        mesh_name = obj.getData(name_only=True)
-                        try:
-                            self.meshes[mesh_name] += [obj]
-                        except KeyError:
-                            self.meshes[mesh_name] = [obj]
-                        self.objects.append([obj, matrix])
+                        if len(psystems) == 0 or export_emitter:
+                            mesh_name = obj.getData(name_only=True)
+                            try:
+                                self.meshes[mesh_name] += [obj]
+                            except KeyError:
+                                self.meshes[mesh_name] = [obj]
+                            self.objects.append([obj, matrix])
             elif (obj_type == "Lamp"):
                 ltype = obj.getData(mesh=1).getType() # data
                 if (ltype == Lamp.Types["Lamp"]) or (ltype == Lamp.Types["Spot"]) or (ltype == Lamp.Types["Area"]):
