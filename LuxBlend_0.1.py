@@ -202,7 +202,7 @@ clayMat = None
 # helper function to get the material list of an object in respect of obj.colbits
 #-------------------------------------------------
 def getMaterials(obj, compress=False):
-    if obj.type != 'Mesh':
+    if not obj.type in ['Mesh', 'Curve', 'Surf', 'Text', 'MBall']:
     	return []
     
     global clayMat
