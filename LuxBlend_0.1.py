@@ -2960,7 +2960,7 @@ def luxCamera(cam, context, gui=None):
                 
                 if camtype.get() == "perspective":
                     
-                    usefstop = luxProp(cam, "usefstop", "false")
+                    usefstop = luxProp(cam, "usefstop", "true")
                     luxBool("usefstop", usefstop, "Use f/stop", "Use f/stop to define DOF effect", gui, 1.0)
                     
                     LR_SCALE = 1000.0       # lr in metres -> mm
@@ -2974,14 +2974,17 @@ def luxCamera(cam, context, gui=None):
                         return fl / ( 2.0 * fs )
                     
                     if usefstop.get() == 'true':
+                        halfstop = luxProp(cam, 'camera.halfstop', 'false')
+                        luxBool('camera.halfstop', halfstop, 'half-stop', 'Use half-stop presets', gui, 0.5)
+                        fs.default = 2.8 if halfstop.get() == 'false' else 3.3
+                        luxOption('camera.fstoppresets', fs, luxFstopPresets('full' if halfstop.get() == 'false' else 'half'), 'f/stop', 'Choose the focal ratio number (lens aperture)', gui, 0.5)
                         lr.set(fs_2_lr(fl.get() * FL_SCALE, fs.get()) / LR_SCALE)
-                        luxFloat("fstop", fs, 0.9, 64.0, "fstop", "Defines the lens aperture.", gui)
                         str += luxFloat("lensradius", lr, 0.0, 1.0, "", "", None)
                     else:
                         fs.set(lr_2_fs(fl.get() * FL_SCALE, lr.get() * LR_SCALE))
-                        str += luxFloat("lensradius", lr, 0.0, 1.0, "lens-radius", "Defines the lens radius. Values higher than 0. enable DOF and control the amount", gui)
+                        str += luxFloat("lensradius", lr, 0.0, 1.0, "lens-radius", "Defines the lens radius. Values higher than 0 enable DOF and control its amount", gui)
                 else:
-                    str += luxFloat("lensradius", lr, 0.0, 1.0, "lens-radius", "Defines the lens radius. Values higher than 0. enable DOF and control the amount", gui)
+                    str += luxFloat("lensradius", lr, 0.0, 1.0, "lens-radius", "Defines the lens radius. Values higher than 0 enable DOF and control its amount", gui)
                 
                 focustype = luxProp(cam, "camera.focustype", "autofocus")
                 luxOption("focustype", focustype, ["autofocus", "manual", "object"], "Focus Type", "Choose the focus behaviour", gui)
@@ -3056,42 +3059,23 @@ def luxCamera(cam, context, gui=None):
         if(usemblur.get() == "true"):    
             if gui: gui.newline("  Shutter:")
             mblurpreset = luxProp(cam, "mblurpreset", "true")
-            luxBool("mblurpreset", mblurpreset, "Preset", "Enable use of Shutter Presets", gui, 0.4)
+            luxBool("mblurpreset", mblurpreset, "Preset", "Enable use of Shutter Presets", gui, 0.5)
             if(mblurpreset.get() == "true"):
-                mblurpresetstype = luxProp(cam, "mblurpresetstype", "still")
-                luxOption("mblurpresetstype", mblurpresetstype, ['still', 'cinema'], "camera type", "Choose whether to use still photographic or cinematographic camera presets", gui, 0.5)
-                if mblurpresetstype.get() == 'still':
-                    shutterpresets = ["1", "1/2", "1/4", "1/8", "1/15", "1/25", "1/30", "1/45", "1/60", "1/85", "1/125", "1/250", "1/500", "1/1000"]        
-                else:
-                    shutterpresets = ["90-degree", "180-degree", "270-degree"]        
+                mblurpresetstype = luxProp(cam, "mblurpresetstype", 'photo')
+                luxOption("mblurpresetstype", mblurpresetstype, ['photo', 'cinema'], "camera type", "Choose whether to use still photographic or cinematographic camera presets", gui, 0.5)
                 
-                shutterpreset = luxProp(cam, "camera.shutterspeedpreset", "1/60" if mblurpresetstype.get() == "still" else "180-degree")
-                luxOption("shutterpreset", shutterpreset, shutterpresets, "shutter speed", "Choose the Shutter speed preset", gui, 0.6 if mblurpresetstype.get() == 'cinema' else 1.1)
+                shutterpreset = luxProp(cam, "camera.shutterspeedpreset", "1/60" if mblurpresetstype.get() == 'photo' else "180-degree")
+                luxOption("shutterpreset", shutterpreset, luxShutterSpeedPresets(mblurpresetstype.get()), "shutter speed", "Choose the Shutter speed preset", gui, 0.5 if mblurpresetstype.get() == 'cinema' else 1.0)
                 
                 shutfps = luxProp(cam, "camera.shutfps", "25 FPS")
                 if mblurpresetstype.get() == 'cinema':
-                    fpspresets = ["10 FPS", "12 FPS", "20 FPS", "24 FPS", "25 FPS", "29.976 FPS", "30 FPS", "50 FPS", "60 FPS", "100 FPS", "200 FPS", "500 FPS"]
-                    luxOption("shutfps", shutfps, fpspresets, "@", "Choose the number of frames per second as the time base", gui, 0.5)
+                    luxOption("shutfps", shutfps, luxFPSPresets(), "@", "Choose the number of frames per second as the time base", gui, 0.5)
 
-                sfps = shutfps.get()
-                fps = 25
-                if mblurpresetstype.get() == 'still': fps = 1
-                else: fps = float(sfps[:sfps.find(' ')])  # assuming fps are in form 'n FPS'
-
-                spre = shutterpreset.get()
-                open = 0.0
-                close = 1.0
-                if spre == "90-degree": close = 1.0/fps * 0.75
-                elif spre == "180-degree": close = 1.0/fps * 0.5
-                elif spre == "270-degree": close = 1.0/fps * 0.25
-                elif spre == "1": close = 1.0
-                else: close = 1.0 / float(spre[2:])  # assuming still camera shutterspeed is in form '1/n'
-
-                str += "\n   \"float shutteropen\" [%f]\n   \"float shutterclose\" [%f] "%(open,close)
+                str += "\n   \"float shutteropen\" [%f]\n   \"float shutterclose\" [%f] " % (0, luxFilmExposure(mblurpresetstype.get(), shutterpreset.get(), shutfps.get()))
 
             else:
-                str += luxFloat("shutteropen", luxProp(cam, "camera.shutteropen", 0.0), 0.0, 100.0, "open", "time in seconds when shutter opens", gui, 0.8)
-                str += luxFloat("shutterclose", luxProp(cam, "camera.shutterclose", 1.0), 0.0, 100.0, "close", "time in seconds when shutter closes", gui, 0.8)
+                str += luxFloat("shutteropen", luxProp(cam, "camera.shutteropen", 0.0), 0.0, 100.0, "open", "time in seconds when shutter opens", gui, 0.75)
+                str += luxFloat("shutterclose", luxProp(cam, "camera.shutterclose", 1.0), 0.0, 100.0, "close", "time in seconds when shutter closes", gui, 0.75)
 
             str += luxOption("shutterdistribution", luxProp(cam, "camera.shutterdistribution", "gaussian"), ["uniform", "gaussian"], "distribution", "Choose the shutter sampling distribution", gui, 2.0)
             objectmblur = luxProp(cam, "objectmblur", "true")
@@ -3100,6 +3084,35 @@ def luxCamera(cam, context, gui=None):
             luxBool("cammblur", cammblur, "Camera", "Enable Motion Blur for Camera motion", gui, 1.0)
     return str
 
+
+def luxFPSPresets():
+    return ['10 FPS', '12 FPS', '20 FPS', '24 FPS', '25 FPS', '29.976 FPS', '30 FPS', '50 FPS', '60 FPS', '100 FPS', '200 FPS', '500 FPS']
+
+def luxISOPresets():
+    return [20, 25, 32, 40, 50, 64, 80, 100, 125, 160, 200, 250, 320, 400, 500, 640, 800, 1000]
+
+def luxShutterSpeedPresets(type):
+    speeds = {
+      'photo': ['1', '1/2', '1/4', '1/8', '1/15', '1/30', '1/60', '1/125', '1/250', '1/500', '1/1000'],
+      'cinema': ['45-degree', '90-degree', '180-degree', '270-degree']
+    }
+    return speeds[type]
+
+def luxFstopPresets(type):
+    fstops = {
+      'full': [0.5, 0.7, 1, 1.4, 2, 2.8, 4, 5.6, 8, 11, 16, 22, 32, 45, 64, 90, 128],
+      'half': [1.2, 1.7, 2.4, 3.3, 4.8, 6.7, 9.5, 13, 19, 27, 38, 54, 77, 109]
+    }
+    return fstops[type]
+
+def luxFilmExposure(type, shutterStr, fpsStr):
+    if type == 'photo': fps = 1
+    else: fps = float(fpsStr[:fpsStr.find(' ')])  # assuming fps are in form 'n FPS'
+    
+    if shutterStr == '1': exp = 1.0
+    elif type == 'photo': exp = 1.0 / float(shutterStr[2:])  # assuming still camera shutterspeed is in form '1/n'
+    elif type == 'cinema': exp = (1.0/fps) * (1-float(shutterStr[:shutterStr.find('-')])/360)  # assuming motion camera shutterspeed is in form 'n-degree'
+    return exp
 
 def get_render_resolution(scn, gui = None):
     context = scn.getRenderingContext()
@@ -3254,20 +3267,40 @@ def luxFilm(scn, gui=None):
             str += luxOption("tonemapkernel", tonemapkernel, ["reinhard", "linear", "contrast", "maxwhite"], "Tonemapping Kernel", "Select the tonemapping kernel to use", gui, 1.2)
             str += luxBool("premultiplyalpha", luxProp(scn, "film.premultiplyalpha", "false"), "Premultiply Alpha", "Premultiply film alpha channel during normalization", gui, 0.8)
             if tonemapkernel.get() == "reinhard":
-                autoywa = luxProp(scn, "film.reinhard.autoywa", "true")
-                #str += luxBool("reinhard_autoywa", autoywa, "auto Ywa", "Automatically determine World Adaption Luminance", gui)
-                if autoywa.get() == "false":
-                    str += luxFloat("reinhard_ywa", luxProp(scn, "film.reinhard.ywa", 0.1), 0.001, 1.0, "Ywa", "Display/World Adaption Luminance", gui)
                 str += luxFloat("reinhard_prescale", luxProp(scn, "film.reinhard.prescale", 1.0), 0.0, 10.0, "preScale", "Image scale before tonemap operator", gui)
                 str += luxFloat("reinhard_postscale", luxProp(scn, "film.reinhard.postscale", 1.2), 0.0, 10.0, "postScale", "Image scale after tonemap operator", gui)
-                str += luxFloat("reinhard_burn", luxProp(scn, "film.reinhard.burn", 6.0), 0.1, 12.0, "burn", "12.0: no burn out, 0.1 lot of burn out", gui)
+                str += luxFloat("reinhard_burn", luxProp(scn, "film.reinhard.burn", 6.0), 0.1, 12.0, "burn", "12.0: no burn out, 0.1 lot of burn out", gui, 2.0)
             elif tonemapkernel.get() == "linear":
-                str += luxFloat("linear_sensitivity", luxProp(scn, "film.linear.sensitivity", 50.0), 0.0, 1000.0, "sensitivity", "Adaption/Sensitivity", gui)
-                str += luxFloat("linear_exposure", luxProp(scn, "film.linear.exposure", 1.0), 0.001, 1.0, "exposure", "Exposure duration in seconds", gui)
-                str += luxFloat("linear_fstop", luxProp(scn, "film.linear.fstop", 2.8), 0.1, 64.0, "Fstop", "F-Stop", gui)
+                linearSensitivity = luxProp(scn, 'film.linear.sensitivity', 100.0)
+                linearExposure = luxProp(scn, 'film.linear.exposure', 0.008)
+                linearFstop = luxProp(scn, 'film.linear.fstop', 2.8)
+                linearPreset = luxProp(scn, 'film.linear.presets', 'true')
+                luxBool('linearpresets', linearPreset, 'Preset', 'Enable use of lens and film presets', gui, 0.5 if linearPreset.get() == 'true' else 1.0)
+                if linearPreset.get() == 'true':
+                    linearPresetsType = luxProp(scn, 'film.linear.cameratype', 'photo')
+                    luxOption('linearpresetstype', linearPresetsType, ['photo', 'cinema'], 'camera type', 'Choose whether to use still photographic or cinematographic camera presets', gui, 0.5)
+                    linearExposurePreset = luxProp(scn, 'film.linear.exposurepreset', '1/125' if linearPresetsType.get() == 'photo' else '180-degree')
+                    luxOption('linearexposurepreset', linearExposurePreset, luxShutterSpeedPresets(linearPresetsType.get()), 'exposure', 'Exposure duration in seconds, or shutter speed', gui, 0.5 if linearPresetsType.get() == 'cinema' else 1.0)
+                    linearFPSPreset = luxProp(scn, 'film.linear.camerafps', '25 FPS')
+                    if linearPresetsType.get() == 'cinema':
+                        luxOption('linearfpspreset', linearFPSPreset, luxFPSPresets(), '@', 'Choose the number of frames per second as the time base', gui, 0.5)
+                    linearExposure.set(luxFilmExposure(linearPresetsType.get(), linearExposurePreset.get(), linearFPSPreset.get()))
+                    linearHalfStop = luxProp(scn, 'film.linear.halfstop', 'false')
+                    luxBool('linearhalfstop', linearHalfStop, 'half-stop', 'Use half-stop presets', gui, 0.5)
+                    linearFstop.default = 2.8 if linearHalfStop.get() == 'false' else 3.3
+                    luxOption('linearpresetsfstop', linearFstop, luxFstopPresets('full' if linearHalfStop.get() == 'false' else 'half'), 'f/stop', 'Choose the focal ratio number (lens aperture)', gui, 0.5)
+                    linearFstop.set(float(linearFstop.get()))
+                    luxOption('linearpresetsiso', linearSensitivity, luxISOPresets(), 'film ISO', 'Choose film sensitivity (ISO scale number)', gui)
+                    linearSensitivity.set(float(linearSensitivity.get()))
+                    linearGUI = None
+                else:
+                    linearGUI = gui
+                str += luxFloat("linear_sensitivity", linearSensitivity, 1.0, 1000.0, "sensitivity", "Film adaption/sensitivity", linearGUI)
+                str += luxFloat("linear_exposure", linearExposure, 0.0001, 1.0, "exposure", "Exposure duration in seconds", linearGUI)
+                str += luxFloat("linear_fstop", linearFstop, 0.1, 128.0, "f/stop", "Focal ratio number", linearGUI)
                 str += luxFloat("linear_gamma", luxProp(scn, "film.gamma", 2.2), 0.0, 8.0, "gamma", "Film gamma correction", None)
             elif tonemapkernel.get() == "contrast":
-                str += luxFloat("contrast_ywa", luxProp(scn, "film.contrast.ywa", 0.1), 0.001, 10000.0, "Ywa", "Display/World Adaption Luminance", gui)
+                str += luxFloat("contrast_ywa", luxProp(scn, "film.contrast.ywa", 0.1), 0.001, 10000.0, "Ywa", "Display/World Adaption Luminance", gui, 2.0)
 
         # Image File Outputs
 
