@@ -3467,22 +3467,22 @@ def luxFilm(scn, gui=None):
                 luxBool("whitepointusepreset", whitepointusepreset, "Preset", "Select from a list of predefined presets", gui, 0.4)
     
                 if(whitepointusepreset.get() == "true"):
-                    whitepointpresets = ["E", "D50", "D55", "D65", "D75", "A", "B", "C", "9300", "F2", "F7", "F11"]
-                    whitepointpreset = luxProp(scn, "film.whitepointpreset", "D65")
+                    whitepointpresets = ["A - incandescent", "B - sunlight", "C - daylight", "D50 - daylight, 5003K", "D55 - daylight, 5503K", "D65 - daylight, 6504K", "D75 - daylight, 7504K", "E - equal energy", "F2 - standard fluorescent", "F7 - broadband fluorescent", "F11 - narrow threeband fluorescent", "9300"]
+                    whitepointpreset = luxProp(scn, "film.whitepointpreset", "D65 - daylight, 6504K")
                     luxOption("whitepointpreset", whitepointpreset, whitepointpresets, "  PRESET", "select Whitepoint preset", gui, 1.6)
     
-                    if whitepointpreset.get()=="E": cspacewhiteX.set(0.333); cspacewhiteY.set(0.333)
-                    elif whitepointpreset.get()=="D50": cspacewhiteX.set(0.346); cspacewhiteY.set(0.359)
-                    elif whitepointpreset.get()=="D55": cspacewhiteX.set(0.332); cspacewhiteY.set(0.347)
-                    elif whitepointpreset.get()=="D65": cspacewhiteX.set(0.313); cspacewhiteY.set(0.329)
-                    elif whitepointpreset.get()=="D75": cspacewhiteX.set(0.299); cspacewhiteY.set(0.315)
-                    elif whitepointpreset.get()=="A": cspacewhiteX.set(0.448); cspacewhiteY.set(0.407)
-                    elif whitepointpreset.get()=="B": cspacewhiteX.set(0.348); cspacewhiteY.set(0.352)
-                    elif whitepointpreset.get()=="C": cspacewhiteX.set(0.310); cspacewhiteY.set(0.316)
-                    elif whitepointpreset.get()=="9300": cspacewhiteX.set(0.285); cspacewhiteY.set(0.293)
-                    elif whitepointpreset.get()=="F2": cspacewhiteX.set(0.372); cspacewhiteY.set(0.375)
-                    elif whitepointpreset.get()=="F7": cspacewhiteX.set(0.313); cspacewhiteY.set(0.329)
-                    elif whitepointpreset.get()=="F11": cspacewhiteX.set(0.381); cspacewhiteY.set(0.377)
+                    if whitepointpreset.get().startswith("E - "): cspacewhiteX.set(0.333); cspacewhiteY.set(0.333)
+                    elif whitepointpreset.get().startswith("D50 - "): cspacewhiteX.set(0.346); cspacewhiteY.set(0.359)
+                    elif whitepointpreset.get().startswith("D55 - "): cspacewhiteX.set(0.332); cspacewhiteY.set(0.347)
+                    elif whitepointpreset.get().startswith("D65 - "): cspacewhiteX.set(0.313); cspacewhiteY.set(0.329)
+                    elif whitepointpreset.get().startswith("D75 - "): cspacewhiteX.set(0.299); cspacewhiteY.set(0.315)
+                    elif whitepointpreset.get().startswith("A - "): cspacewhiteX.set(0.448); cspacewhiteY.set(0.407)
+                    elif whitepointpreset.get().startswith("B - "): cspacewhiteX.set(0.348); cspacewhiteY.set(0.352)
+                    elif whitepointpreset.get().startswith("C - "): cspacewhiteX.set(0.310); cspacewhiteY.set(0.316)
+                    elif whitepointpreset.get().startswith("9300"): cspacewhiteX.set(0.285); cspacewhiteY.set(0.293)
+                    elif whitepointpreset.get().startswith("F2 - "): cspacewhiteX.set(0.372); cspacewhiteY.set(0.375)
+                    elif whitepointpreset.get().startswith("F7 - "): cspacewhiteX.set(0.313); cspacewhiteY.set(0.329)
+                    elif whitepointpreset.get().startswith("F11 - "): cspacewhiteX.set(0.381); cspacewhiteY.set(0.377)
                 else:
                     luxFloat("white X", cspacewhiteX, 0.0, 1.0, "white X", "Whitepoint X weight", gui, 0.8)
                     luxFloat("white Y", cspacewhiteY, 0.0, 1.0, "white Y", "Whitepoint Y weight", gui, 0.8)
