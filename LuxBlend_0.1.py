@@ -289,7 +289,7 @@ class luxExport:
         self.portals = []
         self.volumes = []
         self.namedVolumes = []
-        self.hair = {'obj':[], 'sys':[], 'motion':{}}
+        self.hair = {'obj':{}, 'motion':{}}
         self.meshes = {}
         self.instances = {}  # only for instances with quirks: redefined materials and modifiers
         self.materials = []
@@ -349,8 +349,8 @@ class luxExport:
                         #if self.analyseObject(dup_obj, combined_matrix, "%s.%s"%(obj.getName(), dup_obj.getName()), True, True): light = True
                 elif psys.type == Particle.TYPE['HAIR'] and psys.drawAs == Particle.DRAWAS['PATH']:
                     if psys.renderEmitter: export_emitter = True
-                    if not obj in self.hair['obj']: self.hair['obj'].append(obj)
-                    if not psys.getName() in self.hair['sys']: self.hair['sys'].append(psys.getName())
+                    if not obj in self.hair['obj']: self.hair['obj'][obj] = []
+                    if not psys.getName() in self.hair['obj'][obj]: self.hair['obj'][obj].append(psys.getName())
                     if not psys.renderEmitter:
                         export_emitter_mats = True
             
@@ -476,11 +476,11 @@ class luxExport:
         clay_export = (luxProp(self.scene, 'clay', 'false').get() != 'true')
         ob_moblur = (luxProp(self.camera.data, 'objectmblur', 'true').get() == 'true' and luxProp(self.camera.data, 'usemblur', 'false').get() == 'true')
         frame = Blender.Get('curframe')
-        for obj in self.hair['obj']:
+        for obj, obj_psystems in self.hair['obj'].items():
             #pb.counter('Exporting Hair Particles')
             for psys in obj.getParticleSystems():
                 psysname = psys.getName()
-                if not psysname in self.hair['sys']: continue
+                if not psysname in obj_psystems: continue
                 
                 if clay_export:
                     mat = psys.getMat() or dummyMat
@@ -488,8 +488,8 @@ class luxExport:
                     mat = getMaterials(obj, True)[0]
                 
                 size = luxProp(mat, 'hair_thickness', 0.5).get() * luxScaleUnits('hair_thickness', 'mm', mat)
-                legname = '%s:luxHairPrimitive:leg' % psysname
-                jointname = '%s:luxHairPrimitive:joint' % psysname
+                legname = '%s:%s:luxHairPrimitive:leg' % (obj.name, psysname)
+                jointname = '%s:%s:luxHairPrimitive:joint' % (obj.name, psysname)
                 primitives = {
                   legname: "\tShape \"cylinder\" \"float radius\" %f \"float zmin\" 0.0 \"float zmax\" 1.0\n" % (0.5*size),
                   jointname: "\tShape \"sphere\" \"float radius\" %f\n" % (0.5*size)
@@ -508,7 +508,7 @@ class luxExport:
                     self.luxCollectHairObjs(psys, jointname, legname, size, True)
                     Blender.Set('curframe', frame)
                 # removing psys from the list to avoid multiple exports
-                self.hair['sys'].remove(psysname)
+                self.hair['obj'][obj].remove(psysname)
 
     # collect hair strand segment objects/matrices pairs
     def luxCollectHairObjs(self, psys, jointname, legname, size, motion=False):
