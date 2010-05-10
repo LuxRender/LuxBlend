@@ -8098,7 +8098,7 @@ if (pyargs != []) and (batchindex != 0):
         print("End frame: %s" %opts['-e'])
         context.endFrame(int(opts['-e']))
     else:
-        print("Error: End frame not supplied (-e)"); osys.exit(1)
+        print("Error: End frame not supplied (-e)")
     if opts.has_key('-l'):
         print("Path to LuxRender binary: %s" %opts['-l'])
         luxbatchconsolemode = luxProp(scene, "luxbatchc", "false")
