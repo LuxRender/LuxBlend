@@ -189,6 +189,17 @@ def exportMaterialGeomTag(mat):
     return "%s\n"%(luxProp(mat, "link", "").get())
 
 
+# generate and attach a permanent UID to the scene if there isn't any
+def luxGenUID(scn):
+    guid = luxProp(scn, 'UID', '')
+    g = guid.get()
+    if not g:
+        import sha
+        try: r = os.urandom(20)
+        except NotImplementedError: r = ''
+        g = sha.new(str(sys.time())+'|'+r).hexdigest()
+        guid.set(g)
+    return g
 
 
 ################################################################
@@ -5477,31 +5488,37 @@ def luxScaleUnits(keyname, default, mat, width=0.5, gui=None):
 
 def listNamedVolumes():
     # returns a dict of volumeName:volumeId pairs
+    scn = Scene.GetCurrent()
     d = {}
     s = 'named_volumes:'
     try:
-        for k, v in Scene.GetCurrent().properties['luxblend'].convert_to_pyobject().items():
+        for k, v in scn.properties['luxblend'].convert_to_pyobject().items():
             if k.startswith(s) and k[k.find('.')+1:] == 'name':
                 d[v] = int(k[len(s):k.find('.')])
     except KeyError:
         pass
     if not d.has_key('0'):
         d['world *'] = 0
-        luxProp(Scene.GetCurrent(), 'named_volumes:0.id', 0).set(0)
-        luxProp(Scene.GetCurrent(), 'named_volumes:0.name', '').set('world *')
+        luxProp(scn, 'named_volumes:0.id', 0).set(0)
+        luxProp(scn, 'named_volumes:0.name', '').set('world *')
     return d
             
-def getNamedVolume(id):
+def getNamedVolume(id, scene=None):
     # returns a dict of volume properties' name:value pairs
+    if scene is None:
+        scn = Scene.GetCurrent()
+    else:
+        scn = scene
     d = {}
     s = 'named_volumes:%s.' % id
-    for k, v in Scene.GetCurrent().properties['luxblend'].convert_to_pyobject().items():
+    for k, v in scn.properties['luxblend'].convert_to_pyobject().items():
         (kn, vl) = (k, v)
         if k[:7] == '__hash:':
             (kn, vl) = v.split(' = ')
         if kn[:len(s)] == s:
             d[kn[len(s):]] = vl
     if not d:
+        if scene is None: return None
         d['id'] = 0
         d['name'] = 'world *'
     else:
@@ -5521,6 +5538,16 @@ def luxNamedVolume(mat, volume_prop, gui=None):
     if gui: gui.newline('Medium name:', 0, 0, None, [0.4,0.4,0.6])
     volumeId = luxProp(mat, '%s_vol_id' % (volume_prop), 0)
     volumeName = luxProp(mat, '%s_vol_name' % (volume_prop), '')
+    volumeUID = luxProp(mat, '%s_vol_guid' % (volume_prop), '')
+    # link volume data to the scene UID if it's not linked already
+    if not volumeUID.get():
+        volumeUID.set(luxUID)
+    # is that a native volume data or maybe we linked material
+    # from another scene? lets see and import if necessary
+    elif volumeUID.get() != luxUID:
+        importNamedVolume(volumeId, volumeName, volumeUID)
+        volumes = listNamedVolumes()  # reloading in case we have something imported
+    # do we have that volume in the scene data?
     if not volumes.has_key(volumeName.get()):
         # seems selected volume was renamed or deleted.
         # lets try to update its name from id (if it still exists)
@@ -5594,6 +5621,53 @@ def luxNamedVolumeTexture(volId, gui=None):
         (s, l) = c((s, l), (s1, l1))
     
     return s, volType+l
+
+def importNamedVolume(volumeId, volumeName, volumeUID):
+    # scans all linked libraries and imports volume
+    # data from another scene object if possible.
+    def assignName(name, volumes):
+        # helper function to set a proper name for imported
+        # volume without overwriting existing ones
+        if not name in volumes:
+            return name
+        else:
+            if not (name[-4] == '.' and name[-3:].isdigit): subname = name
+            else: subname = name[:-4]
+            for i in range(1, 1000):
+                n = subname+'.'+str(i).rjust(3, '0')
+                if not n in volumes: return n
+    Library = Blender.Library
+    scn = Scene.GetCurrent()
+    for lib in Library.LinkedLibs():
+        Library.Open(sys.expandpath(lib))
+        for scnName in Library.Datablocks('Scene'):
+            Library.Load(scnName, 'Scene', 1)
+            linkedScn = Scene.Get()[-1]
+            linkedUID = luxProp(linkedScn, 'UID', '')
+            if volumeUID.get() == linkedUID.get():
+                linkedVolumeData = getNamedVolume(volumeId.get(), linkedScn)
+                currentVolumeData = getNamedVolume(volumeId.get(), scn)
+                if linkedVolumeData != currentVolumeData and linkedVolumeData is not None:
+                    volumes = listNamedVolumes()
+                    newId = max(volumes.values())+1
+                    prefix = 'named_volumes:%s.' % newId
+                    for k, v in linkedVolumeData.items():
+                        if k == 'id':
+                            volumeId.set(newId)  # material property
+                        elif k == 'name':
+                            newName = assignName(v, volumes.keys())
+                            volumeName.set(newName)  # material property
+                            luxProp(scn, prefix+k, '').set(newName)
+                        else:
+                            luxProp(scn, prefix+k, '').set(v)
+                    print 'Properties for medium "%s" imported successfully from the library file %s' % (newName, lib)
+            # end of matched UID clause
+            for obj in linkedScn.getChildren(): linkedScn.unlink(obj)
+            Scene.Unlink(linkedScn)
+        # end of Scene blocks loop
+        Blender.Library.Close()
+    # end of libs loop
+    volumeUID.set(luxUID)  # material property
 
 def luxLight(name, kn, mat, gui, level):
     if gui:
@@ -7572,6 +7646,7 @@ def showVolumesMenu(mat, volume_prop):
             luxProp(scn, 'named_volumes:%s.name' % newId, 0).set(name)
             luxProp(mat, '%s_vol_id' % (volume_prop), 0).set(newId)
             luxProp(mat, '%s_vol_name' % (volume_prop), '').set(name)
+            luxProp(mat, '%s_vol_guid' % (volume_prop), '').set(luxUID)
             Blender.Window.QRedrawAll()
             return True
     elif r == 2:
@@ -7598,6 +7673,8 @@ def showVolumesMenu(mat, volume_prop):
         for k, v in active_volume.items():
             if not k in ['name', 'id']:
                 luxProp(scn, 'named_volumes:%s.%s'%(volId,k), '').set(v)
+        luxProp(mat, '%s_vol_id' % (volume_prop), 0).set(volId)
+        luxProp(mat, '%s_vol_name' % (volume_prop), '').set(name)
         Blender.Window.QRedrawAll()
         return True
     elif r == 3:
@@ -8139,14 +8216,17 @@ if (pyargs != []) and (batchindex != 0):
 else:
     print("\n\nLuxBlend v%s - UI mode\n"%__version__)
     from Blender.Window import DrawProgressBar
+    global luxUID
     LuxIsGUI = True
+    scn = Scene.GetCurrent()
     
     Draw.Register(luxDraw, luxEvent, luxButtonEvt) # init GUI
 
-    luxpathprop = luxProp(Scene.GetCurrent(), "lux", "")
+    luxpathprop = luxProp(scn, "lux", "")
     luxpath = luxpathprop.get()
-    luxrun = luxProp(Scene.GetCurrent(), "run", True).get()
-    checkluxpath = luxProp(Scene.GetCurrent(), "checkluxpath", True).get()
+    luxrun = luxProp(scn, "run", True).get()
+    checkluxpath = luxProp(scn, "checkluxpath", True).get()
+    luxUID = luxGenUID(scn)
 
     if checkluxpath and luxrun:
         if (luxpath is None) or (sys.exists(luxpath)<=0):
@@ -8166,7 +8246,6 @@ else:
             
             if (luxpath is None) or (sys.exists(luxpath)<=0):
                 print("WARNING: LuxRender path \"%s\" is not valid\n"%(luxpath))
-                scn = Scene.GetCurrent()
                 if scn:
                     r = Draw.PupMenu("Installation: Set path to the LuxRender software?%t|Yes%x1|No%x0|Never%x2")
                     if r == 1:
