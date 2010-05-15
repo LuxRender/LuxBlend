@@ -3992,7 +3992,7 @@ def luxEnvironment(scn, gui=None):
                     sunstr = ""
                     if gui:
                         gui.newline(); r = gui.getRect(2,1); BGL.glRasterPos2i(r[0],r[1]+5) 
-                        Draw.Text("create a blender Sun Lamp")
+                        Draw.Text("create a Blender Sun Lamp")
             
             if skystr != "": str += skystr
             if sunstr != "": str += sunstr
@@ -6929,7 +6929,8 @@ def convertMaterial(mat):
         else: makeGlass(alpha0name)
 
 def convertAllMaterials():
-    for mat in Material.Get(): convertMaterial(mat)
+    if Draw.PupMenu('  OK?%t|Are you sure to convert all materials, replacing the current LuxRender material definitions?%x1') == 1:
+        for mat in Material.Get(): convertMaterial(mat)
 
 
 
@@ -7837,7 +7838,7 @@ def luxDraw():
                     for i, v in enumerate(matnames): menustr = "%s %%x%d|%s"%(v, i, menustr)
                     gui.newline("MATERIAL:", 8) 
                     r = gui.getRect(1.1, 1)
-                    Draw.Button("C", evtConvertMaterial, r[0]-gui.h, gui.y-gui.h, gui.h, gui.h, "convert blender material to LuxRender material")
+                    Draw.Button("C", evtConvertMaterial, r[0]-gui.h, gui.y-gui.h, gui.h, gui.h, "convert Blender material to LuxRender material")
                     Draw.Menu(menustr, evtLuxGui, r[0], r[1], r[2], r[3], matindex, "", lambda e,v: setactivemat(mats[v]))
                     luxBool("", matfilter, "filter", "only show active object materials", gui, 0.5)
 
