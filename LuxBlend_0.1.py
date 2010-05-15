@@ -3861,6 +3861,22 @@ def luxEnvironment(scn, gui=None):
     global icon_c_environment
     str = ""
     if scn:
+        def componentRotation(key, hint, scn, gui, complimentary=False):
+            str = ''
+            rotZ = luxProp(scn, key+".rotation", 0.0)
+            rotY = luxProp(scn, key+".rotationY", 0.0)
+            rotX = luxProp(scn, key+".rotationX", 0.0)
+            luxFloat(key+".rotationX", rotX, 0.0, 360.0, "rot X", hint+" rotation X", gui, 0.66)
+            luxFloat(key+".rotationY", rotY, 0.0, 360.0, "rot Y", hint+" rotation Y", gui, 0.66)
+            luxFloat(key+".rotationZ", rotZ, 0.0, 360.0, "rot Z", hint+" rotation Z", gui, 0.66)
+            if rotZ.get() != 0 or rotY.get() != 0 or rotX.get() != 0:
+                if complimentary:
+                    str += "\nAttributeEnd\nAttributeBegin\n"
+                str += "\tRotate %d 1 0 0\n"%(rotX.get())
+                str += "\tRotate %d 0 1 0\n"%(rotY.get())
+                str += "\tRotate %d 0 0 1\n"%(rotZ.get())
+            if gui: gui.newline()
+            return str
         envtype = luxProp(scn, "env.type", "infinite")
         lsstr = luxIdentifier("LightSource", envtype, ["none", "infinite", "sunsky"], "ENVIRONMENT", "select environment light type", gui, icon_c_environment)
         if gui: gui.newline()
@@ -3872,19 +3888,8 @@ def luxEnvironment(scn, gui=None):
         
         if envtype.get() != "none":
             
-            rotZ = luxProp(scn, "env.rotation", 0.0)
-            rotY = luxProp(scn, "env.rotationY", 0.0)
-            rotX = luxProp(scn, "env.rotationX", 0.0)
-            luxFloat("rotation", rotX, 0.0, 360.0, "rot X", "environment rotation X", gui, 0.66)
-            luxFloat("rotation", rotY, 0.0, 360.0, "rot Y", "environment rotation Y", gui, 0.66)
-            luxFloat("rotation", rotZ, 0.0, 360.0, "rot Z", "environment rotation Z", gui, 0.66)
-            if rotZ.get() != 0 or rotY.get() != 0 or rotX.get() != 0:
-                str += "\tRotate %d 1 0 0\n"%(rotX.get())
-                str += "\tRotate %d 0 1 0\n"%(rotY.get())
-                str += "\tRotate %d 0 0 1\n"%(rotZ.get())
-            if gui: gui.newline()
-            
             if envtype.get() in ("infinite", "infinitesample"):
+                str += componentRotation('env', 'environment map', scn, gui)
                 env_lg = luxProp(scn, "env.lightgroup", "default")
                 luxString("env.lightgroup", env_lg, "lightgroup", "Environment light group", gui)
                 if luxProp(scn, "nolg", "false").get()!="true":
@@ -3907,6 +3912,7 @@ def luxEnvironment(scn, gui=None):
                     except: pass
 
             if envtype.get() == "sunsky":
+                str += componentRotation('sunsky', 'sunsky', scn, gui)
                 skycomponentProp = luxProp(scn, "env.sunsky.skycomponent", "true")
                 luxCollapse("skycomponent", skycomponentProp, "Sky Component", "Add Skydome Light Component", gui, 2.0)
                 if skycomponentProp.get() == "true":
@@ -3936,6 +3942,7 @@ def luxEnvironment(scn, gui=None):
                 infinitesunProp = luxProp(scn, "env.infinite.suncomponent", "false")
                 luxCollapse("infinitesun", infinitesunProp, "Sun Component", "Add Sunlight Component", gui, 2.0)
                 if infinitesunProp.get() == "true":
+                    str += componentRotation('envsun', 'sun component', scn, gui, True)
                     sun_lg = luxProp(scn, "env.sun_lightgroup", "default")
                     luxString("env.lightgroup", sun_lg, "lightgroup", "Sun component light group", gui)
                     if luxProp(scn, "nolg", "false").get() != "true":
