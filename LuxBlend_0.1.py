@@ -4472,7 +4472,7 @@ def luxMapping(key, mat, gui, level=0):
         str += luxFloat("uscale", luxProp(mat, key+".uscale", 1.0), -100.0, 100.0, "Us", "u-scale", gui, 0.5)
         str += luxFloat("vscale", luxProp(mat, key+".vscale", -1.0), -100.0, 100.0, "Vs", "v-scale", gui, 0.5)
         str += luxFloat("udelta", luxProp(mat, key+".udelta", 0.0), -100.0, 100.0, "Ud", "u-delta", gui, 0.5)
-        str += luxFloat("vdelta", luxProp(mat, key+".vdelta", 0.0), -100.0, 100.0, "Vd", "v-delta", gui, 0.5)
+        str += luxFloat("vdelta", luxProp(mat, key+".vdelta", 1.0 if luxProp(mat, key+'.texture', 'imagemap').get() == 'imagemap' else 0.0), -100.0, 100.0, "Vd", "v-delta", gui, 0.5)
     elif mapping.get() == "spherical":
         if gui: gui.newline()
         str += luxFloat("uscale", luxProp(mat, key+".uscale", 1.0), -100.0, 100.0, "Us", "u-scale", gui, 0.5)
@@ -6660,7 +6660,7 @@ def convertMaterial(mat):
             luxProp(mat, dot(name)+"uscale", 1.0).set(tex.size[0])
             luxProp(mat, dot(name)+"vscale", 1.0).set(-tex.size[1])
             luxProp(mat, dot(name)+"udelta", 0.0).set(tex.ofs[0]+0.5*(1.0-tex.size[0]))
-            luxProp(mat, dot(name)+"vdelta", 0.0).set(-tex.ofs[1]-0.5*(1.0-tex.size[1]))
+            luxProp(mat, dot(name)+"vdelta", 0.0).set(-tex.ofs[1]+1-(0.5*(1.0-tex.size[1])))
             if tex.mapping != Texture.Mappings["FLAT"]:
                 print("Material Conversion Warning: for UV-texture-input only FLAT mapping is supported\n") 
         else:
