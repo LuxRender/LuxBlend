@@ -3961,33 +3961,46 @@ def luxEnvironment(scn, gui=None):
                         skystr += "\n   \"vector sundir\" [%f %f %f]" %(invmatrix[0][2], invmatrix[1][2], invmatrix[2][2])
                     
                     showGeo = luxProp(sun, 'sc.show', 'false')
-                    if gui:
-                        luxCollapse("sc.show", showGeo, "Geographic Sun", "Set sun position by world location, date and time", gui, 2.0)
-                    if gui and showGeo.get() == 'true':
-                        gui.newline("Geographic:")
+                    if gui: luxCollapse("sc.show", showGeo, "Geographic Sun", "Set sun position by world location, date and time", gui, 2.0)
+                    if showGeo.get() == 'true':
+                        if gui: gui.newline("Geographic:")
                         sc = sun_calculator(sun)
                         
                         luxInt("sc.day", luxProp(sun, "sc.day", 1), 1, 31, "day", "Local date: day", gui, 0.66)
                         luxInt("sc.month", luxProp(sun, "sc.month", 1), 1, 12, "month", "Local date: month", gui, 0.67)
-                        luxInt("sc.year", luxProp(sun, "sc.year", 2009), 1800, 2100, "year", "Local date: year", gui, 0.66)
+                        luxInt("sc.year", luxProp(sun, "sc.year", 2009), 1, 2500, "year", "Local date: year", gui, 0.66)
                         
-                        luxInt("sc.hour", luxProp(sun, "sc.hour", 0), 0, 23, "hour", "Local time: hour", gui, 0.72)
-                        luxInt("sc.minute", luxProp(sun, "sc.minute", 0), 0, 59, "minute", "Local time: minute", gui, 0.72)
+                        sc_hour = luxProp(sun, "sc.hour", 0)
+                        sc_minute = luxProp(sun, "sc.minute", 0)
+                        sc_dayminutes = luxProp(sun, 'sc.dayminutes', 0.0)
+                        sunIpo = luxProp(sun, 'sc.ipo', 'false')
+                        if luxProp(scn, 'useparamkeys', 'false').get() == 'true':
+                            if gui: luxCollapse('sc.ipo', sunIpo, 'Sun IPO Keyframing', 'Set sun position using IPO keyframes', gui, 2.0)
+                            if sunIpo.get() == 'true':
+                                luxFloat('sc.dayminutes', sc_dayminutes, 0.0, 1439.0, 'IPO day minutes', 'Day minutes for IPO keyframing', gui, 2.0)
+                                if int(sc_dayminutes.get()) != sc_hour.get()*60 + sc_minute.get():
+                                    sc_hour.set(int(sc_dayminutes.get()/60))
+                                    sc_minute.set(int(sc_dayminutes.get()%60))
+                                    sc.compute(False)
+                        luxInt("sc.hour", sc_hour, 0, 23, "hour", "Local time: hour", gui, 0.72)
+                        luxInt("sc.minute", sc_minute, 0, 59, "minute", "Local time: minute", gui, 0.72)
                         luxBool("sc.dst", luxProp(sun, "sc.dst", 'false'), "DST", "DST", gui, 0.28)
-                        r = gui.getRect(0.28,1)
-                        Draw.Button("NOW", 0, r[0], r[1], r[2], r[3], "Set to current time", lambda e,v: sc.now())
+                        if gui:
+                            r = gui.getRect(0.28,1)
+                            Draw.Button("NOW", 0, r[0], r[1], r[2], r[3], "Set to current time", lambda e,v: sc.now())
                         
-                        r = gui.getRect(0.3,1)
-                        Draw.Button("Preset", 0, r[0], r[1], r[2], r[3], "Choose a preset location", lambda e,v: sc.set_location(
-                            Draw.PupTreeMenu(sun_calculator.location_list)
-                        ))
+                            r = gui.getRect(0.3,1)
+                            Draw.Button("Preset", 0, r[0], r[1], r[2], r[3], "Choose a preset location", lambda e,v: sc.set_location(
+                                Draw.PupTreeMenu(sun_calculator.location_list)
+                            ))
                         
-                        luxFloat("sc.lat", luxProp(sun, "sc.lat", 0.0), -90.0, 90.0, "lat", "Location: latitude", gui, 0.56)
-                        luxFloat("sc.long", luxProp(sun, "sc.long", 0.0), -180.0, 180.0, "long", "Location: longitude", gui, 0.56)
+                        luxFloat("sc.lat", luxProp(sun, "sc.lat", 0.0), -90.0, 90.0, "lat", "Location: latitude. Positive value for north hemisphere, negative value for south hemisphere", gui, 0.56)
+                        luxFloat("sc.long", luxProp(sun, "sc.long", 0.0), -180.0, 180.0, "long", "Location: longitude. Positive value for west hemisphere, negative value for east hemisphere", gui, 0.56)
                         luxInt("sc.tz", luxProp(sun, "sc.tz", 0), -12, 12, "timezone", "Local time: timezone offset from GMT", gui, 0.56)
                         
-                        r = gui.getRect(2,1)
-                        Draw.Button("Calculate", 0, r[0], r[1], r[2], r[3], "Calculate sun's position", lambda e,v: sc.compute())
+                        if gui:
+                            r = gui.getRect(2,1)
+                            Draw.Button("Calculate", 0, r[0], r[1], r[2], r[3], "Calculate sun's position", lambda e,v: sc.compute())
                 else:
                     sunstr = ""
                     if gui:
@@ -4113,85 +4126,85 @@ class sun_calculator:
 
     location_data = {
         # Europe
-        67:   ( 51.2167, 4.4, 1),
-        1:    ( 52.33, 13.30, 1),
-        70:   ( 48.17, 17.17, 1),
-        72:   ( 49.2, 16.63, 1),
-        68:   ( 58.8467, 4.3525, 1),
-        65:   ( 46.217, 6.150, 1),
-        7:    ( 60.1667, 24.9667,2),
-        62:   ( 47.2672, 11.3928, 1),
-        64:   ( 50.75, 30.0833, 2),
+        67:   ( 51.2167, -4.4, 1),
+        1:    ( 52.33, -13.30, 1),
+        70:   ( 48.17, -17.17, 1),
+        72:   ( 49.2, -16.63, 1),
+        68:   ( 58.8467, -4.3525, 1),
+        65:   ( 46.217, -6.150, 1),
+        7:    ( 60.1667, -24.9667,2),
+        62:   ( 47.2672, -11.3928, 1),
+        64:   ( 50.75, -30.0833, 2),
         10:   ( 51.50, 0.0, 0),
-        66:   ( 45.767, 4.833, 1),
-        69:   ( 48.32, 18.07, 1),
-        58:   ( 59.56, 10.41, 1),
-        15:   ( 48.8667, 2.667, 1),
-        71:   ( 50.08, 14.46, 1),
-        18:   ( 41.90, 12.4833, 1),
-        63:   ( 47.3, 11.0667, 1),
-        74:   ( 52.232, 21.008, 1),
-        73:   ( 51.108, 17.038, 1),
-        21:   ( 47.3833, 8.5333, 1),
+        66:   ( 45.767, -4.833, 1),
+        69:   ( 48.32, -18.07, 1),
+        58:   ( 59.56, -10.41, 1),
+        15:   ( 48.8667, -2.667, 1),
+        71:   ( 50.08, -14.46, 1),
+        18:   ( 41.90, -12.4833, 1),
+        63:   ( 47.3, -11.0667, 1),
+        74:   ( 52.232, -21.008, 1),
+        73:   ( 51.108, -17.038, 1),
+        21:   ( 47.3833, -8.5333, 1),
     
         # World Cities
-        0:    ( 39.9167, 116.4167, 8),
-        2:    ( 18.9333, 72.8333, 5.5),
-        3:    (-34.60, -58.45, -3),
-        4:    ( 30.10, 31.3667, 2),
-        5:    (-33.9167, 18.3667, 2),
-        6:    ( 10.50, -66.9333, -4),
-        60:   (-25.4278, -49.2731, -3),
-        8:    ( 22.25, 114.1667, 8),
-        9:    ( 31.7833, 35.2333, 2),
-        61:   (-29.3044, -48.8456, -3),
-        11:   ( 19.4, -99.15, -6),
-        12:   ( 55.75, 37.5833, 3),
-        13:   ( 28.6, 77.2, 5.5),
-        14:   ( 45.41667, -75.7, -5),
-        16:   (-22.90, -43.2333, -3),
-        17:   ( 24.633, 46.71667, 3),
-        59:   ( -23.5475, -46.6361, -3),
-        19:   (-33.8667,151.2167,10),
-        20:   ( 35.70, 139.7667, 9), 
+        0:    ( 39.9167, -116.4167, 8),
+        2:    ( 18.9333, -72.8333, 5.5),
+        3:    (-34.60, 58.45, -3),
+        4:    ( 30.10, -31.3667, 2),
+        5:    (-33.9167, -18.3667, 2),
+        6:    ( 10.50, 66.9333, -4),
+        60:   (-25.4278, 49.2731, -3),
+        8:    ( 22.25, -114.1667, 8),
+        9:    ( 31.7833, -35.2333, 2),
+        61:   (-29.3044, 48.8456, -3),
+        11:   ( 19.4, 99.15, -6),
+        12:   ( 55.75, -37.5833, 3),
+        13:   ( 28.6, -77.2, 5.5),
+        14:   ( 45.41667, 75.7, -5),
+        16:   (-22.90, 43.2333, -3),
+        17:   ( 24.633, -46.71667, 3),
+        59:   ( -23.5475, 46.6361, -3),
+        19:   (-33.8667, -151.2167,10),
+        20:   ( 35.70, -139.7667, 9), 
     
         # US Cities
-        22:   ( 35.0833, -106.65, -7),
-        23:   ( 61.217, -149.90, -9),
-        24:   ( 33.733, -84.383, -5),
-        25:   ( 30.283, -97.733, -6),
-        26:   ( 33.521, -86.8025, -6),
-        27:   ( 46.817, -100.783, -6),
-        28:   ( 42.35, -71.05, -5),
-        29:   ( 40.125, -105.237, -7),
-        30:   ( 41.85, -87.65, -6),
-        31:   ( 32.46, -96.47, -6),
-        32:   ( 39.733, -104.983, -7),
-        33:   ( 42.333, -83.05, -5),
-        34:   ( 21.30, -157.85, -10),
-        35:   ( 29.75, -95.35, -6),
-        36:   ( 39.767, -86.15, -5),
-        37:   ( 32.283, -90.183, -6),
-        38:   ( 39.083, -94.567, -6),
-        39:   ( 34.05, -118.233, -8),
-        40:   ( 43.11, -88.10, -6),
-        41:   ( 25.767, -80.183, -5),
-        42:   ( 44.967, -93.25, -6),
-        43:   ( 29.95, -90.067, -6),
-        44:   ( 40.7167, -74.0167, -5),
-        45:   ( 35.483, -97.533, -6),
-        46:   ( 39.95, -75.15, -5),
-        47:   ( 33.433, -112.067,-7),
-        48:   ( 40.433, -79.9833, -5),
-        49:   ( 43.666, -70.283, -5),
-        50:   ( 45.517, -122.65, -8),
-        51:   ( 35.783, -78.65, -5),
-        52:   ( 37.5667, -77.450, -5),
-        53:   ( 38.6167, -90.1833, -6),
-        54:   ( 32.7667, -117.2167, -8),
-        55:   ( 37.7667, -122.4167, -8),
-        56:   ( 47.60, -122.3167, -8),
-        57:   ( 38.8833, -77.0333, -5),
+        22:   ( 35.0833, 106.65, -7),
+        23:   ( 61.217, 149.90, -9),
+        24:   ( 33.733, 84.383, -5),
+        25:   ( 30.283, 97.733, -6),
+        26:   ( 33.521, 86.8025, -6),
+        27:   ( 46.817, 100.783, -6),
+        28:   ( 42.35, 71.05, -5),
+        29:   ( 40.125, 105.237, -7),
+        30:   ( 41.85, 87.65, -6),
+        31:   ( 32.46, 96.47, -6),
+        32:   ( 39.733, 104.983, -7),
+        33:   ( 42.333, 83.05, -5),
+        34:   ( 21.30, 157.85, -10),
+        35:   ( 29.75, 95.35, -6),
+        36:   ( 39.767, 86.15, -5),
+        37:   ( 32.283, 90.183, -6),
+        38:   ( 39.083, 94.567, -6),
+        39:   ( 34.05, 118.233, -8),
+        40:   ( 43.11, 88.10, -6),
+        41:   ( 25.767, 80.183, -5),
+        42:   ( 44.967, 93.25, -6),
+        43:   ( 29.95, 90.067, -6),
+        44:   ( 40.7167, 74.0167, -5),
+        45:   ( 35.483, 97.533, -6),
+        46:   ( 39.95, 75.15, -5),
+        47:   ( 33.433, 112.067,-7),
+        48:   ( 40.433, 79.9833, -5),
+        49:   ( 43.666, 70.283, -5),
+        50:   ( 45.517, 122.65, -8),
+        51:   ( 35.783, 78.65, -5),
+        52:   ( 37.5667, 77.450, -5),
+        53:   ( 38.6167, 90.1833, -6),
+        54:   ( 32.7667, 117.2167, -8),
+        55:   ( 37.7667, 122.4167, -8),
+        56:   ( 47.60, 122.3167, -8),
+        57:   ( 38.8833, 77.0333, -5),
     }
 
     def __init__(self, sun):
@@ -4211,6 +4224,7 @@ class sun_calculator:
         luxProp(self.sun, 'sc.hour', 0).set(ct[3])
         luxProp(self.sun, 'sc.minute', 0).set(ct[4])
         luxProp(self.sun, 'sc.dst', 0).set(dst)
+        luxProp(self.sun, 'sc.dayminutes', 0.0).set(ct[3]*60.0+ct[4])
         
         self.compute()
         
@@ -4224,7 +4238,7 @@ class sun_calculator:
         
         self.compute()
     
-    def compute(self):
+    def compute(self, redraw=True):
         
         self.lat  = luxProp(self.sun, "sc.lat", 0).get()
         self.long = luxProp(self.sun, "sc.long", 0).get()
@@ -4255,7 +4269,7 @@ class sun_calculator:
         
         self.sun.rot = math.radians(90-el), 0, math.radians(-az)
         
-        Window.Redraw()
+        if redraw is True: Window.Redraw()
         
         
     # --- THE FOLLOWING METHODS ARE ADAPTED FROM LUXMAYA ---
