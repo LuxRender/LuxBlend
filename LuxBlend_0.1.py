@@ -5595,10 +5595,12 @@ def luxNamedVolumeTexture(volId, gui=None):
         usedepth = luxProp(scn, keyname+'usedepth', 'true')
         (s, l) = c((s, l), luxTexture('value', keyname+'tex', 'fresnel', 1.459 if volId != 0 else 1.0002926, 1.0, 6.0, 'IOR', 'ior', scn, gui, 0, 1))
         (s1, l1) = luxSpectrumTexture('absorption', keyname+'absorption', '1.0 1.0 1.0', 1.0 if usedepth.get() == 'true' else 1000.0, 'absorption:', '', scn, gui, 1)
-        if usedepth.get() == 'true':
+        absorb_tex = luxProp(scn, keyname+'absorption:absorption.textured', 'false')
+        if usedepth.get() == 'true' and absorb_tex.get() != 'true':
             luxBool('usecolor', usecolor, 'Color', 'Resulting light color at given depth of the medium', gui, 0.5)
-        luxBool('usedepth', usedepth, 'at depth' if usedepth.get() == 'true' else 'Color at depth', 'Resulting light color at given depth of the medium' if usecolor.get() == 'true' else 'Amount of light absorbed at given depth of the medium', gui, 0.5 if usedepth.get() == 'true' else 1.0)
-        if usedepth.get() == 'true':
+        if absorb_tex.get() != 'true':
+            luxBool('usedepth', usedepth, 'at depth' if usedepth.get() == 'true' else 'Color at depth', 'Resulting light color at given depth of the medium' if usecolor.get() == 'true' else 'Amount of light absorbed at given depth of the medium', gui, 0.5 if usedepth.get() == 'true' else 1.0)
+        if usedepth.get() == 'true' and absorb_tex.get() != 'true':
             texkey = 'named_volumes:%s.absorption:absorption' % volId
             usetex = luxProp(scn, texkey+'.textured', None)
             depth = luxProp(scn, keyname+'depth', 1.0)
