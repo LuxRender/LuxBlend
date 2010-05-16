@@ -5648,24 +5648,26 @@ def luxNamedVolumeTexture(volId, gui=None):
 def importNamedVolume(volumeId, volumeName, volumeUID):
     # scans all linked libraries and imports volume
     # data from another scene object if possible.
-    def assignName(name, volumes):
+    def assignName(name, names):
         # helper function to set a proper name for imported
-        # volume without overwriting existing ones
-        if not name in volumes:
+        # object without overwriting existing ones
+        if not name in names:
             return name
         else:
             if not (name[-4] == '.' and name[-3:].isdigit): subname = name
             else: subname = name[:-4]
             for i in range(1, 1000):
-                n = subname+'.'+str(i).rjust(3, '0')
-                if not n in volumes: return n
+                newname = subname+'.'+str(i).rjust(3, '0')
+                if not newname in names: return newname
     Library = Blender.Library
     scn = Scene.GetCurrent()
+    allscenes = Scene.Get()
     for lib in Library.LinkedLibs():
         Library.Open(sys.expandpath(lib))
         for scnName in Library.Datablocks('Scene'):
             Library.Load(scnName, 'Scene', 1)
-            linkedScn = Scene.Get()[-1]
+            scnName = assignName(scnName, [s.name for s in allscenes])
+            linkedScn = Scene.Get(scnName)
             linkedUID = luxProp(linkedScn, 'UID', '')
             if volumeUID.get() == linkedUID.get():
                 linkedVolumeData = getNamedVolume(volumeId.get(), linkedScn)
@@ -5685,8 +5687,9 @@ def importNamedVolume(volumeId, volumeName, volumeUID):
                             luxProp(scn, prefix+k, '').set(v)
                     print 'Properties for medium "%s" imported successfully from the library file %s' % (newName, lib)
             # end of matched UID clause
-            for obj in linkedScn.getChildren(): linkedScn.unlink(obj)
-            Scene.Unlink(linkedScn)
+            if linkedScn != scn:
+                for obj in linkedScn.objects: linkedScn.objects.unlink(obj)
+                Scene.Unlink(linkedScn)
         # end of Scene blocks loop
         Blender.Library.Close()
     # end of libs loop
