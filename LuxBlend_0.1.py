@@ -5732,7 +5732,7 @@ def importNamedVolume(volumeId, volumeName, volumeUID):
         print '    - closing library path', sys.expandpath(lib)
         Blender.Library.Close()
         if imported: break
-    if not imported:
+    if imported is False:
         print ' - searching in the current blend-file scenes'
         for linkedScn in allscenes:
             if linkedScn != scn:
