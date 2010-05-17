@@ -191,13 +191,16 @@ def exportMaterialGeomTag(mat):
 
 # generate and attach a permanent UID to the scene if there isn't any
 def luxGenUID(scn):
+    global luxUID
     guid = luxProp(scn, 'UID', '')
     g = guid.get()
-    if not g:
+    if (not Blender.Get('filename') and not luxUID) or not g:
+        print 'Lux scene UID is missing. Generating a new one...'
         import sha
         try: r = os.urandom(20)
         except NotImplementedError: r = ''
         g = sha.new(str(sys.time())+'|'+r).hexdigest()
+        print 'Generated UID:', g, "\n"
         guid.set(g)
     return g
 
@@ -5566,8 +5569,15 @@ def luxNamedVolume(mat, volume_prop, gui=None):
     # is that a native volume data or maybe we linked material
     # from another scene? lets see and import if necessary
     elif volumeUID.get() != luxUID:
-        importNamedVolume(volumeId, volumeName, volumeUID)
-        volumes = listNamedVolumes()  # reloading in case we have something imported
+        print 'Global properties for medium "%s" are linked from another scene.' % volumeName.get(), "\nAttempting to import..."
+        imported = importNamedVolume(volumeId, volumeName, volumeUID)
+        if imported is True:
+            print 'Medium properties imported successfully', "\n"
+            volumes = listNamedVolumes()  # reloading volumes list
+        elif imported is False:
+            print 'Medium properties not found in the linked scenes. Import failed', "\n"
+        else:
+            print 'Medium properties import is unnecessary', "\n"
     # do we have that volume in the scene data?
     if not volumes.has_key(volumeName.get()):
         # seems selected volume was renamed or deleted.
@@ -5659,41 +5669,78 @@ def importNamedVolume(volumeId, volumeName, volumeUID):
             for i in range(1, 1000):
                 newname = subname+'.'+str(i).rjust(3, '0')
                 if not newname in names: return newname
+    def importFromScene(scn, linkedScn, volumeId, volumeName, volumeUID):
+        # helper function to scan a passed scene object for
+        # matching uid and volume properties data and import
+        # them in the active scene if found
+        imported = False
+        linkedUID = luxProp(linkedScn, 'UID', '')
+        if volumeUID.get() == linkedUID.get():
+            print '         scene UID matched, loading mediums data'
+            linkedVolumeData = getNamedVolume(volumeId.get(), linkedScn)
+            currentVolumeData = getNamedVolume(volumeId.get(), scn)
+            print '          - target medium found: ID %s, name "%s"' % (linkedVolumeData['id'], linkedVolumeData['name'])
+            if linkedVolumeData != currentVolumeData and linkedVolumeData is not None:
+                volumes = listNamedVolumes()
+                newId = max(volumes.values())+1
+                prefix = 'named_volumes:%s.' % newId
+                print '            importing medium global properties'
+                for k, v in linkedVolumeData.items():
+                    if k == 'id':
+                        volumeId.set(newId)  # material property
+                    elif k == 'name':
+                        newName = assignName(v, volumes.keys())
+                        volumeName.set(newName)  # material property
+                        luxProp(scn, prefix+k, '').set(newName)
+                    else:
+                        luxProp(scn, prefix+k, '').set(v)
+                print '            medium properties imported under name "%s"' % newName
+                imported = True
+            else:
+                print '            properties are the same or empty, skipping import'
+                imported = None
+        else:
+            print '         scene UID mismatch, skipping'
+        return imported
+    
+    imported = False
     Library = Blender.Library
     scn = Scene.GetCurrent()
     allscenes = Scene.Get()
-    for lib in Library.LinkedLibs():
-        Library.Open(sys.expandpath(lib))
+    linkedLibs = Library.LinkedLibs()
+    print ' - active scene "%s" UID %s' % (scn.name, luxUID)
+    print ' - searching for scene UID', volumeUID.get()
+    if linkedLibs:
+        print ' - searching in linked libraries'
+    for lib in linkedLibs:
+        print '    - opening Blender library path', sys.expandpath(lib)
+        try:
+            Library.Open(sys.expandpath(lib))
+        except IOError:
+            print '      error: library file not found, skipping'
         for scnName in Library.Datablocks('Scene'):
+            print '       - loading library scene "%s"' % scnName
             Library.Load(scnName, 'Scene', 1)
-            scnName = assignName(scnName, [s.name for s in allscenes])
-            linkedScn = Scene.Get(scnName)
-            linkedUID = luxProp(linkedScn, 'UID', '')
-            if volumeUID.get() == linkedUID.get():
-                linkedVolumeData = getNamedVolume(volumeId.get(), linkedScn)
-                currentVolumeData = getNamedVolume(volumeId.get(), scn)
-                if linkedVolumeData != currentVolumeData and linkedVolumeData is not None:
-                    volumes = listNamedVolumes()
-                    newId = max(volumes.values())+1
-                    prefix = 'named_volumes:%s.' % newId
-                    for k, v in linkedVolumeData.items():
-                        if k == 'id':
-                            volumeId.set(newId)  # material property
-                        elif k == 'name':
-                            newName = assignName(v, volumes.keys())
-                            volumeName.set(newName)  # material property
-                            luxProp(scn, prefix+k, '').set(newName)
-                        else:
-                            luxProp(scn, prefix+k, '').set(v)
-                    print 'Properties for medium "%s" imported successfully from the library file %s' % (newName, lib)
-            # end of matched UID clause
-            if linkedScn != scn:
+            scnNewName = assignName(scnName, [s.name for s in allscenes])
+            linkedScn = Scene.Get(scnNewName)
+            imported = importFromScene(scn, linkedScn, volumeId, volumeName, volumeUID)
+            if not linkedScn in allscenes:
+                print '       - unlinking library scene "%s" (as "%s")' % (scnName, scnNewName)
                 for obj in linkedScn.objects: linkedScn.objects.unlink(obj)
                 Scene.Unlink(linkedScn)
-        # end of Scene blocks loop
+            if imported: break
+        print '    - closing library path', sys.expandpath(lib)
         Blender.Library.Close()
-    # end of libs loop
+        if imported: break
+    if not imported:
+        print ' - searching in the current blend-file scenes'
+        for linkedScn in allscenes:
+            if linkedScn != scn:
+                print '       - looking in scene "%s"' % linkedScn.name
+                imported = importFromScene(scn, linkedScn, volumeId, volumeName, volumeUID)
+                if imported: break
     volumeUID.set(luxUID)  # material property
+    return imported
 
 def luxLight(name, kn, mat, gui, level):
     if gui:
@@ -7802,6 +7849,7 @@ scrollbar = scrollbar()
 # gui main draw
 def luxDraw():
     global icon_luxblend
+    global luxUID
 
     BGL.glClear(BGL.GL_COLOR_BUFFER_BIT)
 
@@ -7814,6 +7862,7 @@ def luxDraw():
 
     scn = Scene.GetCurrent()
     if scn:
+        luxUID = luxGenUID(scn)
         luxpage = luxProp(scn, "page", 0)
         gui = luxGui(y-70)
 
@@ -8248,6 +8297,7 @@ else:
     print("\n\nLuxBlend v%s - UI mode\n"%__version__)
     from Blender.Window import DrawProgressBar
     global luxUID
+    luxUID = None
     LuxIsGUI = True
     scn = Scene.GetCurrent()
     
@@ -8257,7 +8307,6 @@ else:
     luxpath = luxpathprop.get()
     luxrun = luxProp(scn, "run", True).get()
     checkluxpath = luxProp(scn, "checkluxpath", True).get()
-    luxUID = luxGenUID(scn)
 
     if checkluxpath and luxrun:
         if (luxpath is None) or (sys.exists(luxpath)<=0):
