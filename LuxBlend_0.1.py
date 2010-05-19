@@ -5527,7 +5527,7 @@ def listNamedVolumes():
         luxProp(scn, 'named_volumes:0.name', '').set('world *')
     return d
             
-def getNamedVolume(id, scene=None):
+def getNamedVolume(id, scene=None, filter=[]):
     # returns a dict of volume properties' name:value pairs
     if scene is None:
         scn = Scene.GetCurrent()
@@ -5547,6 +5547,9 @@ def getNamedVolume(id, scene=None):
         d['name'] = 'world *'
     else:
         d['id'] = int(id)
+    for f in filter:
+        try: del d[f]
+        except KeyError: pass
     return d
 
 def luxNamedVolume(mat, volume_prop, gui=None):
@@ -5563,6 +5566,7 @@ def luxNamedVolume(mat, volume_prop, gui=None):
     volumeId = luxProp(mat, '%s_vol_id' % (volume_prop), 0)
     volumeName = luxProp(mat, '%s_vol_name' % (volume_prop), '')
     volumeUID = luxProp(mat, '%s_vol_guid' % (volume_prop), '')
+    unmutable = True if volumeName.get() == 'world *' else False
     # link volume data to the scene UID if it's not linked already
     if not volumeUID.get():
         volumeUID.set(luxUID)
@@ -5585,18 +5589,19 @@ def luxNamedVolume(mat, volume_prop, gui=None):
         try:
             volumeName.set(volumes.keys()[volumes.values().index(volumeId.get())])
         except ValueError:
-            warn = 'Volume previously selected for material "' + mat.getName() + '" was deleted, switching to default'
-            print 'WARNING: ' + warn
-            Draw.PupMenu(warn + '%t|OK%x1')
             volumeId.set(0)
             Blender.Window.QRedrawAll()
-    luxOption('%s_vol_name'%(volume_prop), volumeName, volumes.keys(), '  AVAILABLE MEDIUMS', 'Select medium from the list', gui, 1.5)
+    luxOption('%s_vol_name'%(volume_prop), volumeName, volumes.keys(), '  AVAILABLE MEDIUMS', 'Select medium from the list', gui, 1.1 if not unmutable else 1.5)
     try:
         if volumeName.get(): volumeId.set(volumes[volumeName.get()])
         else: volumeId.set(0)   # no volume was selected yet for that property
     except KeyError:
         volumeId.set(0)
     if gui:
+        if not unmutable:
+            r = gui.getRect(0.2, 1)
+            Draw.Button('X', evtLuxGui, r[0], r[1], r[2], r[3], 'Delete a link to this medium', lambda e,v: showVolumesMenu(mat,volume_prop,4))
+            luxBool('%s_vol_fixed' % (volume_prop), luxProp(Scene.GetCurrent(), 'named_volumes:%s.fixed' % volumeId.get(), 'false'), 'F', 'Saves this medium even if it has no users', gui, 0.2)
         r = gui.getRect(0.5, 1)
         Draw.Button('Options', evtLuxGui, r[0], r[1], r[2], r[3], 'Manage mediums', lambda e,v: showVolumesMenu(mat,volume_prop))
     
@@ -5679,9 +5684,17 @@ def importNamedVolume(volumeId, volumeName, volumeUID):
             print '         scene UID matched, loading mediums data'
             linkedVolumeData = getNamedVolume(volumeId.get(), linkedScn)
             currentVolumeData = getNamedVolume(volumeId.get(), scn)
+            linkedDataNoID = linkedVolumeData.copy() ; del linkedDataNoID['id']
             print '          - target medium found: ID %s, name "%s"' % (linkedVolumeData['id'], linkedVolumeData['name'])
             if linkedVolumeData != currentVolumeData and linkedVolumeData is not None:
                 volumes = listNamedVolumes()
+                try:
+                    i = [ getNamedVolume(vol, filter=['id']) for vol in volumes.values() ].index(linkedDataNoID)
+                    print '            properties are the same, updating ID'
+                    volumeId.set(volumes.values()[i])
+                    return None
+                except ValueError:
+                    pass
                 newId = max(volumes.values())+1
                 prefix = 'named_volumes:%s.' % newId
                 print '            importing medium global properties'
@@ -5746,6 +5759,33 @@ def importNamedVolume(volumeId, volumeName, volumeUID):
                 if imported: break
     volumeUID.set(luxUID)  # material property
     return imported
+
+def gcNamedVolumes(scn):
+    # garbage collector for named volumes
+    used = set()
+    mats = Material.Get()
+    vols = listNamedVolumes()
+    # searching volumes directly linked from materials
+    for mat in mats:
+        for volume_prop in ['Exterior', 'Interior']:
+            if luxProp(mat, '%s_vol_used' % (volume_prop), 'false').get() == 'true':
+                used.add(luxProp(mat, '%s_vol_id' % (volume_prop), 0).get())
+    # searching fixed volumes, protected from gc
+    for vol in vols.values():
+        if luxProp(scn, 'named_volumes:%s.fixed' % vol, 'false').get() == 'true':
+            used.add(vol)
+    # cleaning unused after asking a user
+    unused = set(vols.values()).difference(used)
+    unused.discard(0)
+    for vol in unused:
+        data = getNamedVolume(vol)
+        r = Draw.PupMenu('  LuxRender medium "' + data['name'] + '" is currently unused:%t|Delete medium%x1|Keep medium%x2')
+        if r == 1:
+            for n in data.keys():
+                luxProp(scn, 'named_volumes:%s.%s' % (vol,n), '').delete()
+            print 'Unused medium "%s" removed from the scene' % data['name']
+        Blender.Window.QRedrawAll()
+    print
 
 def luxLight(name, kn, mat, gui, level):
     if gui:
@@ -7710,14 +7750,14 @@ def flipMixMat(mat, basekey):
                 #print pk, '('+str(pk.__hash__())+')', '>>>', newpk, '('+str(newpk.__hash__())+')'
                 previewCache[newpk.__hash__()] = v
 
-def showVolumesMenu(mat, volume_prop):
+def showVolumesMenu(mat, volume_prop, r=None):
     scn = Scene.GetCurrent()
     active_volume = getNamedVolume(luxProp(mat, '%s_vol_id' % (volume_prop), 0).get())
-    menu = "Manage mediums:%t|Create new medium%x1|Copy selected%x2"
+    menu = "Manage mediums:%t|Create new medium%x1"
     if active_volume['name'] != 'world *':
-        menu += "|Rename selected%x3|Delete selected%x4"
+        menu += "|Copy selected%x2|Rename selected%x3"  #"|Delete selected%x4"
     
-    r = Draw.PupMenu(menu)
+    if not r: r = Draw.PupMenu(menu)
     if r==1:
         # create new volume
         name = Draw.PupStrInput('medium name: ', '')
@@ -7775,20 +7815,11 @@ def showVolumesMenu(mat, volume_prop):
             Blender.Window.QRedrawAll()
             return True
     elif r == 4:
-        # delete existing volume
-        r = Draw.PupMenu('  OK?%t|Delete selected medium%x1')
-        if r == 1:
-            for n in active_volume.keys():
-                luxProp(scn, 'named_volumes:%s.%s'%(active_volume['id'],n), '').delete()
-                # switch to the newest volume
-                vols = listNamedVolumes()
-                newId = vols and max(vols.values()) or 0
-                luxProp(mat, '%s_vol_id' % (volume_prop), 0).set(newId)
-            Blender.Window.QRedrawAll()
-            return True
-        else:
-            Blender.Window.QRedrawAll()
-            return False
+        # unlinking a volume
+        luxProp(mat, '%s_vol_name' % (volume_prop), '').set('world *')
+        luxProp(mat, '%s_vol_id' % (volume_prop), 0).set(0)
+        Blender.Window.QRedrawAll()
+        return True
 
 
 activemat = None
@@ -8309,6 +8340,7 @@ else:
     scn = Scene.GetCurrent()
     
     Draw.Register(luxDraw, luxEvent, luxButtonEvt) # init GUI
+    gcNamedVolumes(scn)
 
     luxpathprop = luxProp(scn, "lux", "")
     luxpath = luxpathprop.get()
