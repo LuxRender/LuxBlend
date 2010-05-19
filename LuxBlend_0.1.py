@@ -7281,10 +7281,10 @@ def putMatTex(mat, dict, basekey='', tex=None):
                     del mat.properties['luxblend'][k]
         except: print("error") # pass
         # volume properties
+        scn = Scene.GetCurrent()
         if not basekey:
             for k, v in dict.items():
                 if k == '__volumes__':
-                    scn = Scene.GetCurrent()
                     for volume_prop, volume_data in v.items():
                         volumes = listNamedVolumes()
                         # new id and name if existing are occupied
@@ -7302,6 +7302,8 @@ def putMatTex(mat, dict, basekey='', tex=None):
                                 luxProp(scn, volPrefix+volKey, None).set(volVal)
         # assign loaded properties
         for k,v in dict.items():
+            if k in ['Exterior_vol_guid', 'Interior_vol_guid']:
+                continue
             try:
                 if (basekey!="") and (k=="type"): k = ".type"
                 # zuegs: following two lines should fix issue http://www.luxrender.net/forum/viewtopic.php?f=16&t=1618&p=14512#p14512
