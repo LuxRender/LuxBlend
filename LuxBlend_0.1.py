@@ -5720,19 +5720,24 @@ def importNamedVolume(volumeId, volumeName, volumeUID):
             print '      error: library file not found, skipping'
         for scnName in Library.Datablocks('Scene'):
             print '       - loading library scene "%s"' % scnName
-            Library.Load(scnName, 'Scene', 1)
-            scnNewName = assignName(scnName, [s.name for s in allscenes])
-            linkedScn = Scene.Get(scnNewName)
+            Library.Load(scnName, 'Scene', 0)
+            # we aren't getting a scene obj explicitly by name because after linking we'll
+            # likely end up with two or more scenes with the same name, thus Blender will
+            # return the first one which is the active scene
+            for i, s in enumerate(Scene.Get()):
+                # we cannot use 's in allscenes' directly as objects will be
+                # compared by their str representations and not hashes in that case
+                if not True in [ s == a for a in allscenes ]:
+                    linkedScn = Scene.Get()[i] ; break
             imported = importFromScene(scn, linkedScn, volumeId, volumeName, volumeUID)
-            if not linkedScn in allscenes:
-                print '       - unlinking library scene "%s" (as "%s")' % (scnName, scnNewName)
-                for obj in linkedScn.objects: linkedScn.objects.unlink(obj)
-                Scene.Unlink(linkedScn)
+            print '       - unlinking library scene "%s"' % scnName
+            for obj in linkedScn.objects: linkedScn.objects.unlink(obj)
+            Scene.Unlink(linkedScn)
             if imported: break
         print '    - closing library path', sys.expandpath(lib)
-        Blender.Library.Close()
+        Library.Close()
         if imported: break
-    if imported is False:
+    if imported is False and len(allscenes) > 1:
         print ' - searching in the current blend-file scenes'
         for linkedScn in allscenes:
             if linkedScn != scn:
