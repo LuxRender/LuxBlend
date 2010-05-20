@@ -198,13 +198,21 @@ def luxGenUID(scn):
         print 'Lux scene UID is missing. Generating a new one...'
         try:
             import hashlib
-            hash = hashlib.sha1
+            h = hashlib.sha1
         except ImportError:
-            import sha
-            hash = sha.new
-        try: r = os.urandom(20)
-        except NotImplementedError: r = ''
-        g = hash(str(sys.time())+'|'+r).hexdigest()
+            try:
+                import sha
+                h = sha.new
+            except ImportError:
+                h = hash
+        try:
+            r = os.urandom(20)
+        except NotImplementedError:
+            import random
+            r = str(random.getrandbits(160))
+        g = h(str(sys.time())+'|'+r)
+        try: g = g.hexdigest()
+        except: g = hex(g)[2:]
         print 'Generated UID:', g, "\n"
         guid.set(g)
     return g
