@@ -196,10 +196,15 @@ def luxGenUID(scn):
     g = guid.get()
     if (not Blender.Get('filename') and not luxUID) or not g:
         print 'Lux scene UID is missing. Generating a new one...'
-        import sha
+        try:
+            import hashlib
+            hash = hashlib.sha1
+        except ImportError:
+            import sha
+            hash = sha.new
         try: r = os.urandom(20)
         except NotImplementedError: r = ''
-        g = sha.new(str(sys.time())+'|'+r).hexdigest()
+        g = hash(str(sys.time())+'|'+r).hexdigest()
         print 'Generated UID:', g, "\n"
         guid.set(g)
     return g
