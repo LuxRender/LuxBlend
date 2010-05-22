@@ -8262,6 +8262,8 @@ def setFocus(target):
 
 
 # Parse command line arguments for batch mode rendering if supplied
+global luxUID
+luxUID = None
 
 try:
     batchindex = osys.argv.index('--batch')
@@ -8347,8 +8349,6 @@ if (pyargs != []) and (batchindex != 0):
 else:
     print("\n\nLuxBlend v%s - UI mode\n"%__version__)
     from Blender.Window import DrawProgressBar
-    global luxUID
-    luxUID = None
     LuxIsGUI = True
     scn = Scene.GetCurrent()
     
