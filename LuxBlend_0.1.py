@@ -4329,11 +4329,23 @@ class sun_calculator:
         UT = LocalTime - Timezone
         hour = UT / 24.0
         A = int(Y/100.0)
-        B = 2.0 - A+int(A/4.0)
         
-        JD = math.floor(365.25*(Y+4716.0)) + math.floor(30.6001*(M+1.0)) + Day + hour + B - 1524.4
+        JD = math.floor(365.25*(Y+4716.0)) + math.floor(30.6001*(M+1.0)) + Day + hour - 1524.4
         
-        return JD
+        # The following section is adopted from netCDF4 netcdftime implementation.
+        # Copyright: 2008 by Jeffrey Whitaker
+        # License: http://www.opensource.org/licenses/mit-license.php
+        if JD >= 2299170.5:
+            # 1582 October 15 (Gregorian Calendar)
+            B = 2.0 - A + int(A/4.0)
+        elif JD < 2299160.5:
+            # 1582 October 5 (Julian Calendar)
+            B = 0
+        else:
+            Draw.PupMenu('ERROR: Date falls in the gap between Julian and Gregorian calendars%t|OK%x1')
+            B = 0
+        
+        return JD+B
     
     def geoSunData(self, Latitude, Longitude, Year, Month, Day, LocalTime, Timezone):
         """
