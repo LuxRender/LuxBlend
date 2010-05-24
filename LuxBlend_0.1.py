@@ -5591,7 +5591,7 @@ def luxNamedVolume(mat, volume_prop, gui=None):
     volumeId = luxProp(mat, '%s_vol_id' % (volume_prop), 0)
     volumeName = luxProp(mat, '%s_vol_name' % (volume_prop), '')
     volumeUID = luxProp(mat, '%s_vol_guid' % (volume_prop), '')
-    unmutable = True if volumeName.get() == 'world *' else False
+    unmutable = True if volumeId.get() == 0 else False
     # link volume data to the scene UID if it's not linked already
     if not volumeUID.get():
         volumeUID.set(luxUID)
@@ -5709,12 +5709,12 @@ def importNamedVolume(volumeId, volumeName, volumeUID):
             print '         scene UID matched, loading mediums data'
             linkedVolumeData = getNamedVolume(volumeId.get(), linkedScn)
             currentVolumeData = getNamedVolume(volumeId.get(), scn)
-            linkedDataNoID = linkedVolumeData.copy() ; del linkedDataNoID['id']
+            linkedDataFiltered = getNamedVolume(volumeId.get(), linkedScn, filter=['id', 'name'])
             print '          - target medium found: ID %s, name "%s"' % (linkedVolumeData['id'], linkedVolumeData['name'])
             if linkedVolumeData != currentVolumeData and linkedVolumeData is not None:
                 volumes = listNamedVolumes()
                 try:
-                    i = [ getNamedVolume(vol, filter=['id']) for vol in volumes.values() ].index(linkedDataNoID)
+                    i = [ getNamedVolume(vol, filter=['id', 'name']) for vol in volumes.values() ].index(linkedDataFiltered)
                     print '            properties are the same, updating ID'
                     volumeId.set(volumes.values()[i])
                     return None
@@ -5785,7 +5785,7 @@ def importNamedVolume(volumeId, volumeName, volumeUID):
     volumeUID.set(luxUID)  # material property
     return imported
 
-def gcNamedVolumes(scn):
+def gcNamedVolumes(scn, gui=True):
     # garbage collector for named volumes
     used = set()
     mats = Material.Get()
@@ -5804,8 +5804,8 @@ def gcNamedVolumes(scn):
     unused.discard(0)
     for vol in unused:
         data = getNamedVolume(vol)
-        r = Draw.PupMenu('  LuxRender medium "' + data['name'] + '" is currently unused:%t|Delete medium%x1|Keep medium%x2')
-        if r == 1:
+        if gui: r = Draw.PupMenu('  LuxRender medium "' + data['name'] + '" is currently unused:%t|Delete medium%x1|Keep medium%x2')
+        if not gui or r == 1:
             for n in data.keys():
                 luxProp(scn, 'named_volumes:%s.%s' % (vol,n), '').delete()
             print 'Unused medium "%s" removed from the scene' % data['name']
@@ -7780,7 +7780,7 @@ def showVolumesMenu(mat, volume_prop, r=None):
     active_volume = getNamedVolume(luxProp(mat, '%s_vol_id' % (volume_prop), 0).get())
     menu = "Manage mediums:%t|Create new medium%x1"
     if active_volume['name'] != 'world *':
-        menu += "|Copy selected%x2|Rename selected%x3"  #"|Delete selected%x4"
+        menu += "|Copy selected%x2|Rename selected%x3"
     
     if not r: r = Draw.PupMenu(menu)
     if r==1:
@@ -8288,6 +8288,8 @@ if (pyargs != []) and (batchindex != 0):
     LuxIsGUI = False
     scene = Scene.GetCurrent()
     context = scene.getRenderingContext()
+    luxUID = luxGenUID(scene)
+    gcNamedVolumes(scene, LuxIsGUI)
 
     luxpath = ""
     import getopt
@@ -8365,7 +8367,7 @@ else:
     scn = Scene.GetCurrent()
     
     Draw.Register(luxDraw, luxEvent, luxButtonEvt) # init GUI
-    gcNamedVolumes(scn)
+    gcNamedVolumes(scn, LuxIsGUI)
 
     luxpathprop = luxProp(scn, "lux", "")
     luxpath = luxpathprop.get()
