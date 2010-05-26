@@ -1555,12 +1555,13 @@ def networkstring(scn):
             where_to_look = luxProp(scn,"network_file_path","false").get()
             print "Reading rendering slaves list from the file:", where_to_look
             try:
-                with open(where_to_look) as f:
-                    for l in f:
-                        s = l.strip()
-                        if s and s[0] != '#':
-                            print "   adding slave:", s
-                            servers_string += " -u " + s
+                f = open(where_to_look)
+                for l in f:
+                    s = l.strip()
+                    if s and s[0] != '#':
+                        print "   adding slave:", s
+                        servers_string += " -u " + s
+                f.close()
             except:
                 print "There was an error encountered while reading a file", where_to_look
         elif luxProp(scn,"network_servers","").get():
