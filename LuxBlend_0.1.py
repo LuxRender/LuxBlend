@@ -1550,17 +1550,20 @@ def save_lux(filename, unindexedname, anim_progress=None):
 
 def networkstring(scn):
     servers_string = ""
-    if  (luxProp(scn,"network","false").get() == "true"):
+    if (luxProp(scn,"network","false").get() == "true"):
         if (luxProp(scn,"network_use_file","false").get() == "true"):
-            print("read network servers from file: "+ luxProp(scn,"network_file_path","false").get())
-            f = open(luxProp(scn,"network_file_path","false").get())
-            for s in f:
-                s = s.strip("\n")
-                print("add server :" + s)
-                servers_string=servers_string+" -u "+ s
-            f.close
-        else : 
-             if  luxProp(scn,"network_servers","").get():
+            where_to_look = luxProp(scn,"network_file_path","false").get()
+            print "Reading rendering slaves list from the file:", where_to_look
+            try:
+                with open(where_to_look) as f:
+                    for l in f:
+                        s = l.strip()
+                        if s and s[0] != '#':
+                            print "   adding slave:", s
+                            servers_string += " -u " + s
+            except:
+                print "There was an error encountered while reading a file", where_to_look
+        elif luxProp(scn,"network_servers","").get():
                  for server in luxProp(scn,"network_servers","").get().split(","):
                     servers_string=servers_string+" -u "+ server
     return servers_string
