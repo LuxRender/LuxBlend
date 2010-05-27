@@ -380,6 +380,16 @@ class luxExport:
                     if not psys.getName() in self.hair['obj'][obj]: self.hair['obj'][obj].append(psys.getName())
                     if not psys.renderEmitter:
                         export_emitter_mats = True
+                elif psys.drawAs == Particle.DRAWAS['GROUP']:
+                    grpObjs =  obj.DupObjects
+                    grpObjName = obj.name
+                    for i in grpObjs:
+                        o = i[0]
+                        m = i[1]
+                        # Prefix the name of all particle objects with "luxGroupParticle".
+                        self.analyseObject(o, m, "%s.%s"%("luxGroupParticle", grpObjName), False, True)
+                else:
+                    print "Unknown particle type for particle system [" + obj.name + "]."
             
             if (obj.enableDupFrames and isOriginal):
                 for o, m in obj.DupObjects:
