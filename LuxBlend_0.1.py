@@ -397,7 +397,8 @@ class luxExport:
             if (obj.enableDupGroup or obj.enableDupVerts or obj.enableDupFaces):
                 self.duplis.add(obj)
                 for o, m in obj.DupObjects:
-                    self.analyseObject(o, m, "%s.%s"%(name, o.getName()), True, True)    
+                    if not o.restrictRender and not isDupli:
+                        self.analyseObject(o, m, "%s.%s"%(name, o.getName()), True, True)    
             elif ((isDupli or (not obj.getParent() in self.duplis)) and ((obj_type == "Mesh") or (obj_type == "Surf") or (obj_type == "Curve") or (obj_type == "Text"))):
                 if (len(psystems) == 0) or export_emitter or export_emitter_mats:
                     mats = getMaterials(obj)
