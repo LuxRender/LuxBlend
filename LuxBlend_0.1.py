@@ -218,6 +218,18 @@ def luxGenUID(scn):
     return g
 
 
+def bitmask(n, max=20):
+    bits = []
+    for i in range(max-1, -1, -1):
+        v = pow(2, i)
+        if n < v:
+            continue
+        else:
+            n = n - v
+            bits.insert(0, i+1)
+    return bits
+
+
 ################################################################
 
 
@@ -319,6 +331,7 @@ class luxExport:
         self.hair = {'obj':{}, 'motion':{}}
         self.meshes = {}
         self.instances = {}  # only for instances with quirks: redefined materials and modifiers
+        self.groups = {}
         self.materials = []
         self.lights = []
         self.duplis = set()
@@ -398,6 +411,12 @@ class luxExport:
                 self.duplis.add(obj)
                 for o, m in obj.DupObjects:
                     if not o.restrictRender and not isDupli:
+                        if obj.enableDupGroup:
+                            objGroups = []
+                            for g in Blender.Group.Get():
+                                if o in g.objects: objGroups.append(g)
+                            if not objGroups or not True in [ l in o.layers for l in self.groups[g] for g in objGroups ]:
+                                continue
                         self.analyseObject(o, m, "%s.%s"%(name, o.getName()), True, True)    
             elif ((isDupli or (not obj.getParent() in self.duplis)) and ((obj_type == "Mesh") or (obj_type == "Surf") or (obj_type == "Curve") or (obj_type == "Text"))):
                 if (len(psystems) == 0) or export_emitter or export_emitter_mats:
@@ -440,6 +459,9 @@ class luxExport:
     #-------------------------------------------------
     def analyseScene(self):
         light = False
+        for g in Blender.Group.Get():
+            # caching groups layers
+            self.groups[g] = bitmask(g.layers)
         for obj in self.scene.objects:
             if ((obj.Layers & self.scene.Layers) > 0) and not obj.restrictRender:
                 if self.analyseObject(obj, obj.getMatrix(), obj.getName()): light = True
