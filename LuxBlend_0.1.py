@@ -7103,10 +7103,10 @@ def convertMaterial(mat):
             luxProp(mat, alpha1name+":amount", 0.0).set(1.0 - mirror)
             mirror0name, mirror1name = ddot(alpha1name)+"mat1", ddot(alpha1name)+"mat2"
         if mirror > 0.0:
-            if mat.glossMir < 1.0: makeGlossy(mirror1name, 1.0-mat.glossMir**2)
+            if mat.glossMir < 1.0: makeGlossy(mirror1name, 1.0-mat.glossMir)
             else: makeMirror(mirror1name)
         if mirror < 1.0:
-            if mat.spec > 0.0: makeGlossy(mirror0name, 1.0/mat.hard)
+            if mat.spec > 0.0: makeGlossy(mirror0name, math.sqrt(2.0/(mat.hard+2.0)))
             else: makeMatte(mirror0name)
     if alpha < 1.0:
         if mat.glossTra < 1.0: makeRoughnessGlass(alpha0name, 1.0-mat.glossTra**2)
