@@ -3483,8 +3483,13 @@ def luxFilm(scn, gui=None):
             cspace = luxProp(scn, "film.colorspace", "sRGB - HDTV (ITU-R BT.709-5)")
             cspaces = ["sRGB - HDTV (ITU-R BT.709-5)", "ROMM RGB", "Adobe RGB 98", "Apple RGB", "NTSC (FCC 1953, ITU-R BT.470-2 System M)", "NTSC (1979) (SMPTE C, SMPTE-RP 145)", "PAL/SECAM (EBU 3213, ITU-R BT.470-6)", "CIE (1931) E"]
             luxOption("colorspace", cspace, cspaces, "Colorspace", "select output working colorspace", gui, 1.6)
-    
-            if cspace.get()=="ROMM RGB":
+
+            if cspace.get()=="sRGB - HDTV (ITU-R BT.709-5)":
+                cspacewhiteX.set(0.314275); cspacewhiteY.set(0.329411) # sRGB
+                cspaceredX.set( 0.63); cspaceredY.set(0.34)
+                cspacegreenX.set(0.31); cspacegreenY.set(0.595)
+                cspaceblueX.set(0.155); cspaceblueY.set( 0.07)    
+            elif cspace.get()=="ROMM RGB":
                 cspacewhiteX.set(0.346); cspacewhiteY.set(0.359) # D50
                 cspaceredX.set(0.7347); cspaceredY.set(0.2653)
                 cspacegreenX.set(0.1596); cspacegreenY.set(0.8404)
