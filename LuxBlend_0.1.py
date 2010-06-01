@@ -6498,13 +6498,16 @@ def luxMaterialBlock(name, luxname, key, mat, gui=None, level=0, str_opt=""):
         if mattype.get() == "metal":
             if gui: gui.newline("name:", 0, level+1)
             metalname = luxProp(mat, kn+"metal.name", "")
-            metals = ["aluminium","amorphous carbon","silver","gold","copper"]
+            metalnames = ["aluminium","amorphous carbon","silver","gold","copper"]
+            metals = [n for n in metalnames]
 
             if not(metalname.get() in metals):
                 metals.append(metalname.get())
             metallink = luxOption("name", metalname, metals, "name", "", gui, 1.88)
             if gui: Draw.Button("...", evtLuxGui, gui.x, gui.y-gui.h, gui.h, gui.h, "click to select a nk file",lambda e,v:Window.FileSelector(lambda s:metalname.set(s), "Select nk file"))
             link += luxstr(metallink)
+            if not metalname.get() in metalnames:
+                link = link.replace('"string name"', '"string filename"')
             anisotropic = luxProp(mat, kn+"metal.anisotropic", "false")
             if gui:
                 gui.newline("")
