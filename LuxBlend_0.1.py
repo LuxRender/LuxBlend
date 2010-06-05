@@ -516,6 +516,10 @@ class luxExport:
         #pb = exportProgressBar(len(self.namedVolumes), self.mpb)
         output = ''
         volumes = listNamedVolumes()
+        for linked, new in importedVolumeIdsTranslation.items():
+            if linked in self.namedVolumes:
+                self.namedVolumes.remove(linked)
+                self.namedVolumes.append(new)
         for volume in volumes.values():
             if volume in self.namedVolumes:
                 #pb.counter('Exporting Mediums Definitions')
@@ -5644,7 +5648,10 @@ def luxNamedVolume(mat, volume_prop, gui=None):
         imported = importNamedVolume(volumeId, volumeName, volumeUID)
         if imported is True:
             print 'Medium properties imported successfully', "\n"
-            volumes = listNamedVolumes()  # reloading volumes list
+            # reloading volumes data
+            volumes = listNamedVolumes()
+            volumeId = luxProp(mat, '%s_vol_id' % (volume_prop), 0)
+            volumeName = luxProp(mat, '%s_vol_name' % (volume_prop), '')
         elif imported is False:
             print 'Medium properties not found in the linked scenes. Import failed', "\n"
         else:
@@ -5727,6 +5734,7 @@ def luxNamedVolumeTexture(volId, gui=None):
     
     return s, volType+l
 
+importedVolumeIdsTranslation = {}
 def importNamedVolume(volumeId, volumeName, volumeUID):
     # scans all linked libraries and imports volume
     # data from another scene object if possible.
@@ -5745,6 +5753,7 @@ def importNamedVolume(volumeId, volumeName, volumeUID):
         # helper function to scan a passed scene object for
         # matching uid and volume properties data and import
         # them in the active scene if found
+        global importedVolumeIdsTranslation
         imported = False
         linkedUID = luxProp(linkedScn, 'UID', '')
         if volumeUID.get() == linkedUID.get():
@@ -5755,6 +5764,9 @@ def importNamedVolume(volumeId, volumeName, volumeUID):
             print '          - target medium found: ID %s, name "%s"' % (linkedVolumeData['id'], linkedVolumeData['name'])
             if linkedVolumeData != currentVolumeData and linkedVolumeData is not None:
                 volumes = listNamedVolumes()
+                newId = max(volumes.values())+1
+                prefix = 'named_volumes:%s.' % newId
+                importedVolumeIdsTranslation[linkedVolumeData['id']] = newId
                 try:
                     i = [ getNamedVolume(vol, filter=['id', 'name']) for vol in volumes.values() ].index(linkedDataFiltered)
                     print '            properties are the same, updating ID'
@@ -5762,8 +5774,6 @@ def importNamedVolume(volumeId, volumeName, volumeUID):
                     return None
                 except ValueError:
                     pass
-                newId = max(volumes.values())+1
-                prefix = 'named_volumes:%s.' % newId
                 print '            importing medium global properties'
                 for k, v in linkedVolumeData.items():
                     if k == 'id':
@@ -5797,7 +5807,8 @@ def importNamedVolume(volumeId, volumeName, volumeUID):
         try:
             Library.Open(sys.expandpath(lib))
         except IOError:
-            print '      error: library file not found, skipping'
+            print '      error opening library file, skipping'
+            continue
         for scnName in Library.Datablocks('Scene'):
             print '       - loading library scene "%s"' % scnName
             Library.Load(scnName, 'Scene', 0)
