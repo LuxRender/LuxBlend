@@ -4702,19 +4702,25 @@ def luxTexture(name, parentkey, type, default, min, max, caption, hint, mat, gui
         cauchynames = ["01 - Fused silica glass", "02 - Borosilicate glass BK7", "03 - Hard crown glass K5", "04 - Barium crown glass BaK4", "05 - Barium flint glass BaF10", "06 - Dense flint glass SF10" ]
         cauchyvals = [ (1.4580, 0.00354), (1.5046, 0.00420), (1.5220, 0.00459), (1.5690, 0.00531), (1.6700, 0.00743), (1.7280, 0.01342) ]
         cauchyusepreset = luxProp(mat, keyname+".cauchyusepreset", "true")
+        cauchyindex = luxProp(mat, keyname+'.cauchyindex', 'false')
         luxBool("cauchyusepreset", cauchyusepreset, "Preset", "Select from a list of predefined presets", gui, 0.4)
         
         if cauchyusepreset.get() == "true":
             cauchypreset = luxProp(mat, keyname+".cauchypreset", "01 - Fused silica glass")
             luxOption("cauchypreset", cauchypreset, cauchynames, "  PRESET", "Select Cauchy preset", gui, 1.6)
             idx = cauchynames.index(cauchypreset.get())
+            cauchyindex.set('false')
             cauchya.set(cauchyvals[idx][0])
             cauchyb.set(cauchyvals[idx][1])
             str += luxFloat('cauchya', cauchya, min, max, 'cauchy a', hint, None)
             str += luxFloat('cauchyb', cauchyb, 0.0, 1.0, 'cauchy b', hint, None)
         else:
-            str += luxFloat('cauchya', cauchya, min, max, 'cauchy a', 'Cauchy\'s A parameter', gui, 0.8)
-            str += luxFloat('cauchyb', cauchyb, 0.0, 1.0, 'cauchy b', 'Cauchy\'s B parameter', gui, 0.8)
+            luxBool('cauchyindex', cauchyindex, 'Index', 'Use IOR value instead of Cauchy\'s A', gui, 0.4)
+            if cauchyindex.get() == 'true':
+                str += luxFloat('index', luxProp(mat, keyname+'.value', 1.459), min, max, 'ior', 'Index of refraction', gui, 0.6)
+            else:
+                str += luxFloat('cauchya', cauchya, min, max, 'a', 'Cauchy\'s A parameter', gui, 0.6)
+            str += luxFloat('cauchyb', cauchyb, 0.0, 1.0, 'b', 'Cauchy\'s B parameter', gui, 0.6)
         return str, ' "texture %s" ["%s"]' % (type, texname)
 
     if texture.get() == 'sellmeier':
