@@ -390,7 +390,19 @@ class luxExport:
                 elif psys.type == Particle.TYPE['HAIR'] and psys.drawAs == Particle.DRAWAS['PATH']:
                     if psys.renderEmitter: export_emitter = True
                     if not obj in self.hair['obj']: self.hair['obj'][obj] = []
-                    if not psys.getName() in self.hair['obj'][obj]: self.hair['obj'][obj].append(psys.getName())
+                    try:
+                        if not psys.getName() in self.hair['obj'][obj]: self.hair['obj'][obj].append(psys.getName())
+                    except AttributeError:
+                        print 'ERROR: Installed version of Blender does not properly supports hair particles'
+                        print '       export. Please use this version of LuxBlend with Blender 2.49b only.'
+                        if osys.platform == 'win32':
+                            print '       Important note for users of Blender 2.49b on Windows systems: if you'
+                            print '       received this message, then you\'re using an inappropriate build of'
+                            print '       Blender program. You can find the correct version build in blender.org'
+                            print '       download section in a *zip archive* (not in an installer!).'
+                        print
+                        Draw.PupMenu('ERROR: Blender version does not properly supports hair export (see console for details)%t|OK%x1')
+                        break
                     if not psys.renderEmitter:
                         export_emitter_mats = True
                 elif psys.drawAs == Particle.DRAWAS['GROUP']:
