@@ -7852,9 +7852,9 @@ def flipMixMat(mat, basekey):
 def showVolumesMenu(mat, volume_prop, r=None):
     scn = Scene.GetCurrent()
     active_volume = getNamedVolume(luxProp(mat, '%s_vol_id' % (volume_prop), 0).get())
-    menu = "Manage mediums:%t|Create new medium%x1"
+    menu = "Manage mediums:%t|Create new medium%x1|Copy selected%x2"
     if active_volume['name'] != 'world *':
-        menu += "|Copy selected%x2|Rename selected%x3"
+        menu += "|Rename selected%x3"
     
     if not r: r = Draw.PupMenu(menu)
     if r==1:
@@ -7905,14 +7905,26 @@ def showVolumesMenu(mat, volume_prop, r=None):
         # rename existing volume
         name = Draw.PupStrInput('new name: ', active_volume['name'])
         vols = listNamedVolumes()
-        if vols.has_key(name) or name == 'world *':
-            Draw.PupMenu('ERROR: Medium name already exists%t|OK%x1')
+        if name == 'world *':
+            Draw.PupMenu('ERROR: Impossible to rename to the world medium, use Copy instead%t|OK%x1')
             Blender.Window.QRedrawAll()
             return False
-        elif name != active_volume['name'] and name != '':
-            luxProp(scn, 'named_volumes:%s.name' % active_volume['id'], 0).set(name)
+        elif name == active_volume['name'] or name == '':
             Blender.Window.QRedrawAll()
-            return True
+            return False
+        if vols.has_key(name):
+            r = Draw.PupMenu('  OK?%t|Replace existing medium%x1')
+            if r == 1:
+                volProps = getNamedVolume(vols[name])
+                for n in volProps.keys():
+                    luxProp(scn, 'named_volumes:%s.%s'%(vols[name],n), '').delete()
+            else:
+                Blender.Window.QRedrawAll()
+                return False
+        luxProp(scn, 'named_volumes:%s.name' % active_volume['id'], 0).set(name)
+        luxProp(mat, '%s_vol_name' % (volume_prop), '').set(name)
+        Blender.Window.QRedrawAll()
+        return True
     elif r == 4:
         # unlinking a volume
         luxProp(mat, '%s_vol_name' % (volume_prop), '').set('world *')
