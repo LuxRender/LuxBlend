@@ -4682,6 +4682,7 @@ def luxTexture(name, parentkey, type, default, min, max, caption, hint, mat, gui
         if type == "float": luxFloat("value", value, min, max, "", "", gui, 1.1)
         elif type == "color": luxRGB("value", value, max, "", "", gui, 2)
         elif type == 'fresnel':
+            if gui: gui.newline()
             # rude copy&paste from luxIORFloatTexture() with slight modifications
             iorusepreset = luxProp(mat, keyname+".iorusepreset", "true")
             luxBool("iorusepreset", iorusepreset, "Preset", "Select from a list of predefined presets", gui, 0.4)
@@ -4708,6 +4709,7 @@ def luxTexture(name, parentkey, type, default, min, max, caption, hint, mat, gui
 #        else: str += " \"%s value\" [%s]"%(type, value.get())
 
     if texture.get() == 'cauchy':
+        if gui: gui.newline()
         cauchya = luxProp(mat, keyname+'.cauchya.value', 1.4580)
         cauchyb = luxProp(mat, keyname+'.cauchyb.value', 0.00354)
         # copy&paste from luxCauchyBFloatTexture() with some modifications
@@ -4751,6 +4753,7 @@ def luxTexture(name, parentkey, type, default, min, max, caption, hint, mat, gui
             elif len(fc) > len(fb):
                 fc = fc[:len(fb)]
             return fb, fc
+        if gui: gui.newline()
         sellmeiernames = [ '01 - Fused silica', '02 - Borosilicate glass BK7', '03 - Sapphire (ordinary wave)', '04 - Sapphire (extraordinary wave)' ]
         sellmeiervals = [ (1.0, '0.696166300 0.407942600 0.897479400', '4.67914826e-3 1.35120631e-2 97.9340025'), (1.0, '1.03961212 0.231792344 1.01046945', '6.00069867e-3 2.00179144e-2 1.03560653e2'), (1.0, '1.43134930 0.65054713 5.3414021', '5.2799261e-3 1.42382647e-2 3.25017834e2'), (1.0, '1.5039759 0.55069141 6.5927379', '5.48041129e-3 1.47994281e-2 4.0289514e2') ]
         sellmeiera = luxProp(mat, keyname+'.sellmeiera.value', sellmeiervals[0][0])
@@ -5662,7 +5665,7 @@ def luxNamedVolume(mat, volume_prop, gui=None):
     # is that a native volume data or maybe we linked material
     # from another scene? lets see and import if necessary
     elif volumeUID.get() != luxUID:
-        print 'Global properties for medium "%s" are linked from another scene.' % volumeName.get(), "\nAttempting to import..."
+        print 'Global properties for medium "%s" are supposedly linked' % volumeName.get(), "\nfrom another scene. Attempting to import..."
         imported = importNamedVolume(volumeId, volumeName, volumeUID)
         if imported is True:
             print 'Medium properties imported successfully', "\n"
