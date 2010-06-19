@@ -2024,7 +2024,7 @@ evtLoadMaterial2 = 90
 
 
 # default settings
-defaultsExclude = ['preset','filename','page','link']
+defaultsExclude = ['preset','filename','page','link','UID']
 try:
     luxdefaults = Blender.Registry.GetKey('luxblend', True)
     if not(type(luxdefaults) is DictType):
@@ -4585,7 +4585,7 @@ def luxRemoveProps(scn, gui=None):
             Draw.PupMenu('ERROR: Select at least one category of properties%t|OK%x1')
             Blender.Window.QRedrawAll()
             return
-        if Draw.PupMenu('  OK?%t|Are you completely sure to remove defined LuxBlend properties?%x1') != 1:
+        if Draw.PupMenu('  OK?%t|Are you completely sure to remove defined LuxBlend properties? This action is irreversible.%x1') != 1:
             return
         print 'Removing LuxBlend properties...'
         if defs == 'true':
@@ -4601,6 +4601,7 @@ def luxRemoveProps(scn, gui=None):
             scns = filter(lambda s: s.lib is None and s != Scene.GetCurrent(), Scene.Get()) + [Scene.GetCurrent()] if all == 'true' else [Scene.GetCurrent()]
             for scn in scns:
                 luxProp(scn, 'UID', '').delete()
+            if 'UID' in luxdefaults: del luxdefaults['UID']
             print '   processed scenes:', ', '.join([ '"%s"' % s.name for s in scns ])
             l = []
             for mat in Material.Get():
@@ -4628,11 +4629,11 @@ def luxRemoveProps(scn, gui=None):
         wipe = luxProp(scn, 'wipe_props', 'false')
         luxCollapse('wipe', wipe, 'Reset settings', 'Completely remove LuxBlend properties from defined objects', gui, 2.0)
         if wipe.get() == 'true':
-            wipe_defs = luxProp(scn, 'wipe_defs', 'true')
-            wipe_uids = luxProp(scn, 'wipe_uids', 'true')
-            wipe_scns = luxProp(scn, 'wipe_scns', 'true')
-            wipe_cams = luxProp(scn, 'wipe_cams', 'true')
-            wipe_mats = luxProp(scn, 'wipe_mats', 'true')
+            wipe_defs = luxProp(scn, 'wipe_defs', 'false')
+            wipe_uids = luxProp(scn, 'wipe_uids', 'false')
+            wipe_scns = luxProp(scn, 'wipe_scns', 'false')
+            wipe_cams = luxProp(scn, 'wipe_cams', 'false')
+            wipe_mats = luxProp(scn, 'wipe_mats', 'false')
             wipe_all = luxProp(scn, 'wipe_all', 'true')
             luxBool('switch_wipe_defs', wipe_defs, 'Defaults', 'Reset default settings', gui, 0.5)
             if not wipe_scns.get() == 'true':
