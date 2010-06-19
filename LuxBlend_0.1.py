@@ -3643,8 +3643,8 @@ def luxPixelFilter(scn, gui=None):
             if showadvanced.get()=="true":
                 # Advanced parameters
                 if gui: gui.newline()
-                str += luxFloat("xwidth", luxProp(scn, "pixelfilter.mitchell.xwidth", 2.0), 0.0, 10.0, "x-width", "Width of the filter in the x direction", gui)
-                str += luxFloat("ywidth", luxProp(scn, "pixelfilter.mitchell.ywidth", 2.0), 0.0, 10.0, "y-width", "Width of the filter in the y direction", gui)
+                str += luxFloat("xwidth", luxProp(scn, "pixelfilter.mitchell.xwidth", 1.5), 0.0, 10.0, "x-width", "Width of the filter in the x direction", gui)
+                str += luxFloat("ywidth", luxProp(scn, "pixelfilter.mitchell.ywidth", 1.5), 0.0, 10.0, "y-width", "Width of the filter in the y direction", gui)
                 if gui: gui.newline()
     
                 optmode = luxProp(scn, "pixelfilter.mitchell.optmode", "slider")
