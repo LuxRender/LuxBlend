@@ -4563,6 +4563,89 @@ def luxSystem(scn, gui=None):
                 luxInt("network_interval",luxProp(scn,"network_interval",180),15,86400,"update interval","interval between network refresh (in seconds)",gui)
 
 
+def luxRemoveProps(scn, gui=None):
+    def doRemove(defs, uids, scenes, cameras, materials, all):
+        def wipeProps(objs):
+            l = []
+            for obj in objs:
+                if obj.lib is not None: continue
+                try:
+                    del obj.properties['luxblend']
+                    l.append('"%s"' % obj.name)
+                except:
+                    pass
+            return ', '.join(l) if l else 'none'
+        defs = defs.get()
+        uids = uids.get()
+        scenes = scenes.get()
+        cameras = cameras.get()
+        materials = materials.get()
+        all = all.get()
+        if not 'true' in [defs, uids, scenes, cameras, materials]:
+            Draw.PupMenu('ERROR: Select at least one category of properties%t|OK%x1')
+            Blender.Window.QRedrawAll()
+            return
+        if Draw.PupMenu('  OK?%t|Are you completely sure to remove defined LuxBlend properties?%x1') != 1:
+            return
+        print 'Removing LuxBlend properties...'
+        if defs == 'true':
+            print ' - removing default settings'
+            try:
+                global luxdefaults
+                luxdefaults = {}
+                Blender.Registry.RemoveKey('luxblend', True)
+            except:
+                pass
+        if uids == 'true' or scenes == 'true':
+            print ' - removing UIDs'
+            scns = filter(lambda s: s.lib is None and s != Scene.GetCurrent(), Scene.Get()) + [Scene.GetCurrent()] if all == 'true' else [Scene.GetCurrent()]
+            for scn in scns:
+                luxProp(scn, 'UID', '').delete()
+            print '   processed scenes:', ', '.join([ '"%s"' % s.name for s in scns ])
+            l = []
+            for mat in Material.Get():
+                if mat.lib is None:
+                    for volume_prop in ['Exterior', 'Interior']:
+                        luxProp(mat, '%s_vol_guid' % (volume_prop), '').delete()
+                    l.append('"%s"' % mat.name)
+            print '   processed UID tags in materials:', (', '.join(l) if l else 'none')
+        if scenes == 'true':
+            print ' - removing scene properties'
+            scns = filter(lambda s: s.lib is None and s != Scene.GetCurrent(), Scene.Get()) + [Scene.GetCurrent()] if all == 'true' else [Scene.GetCurrent()]
+            print '   processed scenes:', wipeProps(scns)
+        if cameras == 'true':
+            print ' - removing camera properties'
+            cams = Blender.Camera.Get() if all == 'true' else [Scene.GetCurrent().objects.camera.data]
+            print '   processed cameras:', wipeProps(cams)
+        if materials == 'true':
+            print ' - removing material properties'
+            print '   processed materials:', wipeProps(Material.Get())
+        print 'LuxBlend properties removed'
+        print
+        Blender.Window.QRedrawAll()
+    
+    if scn:
+        wipe = luxProp(scn, 'wipe_props', 'false')
+        luxCollapse('wipe', wipe, 'Reset settings', 'Completely remove LuxBlend properties from defined objects', gui, 2.0)
+        if wipe.get() == 'true':
+            wipe_defs = luxProp(scn, 'wipe_defs', 'true')
+            wipe_uids = luxProp(scn, 'wipe_uids', 'true')
+            wipe_scns = luxProp(scn, 'wipe_scns', 'true')
+            wipe_cams = luxProp(scn, 'wipe_cams', 'true')
+            wipe_mats = luxProp(scn, 'wipe_mats', 'true')
+            wipe_all = luxProp(scn, 'wipe_all', 'true')
+            luxBool('switch_wipe_defs', wipe_defs, 'Defaults', 'Reset default settings', gui, 0.5)
+            if not wipe_scns.get() == 'true':
+                luxBool('switch_wipe_uids', wipe_uids, 'UIDs', 'Reset scene UID (use this option after forking blend-file or making a new "Full Copy" scene)', gui, 0.25)
+            luxBool('switch_wipe_scns', wipe_scns, 'Scenes' if wipe_scns.get() == 'true' else 'Scns', 'Remove global scene properties (including mediums definitions)', gui, 0.5 if wipe_scns.get() == 'true' else 0.25)
+            luxBool('switch_wipe_cams', wipe_cams, 'Cameras', 'Remove camera properties', gui, 0.5)
+            luxBool('switch_wipe_mats', wipe_mats, 'Materials', 'Remove material properties', gui, 0.5)
+            luxBool('switch_wipe_all', wipe_all, 'All scenes/cameras', 'Remove properties from all cameras/scenes or from the current ones only', gui, 1.5)
+            if gui:
+                r = gui.getRect(0.5, 1)
+                Draw.Button('REMOVE', 0, r[0], r[1], r[2], r[3], 'Proceed with removing', lambda e,v:doRemove(wipe_defs, wipe_uids, wipe_scns, wipe_cams, wipe_mats, wipe_all))
+
+
 def scalelist(list, factor):
     for i in range(len(list)): list[i] = list[i] * factor
     return list
@@ -8116,6 +8199,7 @@ def luxDraw():
             gui.newline("SETTINGS:", 10)
             r = gui.getRect(2,1)
             Draw.Button("Save defaults", 0, r[0], r[1], r[2], r[3], "Save current settings as defaults", lambda e,v:saveluxdefaults())
+            luxRemoveProps(scn, gui)
         y = gui.y - 80
         if y > 0: y = 0 # bottom align of render button
         run = luxProp(scn, "run", "true")
