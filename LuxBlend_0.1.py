@@ -418,7 +418,7 @@ class luxExport:
             
             if (obj.enableDupFrames and isOriginal):
                 for o, m in obj.DupObjects:
-                    self.analyseObject(o, m, "%s.%s"%(name, o.getName()), False)    
+                    light = self.analyseObject(o, m, "%s.%s"%(name, o.getName()), False)
             if (obj.enableDupGroup or obj.enableDupVerts or obj.enableDupFaces):
                 self.duplis.add(obj)
                 for o, m in obj.DupObjects:
@@ -429,7 +429,7 @@ class luxExport:
                                 if o in g.objects: objGroups.append(g)
                             if not objGroups or not True in [ l in o.layers for l in self.groups[g] for g in objGroups ]:
                                 continue
-                        self.analyseObject(o, m, "%s.%s"%(name, o.getName()), True, True)    
+                        light = self.analyseObject(o, m, "%s.%s"%(name, o.getName()), True, True)
             elif ((isDupli or (not obj.getParent() in self.duplis)) and ((obj_type == "Mesh") or (obj_type == "Surf") or (obj_type == "Curve") or (obj_type == "Text"))):
                 if (len(psystems) == 0) or export_emitter or export_emitter_mats:
                     mats = getMaterials(obj)
