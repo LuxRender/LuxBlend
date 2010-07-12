@@ -8467,7 +8467,7 @@ if (pyargs != []) and (batchindex != 0):
 
     luxpath = ""
     import getopt
-    o, a = getopt.getopt(pyargs, 's:e:o:t:l:',["scale=","haltspp=","run=", "lbm=", "lbt="])
+    o, a = getopt.getopt(pyargs, 's:e:o:t:l:',["scale=", "haltspp=", "run=", "lbm=", "lbt=", "servers="])
 
     opts = {}
     for k,v in o:
@@ -8482,6 +8482,12 @@ if (pyargs != []) and (batchindex != 0):
     if opts.has_key('--scale'):
         print("Zoom: %s" %opts['--scale'])
         luxProp(scene, "film.scale", "100 %").set(opts['--scale'])
+
+    if opts.has_key('--servers'):
+        print("Servers file: %s" %opts['--servers'])
+        luxProp(scene,"network","false").set("true")
+        luxProp(scene,"network_use_file","false").set("true")
+        luxProp(scene,"network_file_path","false").set(opts['--servers'])
 
     if opts.has_key('--haltspp'):
         print("haltspp: %s" %opts['--haltspp'])
