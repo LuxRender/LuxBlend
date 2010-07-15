@@ -1241,6 +1241,12 @@ class exportProgressBar(object):
 
 def save_lux(filename, unindexedname, anim_progress=None):
     global meshlist, matnames, lxs_filename, geom_filename, geom_pfilename, mat_filename, mat_pfilename, vol_filename, vol_pfilename, LuxIsGUI
+    scn = Scene.GetCurrent()
+    
+    if luxProp(scn, 'cnsl', 'false').get() == 'true' and not luxProp(scn, 'haltspp', 0).get() and not luxProp(scn, 'halttime', 0).get():
+        Draw.PupMenu('ERROR: Use "halt at time" and/or "halt at spp" options with luxconsole rendering%t|OK%x1')
+        Blender.Window.QRedrawAll()
+        return False
     
     if LuxIsGUI:
         pb = exportProgressBar(12, anim_progress)
@@ -1254,7 +1260,6 @@ def save_lux(filename, unindexedname, anim_progress=None):
 
     print("LuxRender Export started...\n")
     time1 = Blender.sys.time()
-    scn = Scene.GetCurrent()
 
     filepath = os.path.dirname(filename)
     filebase = os.path.splitext(os.path.basename(filename))[0]
@@ -1628,6 +1633,7 @@ def get_lux_exec(scn, type="luxrender"):
     #get blenders 'bpydata' directory
     datadir=Blender.Get("datadir")
     
+    if luxProp(scn, "cnsl", "false").get() == "true": type = "luxconsole"
     ic = luxProp(scn, "lux", "").get()
     ic = Blender.sys.dirname(ic) + os.sep + type
     
@@ -1686,11 +1692,14 @@ def get_lux_args(filename, extra_args=[], anim=False):
         else: prio = "/high"
         
         if not anim:
-            cmd = "start /b %s \"\" %s" % (prio, lux_args)
+            # if cmd button pressed launch luxconsole instead of the lux gui
+            if luxProp(scn, "cnsl", "false").get() == "true":
+                cmd = "start %s \"\" %s" % (prio, lux_args)
+            else:
+                cmd = "start /b %s \"\" %s" % (prio, lux_args)
         else:
             # if animation/luxconsole, start minimised and wait for completion
             cmd = "start /WAIT /MIN %s \"\" %s" % (prio, lux_args)
-        
 #    if ostype == "linux2" or ostype == "darwin":
     else:
         if not anim:
@@ -3854,8 +3863,8 @@ def luxSurfaceIntegrator(scn, gui=None):
             if gui: gui.newline("  Direct:")
             str += luxBool("directsampleall",luxProp(scn, "sintegrator.distributedpath.directsampleall", "true"), "Direct ALL", "Include diffuse direct light sample at first vertex", gui, 0.7)
             str += luxInt("directsamples", luxProp(scn, "sintegrator.distributedpath.directsamples", 1), 0, 1024, "s", "The number of direct light samples to take at the eye vertex", gui, 0.3)
-            str += luxBool("indirectsampleall",luxProp(scn, "sintegrator.distributedpath.indirectsampleall", "false"), "Indirect ALL", "Include diffuse direct light sample at first vertex", gui, 0.7)
-            str += luxInt("indirectsamples", luxProp(scn, "sintegrator.distributedpath.indirectsamples", 1), 0, 1024, "s", "The number of direct light samples to take at the remaining vertices", gui, 0.3)
+            str += luxBool("indirectsampleall",luxProp(scn, "sintegrator.distributedpath.indirectsampleall", "false"), "Indirect ALL", "Include diffuse indirect light sample at first vertex", gui, 0.7)
+            str += luxInt("indirectsamples", luxProp(scn, "sintegrator.distributedpath.indirectsamples", 1), 0, 1024, "s", "The number of indirect light samples to take at the remaining vertices", gui, 0.3)
             if gui: gui.newline("  Diffuse:")
             str += luxInt("diffusereflectdepth", luxProp(scn, "sintegrator.distributedpath.diffusereflectdepth", 3), 0, 2048, "Reflect", "The maximum recursion depth for diffuse reflection ray casting", gui, 0.5)
             str += luxInt("diffusereflectsamples", luxProp(scn, "sintegrator.distributedpath.diffusereflectsamples", 1), 0, 1024, "s", "The number of diffuse reflection samples to take at the eye vertex", gui, 0.3)
@@ -8204,6 +8213,7 @@ def luxDraw():
         y = gui.y - 80
         if y > 0: y = 0 # bottom align of render button
         run = luxProp(scn, "run", "true")
+        cnsl = luxProp(scn, "cnsl", "false")
         dlt = luxProp(scn, "default", "true")
         pipe = luxProp(scn, "pipe", "false")
         clay = luxProp(scn, "clay", "false")
@@ -8245,6 +8255,7 @@ def luxDraw():
                 Draw.Button("Export Anim", 0, 110, y+20, 100, 36, "Export animation", lambda e,v:CBluxAnimExport(dlt.get()=="true" or pipe.get()=="true", False))
             
             Draw.Toggle("run", evtLuxGui, 265, y+40, 30, 16, run.get()=="true", "Start LuxRender after export", lambda e,v: run.set(["false","true"][bool(v)]))
+            Draw.Toggle("cmd", evtLuxGui, 235, y+40, 30, 16, cnsl.get()=="true", "Render in luxconsole instead of LuxRender GUI", lambda e,v: cnsl.set(["false","true"][bool(v)]))
             
             if (pipe.get() == 'false' and dlt.get() == 'true') or run.get()=='false':
                 Draw.Toggle("def", evtLuxGui, 295, y+40, 55, 16, dlt.get()=="true", "Write to default lxs file", lambda e,v: check_pipe_def_exclusion('d',v))
@@ -8258,10 +8269,10 @@ def luxDraw():
             Draw.Toggle("noLG", evtLuxGui, 380, y+40, 35, 16, nolg.get()=="true", "Disables all light groups", lambda e,v: nolg.set(["false","true"][bool(v)]))
             
             if pipe.get() == "false":
-                Draw.Toggle(".lxs", 0, 265, y+20, 37, 16, lxs.get()=="true", "Export .lxs scene file", lambda e,v: lxs.set(["false","true"][bool(v)]))
-                Draw.Toggle(".lxo", 0, 302, y+20, 38, 16, lxo.get()=="true", "Export .lxo geometry file", lambda e,v: lxo.set(["false","true"][bool(v)]))
-                Draw.Toggle(".lxm", 0, 340, y+20, 37, 16, lxm.get()=="true", "Export .lxm material file", lambda e,v: lxm.set(["false","true"][bool(v)]))
-                Draw.Toggle(".lxv", 0, 377, y+20, 38, 16, lxv.get()=="true", "Export .lxv volume file", lambda e,v: lxv.set(["false","true"][bool(v)]))
+                Draw.Toggle(".lxs", 0, 235, y+20, 45, 16, lxs.get()=="true", "Export .lxs scene file", lambda e,v: lxs.set(["false","true"][bool(v)]))
+                Draw.Toggle(".lxo", 0, 280, y+20, 45, 16, lxo.get()=="true", "Export .lxo geometry file", lambda e,v: lxo.set(["false","true"][bool(v)]))
+                Draw.Toggle(".lxm", 0, 325, y+20, 45, 16, lxm.get()=="true", "Export .lxm material file", lambda e,v: lxm.set(["false","true"][bool(v)]))
+                Draw.Toggle(".lxv", 0, 370, y+20, 45, 16, lxv.get()=="true", "Export .lxv volume file", lambda e,v: lxv.set(["false","true"][bool(v)]))
     
     BGL.glColor3f(0.9, 0.9, 0.9)
     
@@ -8552,6 +8563,7 @@ else:
     luxpathprop = luxProp(scn, "lux", "")
     luxpath = luxpathprop.get()
     luxrun = luxProp(scn, "run", True).get()
+    luxcnsl = luxProp(scn, "cnsl", True).get()
     checkluxpath = luxProp(scn, "checkluxpath", True).get()
 
     if checkluxpath and luxrun:
