@@ -345,7 +345,7 @@ class luxExport:
         light = False
         export_emitter = False
         export_emitter_mats = False
-        if (obj.users > 0):
+        if obj.users != 0:   # Blender quirk: could go negative with large amount of instances
             obj_type = obj.getType()
 
             psystems = obj.getParticleSystems()
