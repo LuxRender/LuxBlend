@@ -3953,15 +3953,15 @@ def luxEnvironment(scn, gui=None):
             rotZ = luxProp(scn, key+".rotation", 0.0)
             rotY = luxProp(scn, key+".rotationY", 0.0)
             rotX = luxProp(scn, key+".rotationX", 0.0)
-            luxFloat(key+".rotationX", rotX, 0.0, 360.0, "rot X", hint+" rotation X", gui, 0.66)
-            luxFloat(key+".rotationY", rotY, 0.0, 360.0, "rot Y", hint+" rotation Y", gui, 0.66)
-            luxFloat(key+".rotationZ", rotZ, 0.0, 360.0, "rot Z", hint+" rotation Z", gui, 0.66)
+            luxFloat(key+".rotationX", rotX, -360.0, 360.0, "rot X", hint+" rotation X", gui, 0.66)
+            luxFloat(key+".rotationY", rotY, -360.0, 360.0, "rot Y", hint+" rotation Y", gui, 0.66)
+            luxFloat(key+".rotationZ", rotZ, -360.0, 360.0, "rot Z", hint+" rotation Z", gui, 0.66)
             if rotZ.get() != 0 or rotY.get() != 0 or rotX.get() != 0:
                 if complimentary:
                     str += "\nAttributeEnd\nAttributeBegin\n"
-                str += "\tRotate %d 1 0 0\n"%(rotX.get())
-                str += "\tRotate %d 0 1 0\n"%(rotY.get())
-                str += "\tRotate %d 0 0 1\n"%(rotZ.get())
+                str += "\tRotate %.2f 1 0 0\n"%(rotX.get() % 360)
+                str += "\tRotate %.2f 0 1 0\n"%(rotY.get() % 360)
+                str += "\tRotate %.2f 0 0 1\n"%(rotZ.get() % 360)
             if gui: gui.newline()
             return str
         envtype = luxProp(scn, "env.type", "infinite")
