@@ -6855,7 +6855,7 @@ def luxMaterialBlock(name, luxname, key, mat, gui=None, level=0, str_opt=""):
                 luxBool("nsmooth", nsmooth, "Smooth", "Smooth faces during subdivision", gui, 1.0)
             if usedisp.get() == "true":
                 (str,ll) = c((str,link), luxDispFloatTexture("dispmap", keyname, 0.1, -10, 10.0, "dispmap", "Displacement Mapping amount", mat, gui, level+1))
-                luxFloat("sdoffset",  luxProp(mat, "sdoffset", 0.0), 0.0, 1.0, "Offset", "Offset for displacement map", gui, 2.0)
+                luxFloat("sdoffset",  luxProp(mat, "sdoffset", 0.0), -0.1, 1.0, "Offset", "Offset for displacement map", gui, 2.0)
                 usesubdiv.set("true")
             if gui: gui.newline('Hair:', 2, level, None, [0.6,0.6,0.4])
             luxFloat('hair_thickness',  luxProp(mat, 'hair_thickness', 0.5), 0.001, 100.0, 'hair thickness', 'Hair strand diameter', gui, 1.5)
