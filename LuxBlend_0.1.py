@@ -1248,6 +1248,11 @@ def save_lux(filename, unindexedname, anim_progress=None):
         Blender.Window.QRedrawAll()
         return False
     
+    if not luxProp(scn, 'datadir', '').get() and luxProp(scn, 'default', 'true').get() == 'true':
+        Draw.PupMenu('ERROR: Please specify "default out dir" in System tab prior to export to default lxs file%t|OK%x1')
+        Blender.Window.QRedrawAll()
+        return False
+    
     if LuxIsGUI:
         pb = exportProgressBar(12, anim_progress)
     else:
@@ -1325,7 +1330,11 @@ def save_lux(filename, unindexedname, anim_progress=None):
             
     class file_output(output_proxy):
         def __init__(self,filename):
-            self.f = open(filename, "w")
+            try:
+                self.f = open(filename, "w")
+            except IOError:
+                Draw.PupMenu('ERROR: Unable to write to "'+filename+'", please check permissions or "default out dir" in System tab%t|OK%x1')
+                raise IOError, "Permission denied: '%s'" % filename
             
     from threading import Thread
     class pipe_output(output_proxy, Thread):
@@ -1659,7 +1668,7 @@ def get_lux_args(filename, extra_args=[], anim=False):
     checkluxpath = luxProp(scn, "checkluxpath", True).get()
     if checkluxpath:
         if sys.exists(ic) != 1:
-            Draw.PupMenu("Error: LuxRender not found. Please set path on System page.%t|OK")
+            Draw.PupMenu("ERROR: LuxRender not found. Please specify \"lux binary dir\" in System tab%t|OK%x1")
             return
     autothreads = luxProp(scn, "autothreads", "true").get()
     threads = luxProp(scn, "threads", 1).get()
@@ -1730,7 +1739,8 @@ def get_lux_pipe(scn, buf = 1024, type="luxconsole"):
     return subprocess.Popen(bin + raw_args, shell=True, bufsize=buf, stdin=PIPE, stdout=PIPE, stderr=PIPE)
 
 def launchLux(filename):
-    cmd, raw_args = get_lux_args(filename, extra_args=[])
+    try: cmd, raw_args = get_lux_args(filename, extra_args=[])
+    except TypeError: return
     print("Running LuxRender:\n"+cmd)
     os.system(cmd)
 
