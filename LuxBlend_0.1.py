@@ -7199,7 +7199,7 @@ def convertMaterial(mat):
         convertBumpTexture(name)
     def makeGlass(name):
         luxProp(mat, dot(name)+"type", "").set("glass")
-        luxProp(mat, name+":Kr", "").setRGB((0.0, 0.0, 0.0))
+        luxProp(mat, name+":Kr", "").setRGB((mat.R, mat.G, mat.B))
         luxProp(mat, name+":Kt", "").setRGB((mat.R, mat.G, mat.B))
         luxProp(mat, name+":index.iorusepreset", "").set("false")
         luxProp(mat, name+":index", 0.0).set(mat.getIOR())
@@ -7208,7 +7208,7 @@ def convertMaterial(mat):
         convertBumpTexture(name)
     def makeRoughglass(name, roughness):
         luxProp(mat, dot(name)+"type", "").set("roughglass")
-        luxProp(mat, name+":Kr", "").setRGB((0.0, 0.0, 0.0))
+        luxProp(mat, name+":Kr", "").setRGB((mat.R, mat.G, mat.B))
         luxProp(mat, name+":Kt", "").setRGB((mat.R, mat.G, mat.B))
         luxProp(mat, name+":index.iorusepreset", "").set("false")
         luxProp(mat, name+":index", 0.0).set(mat.getIOR())
@@ -7240,13 +7240,13 @@ def convertMaterial(mat):
             luxProp(mat, alpha1name+":amount", 0.0).set(1.0 - mirror)
             mirror0name, mirror1name = ddot(alpha1name)+"mat1", ddot(alpha1name)+"mat2"
         if mirror > 0.0:
-            if mat.glossMir < 1.0: makeGlossy(mirror1name, 1.0-mat.glossMir)
+            if mat.glossMir < 1.0: makeGlossy(mirror1name, (1.0-mat.glossMir)**2)
             else: makeMirror(mirror1name)
         if mirror < 1.0:
             if mat.spec > 0.0: makeGlossy(mirror0name, math.sqrt(2.0/(mat.hard+2.0)))
             else: makeMatte(mirror0name)
     if alpha < 1.0:
-        if mat.glossTra < 1.0: makeRoughnessGlass(alpha0name, 1.0-mat.glossTra**2)
+        if mat.glossTra < 0.97: makeRoughglass(alpha0name, (1.0-mat.glossTra)**2)
         else: makeGlass(alpha0name)
 
 def convertAllMaterials():
