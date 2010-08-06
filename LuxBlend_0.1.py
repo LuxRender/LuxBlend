@@ -1248,6 +1248,11 @@ def save_lux(filename, unindexedname, anim_progress=None):
         Blender.Window.QRedrawAll()
         return False
     
+    if not luxProp(scn, 'datadir', '').get() and luxProp(scn, 'default', 'true').get() == 'true':
+        Draw.PupMenu('ERROR: Please specify "default out dir" in System tab prior to export to default lxs file%t|OK%x1')
+        Blender.Window.QRedrawAll()
+        return False
+    
     if LuxIsGUI:
         pb = exportProgressBar(12, anim_progress)
     else:
@@ -1325,7 +1330,11 @@ def save_lux(filename, unindexedname, anim_progress=None):
             
     class file_output(output_proxy):
         def __init__(self,filename):
-            self.f = open(filename, "w")
+            try:
+                self.f = open(filename, "w")
+            except IOError:
+                Draw.PupMenu('ERROR: Unable to write to "'+filename+'", please check permissions or "default out dir" in System tab%t|OK%x1')
+                raise IOError, "Permission denied: '%s'" % filename
             
     from threading import Thread
     class pipe_output(output_proxy, Thread):
@@ -1659,7 +1668,7 @@ def get_lux_args(filename, extra_args=[], anim=False):
     checkluxpath = luxProp(scn, "checkluxpath", True).get()
     if checkluxpath:
         if sys.exists(ic) != 1:
-            Draw.PupMenu("Error: LuxRender not found. Please set path on System page.%t|OK")
+            Draw.PupMenu("ERROR: LuxRender not found. Please specify \"lux binary dir\" in System tab%t|OK%x1")
             return
     autothreads = luxProp(scn, "autothreads", "true").get()
     threads = luxProp(scn, "threads", 1).get()
@@ -1730,7 +1739,8 @@ def get_lux_pipe(scn, buf = 1024, type="luxconsole"):
     return subprocess.Popen(bin + raw_args, shell=True, bufsize=buf, stdin=PIPE, stdout=PIPE, stderr=PIPE)
 
 def launchLux(filename):
-    cmd, raw_args = get_lux_args(filename, extra_args=[])
+    try: cmd, raw_args = get_lux_args(filename, extra_args=[])
+    except TypeError: return
     print("Running LuxRender:\n"+cmd)
     os.system(cmd)
 
@@ -5574,7 +5584,11 @@ def luxExponentTexture(name, key, default, min, max, caption, hint, mat, gui, le
 #    link = luxFloat(name, value, min, max, "", hint, gui, 2.0)
     if gui:
         r = gui.getRect(2.0, 1)
-        Draw.Number("", evtLuxGui, r[0], r[1], r[2], r[3], float(2.0/(value.getFloat() ** 2)-2.0), 1.0, 1000000.0, hint, lambda e,v: value.set(math.sqrt(2.0/(v+2.0))))
+        if luxProp(mat, key+'.type' if key else 'type', 'matte').get() == 'glossy':
+            Draw.Number("", evtLuxGui, r[0], r[1], r[2], r[3], float(2.0/(value.getFloat() ** 2)-2.0), 1.0, 1000000.0, hint, lambda e,v: value.set(math.sqrt(2.0/(v+2.0))))
+        else:
+            # oldstyle roughness conversion for blinn/anisotropic microfacet distribution
+            Draw.Number("", evtLuxGui, r[0], r[1], r[2], r[3], float(1.0/value.getFloat()), 1.0, 1000000.0, hint, lambda e,v: value.set(1.0/v))
     link = " \"float %s\" [%f]"%(name, value.getFloat())
 
     tex = luxProp(mat, keyname+".textured", False)
@@ -7246,7 +7260,7 @@ def convertMaterial(mat):
             if mat.spec > 0.0: makeGlossy(mirror0name, math.sqrt(2.0/(mat.hard+2.0)))
             else: makeMatte(mirror0name)
     if alpha < 1.0:
-        if mat.glossTra < 0.97: makeRoughglass(alpha0name, (1.0-mat.glossTra)**2)
+        if mat.glossTra < 0.97: makeRoughglass(alpha0name, 1.0-mat.glossTra**2)
         else: makeGlass(alpha0name)
 
 def convertAllMaterials():
