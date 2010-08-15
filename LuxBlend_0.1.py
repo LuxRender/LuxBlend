@@ -362,10 +362,13 @@ class luxExport:
                     locs = psys.getLoc()
                     scales = psys.getSize()
                     rots = psys.getRot()
-                    if(len(locs) != len(scales) or len(locs) != len(rots)):
-                        print("ERROR: Please bake particle systems before rendering")
-                        Draw.PupMenu("ERROR: Please bake particle systems before rendering%t|OK%x1")
-                        break
+                    try:
+                        if(len(locs) != len(scales) or len(locs) != len(rots)):
+                            print("ERROR: Please bake particle systems before rendering")
+                            Draw.PupMenu("ERROR: Please bake particle systems before rendering%t|OK%x1")
+                            break
+                    except TypeError:
+                            break
                     
                     for i in range(len(locs)) :
                         part_rotation_quat = Mathutils.Quaternion(rots[i])
