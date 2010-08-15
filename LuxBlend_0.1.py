@@ -406,6 +406,7 @@ class luxExport:
                     if not psys.renderEmitter:
                         export_emitter_mats = True
                 elif psys.drawAs == Particle.DRAWAS['GROUP']:
+                    if psys.renderEmitter: export_emitter = True
                     grpObjs =  obj.DupObjects
                     grpObjName = obj.name
                     for i in grpObjs:
