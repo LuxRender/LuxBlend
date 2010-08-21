@@ -1677,10 +1677,6 @@ def get_lux_args(filename, extra_args=[], anim=False):
     autothreads = luxProp(scn, "autothreads", "true").get()
     threads = luxProp(scn, "threads", 1).get()
     luxnice = luxProp(scn, "luxnice", 0).get()
-    noopengl = luxProp(scn, "noopengl", "false").get()
-    
-    if noopengl == "true" and not anim:
-        extra_args.append("--noopengl")
     
     lux_args = "\"%s\" " % ic
     
@@ -1737,9 +1733,6 @@ def get_lux_pipe(scn, buf = 1024, type="luxconsole"):
         extra_args=['-b'] if type=="luxconsole" else []
     )
     
-    # dirty hack to filter "noopengl" option from luxconsole args
-    raw_args = raw_args.replace('--noopengl', '')
-
     return subprocess.Popen(bin + raw_args, shell=True, bufsize=buf, stdin=PIPE, stdout=PIPE, stderr=PIPE)
 
 def launchLux(filename):
@@ -4536,9 +4529,6 @@ def luxSystem(scn, gui=None):
             r = gui.getRect(2, 1)
             Draw.Menu("priority%t|abovenormal%x-10|normal%x0|belownormal%x10|low%x19", evtLuxGui, r[0], r[1], r[2], r[3], luxnice.get(), "", lambda e,v: luxnice.set(v))
         else: luxInt("nice", luxnice, -20, 19, "nice", "nice value. Range goes from -20 (highest priority) to 19 (lowest)", gui)
-
-        luxBool("noopengl", luxProp(scn, "noopengl", "false"), "Disable OpenGL", "(workaround for some buggy display drivers)", gui, 1.0)
-
 
         if gui: gui.newline("THREADS:", 10)
         autothreads = luxProp(scn, "autothreads", "true")
