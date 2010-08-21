@@ -6004,7 +6004,7 @@ def luxLight(name, kn, mat, gui, level):
     (str,link) = luxLightSpectrumTexture("L", kn+"light", "1.0 1.0 1.0", 1.0, "Spectrum", "", mat, gui, level+1)
     if gui: gui.newline("")
     link += luxFloat("power", luxProp(mat, kn+"light.power", 100.0), 0.0, 10000.0, "Power(W)", "AreaLight Power in Watts", gui)
-    link += luxFloat("efficacy", luxProp(mat, kn+"light.efficacy", 17.0), 0.0, 100.0, "Efficacy(lm/W)", "Efficacy Luminous flux/watt", gui)
+    link += luxFloat("efficacy", luxProp(mat, kn+"light.efficacy", 17.0), 0.0, 683.0, "Efficacy(lm/W)", "Efficacy Luminous flux/watt", gui)
     if gui: gui.newline("")
     link += luxFloat("gain", luxProp(mat, kn+"light.gain", 1.0), 0.0, 100.0, "gain", "Gain/scale multiplier", gui)
     lightgroup = luxProp(mat, kn+"light.lightgroup", "default")
