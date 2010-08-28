@@ -37,8 +37,9 @@ Please check the lux tutorials & forums for more information.
 # LuxBlend v0.7 exporter
 # --------------------------------------------------------------------------
 #
-# Authors:
-# radiance, zuegs, ideasman42, luxblender, dougal2, SATtva
+# Authors and contributors:
+# radiance, zuegs, ideasman42, luxblender, dougal2, SATtva, BinaryCortex,
+#  zukazuka, Qantorisc, zsouthboy
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
