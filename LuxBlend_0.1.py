@@ -6407,7 +6407,7 @@ def luxMaterialBlock(name, luxname, key, mat, gui=None, level=0, str_opt=""):
             mattype.set("glossy")
 
         # this is reverse order than in shown in the dropdown list
-        materials = ["null","mix","mirror","shinymetal","metal","mattetranslucent","matte","glossy_lossy","glossy","roughglass","glass","glass2","carpaint"]
+        materials = ["null","mix","mirror","shinymetal","metal","mattetranslucent","matte","glossy_lossy","glossy","roughglass","glass","glass2","carpaint","velvet"]
         
         if level == 0: materials = ["portal", "light", "boundvolume"]+materials
         if gui:
@@ -6615,6 +6615,21 @@ def luxMaterialBlock(name, luxname, key, mat, gui=None, level=0, str_opt=""):
             has_object_options = 1
             has_emission_options = 1
             has_compositing_options = 1
+            
+        if mattype.get() == "velvet":
+            velvetadv = luxProp(mat, keyname+".velvetadv", "false")
+            (str,link) = c((str,link), luxSpectrumTexture("Kd", keyname, "0.5 0.5 0.5", 1.0, "diffuse", "", mat, gui, level+1))
+            luxCollapse("velvetadv", velvetadv, "Advanced", "Enable advanced options", gui, 2.0)
+            if velvetadv.get() == "true":
+                (str,link) = c((str,link), luxFloatTexture("p1", keyname, -2.0, -100.0, 100.0, "p1", "Legrende coefficient 1 for asperity BRDF", mat, gui, level+1))
+                (str,link) = c((str,link), luxFloatTexture("p2", keyname, 20.0, -100.0, 100.0, "p2", "Legrende coefficient 2 for asperity BRDF", mat, gui, level+1))
+                (str,link) = c((str,link), luxFloatTexture("p3", keyname, 2.0, -100.0, 100.0, "p3", "Legrende coefficient 3 for asperity BRDFF", mat, gui, level+1))
+                (str,link) = c((str,link), luxFloatTexture("thickness", keyname, 0.1, 0.0, 1.0, "thickness", "Thickness of scattering layer for asperity BRDF", mat, gui, level+1))
+            has_volume_options = 1
+            has_bump_options = 1
+            has_object_options = 1
+            has_emission_options = 1
+            has_compositing_options = 1            
         
         if mattype.get() == "mattetranslucent":
             orennayar = luxProp(mat, keyname+".orennayar", "false")
