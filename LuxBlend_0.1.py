@@ -6635,6 +6635,7 @@ def luxMaterialBlock(name, luxname, key, mat, gui=None, level=0, str_opt=""):
             orennayar = luxProp(mat, keyname+".orennayar", "false")
             (str,link) = c((str,link), luxSpectrumTexture("Kr", keyname, "1.0 1.0 1.0", 1.0, "reflection", "", mat, gui, level+1))
             (str,link) = c((str,link), luxSpectrumTexture("Kt", keyname, "1.0 1.0 1.0", 1.0, "transmission", "", mat, gui, level+1))
+            link += luxBool('energyconserving', luxProp(mat, 'energyconserving', 'true'), 'Clamp Transmission', 'Ensure energy conservation by clamping transmission component', gui, 2.0)
             luxCollapse("orennayar", orennayar, "Oren-Nayar", "Enable Oren-Nayar BRDF", gui, 2.0)
             if orennayar.get() == "true":
                 (str,link) = c((str,link), luxFloatTexture("sigma", keyname, 0.0, 0.0, 100.0, "sigma", "", mat, gui, level+1))
