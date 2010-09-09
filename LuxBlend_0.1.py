@@ -1487,6 +1487,11 @@ def save_lux(filename, unindexedname, anim_progress=None):
         file.write(luxPixelFilter(scn))
         file.write("\n")
     
+        if LuxIsGUI: pb.next('Exporting Rendering Engine')
+        ##### Write Renderer ######
+        file.write(luxRenderer(scn))
+        file.write("\n")
+    
         if LuxIsGUI: pb.next('Exporting Sampler')
         ##### Write Sampler ######
         file.write(luxSampler(scn))
@@ -3706,6 +3711,39 @@ def luxPixelFilter(scn, gui=None):
                 str += luxFloat("ywidth", luxProp(scn, "pixelfilter.triangle.ywidth", 2.0), 0.0, 10.0, "y-width", "Width of the filter in the y direction", gui)
     return str            
 
+def luxRenderer(scn, gui=None):
+    str = ''
+    if scn:
+        renderer = luxProp(scn, 'renderer.type', 'classic')
+        str = luxIdentifier('Renderer', renderer, ['classic', 'hybrid'], 'ENGINE', 'select rendering engine', gui)
+        showadvanced = luxProp(scn, 'renderer.showadvanced', 'false')
+        luxBool('advanced', showadvanced, 'Advanced', 'Show advanced options', gui, 0.6)
+        showhelp = luxProp(scn, 'renderer.showhelp', 'false')
+        luxHelp('help', showhelp, 'Help', 'Show help information', gui, 0.4)
+        
+        if renderer.get() == 'classic':
+            str = ''   # XXX: lux 0.7.x compatibility workaround
+            if showadvanced.get() == 'true':
+                if gui: gui.newline('  Threads:')
+                autothreads = luxProp(scn, 'autothreads', 'true')
+                luxBool('autothreads', autothreads, 'auto detect', 'Automatically use all available processors', gui)
+                if autothreads.get() == 'false':
+                    luxInt('threads', luxProp(scn, 'threads', 1), 1, 100, 'threads', 'Number of threads used for rendering', gui)
+            else:
+                luxProp(scn, 'autothreads', 'true').set('true')
+            
+            if showhelp.get() == 'true':
+                if gui: gui.newline('  Description:', 8, 0, icon_help, [0.4,0.5,0.56])
+                r = gui.getRect(2,1); BGL.glRasterPos2i(r[0],r[1]+5)
+                Draw.Text('LuxRender classic CPU-only rendering engine', 'small')
+
+        if renderer.get() == 'hybrid':
+            if showhelp.get() == 'true':
+                if gui: gui.newline('  Description:', 8, 0, icon_help, [0.4,0.5,0.56])
+                r = gui.getRect(2,1); BGL.glRasterPos2i(r[0],r[1]+5)
+                Draw.Text('LuxRender hybrid CPU+GPU rendering engine', 'small')
+    return str
+
 def luxSampler(scn, gui=None):
     global icon_c_sampler, icon_help
     str = ""
@@ -4531,11 +4569,7 @@ def luxSystem(scn, gui=None):
             Draw.Menu("priority%t|abovenormal%x-10|normal%x0|belownormal%x10|low%x19", evtLuxGui, r[0], r[1], r[2], r[3], luxnice.get(), "", lambda e,v: luxnice.set(v))
         else: luxInt("nice", luxnice, -20, 19, "nice", "nice value. Range goes from -20 (highest priority) to 19 (lowest)", gui)
 
-        if gui: gui.newline("THREADS:", 10)
-        autothreads = luxProp(scn, "autothreads", "true")
-        luxBool("autothreads", autothreads, "Auto Detect", "Automatically use all available processors", gui, 1.0)
-        if autothreads.get()=="false":
-            luxInt("threads", luxProp(scn, "threads", 1), 1, 100, "threads", "number of threads used for rendering", gui, 1.0)
+#        if gui: gui.newline("THREADS:", 10)
 #        luxBool('export.threaded', luxProp(scn, 'export.threaded', 'true'), 'Pipe in background', 'When using pipe export, do not block Blender UI', gui, 1.0)
 
         if gui: gui.newline("ANIM:", 10)
@@ -8212,6 +8246,8 @@ def luxDraw():
         if luxpage.get() == 2:
             BGL.glColor3f(1.0,0.5,0.0);BGL.glRectf(170,y-74,250,y-70);BGL.glColor3f(0.9,0.9,0.9)
             r = gui.getRect(1.1, 1)
+            luxRenderer(scn, gui)
+            gui.newline("", 10)
             luxSampler(scn, gui)
             gui.newline("", 10)
             luxSurfaceIntegrator(scn, gui)
@@ -8404,6 +8440,7 @@ def luxButtonEvt(evt):  # function that handles button events
             if name != "":
                 usedproperties = {}
                 usedpropertiesfilterobj = None
+                luxRenderer(scn)
                 luxSurfaceIntegrator(scn)
                 luxSampler(scn)
                 luxPixelFilter(scn)
