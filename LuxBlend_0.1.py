@@ -34,7 +34,7 @@ Please check the lux tutorials & forums for more information.
 # ***** BEGIN GPL LICENSE BLOCK *****
 #
 # --------------------------------------------------------------------------
-# LuxBlend v0.8 exporter
+# LuxBlend v0.7.1 exporter
 # --------------------------------------------------------------------------
 #
 # Authors and contributors:
