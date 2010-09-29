@@ -1257,7 +1257,12 @@ def save_lux(filename, unindexedname, anim_progress=None):
         Draw.PupMenu('ERROR: Please specify "default out dir" in System tab prior to export to default lxs file%t|OK%x1')
         Blender.Window.QRedrawAll()
         return False
-    
+
+    if not luxProp(scn, 'datadir', '').get() and luxProp(scn, 'default', 'true').get() == 'true':
+        Draw.PupMenu('ERROR: Please specify "default out dir" in System tab prior to export to default lxs file%t|OK%x1')
+        Blender.Window.QRedrawAll()
+        return False
+		   
     if LuxIsGUI:
         pb = exportProgressBar(12, anim_progress)
     else:
@@ -1734,9 +1739,6 @@ def get_lux_pipe(scn, buf = 1024, type="luxconsole"):
         extra_args=['-b'] if type=="luxconsole" else []
     )
     
-    # dirty hack to filter "noopengl" option from luxconsole args
-    raw_args = raw_args.replace('--noopengl', '')
-
     return subprocess.Popen(bin + raw_args, shell=True, bufsize=buf, stdin=PIPE, stdout=PIPE, stderr=PIPE)
 
 def launchLux(filename):
