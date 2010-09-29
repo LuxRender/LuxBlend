@@ -34,11 +34,12 @@ Please check the lux tutorials & forums for more information.
 # ***** BEGIN GPL LICENSE BLOCK *****
 #
 # --------------------------------------------------------------------------
-# LuxBlend v0.7.1 exporter
+# LuxBlend v0.8 exporter
 # --------------------------------------------------------------------------
 #
-# Authors:
-# radiance, zuegs, ideasman42, luxblender, dougal2, SATtva
+# Authors and contributors:
+# radiance, zuegs, ideasman42, luxblender, dougal2, SATtva, BinaryCortex,
+#  zukazuka, Qantorisc, zsouthboy, jensverwiebe
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -362,10 +363,13 @@ class luxExport:
                     locs = psys.getLoc()
                     scales = psys.getSize()
                     rots = psys.getRot()
-                    if(len(locs) != len(scales) or len(locs) != len(rots)):
-                        print("ERROR: Please bake particle systems before rendering")
-                        Draw.PupMenu("ERROR: Please bake particle systems before rendering%t|OK%x1")
-                        break
+                    try:
+                        if(len(locs) != len(scales) or len(locs) != len(rots)):
+                            print("ERROR: Please bake particle systems before rendering")
+                            Draw.PupMenu("ERROR: Please bake particle systems before rendering%t|OK%x1")
+                            break
+                    except TypeError:
+                            break
                     
                     for i in range(len(locs)) :
                         part_rotation_quat = Mathutils.Quaternion(rots[i])
@@ -1673,10 +1677,6 @@ def get_lux_args(filename, extra_args=[], anim=False):
     autothreads = luxProp(scn, "autothreads", "true").get()
     threads = luxProp(scn, "threads", 1).get()
     luxnice = luxProp(scn, "luxnice", 0).get()
-    noopengl = luxProp(scn, "noopengl", "false").get()
-    
-    if noopengl == "true" and not anim:
-        extra_args.append("--noopengl")
     
     lux_args = "\"%s\" " % ic
     
@@ -4533,9 +4533,6 @@ def luxSystem(scn, gui=None):
             Draw.Menu("priority%t|abovenormal%x-10|normal%x0|belownormal%x10|low%x19", evtLuxGui, r[0], r[1], r[2], r[3], luxnice.get(), "", lambda e,v: luxnice.set(v))
         else: luxInt("nice", luxnice, -20, 19, "nice", "nice value. Range goes from -20 (highest priority) to 19 (lowest)", gui)
 
-        luxBool("noopengl", luxProp(scn, "noopengl", "false"), "Disable OpenGL", "(workaround for some buggy display drivers)", gui, 1.0)
-
-
         if gui: gui.newline("THREADS:", 10)
         autothreads = luxProp(scn, "autothreads", "true")
         luxBool("autothreads", autothreads, "Auto Detect", "Automatically use all available processors", gui, 1.0)
@@ -6004,7 +6001,7 @@ def luxLight(name, kn, mat, gui, level):
     (str,link) = luxLightSpectrumTexture("L", kn+"light", "1.0 1.0 1.0", 1.0, "Spectrum", "", mat, gui, level+1)
     if gui: gui.newline("")
     link += luxFloat("power", luxProp(mat, kn+"light.power", 100.0), 0.0, 10000.0, "Power(W)", "AreaLight Power in Watts", gui)
-    link += luxFloat("efficacy", luxProp(mat, kn+"light.efficacy", 17.0), 0.0, 100.0, "Efficacy(lm/W)", "Efficacy Luminous flux/watt", gui)
+    link += luxFloat("efficacy", luxProp(mat, kn+"light.efficacy", 17.0), 0.0, 683.0, "Efficacy(lm/W)", "Efficacy Luminous flux/watt", gui)
     if gui: gui.newline("")
     link += luxFloat("gain", luxProp(mat, kn+"light.gain", 1.0), 0.0, 100.0, "gain", "Gain/scale multiplier", gui)
     lightgroup = luxProp(mat, kn+"light.lightgroup", "default")
@@ -6644,6 +6641,7 @@ def luxMaterialBlock(name, luxname, key, mat, gui=None, level=0, str_opt=""):
             orennayar = luxProp(mat, keyname+".orennayar", "false")
             (str,link) = c((str,link), luxSpectrumTexture("Kr", keyname, "1.0 1.0 1.0", 1.0, "reflection", "", mat, gui, level+1))
             (str,link) = c((str,link), luxSpectrumTexture("Kt", keyname, "1.0 1.0 1.0", 1.0, "transmission", "", mat, gui, level+1))
+            link += luxBool('energyconserving', luxProp(mat, 'energyconserving', 'true'), 'Clamp Transmission', 'Ensure energy conservation by clamping transmission component', gui, 2.0)
             luxCollapse("orennayar", orennayar, "Oren-Nayar", "Enable Oren-Nayar BRDF", gui, 2.0)
             if orennayar.get() == "true":
                 (str,link) = c((str,link), luxFloatTexture("sigma", keyname, 0.0, 0.0, 100.0, "sigma", "", mat, gui, level+1))
@@ -6770,6 +6768,9 @@ def luxMaterialBlock(name, luxname, key, mat, gui=None, level=0, str_opt=""):
                 (s, l) = luxExponentTexture("uroughness", keyname, 0.002, 0.0, 1.0, "exponent", "", mat, gui, level+1)
                 (str,link) = c((str,link), (s, l))
                 link += l.replace("uroughness", "vroughness", 1)
+
+            if mattype.get() == 'glossy':
+                link += luxBool('multibounce', luxProp(mat, 'multibounce', 'false'), 'Surface Asperity', 'Simulate surface asperity with light multibouncing in specular coating', gui, 2.0)
 
             absorption = luxProp(mat, keyname+".useabsorption", "false")
             luxCollapse("absorption", absorption, "Absorption", "Enable Coating Absorption", gui, 2.0)
@@ -7275,7 +7276,7 @@ def convertMaterial(mat):
             if mat.spec > 0.0: makeGlossy(mirror0name, math.sqrt(2.0/(mat.hard+2.0)))
             else: makeMatte(mirror0name)
     if alpha < 1.0:
-        if mat.glossTra < 0.97: makeRoughglass(alpha0name, 1.0-mat.glossTra**2)
+        if mat.glossTra < 0.97: makeRoughglass(alpha0name, (1.0-mat.glossTra)**2)
         else: makeGlass(alpha0name)
 
 def convertAllMaterials():
