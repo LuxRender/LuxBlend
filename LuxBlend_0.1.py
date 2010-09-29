@@ -5584,7 +5584,7 @@ def luxExponentTexture(name, key, default, min, max, caption, hint, mat, gui, le
 #    link = luxFloat(name, value, min, max, "", hint, gui, 2.0)
     if gui:
         r = gui.getRect(2.0, 1)
-        if luxProp(mat, key+'.type' if key else 'type', 'matte').get() == 'glossy':
+		if luxProp(mat, key+'.type' if key else 'type', 'matte').get() == 'glossy':
             Draw.Number("", evtLuxGui, r[0], r[1], r[2], r[3], float(2.0/(value.getFloat() ** 2)-2.0), 1.0, 1000000.0, hint, lambda e,v: value.set(math.sqrt(2.0/(v+2.0))))
         else:
             # oldstyle roughness conversion for blinn/anisotropic microfacet distribution
