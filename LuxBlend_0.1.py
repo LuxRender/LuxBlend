@@ -7279,7 +7279,7 @@ def convertMaterial(mat):
             if mat.spec > 0.0: makeGlossy(mirror0name, math.sqrt(2.0/(mat.hard+2.0)))
             else: makeMatte(mirror0name)
     if alpha < 1.0:
-        if mat.glossTra < 0.97: makeRoughglass(alpha0name, (1.0-mat.glossTra)**2)
+        if mat.glossTra < 0.97: makeRoughglass(alpha0name, 1.0-mat.glossTra**2)
         else: makeGlass(alpha0name)
 
 def convertAllMaterials():
