@@ -1695,7 +1695,7 @@ def get_lux_args(filename, extra_args=[], anim=False):
     
     if autothreads != "true":
         extra_args.append("--threads=%d " % threads)
-    
+		
     lux_args2 = ' '.join(extra_args)
     
     if filename == '-':
@@ -1739,9 +1739,20 @@ def get_lux_pipe(scn, buf = 1024, type="luxconsole"):
     
     PIPE = subprocess.PIPE
     
-    cmd, raw_args = get_lux_args('-',
-        extra_args=['-b'] if type=="luxconsole" else []
-    )
+    autothreads = luxProp(scn, "autothreads", "true").get()
+    threads = luxProp(scn, "threads", 1).get()
+    if Preview_Update:  #  limit previewthreads for it tends to hang luxconsole due slow threadcreation atm - Jens
+        threads = 8
+ 
+    if autothreads == "true":    
+	    cmd, raw_args = get_lux_args('-',
+            extra_args=['-b', ("--threads=%d " % threads)] if type=="luxconsole" else []
+        )
+    else:
+	    cmd, raw_args = get_lux_args('-',
+            extra_args=['-b'] if type=="luxconsole" else []	
+        )
+#    print(threads)
     
     return subprocess.Popen(bin + raw_args, shell=True, bufsize=buf, stdin=PIPE, stdout=PIPE, stderr=PIPE)
 
@@ -6446,7 +6457,7 @@ def luxMaterialBlock(name, luxname, key, mat, gui=None, level=0, str_opt=""):
             mattype.set("glossy")
 
         # this is reverse order than in shown in the dropdown list
-        materials = ["null","mix","mirror","shinymetal","metal","mattetranslucent","matte","glossy_lossy","glossy","roughglass","glass","glass2","carpaint","velvet"]
+        materials = ["null","mix","mirror","shinymetal","metal","glossytranslucent","mattetranslucent","matte","glossy_lossy","glossy","roughglass","glass","glass2","carpaint"]
         
         if level == 0: materials = ["portal", "light", "boundvolume"]+materials
         if gui:
@@ -6815,6 +6826,73 @@ def luxMaterialBlock(name, luxname, key, mat, gui=None, level=0, str_opt=""):
             has_object_options = 1
             has_emission_options = 1
             has_compositing_options = 1
+
+        if mattype.get() == "glossytranslucent":
+            (str,link) = c((str,link), luxSpectrumTexture("Kd", keyname, "1.0 1.0 1.0", 1.0, "diffuse", "", mat, gui, level+1))
+            (str,link) = c((str,link), luxSpectrumTexture("Kt", keyname, "0.0 0.0 0.0", 1.0, "transmission", "amount of transmitted light", mat, gui, level+1))
+            useior = luxProp(mat, keyname+".useior", "false")
+            if gui:
+                gui.newline("")
+                Draw.Toggle("I", evtLuxGui, gui.x-gui.h, gui.y-gui.h, gui.h, gui.h, useior.get()=="true", "Use IOR/Reflective index input", lambda e,v:useior.set(["false","true"][bool(v)]))
+            if useior.get() == "true":
+                (str,link) = c((str,link), luxIORFloatTexture("index", keyname, 1.5, 1.0, 50.0, "IOR", "", mat, gui, level+1))
+                link += " \"color Ks\" [1.0 1.0 1.0]"    
+            else:
+                (str,link) = c((str,link), luxSpectrumTexture("Ks", keyname, "1.0 1.0 1.0", 1.0, "specular", "", mat, gui, level+1))
+                link += " \"float index\" [0.0]"    
+            anisotropic = luxProp(mat, kn+"glossytranslucent.anisotropic", "false")
+            if gui:
+                gui.newline("")
+                Draw.Toggle("A", evtLuxGui, gui.x-gui.h, gui.y-gui.h, gui.h, gui.h, anisotropic.get()=="true", "anisotropic roughness", lambda e,v:anisotropic.set(["false","true"][bool(v)]))
+            if anisotropic.get()=="true":
+                (str,link) = c((str,link), luxExponentTexture("uroughness", keyname, 0.002, 0.0, 1.0, "u-exponent", "", mat, gui, level+1))
+                (str,link) = c((str,link), luxExponentTexture("vroughness", keyname, 0.002, 0.0, 1.0, "v-exponent", "", mat, gui, level+1))
+            else:
+                (s, l) = luxExponentTexture("uroughness", keyname, 0.002, 0.0, 1.0, "exponent", "", mat, gui, level+1)
+                (str,link) = c((str,link), (s, l))
+                link += l.replace("uroughness", "vroughness", 1)
+            absorption = luxProp(mat, keyname+".useabsorption", "false")
+            luxCollapse("absorption", absorption, "Absorption", "Enable Coating Absorption", gui, 2.0)
+            if absorption.get() == "true":
+                (str,link) = c((str,link), luxSpectrumTexture("Ka", keyname, "0.2 0.2 0.2", 1.0, "absorption", "", mat, gui, level+1))
+                (str,link) = c((str,link), luxFloatTexture("d", keyname, 0.15, 0.0, 15.0, "depth", "", mat, gui, level+1))
+            twosided = luxProp(mat, keyname+".twosided", "false")
+            luxCollapse("twosided", twosided, "Two sided", "Different specularity for backface and frontface", gui, 2.0)
+            if twosided.get() == "true":
+                link += " \"bool onesided\" [\"false\"]"  
+                backface_useior = luxProp(mat, keyname+".backface_useior", "false")
+                if gui:
+                    gui.newline("")
+                    Draw.Toggle("I", evtLuxGui, gui.x-gui.h, gui.y-gui.h, gui.h, gui.h, backface_useior.get()=="true", "Use IOR/Reflective index input", lambda e,v:backface_useior.set(["false","true"][bool(v)]))
+                if backface_useior.get() == "true":
+                    (str,link) = c((str,link), luxIORFloatTexture("backface_index", keyname, 1.5, 1.0, 50.0, "IOR", "", mat, gui, level+1))
+                    link += " \"color backface_Ks\" [1.0 1.0 1.0]"
+                else:
+                    (str,link) = c((str,link), luxSpectrumTexture("backface_Ks", keyname, "1.0 1.0 1.0", 1.0, "specular", "", mat, gui, level+1))
+                    link += " \"float backface_index\" [0.0]"
+                backface_anisotropic = luxProp(mat, kn+"glossytranslucent.backface_anisotropic", "false")
+                if gui:
+                    gui.newline("")
+                    Draw.Toggle("A", evtLuxGui, gui.x-gui.h, gui.y-gui.h, gui.h, gui.h, backface_anisotropic.get()=="true", "backface anisotropic roughness", lambda e,v:backface_anisotropic.set(["false","true"][bool(v)]))
+                if backface_anisotropic.get()=="true":
+                    (str,link) = c((str,link), luxExponentTexture("backface_uroughness", keyname, 0.002, 0.0, 1.0, "u-exponent", "", mat, gui, level+1))
+                    (str,link) = c((str,link), luxExponentTexture("backface_vroughness", keyname, 0.002, 0.0, 1.0, "v-exponent", "", mat, gui, level+1))
+                else:
+                    (s, l) = luxExponentTexture("backface_uroughness", keyname, 0.002, 0.0, 1.0, "exponent", "", mat, gui, level+1)
+                    (str,link) = c((str,link), (s, l))
+                    link += l.replace("backface_uroughness", "backface_vroughness", 1)
+                backface_absorption = luxProp(mat, keyname+".backface_useabsorption", "false")
+                luxCollapse("absorption", backface_absorption, "Absorption", "Enable Coating Absorption", gui, 2.0)
+                if backface_absorption.get() == "true":
+                    (str,link) = c((str,link), luxSpectrumTexture("backface_Ka", keyname, "0.2 0.2 0.2", 1.0, "absorption", "", mat, gui, level+1))
+                    (str,link) = c((str,link), luxFloatTexture("backface_d", keyname, 0.15, 0.0, 15.0, "depth", "", mat, gui, level+1))
+
+            has_volume_options = 1
+            has_bump_options = 1
+            has_object_options = 1
+            has_emission_options = 1
+            has_compositing_options = 1
+
             
         if mattype.get() == 'null':
             has_emission_options = 1
@@ -7254,6 +7332,21 @@ def convertMaterial(mat):
         luxProp(mat, name+":vroughness", 0.0).set(roughness)
         convertDiffuseTexture(name+":Kd")
         convertSpecularTexture(name+":Ks")
+        convertBumpTexture(name)
+    def makeGlossyTranslucent(name, roughness):
+        luxProp(mat, dot(name)+"type", "").set("glossytranslucent")
+        luxProp(mat, name+":Kd", "").setRGB((mat.R*mat.ref, mat.G*mat.ref, mat.B*mat.ref))
+        luxProp(mat, name+":Ks", "").setRGB((mat.specR*mat.spec*0.5, mat.specG*mat.spec*0.5, mat.specB*mat.spec*0.5))
+        luxProp(mat, name+":uroughness", 0.0).set(roughness)
+        luxProp(mat, name+":vroughness", 0.0).set(roughness)
+        luxProp(mat, name+":transmission", 0.0).set(transmission)
+        luxProp(mat, name+":onesided","").set(false)
+        luxProp(mat, name+":backface_Ks", "").setRGB((mat.specR*mat.spec*0.5, mat.specG*mat.spec*0.5, mat.specB*mat.spec*0.5))
+        luxProp(mat, name+":backface_uroughness", 0.0).set(roughness)
+        luxProp(mat, name+":backface_vroughness", 0.0).set(roughness)
+        convertDiffuseTexture(name+":Kd")
+        convertSpecularTexture(name+":Ks")
+        convertSpecularTexture(name+":backface_Ks")
         convertBumpTexture(name)
     def makeMirror(name):
         luxProp(mat, dot(name)+"type", "").set("mirror")
