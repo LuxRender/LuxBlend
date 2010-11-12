@@ -6851,6 +6851,10 @@ def luxMaterialBlock(name, luxname, key, mat, gui=None, level=0, str_opt=""):
                 (s, l) = luxExponentTexture("uroughness", keyname, 0.002, 0.0, 1.0, "exponent", "", mat, gui, level+1)
                 (str,link) = c((str,link), (s, l))
                 link += l.replace("uroughness", "vroughness", 1)
+				
+            if mattype.get() == 'glossytranslucent':
+                link += luxBool('multibounce', luxProp(mat, keyname+'multibounce', 'false'), 'Surface Asperity', 'Simulate surface asperity with light multibouncing in specular coating', gui, 2.0)
+				
             absorption = luxProp(mat, keyname+".useabsorption", "false")
             luxCollapse("absorption", absorption, "Absorption", "Enable Coating Absorption", gui, 2.0)
             if absorption.get() == "true":
