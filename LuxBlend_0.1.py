@@ -1535,12 +1535,17 @@ def save_lux(filename, unindexedname, anim_progress=None):
                 env = luxEnvironment(scn)
             
             file.write("AttributeBegin\n")
-            l = env.split('LightGroup')
+            try:
+                env.index('LightGroup')
+                s = 'LightGroup'
+            except ValueError:
+                s = 'LightSource'
+            l = env.split(s)
             o = []
             for i,n in enumerate(l):
                 file.write(n)
                 if i > 0: export.exportPortals(file)
-                if i+1 < len(l): file.write('LightGroup')
+                if i+1 < len(l): file.write(s)
             file.write("AttributeEnd\n")
             file.write("\n")    
 
