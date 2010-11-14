@@ -1560,11 +1560,11 @@ def save_lux(filename, unindexedname, anim_progress=None):
 
         #### Write material & geometry file includes in scene file
         if not file.combine_all_output:
-            if os.path.exists(mat_filename):
+            if luxProp(scn, 'lxm', 'true').get() == 'true' or os.path.exists(mat_filename):
                 file.write("Include \"%s\"\n\n" %(mat_pfilename))
-            if os.path.exists(geom_filename):
+            if luxProp(scn, 'lxo', 'true').get() == 'true' or os.path.exists(geom_filename):
                 file.write("Include \"%s\"\n\n" %(geom_pfilename))
-            if os.path.exists(vol_filename):
+            if luxProp(scn, 'lxv', 'true').get() == 'true' or os.path.exists(vol_filename):
                 file.write("Include \"%s\"\n\n" %(vol_pfilename))
         
     if luxProp(scn, "lxm", "true").get()=="true" or use_pipe_output:
