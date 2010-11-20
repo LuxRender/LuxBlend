@@ -1744,20 +1744,9 @@ def get_lux_pipe(scn, buf = 1024, type="luxconsole"):
     
     PIPE = subprocess.PIPE
     
-    autothreads = luxProp(scn, "autothreads", "true").get()
-    threads = luxProp(scn, "threads", 1).get()
-    if Preview_Update:  #  limit previewthreads for it tends to hang luxconsole due slow threadcreation atm - Jens
-        threads = 8
- 
-    if autothreads == "true":    
-	    cmd, raw_args = get_lux_args('-',
-            extra_args=['-b', ("--threads=%d " % threads)] if type=="luxconsole" else []
-        )
-    else:
-	    cmd, raw_args = get_lux_args('-',
-            extra_args=['-b'] if type=="luxconsole" else []	
-        )
-#    print(threads)
+    cmd, raw_args = get_lux_args('-',
+        extra_args=['-b'] if type=="luxconsole" else []
+    )
     
     return subprocess.Popen(bin + raw_args, shell=True, bufsize=buf, stdin=PIPE, stdout=PIPE, stderr=PIPE)
 
