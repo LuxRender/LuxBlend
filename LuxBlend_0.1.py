@@ -3417,6 +3417,12 @@ def luxFilm(scn, gui=None):
             elif tonemapkernel.get() == "contrast":
                 str += luxFloat("contrast_ywa", luxProp(scn, "film.contrast.ywa", 0.1), 0.001, 10000.0, "Ywa", "Display/World Adaption Luminance", gui, 2.0)
 
+        if gui: gui.newline('  Film Resp.:')
+        crf = luxProp(scn, 'film.crf.file', '')
+        crffile = luxFile('cameraresponse', crf, 'crf file', 'Filename for the film response function', gui, 2.0)
+        if crf.get() != '': str += crffile
+        if gui: gui.newline()
+
         # Image File Outputs
 
         # LDR clamping method
