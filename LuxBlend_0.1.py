@@ -3204,7 +3204,7 @@ def luxFPSPresets():
     return ['10 FPS', '12 FPS', '20 FPS', '24 FPS', '25 FPS', '29.976 FPS', '30 FPS', '50 FPS', '60 FPS', '100 FPS', '200 FPS', '500 FPS']
 
 def luxISOPresets():
-    return [20, 25, 32, 40, 50, 64, 80, 100, 125, 160, 200, 250, 320, 400, 500, 640, 800, 1000]
+    return [20, 25, 32, 40, 50, 64, 80, 100, 125, 160, 200, 250, 320, 400, 500, 640, 800, 1000, 1250, 1600, 2000, 2500, 3200, 4000, 5000, 6400]
 
 def luxShutterSpeedPresets(type):
     speeds = {
@@ -3410,7 +3410,7 @@ def luxFilm(scn, gui=None):
                     linearGUI = None
                 else:
                     linearGUI = gui
-                str += luxFloat("linear_sensitivity", linearSensitivity, 1.0, 1000.0, "sensitivity", "Film adaption/sensitivity", linearGUI)
+                str += luxFloat("linear_sensitivity", linearSensitivity, 1.0, 6400.0, "sensitivity", "Film adaption/sensitivity", linearGUI)
                 str += luxFloat("linear_exposure", linearExposure, 0.0001, 1.0, "exposure", "Exposure duration in seconds", linearGUI)
                 str += luxFloat("linear_fstop", linearFstop, 0.1, 128.0, "f/stop", "Focal ratio number", linearGUI)
                 str += luxFloat("linear_gamma", luxProp(scn, "film.gamma", 2.2), 0.0, 8.0, "gamma", "Film gamma correction", None)
