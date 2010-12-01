@@ -3319,7 +3319,7 @@ def luxFilm(scn, gui=None):
                 luxInt("xresolution", luxAttr(context, "sizeX"), 0, 8192, "X", "width of the render", gui, 0.666)
                 luxInt("yresolution", luxAttr(context, "sizeY"), 0, 8192, "Y", "height of the render", gui, 0.666)
                 scale = luxProp(scn, "film.scale", "100 %")
-                luxOption("", scale, ["400 %", "200 %", "100 %", "75 %", "50 %", "25 %"], "scale", "scale resolution", gui, 0.666)
+                luxOption("", scale, ["400 %", "200 %", "150 %", "125 %", "100 %", "75 %", "50 %", "25 %"], "scale", "scale resolution", gui, 0.666)
                 
                 # render region option
                 if context.borderRender:
@@ -4038,7 +4038,7 @@ def luxEnvironment(scn, gui=None):
                 if luxProp(scn, "nolg", "false").get()!="true":
                     lsstr = '\nLightGroup "' + env_lg.get() + '"' + lsstr
                 str += "\t"+lsstr
-                str += luxFloat("gain", luxProp(scn, "env.infinite.gain", 1.0), 0.0001, 10000.0, "gain", "Infinite Env Gain", gui, 1.0)
+                str += luxFloat("gain", luxProp(scn, "env.infinite.gain", 1.0), 0.0001, 100000.0, "gain", "Infinite Env Gain", gui, 1.0)
                 mapping = luxProp(scn, "env.infinite.mapping", "latlong")
                 mappings = ["latlong","angular","vcross"]
                 mapstr = luxOption("mapping", mapping, mappings, "mapping", "Select mapping type", gui, 1.0)
