@@ -3511,7 +3511,13 @@ def luxFilm(scn, gui=None):
         str += luxInt("reject_warmup", luxProp(scn, "film.reject_warmup", 128), 0, 32768, "warmup_spp", "Specify amount of samples per pixel for high intensity rejection", gui)
         debugmode = luxProp(scn, "film.debug", "false")
         str += luxBool("debug", debugmode, "debug", "Turn on debug reporting and switch off reject", gui)
-    
+
+        if gui: gui.newline("  Fireflies Rej:")
+        rejenabled = luxProp(scn, 'rejection.enabled', 'false')
+        luxBool('rejection', rejenabled, 'Enable', 'Enable density-based fireflies rejection (slowers down rendering and may introduce bias)', gui)
+        if rejenabled.get() == 'true':
+            str += luxInt('outlierrejection_k', luxProp(scn, 'rejection.mean', 5), 1, 20, 'mean', 'Higher value leads to less fireflies and larger bias in rendering', gui)
+        
         # Colorspace
         if gui: gui.newline("  Colorspace:")
     
