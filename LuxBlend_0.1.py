@@ -3379,7 +3379,7 @@ def luxFilm(scn, gui=None):
             
             if gui: gui.newline("  Tonemap:")
             tonemapkernel =    luxProp(scn, "film.tonemapkernel", "reinhard")
-            str += luxOption("tonemapkernel", tonemapkernel, ["reinhard", "linear", "contrast", "maxwhite"], "Tonemapping Kernel", "Select the tonemapping kernel to use", gui, 1.2)
+            str += luxOption("tonemapkernel", tonemapkernel, ["reinhard", "linear", "autolinear", "contrast", "maxwhite"], "Tonemapping Kernel", "Select the tonemapping kernel to use", gui, 1.2)
             str += luxBool("premultiplyalpha", luxProp(scn, "film.premultiplyalpha", "false"), "Premultiply Alpha", "Premultiply film alpha channel during normalization", gui, 0.8)
             if tonemapkernel.get() == "reinhard":
                 str += luxFloat("reinhard_prescale", luxProp(scn, "film.reinhard.prescale", 1.0), 0.0, 10.0, "preScale", "Image scale before tonemap operator", gui)
