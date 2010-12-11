@@ -3918,11 +3918,13 @@ def luxSurfaceIntegrator(scn, gui=None):
 
             if showadvanced.get()=="true":
                 if gui: gui.newline("  Debug options:")
+                photonmapsfile = luxProp(scn, "sintegrator.photonmap.photonmapsfile", "")
                 dbg_enabledirect = luxProp(scn, "sintegrator.photonmap.dbg_enabledirect", "false")
                 dbg_enableradiancemap = luxProp(scn, "sintegrator.photonmap.dbg_enableradiancemap", "false")
                 dbg_enableindircaustic = luxProp(scn, "sintegrator.photonmap.dbg_enableindircaustic", "false")
                 dbg_enableindirdiffuse = luxProp(scn, "sintegrator.photonmap.dbg_enableindirdiffuse", "false")
                 dbg_enableindirspecular = luxProp(scn, "sintegrator.photonmap.dbg_enableindirspecular", "false")
+                str += luxFile("photonmapsfile", photonmapsfile, "Maps file", "Save photon maps to file", gui)
                 str += luxBool("dbg_enabledirect", dbg_enabledirect, "Direct lighing", "Enable visual inspection of direct ligting", gui)
                 str += luxBool("dbg_enableradiancemap", dbg_enableradiancemap, "Radiancemap", "Enable visual inspection of radiance map", gui)
                 str += luxBool("dbg_enableindircaustic", dbg_enableindircaustic, "Indirect caustics", "Enable visual inspection of indirect caustic map", gui)
