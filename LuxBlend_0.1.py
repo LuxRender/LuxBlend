@@ -4796,7 +4796,7 @@ def luxTexture(name, parentkey, type, default, min, max, caption, hint, mat, gui
     else:
         texture = luxProp(mat, keyname+".texture", "blackbody")
 
-    tex_all = ["constant", "imagemap", "mix", "scale", "bilerp", "brick"]
+    tex_all = ["constant", "imagemap", "mix", "band", "scale", "bilerp", "brick"]
     tex_color = ["blackbody", "lampspectrum", "equalenergy", "frequency", "gaussian", "regulardata", "irregulardata", "tabulateddata", "uv", "harlequin", "marble"]
     tex_float = ["blender_marble", "blender_musgrave", "blender_wood", "blender_clouds", "blender_blend", "blender_distortednoise", "blender_noise", "blender_magic", "blender_stucci", "blender_voronoi", "checkerboard", "dots", "fbm", "windy", "wrinkled"]
     tex_fresnel = ['constant', 'cauchy', 'sellmeier', 'sopra', 'luxpop', 'preset']
@@ -5133,6 +5133,19 @@ def luxTexture(name, parentkey, type, default, min, max, caption, hint, mat, gui
         (s, l) = c(("", ""), luxTexture("amount", keyname, "float", 0.5, 0.0, 1.0, "amount", "The degree of mix between the two textures", mat, gui, matlevel, texlevel+1, lightsource))
         (s, l) = c((s, l), luxTexture("tex1", keyname, type, default, min, max, "tex1", "", mat, gui, matlevel, texlevel+1, lightsource))
         (s, l) = c((s, l), luxTexture("tex2", keyname, type, alternativedefault(type, default), min, max, "tex2", "", mat, gui, matlevel, texlevel+1, lightsource))
+        str = s + str + l
+
+    if texture.get() == "band":
+        (s, l) = c(("", ""), luxTexture("amount", keyname, "float", 0.5, 0.0, 1.0, "amount", "The degree of mix between the two textures", mat, gui, matlevel, texlevel+1, lightsource))
+        bounces = luxProp(scn, "sintegrator.bidir.bounces", 16)
+        luxInt("noffsets", luxProp(mat, keyname+".nof", 2), 2, 10, "noffsets", "Number of reference points for the band", gui, 2.0)
+        str = str + "\"float offsets\" ["
+        for i in range(1, luxProp(mat, keyname+".nof", 2).get() + 1, 1):
+            idx = "%d" % i
+            ofs = luxFloat("offset"+idx, luxProp(mat, keyname+".offset"+idx, 0.0), 0.0, 1.0, "offset"+idx, "Reference offset for texture1 in the band", gui, 1.0)
+            (s, l) = c((s, l), luxTexture("tex"+idx, keyname, type, default, min, max, "tex"+idx, "", mat, gui, matlevel, texlevel+1, lightsource))
+            str = str + ("%f" % luxProp(mat, keyname+".offset"+idx, 0.0).get()) + " "
+        str = str + "] "
         str = s + str + l
 
     if texture.get() == "scale":
