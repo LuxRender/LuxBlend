@@ -8,7 +8,7 @@ Group: 'Render'
 Tooltip: 'Export/Render to LuxRender v0.8 scene format (.lxs)'
 """
 
-__author__ = "radiance, zuegs, ideasman42, luxblender, dougal2, SATtva"
+__author__ = "radiance, zuegs, ideasman42, luxblender, dougal2, SATtva, BinaryCortex"
 __version__ = "0.8"
 __url__ = [
     "http://www.luxrender.net/",
@@ -3905,6 +3905,7 @@ def luxSurfaceIntegrator(scn, gui=None):
             str += luxInt("indirectphotons", luxProp(scn, "sintegrator.photonmap.idphotons", 200000), 0, 10000000, "indirect", "The number of photons to shoot for indirect lighting during preprocessing of the photon map", gui)
             str += luxInt("directphotons", luxProp(scn, "sintegrator.photonmap.dphotons", 1000000), 0, 10000000, "direct", "The number of photons to shoot for direct lighting during preprocessing of the photon map", gui)
             str += luxInt("causticphotons", luxProp(scn, "sintegrator.photonmap.cphotons", 20000), 0, 10000000, "caustic", "The number of photons to shoot for caustics during preprocessing of the photon map", gui)
+            str += luxInt("radiancephotons", luxProp(scn, "sintegrator.photonmap.rphotons", 200000), 0, 10000000, "radiance", "The number of photons to shoot for radiance during preprocessing of the photon map", gui)
             if gui: gui.newline("  FinalGather:")
             fg = luxProp(scn, "sintegrator.photonmap.fgather", "true")
             str += luxBool("finalgather", fg, "finalgather", "Enable use of final gather during rendering", gui)
@@ -3915,16 +3916,19 @@ def luxSurfaceIntegrator(scn, gui=None):
                 str += luxFloat("gatherangle", luxProp(scn, "sintegrator.photonmap.gangle", 10.0), 0.0, 360.0, "gatherangle", "Angle for final gather", gui)
                 if rrstrat.get() == "probability":
                     str += luxFloat("rrcontinueprob", luxProp(scn, "sintegrator.photonmap.rrcontinueprob", 0.65), 0.0, 1.0, "rrcontinueprob", "Probability for russian roulette particle tracing termination", gui)
+                photonmapsfile = luxProp(scn, "sintegrator.photonmap.photonmapsfile", "")
+                photonmap = luxProp(scn, 'photonmap.enabled', 'false')
+                luxBool('photonmap', photonmap, 'Photon maps file', 'Loads photon maps from the defined file or writes maps to the file if it not exists', gui, 2.0)
+                if photonmap.get() == 'true':
+                    str += luxFile("photonmapsfile", photonmapsfile, "file", "Photon maps file to read from / write to", gui, 2.0)
 
             if showadvanced.get()=="true":
-                if gui: gui.newline("  Debug options:")
-                photonmapsfile = luxProp(scn, "sintegrator.photonmap.photonmapsfile", "")
+                if gui: gui.newline("  Debug:")
                 dbg_enabledirect = luxProp(scn, "sintegrator.photonmap.dbg_enabledirect", "false")
                 dbg_enableradiancemap = luxProp(scn, "sintegrator.photonmap.dbg_enableradiancemap", "false")
                 dbg_enableindircaustic = luxProp(scn, "sintegrator.photonmap.dbg_enableindircaustic", "false")
                 dbg_enableindirdiffuse = luxProp(scn, "sintegrator.photonmap.dbg_enableindirdiffuse", "false")
                 dbg_enableindirspecular = luxProp(scn, "sintegrator.photonmap.dbg_enableindirspecular", "false")
-                str += luxFile("photonmapsfile", photonmapsfile, "Maps file", "Save photon maps to file", gui)
                 str += luxBool("dbg_enabledirect", dbg_enabledirect, "Direct lighing", "Enable visual inspection of direct ligting", gui)
                 str += luxBool("dbg_enableradiancemap", dbg_enableradiancemap, "Radiancemap", "Enable visual inspection of radiance map", gui)
                 str += luxBool("dbg_enableindircaustic", dbg_enableindircaustic, "Indirect caustics", "Enable visual inspection of indirect caustic map", gui)
