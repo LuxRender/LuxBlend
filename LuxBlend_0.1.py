@@ -5892,7 +5892,7 @@ def luxNamedVolumeTexture(volId, gui=None):
     scn = Scene.GetCurrent()
     keyname = 'named_volumes:%s.' % volId
     s = l = ''
-    volume_types = ['clear']
+    volume_types = ['clear', 'homogeneous']
     volume_type = luxProp(scn, keyname+'type', volume_types[0])
     if gui: gui.newline('type:', 0, 0)
     luxOption(keyname+'type', volume_type, volume_types, '  MEDIUM TYPES', 'Select medium type from the list', gui, 2.0)
@@ -5929,6 +5929,17 @@ def luxNamedVolumeTexture(volId, gui=None):
                         tex[tex.index(t)] = t[:t.rfind('[')] + '[%s %s %s]' % (rgb[0], rgb[1], rgb[2])
                 s1 = "\n".join(tex)
         (s, l) = c((s, l), (s1, l1))
+    elif volume_type.get() == 'homogeneous':
+#        (s, l) = c((s, l), luxSpectrumTexture('sigma_a', texkey, '0.0 0.0 0.0', 1.0, 'absorption:', '', scn, gui, 1))
+#        (s1, l1) = luxSpectrumTexture('sigma_s', texkey, '0.0 0.0 0.0', 1.0, 'scattering:', '', scn, gui, 1)
+#        (s2, l2) = luxFloatTexture('g', texkey, '0.0', -1.0, 1.0, 'asymmetry:', '', scn, gui, 1)
+        if gui: gui.newline("absorption:", 0, 0)
+        l += luxRGB('sigma_a', luxProp(scn, keyname+'sigma_a', '0.0 0.0 0.0'), 1.0, 'absorption:', 'The absorption cross section', gui)
+        if gui: gui.newline("scattering:", 0, 0)
+        l += luxRGB('sigma_s', luxProp(scn, keyname+'sigma_s', '0.0 0.0 0.0'), 1.0, 'scattering:', 'The scattering cross section', gui)
+        if gui: gui.newline("asymmetry:", 0, 0)
+        l += luxFloat('g', luxProp(scn, keyname+'g', '0.0'), -1.0, 1.0, 'asymmetry:', 'The phase function coefficient. -1 leads to backscatter, 1 to forwards scatter, 0 is symmetrical.', gui)
+    
     
     return s, volType+l
 
