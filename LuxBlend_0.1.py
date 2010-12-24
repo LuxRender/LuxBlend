@@ -2156,6 +2156,40 @@ def getScenePresets():
     'pixelfilter.mitchell.supersample': "true",
     'pixelfilter.mitchell.optmode': "slider" }
 
+    presets['0c Preview - Photon Mapping'] = {
+    'film.displayinterval': 10,
+    'haltspp': 1,
+    'halttime': 0,
+    'useparamkeys': 'false',
+    'sampler.showadvanced': 'false',
+    'sintegrator.showadvanced': 'false',
+    'pixelfilter.showadvanced': 'false',
+
+    'sampler.type': 'lowdiscrepancy',
+    'sampler.lowdisc.pixelsamples': 4,
+    'sampler.lowdisc.pixelsampler': 'hilbert',
+
+    'sintegrator.type': 'exphotonmap',
+    'sintegrator.photonmap.renderingmode': 'directlighting',
+    'sintegrator.photonmap.lightstrategy': 'auto',
+    'sintegrator.photonmap.shadowraycount': 1,
+    'sintegrator.photonmap.maxphotondepth': 10,
+    'sintegrator.photonmap.maxdepth': 5,
+    'sintegrator.photonmap.maxphotondist': 0.5,
+    'sintegrator.photonmap.nphotonsused': 50,
+    'sintegrator.photonmap.idphotons': 20000,
+    'sintegrator.photonmap.dphotons': 20000,
+    'sintegrator.photonmap.cphotons': 0,
+    'sintegrator.photonmap.rphotons': 20000,
+    'sintegrator.photonmap.fgather': 'false',
+    'sintegrator.photonmap.rrstrategy': 'efficiency',
+    'sintegrator.photonmap.fgathers': 32,
+    'sintegrator.photonmap.gangle': 10.0,
+    'sintegrator.photonmap.photonmasfile': 'false',
+    'sintegrator.photonmap.rrcontinueprob': 0.65,
+
+    'pixelfilter.type': 'gaussian', }
+
     presets['1 Final - MLT/Bidir Path Tracing (interior) (recommended)'] =  {
     'film.displayinterval': 8,
     'haltspp': 0,
@@ -2486,6 +2520,74 @@ def getScenePresets():
     'pixelfilter.mitchell.ywidth': 1.5,
     'pixelfilter.mitchell.supersample': "true",
     'pixelfilter.mitchell.optmode': "slider" }
+
+    presets['F Anim - Photon Mapping/Low Q'] = {
+    'film.displayinterval': 15,
+    'haltspp': 1,
+    'halttime': 0,
+    'useparamkeys': 'false',
+    'sampler.showadvanced': 'false',
+    'sintegrator.showadvanced': 'false',
+    'pixelfilter.showadvanced': 'false',
+
+    'sampler.type': 'lowdiscrepancy',
+    'sampler.lowdisc.pixelsamples': 16,
+    'sampler.lowdisc.pixelsampler': 'hilbert',
+
+    'sintegrator.type': 'exphotonmap',
+    'sintegrator.photonmap.renderingmode': 'directlighting',
+    'sintegrator.photonmap.lightstrategy': 'auto',
+    'sintegrator.photonmap.shadowraycount': 1,
+    'sintegrator.photonmap.maxphotondepth': 10,
+    'sintegrator.photonmap.maxdepth': 5,
+    'sintegrator.photonmap.maxphotondist': 0.1,
+    'sintegrator.photonmap.nphotonsused': 50,
+    'sintegrator.photonmap.idphotons': 200000,
+    'sintegrator.photonmap.dphotons': 200000,
+    'sintegrator.photonmap.cphotons': 20000,
+    'sintegrator.photonmap.rphotons': 200000,
+    'sintegrator.photonmap.fgather': 'true',
+    'sintegrator.photonmap.rrstrategy': 'efficiency',
+    'sintegrator.photonmap.fgathers': 32,
+    'sintegrator.photonmap.gangle': 10.0,
+    'sintegrator.photonmap.photonmasfile': 'false',
+    'sintegrator.photonmap.rrcontinueprob': 0.65,
+
+    'pixelfilter.type': 'gaussian', }
+
+    presets['G Anim - Photon Mapping/High Q'] = {
+    'film.displayinterval': 15,
+    'haltspp': 1,
+    'halttime': 0,
+    'useparamkeys': 'false',
+    'sampler.showadvanced': 'false',
+    'sintegrator.showadvanced': 'false',
+    'pixelfilter.showadvanced': 'false',
+
+    'sampler.type': 'lowdiscrepancy',
+    'sampler.lowdisc.pixelsamples': 256,
+    'sampler.lowdisc.pixelsampler': 'hilbert',
+
+    'sintegrator.type': 'exphotonmap',
+    'sintegrator.photonmap.renderingmode': 'directlighting',
+    'sintegrator.photonmap.lightstrategy': 'auto',
+    'sintegrator.photonmap.shadowraycount': 1,
+    'sintegrator.photonmap.maxphotondepth': 10,
+    'sintegrator.photonmap.maxdepth': 5,
+    'sintegrator.photonmap.maxphotondist': 0.1,
+    'sintegrator.photonmap.nphotonsused': 50,
+    'sintegrator.photonmap.idphotons': 200000,
+    'sintegrator.photonmap.dphotons': 200000,
+    'sintegrator.photonmap.cphotons': 1000000,
+    'sintegrator.photonmap.rphotons': 200000,
+    'sintegrator.photonmap.fgather': 'true',
+    'sintegrator.photonmap.rrstrategy': 'efficiency',
+    'sintegrator.photonmap.fgathers': 32,
+    'sintegrator.photonmap.gangle': 10.0,
+    'sintegrator.photonmap.photonmasfile': 'false',
+    'sintegrator.photonmap.rrcontinueprob': 0.65,
+
+    'pixelfilter.type': 'gaussian', }
 
     return presets
 
