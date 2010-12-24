@@ -6032,15 +6032,39 @@ def luxNamedVolumeTexture(volId, gui=None):
                 s1 = "\n".join(tex)
         (s, l) = c((s, l), (s1, l1))
     elif volume_type.get() == 'homogeneous':
-#        (s, l) = c((s, l), luxSpectrumTexture('sigma_a', texkey, '0.0 0.0 0.0', 1.0, 'absorption:', '', scn, gui, 1))
-#        (s1, l1) = luxSpectrumTexture('sigma_s', texkey, '0.0 0.0 0.0', 1.0, 'scattering:', '', scn, gui, 1)
-#        (s2, l2) = luxFloatTexture('g', texkey, '0.0', -1.0, 1.0, 'asymmetry:', '', scn, gui, 1)
-        if gui: gui.newline("absorption:", 0, 0)
-        l += luxRGB('sigma_a', luxProp(scn, keyname+'sigma_a', '0.0 0.0 0.0'), 1.0, 'absorption:', 'The absorption cross section', gui)
+        usecolor = luxProp(scn, keyname+'usecolor', 'true')
+        usedepth = luxProp(scn, keyname+'usedepth', 'true')
+        (s1, l1) = luxSpectrumTexture('absorption', keyname+'absorption', '1.0 1.0 1.0', 1.0 if usedepth.get() == 'true' else 1000.0, 'absorption:', '', scn, gui, 1)
+        absorb_tex = luxProp(scn, keyname+'absorption:absorption.textured', 'false')
+        if usedepth.get() == 'true' and absorb_tex.get() != 'true':
+            luxBool('usecolor', usecolor, 'Color', 'Resulting light color at given depth of the medium', gui, 0.5)
+        if absorb_tex.get() != 'true':
+            luxBool('usedepth', usedepth, 'at depth' if usedepth.get() == 'true' else 'Color at depth', 'Resulting light color at given depth of the medium' if usecolor.get() == 'true' else 'Amount of light absorbed at given depth of the medium', gui, 0.5 if usedepth.get() == 'true' else 1.0)
+        if usedepth.get() == 'true' and absorb_tex.get() != 'true':
+            texkey = 'named_volumes:%s.absorption:absorption' % volId
+            usetex = luxProp(scn, texkey+'.textured', None)
+            depth = luxProp(scn, keyname+'depth', 1.0)
+            luxFloat('depth', depth, 0.001, 1000.0, 'depth', 'Depth of the fixed point inside the medium', gui, 0.5)
+            scale = luxScaleUnits(keyname+'scale', 'm', scn, 0.5, gui)
+            if usecolor.get() == 'true':
+                factor = lambda rgb: [ (-math.log(max([rg(float(i)),1e-30]))/(depth.get()*scale)) * (rg(float(i))==1.0 and -1 or 1) for i in rgb ]
+            else:
+                factor = lambda rgb: [ rg(float(i)) * (1/(depth.get()*scale)) for i in rgb ]
+            if l1[l1.find('"')+1:].startswith('color'):
+                rgb = factor(l1[l1.find('[')+1:l1.rfind(']')].split(' '))
+                l1 = l1[:l1.find('[')] + '[%s %s %s]' % (rgb[0], rgb[1], rgb[2])
+            elif usetex.get() == 'true':
+                tex = s1.split("\n")
+                for t in tex:
+                    if t.startswith('Texture "Scene:%s.scale"' % texkey):
+                        rgb = factor(t[t.rfind('[')+1:t.rfind(']')].split(' '))
+                        tex[tex.index(t)] = t[:t.rfind('[')] + '[%s %s %s]' % (rgb[0], rgb[1], rgb[2])
+                s1 = "\n".join(tex)
+        (s, l) = c((s, l), (s1, l1))
         if gui: gui.newline("scattering:", 0, 0)
-        l += luxRGB('sigma_s', luxProp(scn, keyname+'sigma_s', '0.0 0.0 0.0'), 1.0, 'scattering:', 'The scattering cross section', gui)
+        l += luxRGB('sigma_s', luxProp(scn, keyname+'sigma_s', '0.0 0.0 0.0'), 1000.0, 'scattering:', 'The scattering cross section', gui)
         if gui: gui.newline("asymmetry:", 0, 0)
-        l += luxFloat('g', luxProp(scn, keyname+'g', '0.0'), -1.0, 1.0, 'asymmetry:', 'The phase function coefficient. -1 leads to backscatter, 1 to forwards scatter, 0 is symmetrical.', gui)
+        l += luxFloat('g', luxProp(scn, keyname+'g', '0.0'), -1.0, 1.0, 'asymmetry', 'The phase function coefficient. -1 leads to backscatter, 1 to forwards scatter, 0 is symmetrical.', gui)
     
     
     return s, volType+l
