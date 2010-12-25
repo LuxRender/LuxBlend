@@ -7061,6 +7061,7 @@ def luxMaterialBlock(name, luxname, key, mat, gui=None, level=0, str_opt=""):
 
             
         if mattype.get() == 'null':
+            has_volume_options = 1
             has_emission_options = 1
 
         # Bump mapping options (common)
