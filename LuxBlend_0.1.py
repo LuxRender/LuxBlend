@@ -2188,7 +2188,7 @@ def getScenePresets():
     'sintegrator.photonmap.photonmasfile': 'false',
     'sintegrator.photonmap.rrcontinueprob': 0.65,
 
-    'pixelfilter.type': 'gaussian', }
+    'pixelfilter.type': 'gaussian' }
 
     presets['1 Final - MLT/Bidir Path Tracing (interior) (recommended)'] =  {
     'film.displayinterval': 8,
@@ -2553,7 +2553,7 @@ def getScenePresets():
     'sintegrator.photonmap.photonmasfile': 'false',
     'sintegrator.photonmap.rrcontinueprob': 0.65,
 
-    'pixelfilter.type': 'gaussian', }
+    'pixelfilter.type': 'gaussian' }
 
     presets['G Anim - Photon Mapping/High Q'] = {
     'film.displayinterval': 15,
@@ -2587,7 +2587,7 @@ def getScenePresets():
     'sintegrator.photonmap.photonmasfile': 'false',
     'sintegrator.photonmap.rrcontinueprob': 0.65,
 
-    'pixelfilter.type': 'gaussian', }
+    'pixelfilter.type': 'gaussian' }
 
     return presets
 
