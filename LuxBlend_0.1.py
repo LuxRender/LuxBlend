@@ -6034,7 +6034,7 @@ def luxNamedVolumeTexture(volId, gui=None):
     elif volume_type.get() == 'homogeneous':
         usecolor = luxProp(scn, keyname+'usecolor', 'true')
         usedepth = luxProp(scn, keyname+'usedepth', 'true')
-        (s1, l1) = luxSpectrumTexture('absorption', keyname+'absorption', '1.0 1.0 1.0', 1.0 if usedepth.get() == 'true' else 1000.0, 'absorption:', '', scn, gui, 1)
+        (s1, l1) = luxSpectrumTexture('sigma_a', keyname+'absorption', '1.0 1.0 1.0', 1.0 if usedepth.get() == 'true' else 1000.0, 'absorption:', '', scn, gui, 1)
         absorb_tex = luxProp(scn, keyname+'absorption:absorption.textured', 'false')
         if usedepth.get() == 'true' and absorb_tex.get() != 'true':
             luxBool('usecolor', usecolor, 'Color', 'Resulting light color at given depth of the medium', gui, 0.5)
