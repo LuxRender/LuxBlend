@@ -3045,6 +3045,17 @@ def luxRGB(name, lux, max, caption, hint, gui, width=2.0):
         return "\n   \"color %s\" [%s]"%(name, lux.getRGC())
     return "\n   \"color %s\" [%s]"%(name, lux.get())
 
+def luxRGBNeg(name, lux, min, max, caption, hint, gui, width=2.0):
+    if gui:
+        r = gui.getRect(width, 1)
+        vec = lux.getVector()
+        w = int(r[2]/3)
+        drawX, drawY, drawZ = Draw.Create(vec[0]), Draw.Create(vec[1]), Draw.Create(vec[2])
+        drawX = Draw.Number("R:", evtLuxGui, r[0], r[1], w, r[3], drawX.val, min, max, "red", lambda e,v: lux.setVector((v,drawY.val,drawZ.val)))
+        drawY = Draw.Number("G:", evtLuxGui, r[0]+w, r[1], w, r[3], drawY.val, min, max, "green", lambda e,v: lux.setVector((drawX.val,v,drawZ.val)))
+        drawZ = Draw.Number("B:", evtLuxGui, r[0]+2*w, r[1], w, r[3], drawZ.val, min, max, "blue", lambda e,v: lux.setVector((drawX.val,drawY.val,v)))
+    return "\n   \"color %s\" [%s]"%(name, lux.get())
+
 def luxVector(name, lux, min, max, caption, hint, gui, width=2.0):
     if gui:
         r = gui.getRect(width, 1)
@@ -6034,6 +6045,7 @@ def luxNamedVolumeTexture(volId, gui=None):
     elif volume_type.get() == 'homogeneous':
         usecolor = luxProp(scn, keyname+'usecolor', 'true')
         usedepth = luxProp(scn, keyname+'usedepth', 'true')
+        (s, l) = c((s, l), luxTexture('value', keyname+'tex', 'fresnel', 1.459 if volId != 0 else 1.0002926, 1.0, 6.0, 'IOR', 'ior', scn, gui, 0, 1))
         (s1, l1) = luxSpectrumTexture('sigma_a', keyname+'absorption', '1.0 1.0 1.0', 1.0 if usedepth.get() == 'true' else 1000.0, 'absorption:', '', scn, gui, 1)
         absorb_tex = luxProp(scn, keyname+'absorption:absorption.textured', 'false')
         if usedepth.get() == 'true' and absorb_tex.get() != 'true':
@@ -6061,11 +6073,9 @@ def luxNamedVolumeTexture(volId, gui=None):
                         tex[tex.index(t)] = t[:t.rfind('[')] + '[%s %s %s]' % (rgb[0], rgb[1], rgb[2])
                 s1 = "\n".join(tex)
         (s, l) = c((s, l), (s1, l1))
-        if gui: gui.newline("scattering:", 0, 0)
-        l += luxRGB('sigma_s', luxProp(scn, keyname+'sigma_s', '0.0 0.0 0.0'), 1000.0, 'scattering:', 'The scattering cross section', gui)
+        (s, l) = c((s, l), luxSpectrumTexture('sigma_s', keyname+'sigma_s', '0.0 0.0 0.0', 1000.0, 'scattering:', 'The scattering cross section', scn, gui, 1))
         if gui: gui.newline("asymmetry:", 0, 0)
-        l += luxFloat('g', luxProp(scn, keyname+'g', '0.0'), -1.0, 1.0, 'asymmetry', 'The phase function coefficient. -1 leads to backscatter, 1 to forwards scatter, 0 is symmetrical.', gui)
-    
+        l += luxRGBNeg('g', luxProp(scn, keyname+'g', '0.0 0.0 0.0'), -1.0, 1.0, 'asymmetry:', 'The phase function coefficient. -1 leads to backscatter, 1 to forwards scatter, 0 is symmetrical.', gui)
     
     return s, volType+l
 
