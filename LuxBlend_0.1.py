@@ -1354,7 +1354,7 @@ def save_lux(filename, unindexedname, anim_progress=None):
             self.xr = xr
             self.yr = yr
             
-            if self.haltspp > 0 or self.halttime > 0:
+            if luxProp(scn, 'cnsl', 'false').get() == 'true':
                 bintype = "luxconsole"
                 self.load_result = True
             else:
