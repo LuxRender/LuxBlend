@@ -73,6 +73,7 @@ import types
 import subprocess
 import Blender
 from Blender import Mesh, Scene, Object, Material, Modifier, Texture, Window, sys, Draw, BGL, Mathutils, Lamp, Image, Particle, Curve
+import struct
 
 # critical export function profiling
 if False:
@@ -243,7 +244,7 @@ clayMat = None
 #-------------------------------------------------
 def getMaterials(obj, compress=False):
     if not obj.type in ['Mesh', 'Curve', 'Surf', 'Text', 'MBall']:
-    	return []
+        return []
     
     global clayMat
     mats = [None]*16
@@ -608,7 +609,7 @@ class luxExport:
         segmentsLoc = psys.getLoc()  # sic
         for i, strand in enumerate(segmentsLoc):
             for j in range(0, len(strand)*2-1):
-            	j_over_2 = j/2
+                j_over_2 = j/2
                 if j%2 == 0:
                     name = jointname
                     matrix = Mathutils.Matrix([1.0, 0.0, 0.0, 0.0], [0.0, 1.0, 0.0, 0.0], [0.0, 0.0, 1.0, 0.0], [strand[j_over_2][0], strand[j_over_2][1], strand[j_over_2][2], 1.0])
@@ -710,13 +711,17 @@ class luxExport:
     #-------------------------------------------------
     # exportMesh(self, file, mesh, mats, name, portal, instancedMats, instancedShapes)
     # exports mesh to the file without any optimization
+    # os.path.join(filepath, filebase + "-geom.lxo")
     #-------------------------------------------------
     def exportMesh(self, file, mesh, mats, name, portal=False, instancedMats=None, instancedShapes=None):
+        binary_ply = luxProp(scn, "binary_ply", "false").get()
+        filepath = luxProp(scn, "curFilePath", "").get()
         #print("    exporting mesh")
         if mats == []:
             mats = [dummyMat]
         usedmats = [f.mat for f in mesh.faces]
         i = 0
+
         for matIndex in range(len(mats)):
             if not matIndex in usedmats:
                 continue
@@ -727,44 +732,55 @@ class luxExport:
                 if instancedMats:
                     file.write("ObjectBegin \"%s\"\n" % self.exportInstanceObjName(instancedMats, i, instancedShapes))
                 self.exportMaterialLink(file, mat)
-            mesh_str = self.getMeshType(len(mesh.verts), mats[matIndex], instancedMats)
-            if not(portal):
-                file.write("\tShape %s \"integer indices\" [\n"% mesh_str)
+
+            if (binary_ply == "true") and not(portal):
+                 mesh_str = "\"plymesh\""
+                 file.write("\tShape %s \n"% mesh_str)
             else:
-                self.exportMaterialLink(file, mats[matIndex])
-                file.write("\tPortalShape %s \"integer indices\" [\n"% mesh_str)
-            index = 0
-            ffaces = [f for f in mesh.faces if f.mat == matIndex]
-            for face in ffaces:
-                file.write("%d %d %d\n"%(index, index+1, index+2))
-                if (len(face)==4):
-                    file.write("%d %d %d\n"%(index, index+2, index+3))
-                index += len(face.verts)
-            file.write("\t] \"point P\" [\n")
-            for face in ffaces:
-                for vertex in face:
-                    file.write("%f %f %f\n"% tuple(vertex.co))
-            file.write("\t] \"normal N\" [\n")
-            for face in ffaces:
-                normal = face.no
-                for vertex in face:
-                    if (face.smooth):
-                        normal = vertex.no
-                    file.write("%f %f %f\n"% tuple(normal))
-            if (mesh.faceUV):
-                file.write("\t] \"float uv\" [\n")
-                # Check if there is a render specific UV layer and make it active for export.
-                activeUVLayer_orig = mesh.activeUVLayer
-                renderUVLayer = mesh.renderUVLayer
-                if renderUVLayer != activeUVLayer_orig:
-                    mesh.activeUVLayer = renderUVLayer
+                 mesh_str = self.getMeshType(len(mesh.verts), mats[matIndex], instancedMats)
+                 if not(portal):
+                     file.write("\tShape %s \"integer indices\" [\n"% mesh_str)
+                 else:
+                     file.write("\tPortalShape %s \"integer indices\" [\n"% mesh_str)
+
+            if (binary_ply == "true") and not(portal):
+                sceneName = luxProp(scn, "sceneName", "").get()
+                filename = sceneName + "-" + name + "-mat" + str(matIndex) + ".ply"
+                plyExport(filepath, filename, mesh, matIndex)
+                file.write("\t\"string filename\" [\"%s\"]\n"% filename)
+            else:
+                index = 0
+                ffaces = [f for f in mesh.faces if f.mat == matIndex]
                 for face in ffaces:
-                    for uv in face.uv:
-                        file.write("%f %f\n"% tuple(uv))
-                # If we changed the active UV layer: reset it to the original.
-                if renderUVLayer != activeUVLayer_orig:
-                    mesh.activeUVLayer = activeUVLayer_orig 
-            file.write("\t]\n")
+                    file.write("%d %d %d\n"%(index, index+1, index+2))
+                    if (len(face)==4):
+                        file.write("%d %d %d\n"%(index, index+2, index+3))
+                    index += len(face.verts)
+                file.write("\t] \"point P\" [\n")
+                for face in ffaces:
+                    for vertex in face:
+                        file.write("%f %f %f\n"% tuple(vertex.co))
+                file.write("\t] \"normal N\" [\n")
+                for face in ffaces:
+                    normal = face.no
+                    for vertex in face:
+                        if (face.smooth):
+                            normal = vertex.no
+                        file.write("%f %f %f\n"% tuple(normal))
+                if (mesh.faceUV):
+                    file.write("\t] \"float uv\" [\n")
+                    # Check if there is a render specific UV layer and make it active for export.
+                    activeUVLayer_orig = mesh.activeUVLayer
+                    renderUVLayer = mesh.renderUVLayer
+                    if renderUVLayer != activeUVLayer_orig:
+                        mesh.activeUVLayer = renderUVLayer
+                    for face in ffaces:
+                        for uv in face.uv:
+                            file.write("%f %f\n"% tuple(uv))
+                    # If we changed the active UV layer: reset it to the original.
+                    if renderUVLayer != activeUVLayer_orig:
+                        mesh.activeUVLayer = activeUVLayer_orig 
+                file.write("\t]\n")
             if instancedMats:
                 file.write("ObjectEnd # %s\n\n" % self.exportInstanceObjName(instancedMats, i, instancedShapes))
             i += 1
@@ -967,6 +983,7 @@ class luxExport:
         objectmblur = luxProp(cam, "objectmblur", "true").get()
         usemblur = luxProp(cam, "usemblur", "false").get()
         mesh_optimizing = luxProp(scn, "mesh_optimizing", "true").get()
+        binary_ply = luxProp(scn, "binary_ply", "false").get()
         mesh = Mesh.New('')
         #pb = exportProgressBar(len(self.objects), self.mpb)
         for [obj, matrix] in self.objects:
@@ -1272,10 +1289,11 @@ def save_lux(filename, unindexedname, anim_progress=None):
     time1 = Blender.sys.time()
 
     filepath = os.path.dirname(filename)
+    luxProp(scn, "curFilePath", "").set(filepath)
     filebase = os.path.splitext(os.path.basename(filename))[0]
 
     lxs_filename = filename
-
+    luxProp(scn, "sceneName", filebase).set(filebase)
     geom_filename = os.path.join(filepath, filebase + "-geom.lxo")
     geom_pfilename = filebase + "-geom.lxo"
 
@@ -1700,7 +1718,7 @@ def get_lux_args(filename, extra_args=[], anim=False):
     
     if autothreads != "true":
         extra_args.append("--threads=%d " % threads)
-		
+        
     lux_args2 = ' '.join(extra_args)
     
     if filename == '-':
@@ -4731,6 +4749,9 @@ def luxSystem(scn, gui=None):
         luxBool("ColClamp", luxProp(scn, "colorclamp", "false"), "ColClamp", "clamp all colors to 0.0-0.9", gui)
         if gui: gui.newline("MESH:", 10)
         luxBool("mesh_optimizing", luxProp(scn, "mesh_optimizing", "true"), "Optimize meshes", "Optimize meshes during export", gui, 2.0)
+        luxBool("binary_ply", luxProp(scn, "binary_ply", "false"), "Export Binary Ply meshes", "Exports binary ply meshes during export", gui, 2.0)
+        if luxProp(scn, "binary_ply", "false").get() == "true":
+            luxProp(scn, "mesh_optimizing", "true").set("false")
         #luxInt("trianglemesh thr", luxProp(scn, "trianglemesh_thr", 0), 0, 10000000, "trianglemesh threshold", "Vertex threshold for exporting (wald) trianglemesh object(s)", gui, 2.0)
         #if gui: gui.newline()
         #luxInt("barytrianglemesh thr", luxProp(scn, "barytrianglemesh_thr", 300000), 0, 100000000, "barytrianglemesh threshold", "Vertex threshold for exporting barytrianglemesh object(s) (slower but uses less memory)", gui, 2.0)
@@ -7023,10 +7044,10 @@ def luxMaterialBlock(name, luxname, key, mat, gui=None, level=0, str_opt=""):
                 (s, l) = luxExponentTexture("uroughness", keyname, 0.002, 0.0, 1.0, "exponent", "", mat, gui, level+1)
                 (str,link) = c((str,link), (s, l))
                 link += l.replace("uroughness", "vroughness", 1)
-				
+                
             if mattype.get() == 'glossytranslucent':
                 link += luxBool('multibounce', luxProp(mat, keyname+'multibounce', 'false'), 'Surface Asperity', 'Simulate surface asperity with light multibouncing in specular coating', gui, 2.0)
-				
+                
             absorption = luxProp(mat, keyname+".useabsorption", "false")
             luxCollapse("absorption", absorption, "Absorption", "Enable Coating Absorption", gui, 2.0)
             if absorption.get() == "true":
@@ -7160,24 +7181,26 @@ def luxMaterialBlock(name, luxname, key, mat, gui=None, level=0, str_opt=""):
 
         # Object options (common)
         if (level == 0) and (has_object_options == 1):
-            if gui: gui.newline("Mesh:", 2, level, icon, [0.6,0.6,0.4])
-            usesubdiv = luxProp(mat, "subdiv", "false")
-            luxBool("usesubdiv", usesubdiv, "Subdivision", "Enable Loop Subdivision options", gui, 1.0)
-            usedisp = luxProp(mat, "dispmap", "false")
-            luxBool("usedisp", usedisp, "Displacement Map", "Enable Displacement mapping options", gui, 1.0)
-            if usesubdiv.get() == "true" or usedisp.get() == "true":
-                luxInt("sublevels", luxProp(mat, "sublevels", 2), 0, 12, "sublevels", "The number of levels of object subdivision", gui, 2.0)
-                sharpbound = luxProp(mat, "sharpbound", "false")
-                luxBool("sharpbound", sharpbound, "Sharpen Bounds", "Sharpen boundaries during subdivision", gui, 1.0)
-                nsmooth = luxProp(mat, "nsmooth", "true")
-                luxBool("nsmooth", nsmooth, "Smooth", "Smooth faces during subdivision", gui, 1.0)
-            if usedisp.get() == "true":
-                (str,ll) = c((str,link), luxDispFloatTexture("dispmap", keyname, 0.1, -10, 10.0, "dispmap", "Displacement Mapping amount", mat, gui, level+1))
-                luxFloat("sdoffset",  luxProp(mat, "sdoffset", 0.0), -0.1, 1.0, "Offset", "Offset for displacement map", gui, 2.0)
-                usesubdiv.set("true")
-            if gui: gui.newline('Hair:', 2, level, None, [0.6,0.6,0.4])
-            luxFloat('hair_thickness',  luxProp(mat, 'hair_thickness', 0.5), 0.001, 100.0, 'hair thickness', 'Hair strand diameter', gui, 1.5)
-            luxScaleUnits('hair_thickness', 'mm', mat, 0.5, gui)
+            binary_ply = luxProp(scn, "binary_ply", "false").get()
+            if binary_ply == "false":
+                if gui: gui.newline("Mesh:", 2, level, icon, [0.6,0.6,0.4])
+                usesubdiv = luxProp(mat, "subdiv", "false")
+                luxBool("usesubdiv", usesubdiv, "Subdivision", "Enable Loop Subdivision options", gui, 1.0)
+                usedisp = luxProp(mat, "dispmap", "false")
+                luxBool("usedisp", usedisp, "Displacement Map", "Enable Displacement mapping options", gui, 1.0)
+                if usesubdiv.get() == "true" or usedisp.get() == "true":
+                    luxInt("sublevels", luxProp(mat, "sublevels", 2), 0, 12, "sublevels", "The number of levels of object subdivision", gui, 2.0)
+                    sharpbound = luxProp(mat, "sharpbound", "false")
+                    luxBool("sharpbound", sharpbound, "Sharpen Bounds", "Sharpen boundaries during subdivision", gui, 1.0)
+                    nsmooth = luxProp(mat, "nsmooth", "true")
+                    luxBool("nsmooth", nsmooth, "Smooth", "Smooth faces during subdivision", gui, 1.0)
+                if usedisp.get() == "true":
+                    (str,ll) = c((str,link), luxDispFloatTexture("dispmap", keyname, 0.1, -10, 10.0, "dispmap", "Displacement Mapping amount", mat, gui, level+1))
+                    luxFloat("sdoffset",  luxProp(mat, "sdoffset", 0.0), -0.1, 1.0, "Offset", "Offset for displacement map", gui, 2.0)
+                    usesubdiv.set("true")
+                if gui: gui.newline('Hair:', 2, level, None, [0.6,0.6,0.4])
+                luxFloat('hair_thickness',  luxProp(mat, 'hair_thickness', 0.5), 0.001, 100.0, 'hair thickness', 'Hair strand diameter', gui, 1.5)
+                luxScaleUnits('hair_thickness', 'mm', mat, 0.5, gui)
 
         if mattype.get() == "light":
             return (str, link)
@@ -8091,7 +8114,7 @@ def showMatTexMenu(mat, basekey='', tex=False):
         menu += "|Download from DB%x5" #not(tex) and
         # XXX temporarily disabling for glass2
         if luxProp(mat, basekey+'type', '').get() != 'glass2': menu += "|Upload to DB%x6"
-	menu += '|Reset%x7'
+    menu += '|Reset%x7'
 
 #    menu += "|%l|dump material%x99|dump clipboard%x98"
     r = Draw.PupMenu(menu)
@@ -8798,6 +8821,142 @@ def setFocus(target):
     camObj.getData(mesh=1).dofDist = (camDir[0]*dist[0]+camDir[1]*dist[1]+camDir[2]*dist[2])/camDir.length # data
 
 
+# The following functions "rvec3d, rvec2d and plyExport" come from the Blender ply_export.py script by Bruce Merry (bmerry@cs.uct.ac.za).
+# The plyExport function is based on the file_callback function in the afore mentioned ply_export.py script by Bruce Merry.
+# The plyExport function has been modified to output binary ply format .ply files using the little-endian encoding.
+
+def rvec3d(v):    return round(v[0], 6), round(v[1], 6), round(v[2], 6)
+def rvec2d(v):    return round(v[0], 6), round(v[1], 6)
+
+def plyExport(filepath, filename, mesh, matIndex):
+    if not filename.lower().endswith('.ply'):
+        filename += '.ply'
+    if not filepath.endswith('\\'):
+        filepath += '\\'
+    print("exporting binary ply: " + filepath + filename)
+    
+    file = open(filepath + filename, 'wb')
+    
+    EXPORT_APPLY_MODIFIERS = 1
+    EXPORT_NORMALS = 1
+    EXPORT_UV = 1
+    EXPORT_COLORS = 1
+    #EXPORT_EDGES = 0
+    
+    if not mesh:
+        Blender.Draw.PupMenu('Error%t|Could not get mesh data from active object')
+        return
+    
+    faceUV = mesh.faceUV
+    vertexUV = mesh.vertexUV
+    vertexColors = mesh.vertexColors
+    
+    if (not faceUV) and (not vertexUV):        EXPORT_UV = False
+    if not vertexColors:                    EXPORT_COLORS = False
+    
+    if not EXPORT_UV:                        faceUV = vertexUV = False
+    if not EXPORT_COLORS:                    vertexColors = False
+    
+    # incase
+    color = uvcoord = uvcoord_key = normal = normal_key = None
+    
+    verts = [] # list of dictionaries
+    # vdict = {} # (index, normal, uv) -> new index
+    vdict = [{} for i in xrange(len(mesh.verts))]
+    face_count = 0
+    vert_count = 0
+    for i, f in enumerate(mesh.faces):
+        if not f.mat == matIndex:
+            continue
+        smooth = f.smooth
+        if not smooth:
+            normal = tuple(f.no)
+            normal_key = rvec3d(normal)
+            
+        if faceUV:            uv = f.uv
+        if vertexColors:    col = f.col
+        face_count += 1
+        for j, v in enumerate(f):
+            if smooth:
+                normal=        tuple(v.no)
+                normal_key = rvec3d(normal)
+            
+            if faceUV:
+                uvcoord=    uv[j][0], 1.0-uv[j][1]
+                uvcoord_key = rvec2d(uvcoord)
+            elif vertexUV:
+                uvcoord=    v.uvco[0], 1.0-v.uvco[1]
+                uvcoord_key = rvec2d(uvcoord)
+            
+            if vertexColors:    color=        col[j].r, col[j].g, col[j].b
+            
+            
+            key = normal_key, uvcoord_key, color
+            
+            vdict_local = vdict[v.index]
+            
+            if (not vdict_local) or (not vdict_local.has_key(key)):
+                vdict_local[key] = vert_count;
+                verts.append( (tuple(v.co), normal, uvcoord, color) )
+                vert_count += 1
+    
+    
+    file.write('ply\n')
+    file.write('format binary_little_endian 1.0\n')
+    file.write('comment Created by Blender3D %s - www.blender.org, source file: %s\n' % (Blender.Get('version'), Blender.Get('filename').split('/')[-1].split('\\')[-1] ))
+    
+    file.write('element vertex %d\n' % len(verts))
+    
+    file.write('property float x\n')
+    file.write('property float y\n')
+    file.write('property float z\n')
+    if EXPORT_NORMALS:
+        file.write('property float nx\n')
+        file.write('property float ny\n')
+        file.write('property float nz\n')
+    
+    if EXPORT_UV:
+        file.write('property float s\n')
+        file.write('property float t\n')
+    if EXPORT_COLORS:
+        file.write('property uchar red\n')
+        file.write('property uchar green\n')
+        file.write('property uchar blue\n')
+    
+    file.write('element face %d\n' % face_count)
+    file.write('property list uchar uint vertex_indices\n')
+    file.write('end_header\n')
+
+    for i, v in enumerate(verts):
+        file.write(struct.pack('<fff', v[0][0], v[0][1], v[0][2])) # co
+        if EXPORT_NORMALS:
+            file.write(struct.pack('<fff', v[1][0], v[1][1], v[1][2])) # no
+        
+        if EXPORT_UV:
+            file.write(struct.pack('<ff', v[2][0], v[2][1])) # uv
+        if EXPORT_COLORS:
+            file.write(struct.pack('<BBB', v[3][0], v[3][1], v[3][2])) # col
+    
+    for (i, f) in enumerate(mesh.faces):
+        if not f.mat == matIndex:
+            continue
+        file.write(struct.pack('<B', len(f)))
+        smooth = f.smooth
+        if not smooth: no = rvec3d(f.no)
+        
+        if faceUV:            uv = f.uv
+        if vertexColors:    col = f.col
+        for j, v in enumerate(f):
+            if f.smooth:        normal=        rvec3d(v.no)
+            else:                normal=        no
+            if faceUV:            uvcoord=    rvec2d((uv[j][0], 1.0-uv[j][1]))
+            elif vertexUV:        uvcoord=    rvec2d((v.uvco[0], 1.0-v.uvco[1]))
+            if vertexColors:    color=        col[j].r, col[j].g, col[j].b
+            
+            file.write(struct.pack('<I', vdict[v.index][normal, uvcoord, color]))
+            
+    file.close()
+    
 # Parse command line arguments for batch mode rendering if supplied
 global luxUID
 luxUID = None
