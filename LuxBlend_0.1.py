@@ -8832,7 +8832,11 @@ def plyExport(filepath, filename, mesh, matIndex):
     if not filename.lower().endswith('.ply'):
         filename += '.ply'
     if not filepath.endswith('\\'):
-        filepath += '\\'
+        if osys.platform == "darwin":
+            filepath += '/'
+        else:
+            filepath += '\\'
+
     print("exporting binary ply: " + filepath + filename)
     
     file = open(filepath + filename, 'wb')
