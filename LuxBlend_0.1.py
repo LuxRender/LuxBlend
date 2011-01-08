@@ -8831,11 +8831,8 @@ def rvec2d(v):    return round(v[0], 6), round(v[1], 6)
 def plyExport(filepath, filename, mesh, matIndex):
     if not filename.lower().endswith('.ply'):
         filename += '.ply'
-    if not filepath.endswith('\\'):
-        if osys.platform == "darwin":
-            filepath += '/'
-        else:
-            filepath += '\\'
+    if not filepath.endswith(os.sep):
+       filepath += os.sep
 
     print("exporting binary ply: " + filepath + filename)
     
