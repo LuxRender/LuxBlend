@@ -8941,11 +8941,11 @@ def plyExport(filepath, filename, mesh, matIndex):
 
     for i, v in enumerate(verts):
         if (binary_ply == "true"):
-        file.write(struct.pack('<fff', v[0][0], v[0][1], v[0][2])) # co
-    else:
+            file.write(struct.pack('<fff', v[0][0], v[0][1], v[0][2])) # co
+        else:
             file.write('%.6f %.6f %.6f ' % v[0]) # co
         if EXPORT_NORMALS:
-        if (binary_ply == "true"):
+            if (binary_ply == "true"):
                 file.write(struct.pack('<fff', v[1][0], v[1][1], v[1][2])) # no
             else:
                 file.write('%.6f %.6f %.6f ' % v[1]) # no
@@ -8965,8 +8965,8 @@ def plyExport(filepath, filename, mesh, matIndex):
         if not f.mat == matIndex:
             continue
         if (binary_ply == "true"):
-        file.write(struct.pack('<B', len(f)))
-    else:
+            file.write(struct.pack('<B', len(f)))
+        else:
             file.write('%d ' % len(f))
         smooth = f.smooth
         if not smooth: no = rvec3d(f.no)
