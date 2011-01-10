@@ -714,7 +714,7 @@ class luxExport:
     # os.path.join(filepath, filebase + "-geom.lxo")
     #-------------------------------------------------
     def exportMesh(self, file, mesh, mats, name, portal=False, instancedMats=None, instancedShapes=None):
-        binary_ply = luxProp(scn, "binary_ply", "false").get()
+        export_ply = luxProp(scn, "export_ply", "false").get()
         filepath = luxProp(scn, "curFilePath", "").get()
         #print("    exporting mesh")
         if mats == []:
@@ -733,7 +733,7 @@ class luxExport:
                     file.write("ObjectBegin \"%s\"\n" % self.exportInstanceObjName(instancedMats, i, instancedShapes))
                 self.exportMaterialLink(file, mat)
 
-            if (binary_ply == "true") and not(portal):
+            if (export_ply == "true") and not(portal):
                  mesh_str = "\"plymesh\""
                  file.write("\tShape %s \n"% mesh_str)
             else:
@@ -743,7 +743,7 @@ class luxExport:
                  else:
                      file.write("\tPortalShape %s \"integer indices\" [\n"% mesh_str)
 
-            if (binary_ply == "true") and not(portal):
+            if (export_ply == "true") and not(portal):
                 sceneName = luxProp(scn, "sceneName", "").get()
                 filename = sceneName + "-" + name + "-mat" + str(matIndex) + ".ply"
                 plyExport(filepath, filename, mesh, matIndex)
@@ -983,7 +983,7 @@ class luxExport:
         objectmblur = luxProp(cam, "objectmblur", "true").get()
         usemblur = luxProp(cam, "usemblur", "false").get()
         mesh_optimizing = luxProp(scn, "mesh_optimizing", "true").get()
-        binary_ply = luxProp(scn, "binary_ply", "false").get()
+        export_ply = luxProp(scn, "export_ply", "false").get()
         mesh = Mesh.New('')
         #pb = exportProgressBar(len(self.objects), self.mpb)
         for [obj, matrix] in self.objects:
@@ -4749,8 +4749,9 @@ def luxSystem(scn, gui=None):
         luxBool("ColClamp", luxProp(scn, "colorclamp", "false"), "ColClamp", "clamp all colors to 0.0-0.9", gui)
         if gui: gui.newline("MESH:", 10)
         luxBool("mesh_optimizing", luxProp(scn, "mesh_optimizing", "true"), "Optimize meshes", "Optimize meshes during export", gui, 2.0)
-        luxBool("binary_ply", luxProp(scn, "binary_ply", "false"), "Export Binary Ply meshes", "Exports binary ply meshes during export", gui, 2.0)
-        if luxProp(scn, "binary_ply", "false").get() == "true":
+        luxBool("export_ply", luxProp(scn, "export_ply", "false"), "Export Ply", "Exports ply meshes during export", gui, 1.0)
+        luxBool("binary_ply", luxProp(scn, "binary_ply", "true"), "Binary Ply", "Exports binary ply meshes during export", gui, 1.0)
+        if luxProp(scn, "export_ply", "false").get() == "true":
             luxProp(scn, "mesh_optimizing", "true").set("false")
         #luxInt("trianglemesh thr", luxProp(scn, "trianglemesh_thr", 0), 0, 10000000, "trianglemesh threshold", "Vertex threshold for exporting (wald) trianglemesh object(s)", gui, 2.0)
         #if gui: gui.newline()
@@ -7181,8 +7182,8 @@ def luxMaterialBlock(name, luxname, key, mat, gui=None, level=0, str_opt=""):
 
         # Object options (common)
         if (level == 0) and (has_object_options == 1):
-            binary_ply = luxProp(scn, "binary_ply", "false").get()
-            if binary_ply == "false":
+            export_ply = luxProp(scn, "export_ply", "false").get()
+            if export_ply == "false":
                 if gui: gui.newline("Mesh:", 2, level, icon, [0.6,0.6,0.4])
                 usesubdiv = luxProp(mat, "subdiv", "false")
                 luxBool("usesubdiv", usesubdiv, "Subdivision", "Enable Loop Subdivision options", gui, 1.0)
@@ -8834,8 +8835,13 @@ def plyExport(filepath, filename, mesh, matIndex):
     if not filepath.endswith(os.sep):
        filepath += os.sep
 
-    print("exporting binary ply: " + filepath + filename)
+    binary_ply = luxProp(scn, "binary_ply", "true").get()
     
+    if (binary_ply == "true"):
+        print("Exporting binary ply: " + filepath + filename)
+    else:
+        print("Exporting ascii ply: " + filepath + filename)
+
     file = open(filepath + filename, 'wb')
     
     EXPORT_APPLY_MODIFIERS = 1
@@ -8903,8 +8909,13 @@ def plyExport(filepath, filename, mesh, matIndex):
     
     
     file.write('ply\n')
-    file.write('format binary_little_endian 1.0\n')
-    file.write('comment Created by Blender3D %s - www.blender.org, source file: %s\n' % (Blender.Get('version'), Blender.Get('filename').split('/')[-1].split('\\')[-1] ))
+
+    if (binary_ply == "true"):
+        file.write('format binary_little_endian 1.0\n')
+    else:
+        file.write('format ascii 1.0\n')
+    
+    file.write('comment Created by LuxBlend exporter for LuxRender - www.luxrender.net\n')
     
     file.write('element vertex %d\n' % len(verts))
     
@@ -8929,19 +8940,34 @@ def plyExport(filepath, filename, mesh, matIndex):
     file.write('end_header\n')
 
     for i, v in enumerate(verts):
+        if (binary_ply == "true"):
         file.write(struct.pack('<fff', v[0][0], v[0][1], v[0][2])) # co
+    else:
+            file.write('%.6f %.6f %.6f ' % v[0]) # co
         if EXPORT_NORMALS:
-            file.write(struct.pack('<fff', v[1][0], v[1][1], v[1][2])) # no
+        if (binary_ply == "true"):
+                file.write(struct.pack('<fff', v[1][0], v[1][1], v[1][2])) # no
+            else:
+                file.write('%.6f %.6f %.6f ' % v[1]) # no
         
         if EXPORT_UV:
-            file.write(struct.pack('<ff', v[2][0], v[2][1])) # uv
+            if (binary_ply == "true"):
+                file.write(struct.pack('<ff', v[2][0], v[2][1])) # uv
+            else:
+                file.write('%.6f %.6f ' % v[2]) # uv
         if EXPORT_COLORS:
-            file.write(struct.pack('<BBB', v[3][0], v[3][1], v[3][2])) # col
+            if (binary_ply == "true"):
+                file.write(struct.pack('<BBB', v[3][0], v[3][1], v[3][2])) # col
+            else:
+                file.write('%u %u %u' % v[3]) # col
     
     for (i, f) in enumerate(mesh.faces):
         if not f.mat == matIndex:
             continue
+        if (binary_ply == "true"):
         file.write(struct.pack('<B', len(f)))
+    else:
+            file.write('%d ' % len(f))
         smooth = f.smooth
         if not smooth: no = rvec3d(f.no)
         
@@ -8953,9 +8979,14 @@ def plyExport(filepath, filename, mesh, matIndex):
             if faceUV:            uvcoord=    rvec2d((uv[j][0], 1.0-uv[j][1]))
             elif vertexUV:        uvcoord=    rvec2d((v.uvco[0], 1.0-v.uvco[1]))
             if vertexColors:    color=        col[j].r, col[j].g, col[j].b
-            
-            file.write(struct.pack('<I', vdict[v.index][normal, uvcoord, color]))
-            
+
+            if (binary_ply == "true"):
+                file.write(struct.pack('<I', vdict[v.index][normal, uvcoord, color]))
+            else:
+                file.write('%d ' % vdict[v.index][normal, uvcoord, color])
+
+        if (binary_ply == "false"):
+            file.write('\n')
     file.close()
     
 # Parse command line arguments for batch mode rendering if supplied
