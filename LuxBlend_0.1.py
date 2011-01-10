@@ -746,7 +746,9 @@ class luxExport:
             if (export_ply == "true") and not(portal):
                 sceneName = luxProp(scn, "sceneName", "").get()
                 filename = sceneName + "-" + name + "-mat" + str(matIndex) + ".ply"
-                plyExport(filepath, filename, mesh, matIndex)
+                skip_ply = luxProp(scn, "skip_ply", "false").get()
+                if (skip_ply == "false"):
+                    plyExport(filepath, filename, mesh, matIndex)
                 file.write("\t\"string filename\" [\"%s\"]\n"% filename)
             else:
                 index = 0
@@ -4749,8 +4751,9 @@ def luxSystem(scn, gui=None):
         luxBool("ColClamp", luxProp(scn, "colorclamp", "false"), "ColClamp", "clamp all colors to 0.0-0.9", gui)
         if gui: gui.newline("MESH:", 10)
         luxBool("mesh_optimizing", luxProp(scn, "mesh_optimizing", "true"), "Optimize meshes", "Optimize meshes during export", gui, 2.0)
-        luxBool("export_ply", luxProp(scn, "export_ply", "false"), "Export Ply", "Exports ply meshes during export", gui, 1.0)
-        luxBool("binary_ply", luxProp(scn, "binary_ply", "true"), "Binary Ply", "Exports binary ply meshes during export", gui, 1.0)
+        luxBool("export_ply", luxProp(scn, "export_ply", "false"), "Export Ply", "Exports ply meshes during export", gui, 0.66)
+        luxBool("binary_ply", luxProp(scn, "binary_ply", "true"), "Export binary", "Exports binary ply meshes during export", gui, 0.66)
+        luxBool("skip_ply", luxProp(scn, "skip_ply", "false"), "Partial export", "Only exports mesh scale, location, rotation data.", gui, 0.67)
         if luxProp(scn, "export_ply", "false").get() == "true":
             luxProp(scn, "mesh_optimizing", "true").set("false")
         #luxInt("trianglemesh thr", luxProp(scn, "trianglemesh_thr", 0), 0, 10000000, "trianglemesh threshold", "Vertex threshold for exporting (wald) trianglemesh object(s)", gui, 2.0)
