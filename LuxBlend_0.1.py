@@ -8892,10 +8892,10 @@ def plyExport(filepath, filename, mesh, matIndex):
                 normal_key = rvec3d(normal)
             
             if faceUV:
-                uvcoord=    uv[j][0], 1.0-uv[j][1]
+                uvcoord=    uv[j][0], uv[j][1]
                 uvcoord_key = rvec2d(uvcoord)
             elif vertexUV:
-                uvcoord=    v.uvco[0], 1.0-v.uvco[1]
+                uvcoord=    v.uvco[0], v.uvco[1]
                 uvcoord_key = rvec2d(uvcoord)
             
             if vertexColors:    color=        col[j].r, col[j].g, col[j].b
