@@ -8979,8 +8979,8 @@ def plyExport(filepath, filename, mesh, matIndex):
         for j, v in enumerate(f):
             if f.smooth:        normal=        rvec3d(v.no)
             else:                normal=        no
-            if faceUV:            uvcoord=    rvec2d((uv[j][0], 1.0-uv[j][1]))
-            elif vertexUV:        uvcoord=    rvec2d((v.uvco[0], 1.0-v.uvco[1]))
+            if faceUV:            uvcoord=    rvec2d((uv[j][0], uv[j][1]))
+            elif vertexUV:        uvcoord=    rvec2d((v.uvco[0], v.uvco[1]))
             if vertexColors:    color=        col[j].r, col[j].g, col[j].b
 
             if (binary_ply == "true"):
