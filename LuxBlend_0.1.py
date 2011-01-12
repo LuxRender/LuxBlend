@@ -8005,7 +8005,7 @@ def format_dictStr(dictStr):
                 
         result += char
         
-        if char in [',', '{', '[']:
+        if char in ['{', '[']:
             result += newLine
             if char in ['{', '[']:
                 pos += 1
