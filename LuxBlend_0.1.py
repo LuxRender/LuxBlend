@@ -467,6 +467,12 @@ class luxExport:
                 ltype = obj.getData(mesh=1).getType() # data
                 if (ltype == Lamp.Types["Lamp"]) or (ltype == Lamp.Types["Spot"]) or (ltype == Lamp.Types["Area"]):
                     if luxProp(Scene.GetCurrent(), "lightgroup.disable."+luxProp(obj, "light.lightgroup", "default").get(), "false").get() != "true":
+                        # collect used named volumes ids
+                        for volume_prop in ['Exterior']:
+                            if luxProp(obj, '%s_vol_used'%(volume_prop), 'false').get() == 'true':
+                                volumeId = luxProp(obj, '%s_vol_id' % (volume_prop), 0).get()
+                                if volumeId not in self.namedVolumes:
+                                    self.namedVolumes.append(volumeId)                        
                         self.lights.append([obj, matrix])
                         light = True
         return light
@@ -1105,11 +1111,13 @@ class luxExport:
                 if luxProp(Scene.GetCurrent(), "lightgroup.disable."+lightgroup.get(), "false").get() == "true":
                     continue
                 #print("light: %s"%(obj.getName()))
-                if ltype == Lamp.Types["Area"]:
-                    (str, link) = luxLight("", "", obj, None, 0)
-                    file.write(str)
-                if ltype == Lamp.Types["Area"]: file.write("AttributeBegin # %s\n"%obj.getName())
-                else: file.write("TransformBegin # %s\n"%obj.getName())
+                # why treat area differently?
+                #if ltype == Lamp.Types["Area"]:
+                #    (str, link) = luxLight("", "", obj, None, 0)
+                #    file.write(str)
+                #if ltype == Lamp.Types["Area"]: file.write("AttributeBegin # %s\n"%obj.getName())
+                #else: file.write("TransformBegin # %s\n"%obj.getName())
+                file.write("AttributeBegin # %s\n"%obj.getName())
                 file.write("\tTransform [%s %s %s %s  %s %s %s %s  %s %s %s %s  %s %s %s %s]\n"\
                     %(matrix[0][0], matrix[0][1], matrix[0][2], matrix[0][3],\
                       matrix[1][0], matrix[1][1], matrix[1][2], matrix[1][3],\
@@ -1138,18 +1146,21 @@ class luxExport:
                 if ltype == Lamp.Types["Area"]:
                     if luxProp(Scene.GetCurrent(), "nolg", "false").get()!="true":
                         file.write("LightGroup \"%s\"\n"%lightgroup.get())
+                    # pass name to luxLight() so volume export is enabled
+                    (str, link) = luxLight("Area LIGHT", "", obj, None, 0)                    
+                    file.write(str)
                     file.write("\tAreaLightSource \"area\"")
-                    file.write(link)
+                    file.write(link + "\n")
 #                    file.write(luxLight("", "", obj, None, 0))
-                    file.write("\n")
                     areax = obj.getData(mesh=1).getAreaSizeX()
                     # lamps "getAreaShape()" not implemented yet - so we can't detect shape! Using square as default
                     # todo: ideasman42
                     if (True): areay = areax
                     else: areay = obj.getData(mesh=1).getAreaSizeY()
                     file.write('\tShape "trianglemesh" "integer indices" [0 1 2 0 2 3] "point P" [-%(x)f %(y)f 0.0 %(x)f %(y)f 0.0 %(x)f -%(y)f 0.0 -%(x)f -%(y)f 0.0]\n'%{"x":areax/2, "y":areay/2})
-                if ltype == Lamp.Types["Area"]: file.write("AttributeEnd # %s\n"%obj.getName())
-                else: file.write("TransformEnd # %s\n"%obj.getName())
+                #if ltype == Lamp.Types["Area"]: file.write("AttributeEnd # %s\n"%obj.getName())
+                #else: file.write("TransformEnd # %s\n"%obj.getName())
+                file.write("AttributeEnd # %s\n"%obj.getName())
                 file.write("\n")
 
 
@@ -1491,10 +1502,19 @@ def save_lux(filename, unindexedname, anim_progress=None):
             target = pos + forwards
             up = matrix[1]
             file.write("LookAt %f %f %f \n       %f %f %f \n       %f %f %f\n\n" % ( pos[0], pos[1], pos[2], target[0], target[1], target[2], up[0], up[1], up[2] ))
-            file.write(luxCamera(camObj.data, scn.getRenderingContext()))
+            file.write(luxCamera(camObj.data, scn.getRenderingContext()))            
             if motion:
-                file.write("\n   \"string endtransform\" [\"CameraEndTransform\"]")
+                file.write("\n   \"string endtransform\" [\"CameraEndTransform\"]")                               
             file.write("\n")
+            
+            # output camera medium
+            for volume_prop in ['Exterior']:
+                cam = camObj.data
+                if luxProp(cam, '%s_vol_used'%(volume_prop), 'false').get() == 'true':
+                    volumeId = luxProp(cam, '%s_vol_id' % (volume_prop), 0).get()
+                    if volumeId not in export.namedVolumes:
+                        export.namedVolumes.append(volumeId)
+            
         file.write("\n")
     
         if LuxIsGUI: pb.next('Exporting Film Settings')
@@ -1629,6 +1649,16 @@ def save_lux(filename, unindexedname, anim_progress=None):
     Blender.Window.QRedrawAll()
 
     if luxProp(scn, "lxs", "true").get()=="true" or use_pipe_output:
+        camObj = scn.objects.camera
+        if camObj:
+            cam = camObj.data
+            #if luxProp(cam, "usemedium", "false").get() == "true":
+            #    # default volume is world
+            #    file.write(luxNamedVolume(cam, 'Exterior', None) + "\n")
+            for volume_prop in ['Exterior']:
+                volume_used = luxProp(cam, '%s_vol_used'%(volume_prop), 'false')
+                if volume_used.get() == "true":
+                    file.write(luxNamedVolume(cam, volume_prop, None) + " # Camera medium \n")
         #### Write End Tag
         file.write("WorldEnd\n\n")
         file.close()
@@ -3330,6 +3360,17 @@ def luxCamera(cam, context, gui=None):
             luxBool("objectmblur", objectmblur, "Object", "Enable Motion Blur for scene object motions", gui, 1.0)
             cammblur = luxProp(cam, "cammblur", "true")
             luxBool("cammblur", cammblur, "Camera", "Enable Motion Blur for Camera motion", gui, 1.0)
+            
+    #if gui: gui.newline('Exterior:', 0, 0, None, [0.4,0.4,0.6])            
+    #usemedium = luxProp(cam, "usemedium", "false")
+    #luxBool("usemedium", usemedium, "Use world medium", "Assign world medium to camera", gui, 1.0)
+
+    for volume_prop in ['Exterior']:
+        volume_used = luxProp(cam, '%s_vol_used'%(volume_prop), 'false')
+        if gui: gui.newline('', 2, 0, None, [0.4,0.4,0.6])
+        luxCollapse('%s_vol_used'%(volume_prop), volume_used, "%s Medium"%(volume_prop), "%s medium settings"%(volume_prop), gui, 2.0)
+        if volume_used.get() == "true":
+            luxNamedVolume(cam, volume_prop, gui)
     return str
 
 
@@ -6252,6 +6293,14 @@ def luxLight(name, kn, mat, gui, level):
     if lg_disable.get() == "true":
         link = ""
 
+    if name != "": # Only show for area lamp, not emission
+        for volume_prop in ['Exterior']:
+            volume_used = luxProp(mat, '%s_vol_used'%(volume_prop), 'false')
+            if gui: gui.newline('', 2, level, None, [0.4,0.4,0.6])
+            luxCollapse('%s_vol_used'%(volume_prop), volume_used, "%s Medium"%(volume_prop), "%s medium settings"%(volume_prop), gui, 2.0)
+            if volume_used.get() == "true":
+                str = luxNamedVolume(mat, volume_prop, gui) + "\n\t" + str 
+
     if gui: gui.newline("Photometric")
     pm = luxProp(mat, kn+"light.usepm", "false")
     luxCollapse("photometric", pm, "Photometric Diagram", "Enable Photometric Diagram options", gui, 2.0)
@@ -6291,6 +6340,13 @@ def luxLamp(name, kn, mat, gui, level):
     lg_disable = luxProp(Scene.GetCurrent(), "lightgroup.disable."+lightgroup.get(), "false")
     luxBool("lg_disable", lg_disable, "D", "Disable lightgroup during export", gui, 0.2)
 
+    for volume_prop in ['Exterior']:
+        volume_used = luxProp(mat, '%s_vol_used'%(volume_prop), 'false')
+        if gui: gui.newline('', 2, level, None, [0.4,0.4,0.6])
+        luxCollapse('%s_vol_used'%(volume_prop), volume_used, "%s Medium"%(volume_prop), "%s medium settings"%(volume_prop), gui, 2.0)
+        if volume_used.get() == "true":
+            str = luxNamedVolume(mat, volume_prop, gui) + "\n\t" + str 
+
     if gui: gui.newline("Photometric")
     pm = luxProp(mat, kn+"light.usepm", "false")
     luxBool("photometric", pm, "Photometric Diagram", "Enable Photometric Diagram options", gui, 2.0)
@@ -6329,6 +6385,13 @@ def luxSpot(name, kn, mat, gui, level):
     luxString("lightgroup", lightgroup, "group", "assign light to a named light-group", gui, 0.8)
     lg_disable = luxProp(Scene.GetCurrent(), "lightgroup.disable."+lightgroup.get(), "false")
     luxBool("lg_disable", lg_disable, "D", "Disable lightgroup during export", gui, 0.2)
+
+    for volume_prop in ['Exterior']:
+        volume_used = luxProp(mat, '%s_vol_used'%(volume_prop), 'false')
+        if gui: gui.newline('', 2, level, None, [0.4,0.4,0.6])
+        luxCollapse('%s_vol_used'%(volume_prop), volume_used, "%s Medium"%(volume_prop), "%s medium settings"%(volume_prop), gui, 2.0)
+        if volume_used.get() == "true":
+            str = luxNamedVolume(mat, volume_prop, gui) + "\n\t" + str 
 
     if gui: gui.newline("Projection")
     proj = luxProp(mat, kn+"light.usetexproj", "false")
@@ -8838,9 +8901,13 @@ def plyExport(filepath, filename, mesh, matIndex):
     if not filepath.endswith(os.sep):
        filepath += os.sep
 
-    binary_ply = luxProp(scn, "binary_ply", "true").get()
+    binary_ply = luxProp(scn, "binary_ply", "true")
+    if binary_ply and binary_ply.get() == "false":
+        export_binary_ply = 0
+    else:
+        export_binary_ply = 1
     
-    if (binary_ply == "true"):
+    if export_binary_ply:
         print("Exporting binary ply: " + filepath + filename)
     else:
         print("Exporting ascii ply: " + filepath + filename)
@@ -8913,7 +8980,7 @@ def plyExport(filepath, filename, mesh, matIndex):
     
     file.write('ply\n')
 
-    if (binary_ply == "true"):
+    if export_binary_ply:
         file.write('format binary_little_endian 1.0\n')
     else:
         file.write('format ascii 1.0\n')
@@ -8943,31 +9010,35 @@ def plyExport(filepath, filename, mesh, matIndex):
     file.write('end_header\n')
 
     for i, v in enumerate(verts):
-        if (binary_ply == "true"):
-            file.write(struct.pack('<fff', v[0][0], v[0][1], v[0][2])) # co
+        vs = ''
+        if export_binary_ply:
+            vs = struct.pack('<fff', *v[0]) # co
         else:
-            file.write('%.6f %.6f %.6f ' % v[0]) # co
+            vs = '%.6f %.6f %.6f ' % v[0] # co
         if EXPORT_NORMALS:
-            if (binary_ply == "true"):
-                file.write(struct.pack('<fff', v[1][0], v[1][1], v[1][2])) # no
+            if export_binary_ply:
+                vs += struct.pack('<fff', *v[1]) # no
             else:
-                file.write('%.6f %.6f %.6f ' % v[1]) # no
+                vs += '%.6f %.6f %.6f ' % v[1] # no
         
         if EXPORT_UV:
-            if (binary_ply == "true"):
-                file.write(struct.pack('<ff', v[2][0], v[2][1])) # uv
+            if export_binary_ply:
+                vs += struct.pack('<ff', *v[2]) # uv
             else:
-                file.write('%.6f %.6f ' % v[2]) # uv
+                vs += '%.6f %.6f ' % v[2] # uv
         if EXPORT_COLORS:
-            if (binary_ply == "true"):
-                file.write(struct.pack('<BBB', v[3][0], v[3][1], v[3][2])) # col
+            if export_binary_ply:
+                vs += struct.pack('<BBB', *v[3]) # col
             else:
-                file.write('%u %u %u' % v[3]) # col
+                vs += '%u %u %u' % v[3] # col
+        if not export_binary_ply:
+            vs += '\n'
+        file.write(vs)
     
     for (i, f) in enumerate(mesh.faces):
         if not f.mat == matIndex:
             continue
-        if (binary_ply == "true"):
+        if export_binary_ply:
             file.write(struct.pack('<B', len(f)))
         else:
             file.write('%d ' % len(f))
@@ -8983,12 +9054,12 @@ def plyExport(filepath, filename, mesh, matIndex):
             elif vertexUV:        uvcoord=    rvec2d((v.uvco[0], v.uvco[1]))
             if vertexColors:    color=        col[j].r, col[j].g, col[j].b
 
-            if (binary_ply == "true"):
+            if export_binary_ply:
                 file.write(struct.pack('<I', vdict[v.index][normal, uvcoord, color]))
             else:
                 file.write('%d ' % vdict[v.index][normal, uvcoord, color])
 
-        if (binary_ply == "false"):
+        if not export_binary_ply:
             file.write('\n')
     file.close()
     
