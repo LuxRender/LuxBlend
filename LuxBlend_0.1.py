@@ -6154,7 +6154,7 @@ def luxNamedVolumeTexture(volId, gui=None):
                         tex[tex.index(t)] = t[:t.rfind('[')] + '[%s %s %s]' % (rgb[0], rgb[1], rgb[2])
                 s1 = "\n".join(tex)
         (s, l) = c((s, l), (s1, l1))
-        (s, l) = c((s, l), luxSpectrumTexture('sigma_s', keyname+'sigma_s', '0.0 0.0 0.0', 1000.0, 'scattering:', 'The scattering cross section', scn, gui, 1))
+        (s, l) = c((s, l), luxSpectrumTexture('sigma_s', keyname+'sigma_s', '0.0 0.0 0.0', 4000.0, 'scattering:', 'The scattering cross section', scn, gui, 1))
         if gui: gui.newline("asymmetry:", 0, 0)
         l += luxRGBNeg('g', luxProp(scn, keyname+'g', '0.0 0.0 0.0'), -1.0, 1.0, 'asymmetry:', 'The phase function coefficient. -1 leads to backscatter, 1 to forwards scatter, 0 is symmetrical.', gui)
     
