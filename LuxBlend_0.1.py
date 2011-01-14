@@ -1507,7 +1507,7 @@ def save_lux(filename, unindexedname, anim_progress=None):
                 file.write("\n   \"string endtransform\" [\"CameraEndTransform\"]")                               
             file.write("\n")
             
-            # output camera medium
+            # export camera medium
             for volume_prop in ['Exterior']:
                 cam = camObj.data
                 if luxProp(cam, '%s_vol_used'%(volume_prop), 'false').get() == 'true':
@@ -1587,7 +1587,15 @@ def save_lux(filename, unindexedname, anim_progress=None):
                 if i > 0: export.exportPortals(file)
                 if i+1 < len(l): file.write(s)
             file.write("AttributeEnd\n")
-            file.write("\n")    
+            file.write("\n")  
+
+            # export environment light medium
+            for volume_prop in ['Exterior']:
+                if luxProp(scn, '%s_vol_used'%(volume_prop), 'false').get() == 'true':
+                    volumeId = luxProp(scn, '%s_vol_id' % (volume_prop), 0).get()
+                    if volumeId not in export.namedVolumes:
+                        export.namedVolumes.append(volumeId)
+            
 
     # Note - radiance - this is a work in progress
 #        flash = luxFlashBlock(camObj)
@@ -4348,9 +4356,16 @@ def luxEnvironment(scn, gui=None):
                     if gui:
                         gui.newline(); r = gui.getRect(2,1); BGL.glRasterPos2i(r[0],r[1]+5) 
                         Draw.Text("create a Blender Sun Lamp")
-            
+                                
             if skystr != "": str += skystr
             if sunstr != "": str += sunstr
+            
+            for volume_prop in ['Exterior']:
+                volume_used = luxProp(scn, '%s_vol_used'%(volume_prop), 'false')
+                if gui: gui.newline('', 2, 0, None, [0.4,0.4,0.6])
+                luxCollapse('%s_vol_used'%(volume_prop), volume_used, "%s Medium"%(volume_prop), "%s medium settings"%(volume_prop), gui, 2.0)
+                if volume_used.get() == "true":
+                    str = luxNamedVolume(scn, volume_prop, gui) + "\n" + str
             
             str += "\n"
         #if gui: gui.newline("GLOBAL:", 8, 0, None, [0.75,0.5,0.25])
