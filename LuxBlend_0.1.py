@@ -8,7 +8,7 @@ Group: 'Render'
 Tooltip: 'Export/Render to LuxRender v0.8 scene format (.lxs)'
 """
 
-__author__ = "radiance, zuegs, ideasman42, luxblender, dougal2, SATtva, BinaryCortex"
+__author__ = "radiance, zuegs, ideasman42, luxblender, dougal2, SATtva, BinaryCortex, LordCrc"
 __version__ = "0.8"
 __url__ = [
     "http://www.luxrender.net/",
