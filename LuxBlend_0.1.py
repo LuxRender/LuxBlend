@@ -6093,6 +6093,10 @@ def luxNamedVolumeTexture(volId, gui=None):
     volType = '"%s"' % volume_type.get()
     
     if volume_type.get() == 'clear':
+        # turning off color clamping for volumes
+        doclamp = luxProp(scn, "colorclamp", "false").get()
+        if (doclamp == "true"):
+            luxProp(scn, "colorclamp", "false").set("false")
         usecolor = luxProp(scn, keyname+'usecolor', 'true')
         usedepth = luxProp(scn, keyname+'usedepth', 'true')
         (s, l) = c((s, l), luxTexture('value', keyname+'tex', 'fresnel', 1.459 if volId != 0 else 1.0002926, 1.0, 6.0, 'IOR', 'ior', scn, gui, 0, 1))
@@ -6123,7 +6127,14 @@ def luxNamedVolumeTexture(volId, gui=None):
                         tex[tex.index(t)] = t[:t.rfind('[')] + '[%s %s %s]' % (rgb[0], rgb[1], rgb[2])
                 s1 = "\n".join(tex)
         (s, l) = c((s, l), (s1, l1))
+        # reset color clamping if turned off
+        if (doclamp == "true"):
+            luxProp(scn, "colorclamp", "false").set("true")
     elif volume_type.get() == 'homogeneous':
+        # turning off color clamping for volumes
+        doclamp = luxProp(scn, "colorclamp", "false").get()
+        if (doclamp == "true"):
+            luxProp(scn, "colorclamp", "false").set("false")
         usecolor = luxProp(scn, keyname+'usecolor', 'true')
         usedepth = luxProp(scn, keyname+'usedepth', 'true')
         (s, l) = c((s, l), luxTexture('value', keyname+'tex', 'fresnel', 1.459 if volId != 0 else 1.0002926, 1.0, 6.0, 'IOR', 'ior', scn, gui, 0, 1))
@@ -6157,6 +6168,9 @@ def luxNamedVolumeTexture(volId, gui=None):
         (s, l) = c((s, l), luxSpectrumTexture('sigma_s', keyname+'sigma_s', '0.0 0.0 0.0', 4000.0, 'scattering:', 'The scattering cross section', scn, gui, 1))
         if gui: gui.newline("asymmetry:", 0, 0)
         l += luxRGBNeg('g', luxProp(scn, keyname+'g', '0.0 0.0 0.0'), -1.0, 1.0, 'asymmetry:', 'The phase function coefficient. -1 leads to backscatter, 1 to forwards scatter, 0 is symmetrical.', gui)
+        # reset color clamping if turned off
+        if (doclamp == "true"):
+            luxProp(scn, "colorclamp", "false").set("true")
     
     return s, volType+l
 
