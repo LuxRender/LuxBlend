@@ -1564,7 +1564,26 @@ def save_lux(filename, unindexedname, anim_progress=None):
         #    # TODO: propabily scale needs to be applyed on camera coords too 
         #    file.write("Transform [%s 0.0 0.0 0.0  0.0 %s 0.0 0.0  0.0 0.0 %s 0.0  0.0 0.0 0 1.0]\n"%(scale, scale, scale))
         #    file.write("\n")
-        
+            
+
+    # Note - radiance - this is a work in progress
+#        flash = luxFlashBlock(camObj)
+#        if flash != "":
+#            file.write("# Camera flash lamp\n")
+#            file.write("AttributeBegin\n")
+#            #file.write("CoordSysTransform \"camera\"\n")
+#            file.write(flash)
+#            file.write("AttributeEnd\n\n")
+
+        #### Write material & geometry file includes in scene file
+        if not file.combine_all_output:
+            if luxProp(scn, 'lxm', 'true').get() == 'true' or os.path.exists(mat_filename):
+                file.write("Include \"%s\"\n\n" %(mat_pfilename))
+            if luxProp(scn, 'lxo', 'true').get() == 'true' or os.path.exists(geom_filename):
+                file.write("Include \"%s\"\n\n" %(geom_pfilename))
+            if luxProp(scn, 'lxv', 'true').get() == 'true' or os.path.exists(vol_filename):
+                file.write("Include \"%s\"\n\n" %(vol_pfilename))
+
         if LuxIsGUI: pb.next('Exporting Environment')
         ##### Write World Background, Sunsky or Env map ######
         env = luxEnvironment(scn)
@@ -1595,26 +1614,7 @@ def save_lux(filename, unindexedname, anim_progress=None):
                     volumeId = luxProp(scn, '%s_vol_id' % (volume_prop), 0).get()
                     if volumeId not in export.namedVolumes:
                         export.namedVolumes.append(volumeId)
-            
 
-    # Note - radiance - this is a work in progress
-#        flash = luxFlashBlock(camObj)
-#        if flash != "":
-#            file.write("# Camera flash lamp\n")
-#            file.write("AttributeBegin\n")
-#            #file.write("CoordSysTransform \"camera\"\n")
-#            file.write(flash)
-#            file.write("AttributeEnd\n\n")
-
-        #### Write material & geometry file includes in scene file
-        if not file.combine_all_output:
-            if luxProp(scn, 'lxm', 'true').get() == 'true' or os.path.exists(mat_filename):
-                file.write("Include \"%s\"\n\n" %(mat_pfilename))
-            if luxProp(scn, 'lxo', 'true').get() == 'true' or os.path.exists(geom_filename):
-                file.write("Include \"%s\"\n\n" %(geom_pfilename))
-            if luxProp(scn, 'lxv', 'true').get() == 'true' or os.path.exists(vol_filename):
-                file.write("Include \"%s\"\n\n" %(vol_pfilename))
-        
     if luxProp(scn, "lxm", "true").get()=="true" or use_pipe_output:
         if LuxIsGUI: pb.next('Exporting Materials')
         ##### Write Material file #####
