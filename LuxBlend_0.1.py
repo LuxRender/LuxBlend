@@ -691,10 +691,10 @@ class luxExport:
         return Result
 
     #-------------------------------------------------
-    # getMeshType(self, vertcount, mat, instancedMats)
-    # returns type of mesh as string to use depending on thresholds
+    # getMeshParams(self, mat, instancedMats)
+    # returns mesh parameters as string
     #-------------------------------------------------
-    def getMeshType(self, vertcount, mat, instancedMats=None):
+    def getMeshParams(self, mat, instancedMats=None):
         scn = Scene.GetCurrent()
         if mat != dummyMat and not instancedMats:
             usesubdiv = luxProp(mat, "subdiv", "false")
@@ -708,18 +708,18 @@ class luxExport:
             dstr = ""
             if usemicrodisp.get() == "true":
                 nsubdivlevels = luxProp(mat, "nsubdivlevels", 50)
-                dstr += "\"mesh\" \"string subdivscheme\" [\"microdisplacement\"] \"bool dmnormalsmooth\" [\"false\"] \"integer nsubdivlevels\" [%i] \"string displacementmap\" [\"%s::displacementmap\"] \"float dmscale\" [%f] \"float dmoffset\" [%f]"% (nsubdivlevels.get(), mat.getName(), dmscale.get(), dmoffset.get())
+                dstr += "\"string subdivscheme\" [\"microdisplacement\"] \"bool dmnormalsmooth\" [\"false\"] \"integer nsubdivlevels\" [%i] \"string displacementmap\" [\"%s::displacementmap\"] \"float dmscale\" [%f] \"float dmoffset\" [%f]"% (nsubdivlevels.get(), mat.getName(), dmscale.get(), dmoffset.get())
             else:
                 if usesubdiv.get() == "true":
                     nlevels = luxProp(mat, "sublevels", 1)
-                    dstr += "\"loopsubdiv\" \"integer nlevels\" [%i] \"bool dmnormalsmooth\" [\"%s\"] \"bool dmsharpboundary\" [\"%s\"]"% (nlevels.get(), nsmooth.get(), sharpbound.get())
+                    dstr += "\"string subdivscheme\" [\"loopsubdiv\"] \"integer nsubdivlevels\" [%i] \"bool dmnormalsmooth\" [\"%s\"] \"bool dmsharpboundary\" [\"%s\"]"% (nlevels.get(), nsmooth.get(), sharpbound.get())
             
                 if usedisp.get() == "true":
-                    dstr += " \"string displacementmap\" [\"%s::dispmap.scale\"] \"float dmscale\" [-1.0] \"float dmoffset\" [%f]"%(mat.getName(), sdoffset.get()) # scale is scaled in texture
+                    dstr += "\"string displacementmap\" [\"%s::dispmap.scale\"] \"float dmscale\" [-1.0] \"float dmoffset\" [%f]"%(mat.getName(), sdoffset.get()) # scale is scaled in texture
 
-            if dstr != "": return dstr
+            return dstr
 
-        return "\"trianglemesh\""
+        return ""
 
     #-------------------------------------------------
     # exportMesh(self, file, mesh, mats, name, portal, instancedMats, instancedShapes)
@@ -746,18 +746,14 @@ class luxExport:
                     file.write("ObjectBegin \"%s\"\n" % self.exportInstanceObjName(instancedMats, i, instancedShapes))
                 self.exportMaterialLink(file, mat)
 
+            mesh_str = self.getMeshParams(mats[matIndex], instancedMats)
             if (export_ply == "true") and not(portal):
-                 mesh_str = "\"plymesh\""
-                 file.write("\tShape %s \n"% mesh_str)
+                 file.write("\tShape \"plymesh\" %s \n"% mesh_str)
             else:
-                 mesh_str = self.getMeshType(len(mesh.verts), mats[matIndex], instancedMats)
                  if not(portal):
-                     if luxProp(mat, "usemicrodisp", "false").get() == "true":
-                         file.write("\tShape %s \"integer triindices\" [\n"% mesh_str)
-                     else:
-                         file.write("\tShape %s \"integer indices\" [\n"% mesh_str)
+                     file.write("\tShape \"mesh\" %s \"integer triindices\" [\n"% mesh_str)
                  else:
-                     file.write("\tPortalShape %s \"integer indices\" [\n"% mesh_str)
+                     file.write("\tPortalShape \"mesh\" %s \"integer triindices\" [\n"% mesh_str)
 
             if (export_ply == "true") and not(portal):
                 sceneName = luxProp(scn, "sceneName", "").get()
@@ -877,11 +873,11 @@ class luxExport:
                         index += 1
                     exportFaces.append(exportVIndices)
                 if (len(exportVerts)>0):
-                    mesh_str = self.getMeshType(len(exportVerts), mats[matIndex], instancedMats)
+                    mesh_str = self.getMeshParams(mats[matIndex], instancedMats)
                     if portal:
-                        file.write("\tPortalShape %s \"integer indices\" [\n"% mesh_str)
+                        file.write("\tPortalShape \"mesh\" %s \"integer triindices\" [\n"% mesh_str)
                     else:
-                        file.write("\tShape %s \"integer indices\" [\n"% mesh_str)
+                        file.write("\tShape \"mesh\" %s \"integer triindices\" [\n"% mesh_str)
                     for face in exportFaces:
                         file.write("%d %d %d\n"%(face[0], face[1], face[2]))
                         if (len(face)==4):
@@ -7288,31 +7284,31 @@ def luxMaterialBlock(name, luxname, key, mat, gui=None, level=0, str_opt=""):
         # Object options (common)
         if (level == 0) and (has_object_options == 1):
             export_ply = luxProp(scn, "export_ply", "false").get()
+            if gui: gui.newline("Mesh:", 2, level, icon, [0.6,0.6,0.4])
+            usesubdiv = luxProp(mat, "subdiv", "false")
+            luxBool("usesubdiv", usesubdiv, "Subdivision", "Enable Loop Subdivision options", gui, 1.0)
+            usedisp = luxProp(mat, "dispmap", "false")
+            luxBool("usedisp", usedisp, "Displacement Map", "Enable Displacement mapping options", gui, 1.0)
+            if usesubdiv.get() == "true" or usedisp.get() == "true":
+                usemicrodisp = luxProp(mat, "usemicrodisp", "false")
+                luxBool("usemicrodisp", usemicrodisp, "Micro Displacement Subdivision", "Enable micro displacement subdivision options", gui, 2.0)
+                if usemicrodisp.get() == "false":
+                    luxInt("sublevels", luxProp(mat, "sublevels", 2), 0, 12, "sublevels", "The number of levels of object subdivision", gui, 2.0)
+                    sharpbound = luxProp(mat, "sharpbound", "false")
+                    luxBool("sharpbound", sharpbound, "Sharpen Bounds", "Sharpen boundaries during subdivision", gui, 1.0)
+                    nsmooth = luxProp(mat, "nsmooth", "true")
+                    luxBool("nsmooth", nsmooth, "Smooth", "Smooth faces during subdivision", gui, 1.0)
+                    if usedisp.get() == "true":
+                        (str,ll) = c((str,link), luxDispFloatTexture("dispmap", keyname, 0.1, -10, 10.0, "dispmap", "Displacement Mapping amount", mat, gui, level+1))
+                        luxFloat("sdoffset",  luxProp(mat, "sdoffset", 0.0), -0.1, 1.0, "Offset", "Offset for displacement map", gui, 2.0)
+                        usesubdiv.set("true")
+                else:
+                    luxInt("nsubdivlevels", luxProp(mat, "nsubdivlevels", 50), 0, 500, "microsublevels", "The number of levels of object micro subdivision", gui, 2.0)
+                    (str,ll) = c((str,link), luxDispFloatTexture("displacementmap", keyname, 0.1, -10, 10.0, "dispmap", "Displacement Mapping amount", mat, gui, level+1))
+                    luxFloat("dmscale",  luxProp(mat, "dmscale", 0.0), -1.0, 1.0, "Scale", "Scale for micro displacement map", gui, 2.0)
+                    luxFloat("dmoffset",  luxProp(mat, "dmoffset", 0.0), -0.1, 1.0, "Offset", "Offset for micro displacement map", gui, 2.0)
+            if gui: gui.newline('Hair:', 2, level, None, [0.6,0.6,0.4])
             if export_ply == "false":
-                if gui: gui.newline("Mesh:", 2, level, icon, [0.6,0.6,0.4])
-                usesubdiv = luxProp(mat, "subdiv", "false")
-                luxBool("usesubdiv", usesubdiv, "Subdivision", "Enable Loop Subdivision options", gui, 1.0)
-                usedisp = luxProp(mat, "dispmap", "false")
-                luxBool("usedisp", usedisp, "Displacement Map", "Enable Displacement mapping options", gui, 1.0)
-                if usesubdiv.get() == "true" or usedisp.get() == "true":
-                    usemicrodisp = luxProp(mat, "usemicrodisp", "false")
-                    luxBool("usemicrodisp", usemicrodisp, "Micro Displacement Subdivision", "Enable micro displacement subdivision options", gui, 2.0)
-                    if usemicrodisp.get() == "false":
-                        luxInt("sublevels", luxProp(mat, "sublevels", 2), 0, 12, "sublevels", "The number of levels of object subdivision", gui, 2.0)
-                        sharpbound = luxProp(mat, "sharpbound", "false")
-                        luxBool("sharpbound", sharpbound, "Sharpen Bounds", "Sharpen boundaries during subdivision", gui, 1.0)
-                        nsmooth = luxProp(mat, "nsmooth", "true")
-                        luxBool("nsmooth", nsmooth, "Smooth", "Smooth faces during subdivision", gui, 1.0)
-                        if usedisp.get() == "true":
-                            (str,ll) = c((str,link), luxDispFloatTexture("dispmap", keyname, 0.1, -10, 10.0, "dispmap", "Displacement Mapping amount", mat, gui, level+1))
-                            luxFloat("sdoffset",  luxProp(mat, "sdoffset", 0.0), -0.1, 1.0, "Offset", "Offset for displacement map", gui, 2.0)
-                            usesubdiv.set("true")
-                    else:
-                        luxInt("nsubdivlevels", luxProp(mat, "nsubdivlevels", 50), 0, 500, "microsublevels", "The number of levels of object micro subdivision", gui, 2.0)
-                        (str,ll) = c((str,link), luxDispFloatTexture("displacementmap", keyname, 0.1, -10, 10.0, "dispmap", "Displacement Mapping amount", mat, gui, level+1))
-                        luxFloat("dmscale",  luxProp(mat, "dmscale", 0.0), -1.0, 1.0, "Scale", "Scale for micro displacement map", gui, 2.0)
-                        luxFloat("dmoffset",  luxProp(mat, "dmoffset", 0.0), -0.1, 1.0, "Offset", "Offset for micro displacement map", gui, 2.0)
-                if gui: gui.newline('Hair:', 2, level, None, [0.6,0.6,0.4])
                 luxFloat('hair_thickness',  luxProp(mat, 'hair_thickness', 0.5), 0.001, 100.0, 'hair thickness', 'Hair strand diameter', gui, 1.5)
                 luxScaleUnits('hair_thickness', 'mm', mat, 0.5, gui)
 
