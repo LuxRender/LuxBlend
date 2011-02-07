@@ -727,7 +727,7 @@ class luxExport:
     # os.path.join(filepath, filebase + "-geom.lxo")
     #-------------------------------------------------
     def exportMesh(self, file, mesh, mats, name, portal=False, instancedMats=None, instancedShapes=None):
-        export_ply = luxProp(scn, "export_ply", "false").get()
+        export_ply = luxProp(scn, "export_ply", "true").get()
         filepath = luxProp(scn, "curFilePath", "").get()
         #print("    exporting mesh")
         if mats == []:
@@ -997,7 +997,7 @@ class luxExport:
         objectmblur = luxProp(cam, "objectmblur", "true").get()
         usemblur = luxProp(cam, "usemblur", "false").get()
         mesh_optimizing = luxProp(scn, "mesh_optimizing", "true").get()
-        export_ply = luxProp(scn, "export_ply", "false").get()
+        export_ply = luxProp(scn, "export_ply", "true").get()
         mesh = Mesh.New('')
         #pb = exportProgressBar(len(self.objects), self.mpb)
         for [obj, matrix] in self.objects:
@@ -4812,11 +4812,11 @@ def luxSystem(scn, gui=None):
         luxBool("RGC", luxProp(scn, "RGC", "true"), "RGC", "use reverse gamma correction", gui)
         luxBool("ColClamp", luxProp(scn, "colorclamp", "false"), "ColClamp", "clamp all colors to 0.0-0.9", gui)
         if gui: gui.newline("MESH:", 10)
-        luxBool("mesh_optimizing", luxProp(scn, "mesh_optimizing", "true"), "Optimize meshes", "Optimize meshes during export", gui, 2.0)
-        luxBool("export_ply", luxProp(scn, "export_ply", "false"), "Export Ply", "Exports ply meshes during export", gui, 0.66)
+        luxBool("mesh_optimizing", luxProp(scn, "mesh_optimizing", "false"), "Optimize meshes", "Optimize meshes during export", gui, 2.0)
+        luxBool("export_ply", luxProp(scn, "export_ply", "true"), "Export Ply", "Exports ply meshes during export", gui, 0.66)
         luxBool("binary_ply", luxProp(scn, "binary_ply", "true"), "Export binary", "Exports binary ply meshes during export", gui, 0.66)
         luxBool("skip_ply", luxProp(scn, "skip_ply", "false"), "Partial export", "Only exports mesh scale, location, rotation data.", gui, 0.67)
-        if luxProp(scn, "export_ply", "false").get() == "true":
+        if luxProp(scn, "export_ply", "true").get() == "true":
             luxProp(scn, "mesh_optimizing", "true").set("false")
         #luxInt("trianglemesh thr", luxProp(scn, "trianglemesh_thr", 0), 0, 10000000, "trianglemesh threshold", "Vertex threshold for exporting (wald) trianglemesh object(s)", gui, 2.0)
         #if gui: gui.newline()
@@ -7283,7 +7283,7 @@ def luxMaterialBlock(name, luxname, key, mat, gui=None, level=0, str_opt=""):
 
         # Object options (common)
         if (level == 0) and (has_object_options == 1):
-            export_ply = luxProp(scn, "export_ply", "false").get()
+            export_ply = luxProp(scn, "export_ply", "true").get()
             if gui: gui.newline("Mesh:", 2, level, icon, [0.6,0.6,0.4])
             usesubdiv = luxProp(mat, "subdiv", "false")
             luxBool("usesubdiv", usesubdiv, "Subdivision", "Enable Loop Subdivision options", gui, 1.0)
