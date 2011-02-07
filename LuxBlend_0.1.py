@@ -712,7 +712,7 @@ class luxExport:
             else:
                 if usesubdiv.get() == "true":
                     nlevels = luxProp(mat, "sublevels", 1)
-                    dstr += "\"string subdivscheme\" [\"loopsubdiv\"] \"integer nsubdivlevels\" [%i] \"bool dmnormalsmooth\" [\"%s\"] \"bool dmsharpboundary\" [\"%s\"]"% (nlevels.get(), nsmooth.get(), sharpbound.get())
+                    dstr += "\"string subdivscheme\" [\"loop\"] \"integer nsubdivlevels\" [%i] \"bool dmnormalsmooth\" [\"%s\"] \"bool dmsharpboundary\" [\"%s\"]"% (nlevels.get(), nsmooth.get(), sharpbound.get())
             
                 if usedisp.get() == "true":
                     dstr += "\"string displacementmap\" [\"%s::dispmap.scale\"] \"float dmscale\" [-1.0] \"float dmoffset\" [%f]"%(mat.getName(), sdoffset.get()) # scale is scaled in texture
