@@ -3549,7 +3549,8 @@ def luxFilm(scn, gui=None):
 
             if gui: gui.newline("  Output:")
             str += luxInt("displayinterval", luxProp(scn, "film.displayinterval", 12), 4, 3600, "display interval", "Set display interval (seconds)", gui)
-            str += luxInt("writeinterval", luxProp(scn, "film.writeinterval", 120), 12, 3600, "write interval", "Set display interval (seconds)", gui)
+            str += luxInt("flmwriteinterval", luxProp(scn, "film.flmwriteinterval", 600), 12, 3600, "film write interval", "Set film write interval (seconds)", gui)
+            str += luxInt("writeinterval", luxProp(scn, "film.writeinterval", 120), 12, 3600, "img write interval", "Set file write interval (seconds)", gui)
 
             if gui: gui.newline("  Halt:")
             if luxProp(scn, 'useparamkeys', 'false').get() == 'false':
