@@ -4198,8 +4198,10 @@ def luxVolumeIntegrator(scn, gui=None):
     global icon_c_volumeintegrator
     str = ""
     if scn:
-        integratortype = luxProp(scn, "vintegrator.type", "single")
-        str = luxIdentifier("VolumeIntegrator", integratortype, ["emission", "single"], "VOLUME INT", "select volume integrator type", gui, icon_c_volumeintegrator)
+        integratortype = luxProp(scn, "vintegrator.type", "multi")
+        str = luxIdentifier("VolumeIntegrator", integratortype, ["multi", "emission", "single"], "VOLUME INT", "select volume integrator type", gui, icon_c_volumeintegrator)
+        if integratortype.get() == "multi":
+            str += luxFloat("stepsize", luxProp(scn, "vintegrator.emission.stepsize", 1.0), 0.0, 100.0, "stepsize", "Stepsize for volumes", gui)
         if integratortype.get() == "emission":
             str += luxFloat("stepsize", luxProp(scn, "vintegrator.emission.stepsize", 1.0), 0.0, 100.0, "stepsize", "Stepsize for volumes", gui)
         if integratortype.get() == "single":
