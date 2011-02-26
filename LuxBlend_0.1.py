@@ -6533,26 +6533,65 @@ def Preview_Update(mat, kn, defLarge, defType, texName, name, level):
             p.stdin.write('Camera "orthographic" "float screenwindow" [0.0 0.5 0.0 0.5]\n')
         else:
             p.stdin.write('Camera "orthographic" "float screenwindow" [-0.5 0.5 -0.5 0.5]\n')
-    # Fleximage
-    p.stdin.write('Film "fleximage" "integer xresolution" [%i] "integer yresolution" [%i] "integer displayinterval" [3] "integer ldr_writeinterval" [3600] "string tonemapkernel" ["linear"] "integer haltspp" [1] "integer reject_warmup" [64] "bool write_tonemapped_tga" ["false"] "bool write_untonemapped_exr" ["false"] "bool write_tonemapped_exr" ["false"] "bool write_untonemapped_igi" ["false"] "bool write_tonemapped_igi" ["false"] "bool write_png" ["false"] "string filename" ["luxblend-preview"] \n'%(thumbres, thumbres))
-    p.stdin.write('PixelFilter "mitchell" "float xwidth" [1.500000] "float ywidth" [1.500000] "float B" [0.333330] "float C" [0.333330] "bool supersample" ["true"]\n')
+    
     # Quality
     scn = Scene.GetCurrent()
     defprevmat = luxProp(scn, "defprevmat", "high")
+    use_expm = luxProp(scn, "use_expm", "false")
     quality = luxProp(mat, kn+"prev_quality", defprevmat.get())
     if quality.get()=="low":
-        p.stdin.write('Sampler "lowdiscrepancy" "string pixelsampler" ["hilbert"] "integer pixelsamples" [2]\n')
+        if use_expm.get()=="false":
+            # Fleximage
+            p.stdin.write('Film "fleximage" "integer xresolution" [%i] "integer yresolution" [%i] "integer displayinterval" [3] "integer ldr_writeinterval" [3600] "integer haltspp" [2] "string tonemapkernel" ["linear"] "integer reject_warmup" [64] "bool write_tonemapped_tga" ["false"] "bool write_untonemapped_exr" ["false"] "bool write_tonemapped_exr" ["false"] "bool write_untonemapped_igi" ["false"] "bool write_tonemapped_igi" ["false"] "bool write_png" ["false"] "string filename" ["luxblend-preview"] \n'%(thumbres, thumbres))
+            p.stdin.write('PixelFilter "mitchell" "float xwidth" [1.500000] "float ywidth" [1.500000] "float B" [0.333330] "float C" [0.333330] "bool supersample" ["true"]\n')
+            p.stdin.write('Sampler "metropolis"\n')
+        else:
+            # Fleximage
+            p.stdin.write('Film "fleximage" "integer xresolution" [%i] "integer yresolution" [%i] "integer displayinterval" [3] "integer ldr_writeinterval" [3600] "integer haltspp" [1] "string tonemapkernel" ["linear"] "integer reject_warmup" [64] "bool write_tonemapped_tga" ["false"] "bool write_untonemapped_exr" ["false"] "bool write_tonemapped_exr" ["false"] "bool write_untonemapped_igi" ["false"] "bool write_tonemapped_igi" ["false"] "bool write_png" ["false"] "string filename" ["luxblend-preview"] \n'%(thumbres, thumbres))
+            p.stdin.write('PixelFilter "mitchell" "float xwidth" [1.500000] "float ywidth" [1.500000] "float B" [0.333330] "float C" [0.333330] "bool supersample" ["true"]\n')
+            p.stdin.write('Sampler "lowdiscrepancy" "string pixelsampler" ["hilbert"] "integer pixelsamples" [2]\n')
     elif quality.get()=="medium":
-        p.stdin.write('Sampler "lowdiscrepancy" "string pixelsampler" ["hilbert"] "integer pixelsamples" [4]\n')
+        if use_expm.get()=="false":
+            # Fleximage
+            p.stdin.write('Film "fleximage" "integer xresolution" [%i] "integer yresolution" [%i] "integer displayinterval" [3] "integer ldr_writeinterval" [3600] "integer haltspp" [4] "string tonemapkernel" ["linear"] "integer reject_warmup" [64] "bool write_tonemapped_tga" ["false"] "bool write_untonemapped_exr" ["false"] "bool write_tonemapped_exr" ["false"] "bool write_untonemapped_igi" ["false"] "bool write_tonemapped_igi" ["false"] "bool write_png" ["false"] "string filename" ["luxblend-preview"] \n'%(thumbres, thumbres))
+            p.stdin.write('PixelFilter "mitchell" "float xwidth" [1.500000] "float ywidth" [1.500000] "float B" [0.333330] "float C" [0.333330] "bool supersample" ["true"]\n')
+            p.stdin.write('Sampler "metropolis"\n')
+        else:
+            # Fleximage
+            p.stdin.write('Film "fleximage" "integer xresolution" [%i] "integer yresolution" [%i] "integer displayinterval" [3] "integer ldr_writeinterval" [3600] "integer haltspp" [1] "string tonemapkernel" ["linear"] "integer reject_warmup" [64] "bool write_tonemapped_tga" ["false"] "bool write_untonemapped_exr" ["false"] "bool write_tonemapped_exr" ["false"] "bool write_untonemapped_igi" ["false"] "bool write_tonemapped_igi" ["false"] "bool write_png" ["false"] "string filename" ["luxblend-preview"] \n'%(thumbres, thumbres))
+            p.stdin.write('PixelFilter "mitchell" "float xwidth" [1.500000] "float ywidth" [1.500000] "float B" [0.333330] "float C" [0.333330] "bool supersample" ["true"]\n')
+            p.stdin.write('Sampler "lowdiscrepancy" "string pixelsampler" ["hilbert"] "integer pixelsamples" [4]\n')
     elif quality.get()=="high":
-        p.stdin.write('Sampler "lowdiscrepancy" "string pixelsampler" ["hilbert"] "integer pixelsamples" [8]\n')
+        if use_expm.get()=="false":
+            # Fleximage
+            p.stdin.write('Film "fleximage" "integer xresolution" [%i] "integer yresolution" [%i] "integer displayinterval" [3] "integer ldr_writeinterval" [3600] "integer haltspp" [8] "string tonemapkernel" ["linear"] "integer reject_warmup" [64] "bool write_tonemapped_tga" ["false"] "bool write_untonemapped_exr" ["false"] "bool write_tonemapped_exr" ["false"] "bool write_untonemapped_igi" ["false"] "bool write_tonemapped_igi" ["false"] "bool write_png" ["false"] "string filename" ["luxblend-preview"] \n'%(thumbres, thumbres))
+            p.stdin.write('PixelFilter "mitchell" "float xwidth" [1.500000] "float ywidth" [1.500000] "float B" [0.333330] "float C" [0.333330] "bool supersample" ["true"]\n')
+            p.stdin.write('Sampler "metropolis"\n')
+        else:
+            # Fleximage
+            p.stdin.write('Film "fleximage" "integer xresolution" [%i] "integer yresolution" [%i] "integer displayinterval" [3] "integer ldr_writeinterval" [3600] "integer haltspp" [1] "string tonemapkernel" ["linear"] "integer reject_warmup" [64] "bool write_tonemapped_tga" ["false"] "bool write_untonemapped_exr" ["false"] "bool write_tonemapped_exr" ["false"] "bool write_untonemapped_igi" ["false"] "bool write_tonemapped_igi" ["false"] "bool write_png" ["false"] "string filename" ["luxblend-preview"] \n'%(thumbres, thumbres))
+            p.stdin.write('PixelFilter "mitchell" "float xwidth" [1.500000] "float ywidth" [1.500000] "float B" [0.333330] "float C" [0.333330] "bool supersample" ["true"]\n')
+            p.stdin.write('Sampler "lowdiscrepancy" "string pixelsampler" ["hilbert"] "integer pixelsamples" [8]\n')
     else: 
-        p.stdin.write('Sampler "lowdiscrepancy" "string pixelsampler" ["hilbert"] "integer pixelsamples" [32]\n')
+        if use_expm.get()=="false":
+            # Fleximage
+            p.stdin.write('Film "fleximage" "integer xresolution" [%i] "integer yresolution" [%i] "integer displayinterval" [3] "integer ldr_writeinterval" [3600] "integer haltspp" [32] "string tonemapkernel" ["linear"] "integer reject_warmup" [64] "bool write_tonemapped_tga" ["false"] "bool write_untonemapped_exr" ["false"] "bool write_tonemapped_exr" ["false"] "bool write_untonemapped_igi" ["false"] "bool write_tonemapped_igi" ["false"] "bool write_png" ["false"] "string filename" ["luxblend-preview"] \n'%(thumbres, thumbres))
+            p.stdin.write('PixelFilter "mitchell" "float xwidth" [1.500000] "float ywidth" [1.500000] "float B" [0.333330] "float C" [0.333330] "bool supersample" ["true"]\n')
+            p.stdin.write('Sampler "metropolis"\n')
+        else:
+            # Fleximage
+            p.stdin.write('Film "fleximage" "integer xresolution" [%i] "integer yresolution" [%i] "integer displayinterval" [3] "integer ldr_writeinterval" [3600] "integer haltspp" [1] "string tonemapkernel" ["linear"] "integer reject_warmup" [64] "bool write_tonemapped_tga" ["false"] "bool write_untonemapped_exr" ["false"] "bool write_tonemapped_exr" ["false"] "bool write_untonemapped_igi" ["false"] "bool write_tonemapped_igi" ["false"] "bool write_png" ["false"] "string filename" ["luxblend-preview"] \n'%(thumbres, thumbres))
+            p.stdin.write('PixelFilter "mitchell" "float xwidth" [1.500000] "float ywidth" [1.500000] "float B" [0.333330] "float C" [0.333330] "bool supersample" ["true"]\n')
+            p.stdin.write('Sampler "lowdiscrepancy" "string pixelsampler" ["hilbert"] "integer pixelsamples" [32]\n')
+    
     # SurfaceIntegrator
     if(prev_plane.get()=="false"):
-        p.stdin.write('SurfaceIntegrator "distributedpath" "integer directsamples" [1] "integer diffusereflectdepth" [1] "integer diffusereflectsamples" [4] "integer diffuserefractdepth" [4] "integer diffuserefractsamples" [1] "integer glossyreflectdepth" [1] "integer glossyreflectsamples" [2] "integer glossyrefractdepth" [4] "integer glossyrefractsamples" [1] "integer specularreflectdepth" [2] "integer specularrefractdepth" [4]\n')
+        if use_expm.get()=="false":
+            p.stdin.write('SurfaceIntegrator "bidirectional" "integer eyedepth" [32] "integer lightdepth" [32]\n')
+        else:
+            p.stdin.write('SurfaceIntegrator "exphotonmap" "integer directphotons" [10000] "integer indirectphotons" [10000] "integer causticphotons" [2000] "integer radiancephotons" [10000] "integer maxdepth" [32] "integer maxphotondepth" [32]\n')
     else:
-        p.stdin.write('SurfaceIntegrator "distributedpath" "integer directsamples" [1] "integer diffusereflectdepth" [0] "integer diffusereflectsamples" [0] "integer diffuserefractdepth" [0] "integer diffuserefractsamples" [0] "integer glossyreflectdepth" [0] "integer glossyreflectsamples" [0] "integer glossyrefractdepth" [0] "integer glossyrefractsamples" [0] "integer specularreflectdepth" [1] "integer specularrefractdepth" [1]\n')
+        p.stdin.write('SurfaceIntegrator "path"\n')
     # World
     p.stdin.write('WorldBegin\n')
     if(prev_sphere.get()=="true"):
@@ -6624,8 +6663,12 @@ def Preview_Update(mat, kn, defLarge, defType, texName, name, level):
         _s = ' '.join(['%.5f' % b for a in _m for b in a])
         p.stdin.write('AttributeBegin\nTransform [%s]\n'%_s)
     if(area.get() == "false"):
-        p.stdin.write('Texture "pL" "color" "blackbody" "float temperature" [6500.0]\n')
-        p.stdin.write('LightSource "point" "texture L" ["pL"] "float gain" [0.002]')
+        p.stdin.write('Texture "light:light:L" "color" "blackbody" "float temperature" [6500.000000]\n')
+        p.stdin.write('AreaLightSource "area" "texture L" ["light:light:L"] "float power" [100.000000] "float efficacy" [17.000000] "float gain" [0.300000]\n')
+        p.stdin.write('	Rotate 30 1 0 0\n')
+        p.stdin.write('	Shape "mesh"  "integer triindices" [ 0 1 2 0 2 3\n')
+        p.stdin.write('	] "point P" [ -0.100000 0.100000 0.000000 0.100000 0.100000 -0.000000 0.100000 -0.100000 -0.000000 -0.100000 -0.100000 0.000000\n')
+        p.stdin.write('	] "normal N" [ -0.000000 -0.000000 -1.000000 -0.000000 -0.000000 -1.000000 -0.000000 -0.000000 -1.000000 -0.000000 -0.000000 -1.000000 ]\n')
     else:
         p.stdin.write('ReverseOrientation\n')
         p.stdin.write('AreaLightSource "area" "color L" [1.0 1.0 1.0]\n')
@@ -6706,7 +6749,7 @@ def luxPreview(mat, name, defType=0, defEnabled=False, defLarge=False, texName=N
             
             area = luxProp(mat, kn+"prev_arealight", "false")
             if not prev_plane.get()=="true":
-                Draw.Toggle("Area", evtLuxGui, r[0]+133, r[1]+100+voffset, 62, 18, area.get()=="true", "Use area lightsource instead of point light", lambda e,v: area.set(["false","true"][bool(v)]))
+                Draw.Toggle("Area", evtLuxGui, r[0]+133, r[1]+100+voffset, 62, 18, area.get()=="true", "Use area lightsource instead of mesh light", lambda e,v: area.set(["false","true"][bool(v)]))
 
             # Object width
             obwidth = luxProp(mat, kn+"prev_obwidth", 1.0)
@@ -6728,6 +6771,10 @@ def luxPreview(mat, name, defType=0, defEnabled=False, defLarge=False, texName=N
             defprevmat = luxProp(scn, "defprevmat", "high")
             quality = luxProp(mat, kn+"prev_quality", defprevmat.get())
             luxOptionRect("quality", quality, qs, "  Quality", "Select preview quality (higher quality > less noise > longer update)", gui, r[0]+200, r[1]+100+voffset, 88, 18)
+            
+            # Object width
+            use_expm = luxProp(scn, "use_expm", "false")
+            Draw.Toggle("exphotonmap", evtLuxGui, r[0]+200, r[1]+56+voffset, 88, 18, use_expm.get()=="true", "Use Exphotonmap to render.", lambda e,v: use_expm.set(["false","true"][bool(v)]))
 
             # Update preview
             Draw.Button("Update Preview", evtLuxGui, r[0]+133, r[1]+5, 154, 18, "Update Material Preview", lambda e,v: Preview_Update(mat, kn, defLarge, defType, texName, name, level))
