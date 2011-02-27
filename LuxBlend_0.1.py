@@ -6539,50 +6539,28 @@ def Preview_Update(mat, kn, defLarge, defType, texName, name, level):
     defprevmat = luxProp(scn, "defprevmat", "high")
     use_expm = luxProp(scn, "use_expm", "false")
     quality = luxProp(mat, kn+"prev_quality", defprevmat.get())
+    
     if quality.get()=="low":
-        if use_expm.get()=="false":
-            # Fleximage
-            p.stdin.write('Film "fleximage" "integer xresolution" [%i] "integer yresolution" [%i] "integer displayinterval" [3] "integer ldr_writeinterval" [3600] "integer haltspp" [2] "string tonemapkernel" ["linear"] "integer reject_warmup" [64] "bool write_tonemapped_tga" ["false"] "bool write_untonemapped_exr" ["false"] "bool write_tonemapped_exr" ["false"] "bool write_untonemapped_igi" ["false"] "bool write_tonemapped_igi" ["false"] "bool write_png" ["false"] "string filename" ["luxblend-preview"] \n'%(thumbres, thumbres))
-            p.stdin.write('PixelFilter "mitchell" "float xwidth" [1.500000] "float ywidth" [1.500000] "float B" [0.333330] "float C" [0.333330] "bool supersample" ["true"]\n')
-            p.stdin.write('Sampler "metropolis"\n')
-        else:
-            # Fleximage
-            p.stdin.write('Film "fleximage" "integer xresolution" [%i] "integer yresolution" [%i] "integer displayinterval" [3] "integer ldr_writeinterval" [3600] "integer haltspp" [1] "string tonemapkernel" ["linear"] "integer reject_warmup" [64] "bool write_tonemapped_tga" ["false"] "bool write_untonemapped_exr" ["false"] "bool write_tonemapped_exr" ["false"] "bool write_untonemapped_igi" ["false"] "bool write_tonemapped_igi" ["false"] "bool write_png" ["false"] "string filename" ["luxblend-preview"] \n'%(thumbres, thumbres))
-            p.stdin.write('PixelFilter "mitchell" "float xwidth" [1.500000] "float ywidth" [1.500000] "float B" [0.333330] "float C" [0.333330] "bool supersample" ["true"]\n')
-            p.stdin.write('Sampler "lowdiscrepancy" "string pixelsampler" ["hilbert"] "integer pixelsamples" [2]\n')
+        # Fleximage
+        p.stdin.write('Film "fleximage" "integer xresolution" [%i] "integer yresolution" [%i] "integer displayinterval" [3] "integer ldr_writeinterval" [3600] "integer haltspp" [8] "string tonemapkernel" ["linear"] "integer reject_warmup" [64] "bool write_tonemapped_tga" ["false"] "bool write_untonemapped_exr" ["false"] "bool write_tonemapped_exr" ["false"] "bool write_untonemapped_igi" ["false"] "bool write_tonemapped_igi" ["false"] "bool write_png" ["false"] "string filename" ["luxblend-preview"] \n'%(thumbres, thumbres))
+        p.stdin.write('PixelFilter "mitchell" "float xwidth" [1.500000] "float ywidth" [1.500000] "float B" [0.333330] "float C" [0.333330] "bool supersample" ["true"]\n')
     elif quality.get()=="medium":
-        if use_expm.get()=="false":
-            # Fleximage
-            p.stdin.write('Film "fleximage" "integer xresolution" [%i] "integer yresolution" [%i] "integer displayinterval" [3] "integer ldr_writeinterval" [3600] "integer haltspp" [4] "string tonemapkernel" ["linear"] "integer reject_warmup" [64] "bool write_tonemapped_tga" ["false"] "bool write_untonemapped_exr" ["false"] "bool write_tonemapped_exr" ["false"] "bool write_untonemapped_igi" ["false"] "bool write_tonemapped_igi" ["false"] "bool write_png" ["false"] "string filename" ["luxblend-preview"] \n'%(thumbres, thumbres))
-            p.stdin.write('PixelFilter "mitchell" "float xwidth" [1.500000] "float ywidth" [1.500000] "float B" [0.333330] "float C" [0.333330] "bool supersample" ["true"]\n')
-            p.stdin.write('Sampler "metropolis"\n')
-        else:
-            # Fleximage
-            p.stdin.write('Film "fleximage" "integer xresolution" [%i] "integer yresolution" [%i] "integer displayinterval" [3] "integer ldr_writeinterval" [3600] "integer haltspp" [1] "string tonemapkernel" ["linear"] "integer reject_warmup" [64] "bool write_tonemapped_tga" ["false"] "bool write_untonemapped_exr" ["false"] "bool write_tonemapped_exr" ["false"] "bool write_untonemapped_igi" ["false"] "bool write_tonemapped_igi" ["false"] "bool write_png" ["false"] "string filename" ["luxblend-preview"] \n'%(thumbres, thumbres))
-            p.stdin.write('PixelFilter "mitchell" "float xwidth" [1.500000] "float ywidth" [1.500000] "float B" [0.333330] "float C" [0.333330] "bool supersample" ["true"]\n')
-            p.stdin.write('Sampler "lowdiscrepancy" "string pixelsampler" ["hilbert"] "integer pixelsamples" [4]\n')
+        # Fleximage
+        p.stdin.write('Film "fleximage" "integer xresolution" [%i] "integer yresolution" [%i] "integer displayinterval" [3] "integer ldr_writeinterval" [3600] "integer haltspp" [16] "string tonemapkernel" ["linear"] "integer reject_warmup" [64] "bool write_tonemapped_tga" ["false"] "bool write_untonemapped_exr" ["false"] "bool write_tonemapped_exr" ["false"] "bool write_untonemapped_igi" ["false"] "bool write_tonemapped_igi" ["false"] "bool write_png" ["false"] "string filename" ["luxblend-preview"] \n'%(thumbres, thumbres))
+        p.stdin.write('PixelFilter "mitchell" "float xwidth" [1.500000] "float ywidth" [1.500000] "float B" [0.333330] "float C" [0.333330] "bool supersample" ["true"]\n')
     elif quality.get()=="high":
-        if use_expm.get()=="false":
-            # Fleximage
-            p.stdin.write('Film "fleximage" "integer xresolution" [%i] "integer yresolution" [%i] "integer displayinterval" [3] "integer ldr_writeinterval" [3600] "integer haltspp" [8] "string tonemapkernel" ["linear"] "integer reject_warmup" [64] "bool write_tonemapped_tga" ["false"] "bool write_untonemapped_exr" ["false"] "bool write_tonemapped_exr" ["false"] "bool write_untonemapped_igi" ["false"] "bool write_tonemapped_igi" ["false"] "bool write_png" ["false"] "string filename" ["luxblend-preview"] \n'%(thumbres, thumbres))
-            p.stdin.write('PixelFilter "mitchell" "float xwidth" [1.500000] "float ywidth" [1.500000] "float B" [0.333330] "float C" [0.333330] "bool supersample" ["true"]\n')
-            p.stdin.write('Sampler "metropolis"\n')
-        else:
-            # Fleximage
-            p.stdin.write('Film "fleximage" "integer xresolution" [%i] "integer yresolution" [%i] "integer displayinterval" [3] "integer ldr_writeinterval" [3600] "integer haltspp" [1] "string tonemapkernel" ["linear"] "integer reject_warmup" [64] "bool write_tonemapped_tga" ["false"] "bool write_untonemapped_exr" ["false"] "bool write_tonemapped_exr" ["false"] "bool write_untonemapped_igi" ["false"] "bool write_tonemapped_igi" ["false"] "bool write_png" ["false"] "string filename" ["luxblend-preview"] \n'%(thumbres, thumbres))
-            p.stdin.write('PixelFilter "mitchell" "float xwidth" [1.500000] "float ywidth" [1.500000] "float B" [0.333330] "float C" [0.333330] "bool supersample" ["true"]\n')
-            p.stdin.write('Sampler "lowdiscrepancy" "string pixelsampler" ["hilbert"] "integer pixelsamples" [8]\n')
+        # Fleximage
+        p.stdin.write('Film "fleximage" "integer xresolution" [%i] "integer yresolution" [%i] "integer displayinterval" [3] "integer ldr_writeinterval" [3600] "integer haltspp" [32] "string tonemapkernel" ["linear"] "integer reject_warmup" [64] "bool write_tonemapped_tga" ["false"] "bool write_untonemapped_exr" ["false"] "bool write_tonemapped_exr" ["false"] "bool write_untonemapped_igi" ["false"] "bool write_tonemapped_igi" ["false"] "bool write_png" ["false"] "string filename" ["luxblend-preview"] \n'%(thumbres, thumbres))
+        p.stdin.write('PixelFilter "mitchell" "float xwidth" [1.500000] "float ywidth" [1.500000] "float B" [0.333330] "float C" [0.333330] "bool supersample" ["true"]\n')
     else: 
-        if use_expm.get()=="false":
-            # Fleximage
-            p.stdin.write('Film "fleximage" "integer xresolution" [%i] "integer yresolution" [%i] "integer displayinterval" [3] "integer ldr_writeinterval" [3600] "integer haltspp" [32] "string tonemapkernel" ["linear"] "integer reject_warmup" [64] "bool write_tonemapped_tga" ["false"] "bool write_untonemapped_exr" ["false"] "bool write_tonemapped_exr" ["false"] "bool write_untonemapped_igi" ["false"] "bool write_tonemapped_igi" ["false"] "bool write_png" ["false"] "string filename" ["luxblend-preview"] \n'%(thumbres, thumbres))
-            p.stdin.write('PixelFilter "mitchell" "float xwidth" [1.500000] "float ywidth" [1.500000] "float B" [0.333330] "float C" [0.333330] "bool supersample" ["true"]\n')
-            p.stdin.write('Sampler "metropolis"\n')
-        else:
-            # Fleximage
-            p.stdin.write('Film "fleximage" "integer xresolution" [%i] "integer yresolution" [%i] "integer displayinterval" [3] "integer ldr_writeinterval" [3600] "integer haltspp" [1] "string tonemapkernel" ["linear"] "integer reject_warmup" [64] "bool write_tonemapped_tga" ["false"] "bool write_untonemapped_exr" ["false"] "bool write_tonemapped_exr" ["false"] "bool write_untonemapped_igi" ["false"] "bool write_tonemapped_igi" ["false"] "bool write_png" ["false"] "string filename" ["luxblend-preview"] \n'%(thumbres, thumbres))
-            p.stdin.write('PixelFilter "mitchell" "float xwidth" [1.500000] "float ywidth" [1.500000] "float B" [0.333330] "float C" [0.333330] "bool supersample" ["true"]\n')
-            p.stdin.write('Sampler "lowdiscrepancy" "string pixelsampler" ["hilbert"] "integer pixelsamples" [32]\n')
+        # Fleximage
+        p.stdin.write('Film "fleximage" "integer xresolution" [%i] "integer yresolution" [%i] "integer displayinterval" [3] "integer ldr_writeinterval" [3600] "integer haltspp" [128] "string tonemapkernel" ["linear"] "integer reject_warmup" [64] "bool write_tonemapped_tga" ["false"] "bool write_untonemapped_exr" ["false"] "bool write_tonemapped_exr" ["false"] "bool write_untonemapped_igi" ["false"] "bool write_tonemapped_igi" ["false"] "bool write_png" ["false"] "string filename" ["luxblend-preview"] \n'%(thumbres, thumbres))
+        p.stdin.write('PixelFilter "mitchell" "float xwidth" [1.500000] "float ywidth" [1.500000] "float B" [0.333330] "float C" [0.333330] "bool supersample" ["true"]\n')
+    
+    if use_expm.get()=="false":
+        p.stdin.write('Sampler "metropolis"\n')
+    else:
+        p.stdin.write('Sampler "lowdiscrepancy" "string pixelsampler" ["hilbert"] "integer pixelsamples" [8]\n')
     
     # SurfaceIntegrator
     if(prev_plane.get()=="false"):
