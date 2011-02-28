@@ -1091,6 +1091,7 @@ class luxExport:
         mesh = Mesh.New('')
         for [obj, matrix] in self.portals:
             #print("portal: %s"%(obj.getName()))
+            file.write("TransformBegin\n")
             file.write("\tTransform [%s %s %s %s  %s %s %s %s  %s %s %s %s  %s %s %s %s]\n"\
                 %(matrix[0][0], matrix[0][1], matrix[0][2], matrix[0][3],\
                   matrix[1][0], matrix[1][1], matrix[1][2], matrix[1][3],\
@@ -1103,6 +1104,7 @@ class luxExport:
                 self.exportMeshOpt(file, mesh, mats, mesh_name, True)
             else:
                 self.exportMesh(file, mesh, mats, mesh_name, True)
+            file.write("TransformEnd\n")
         mesh.verts = None
 
     #-------------------------------------------------
