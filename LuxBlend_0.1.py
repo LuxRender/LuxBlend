@@ -8,7 +8,7 @@ Group: 'Render'
 Tooltip: 'Export/Render to LuxRender v0.8RC1 scene format (.lxs)'
 """
 
-__author__ = "radiance, zuegs, ideasman42, luxblender, dougal2, SATtva, BinaryCortex, LordCrc"
+__author__ = "radiance, zuegs, ideasman42, luxblender, dougal2, SATtva, BinaryCortex, LordCrc, jensverwiebe"
 __version__ = "0.8RC1"
 __url__ = [
     "http://www.luxrender.net/",
@@ -39,7 +39,7 @@ Please check the lux tutorials & forums for more information.
 #
 # Authors and contributors:
 # radiance, zuegs, ideasman42, luxblender, dougal2, SATtva, BinaryCortex,
-#  zukazuka, Qantorisc, zsouthboy
+#  zukazuka, Qantorisc, zsouthboy, jensverwiebe
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
