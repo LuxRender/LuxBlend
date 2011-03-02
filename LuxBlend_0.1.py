@@ -6791,7 +6791,7 @@ def luxMaterialBlock(name, luxname, key, mat, gui=None, level=0, str_opt=""):
             mattype.set("glossy")
 
         # this is reverse order than in shown in the dropdown list
-        materials = ["null","mix","mirror","shinymetal","metal","glossytranslucent","mattetranslucent","matte","glossy_lossy","glossy","roughglass","glass","glass2","carpaint","velvet"]
+        materials = ["null","mix","mirror","shinymetal","metal","scatter","glossytranslucent","mattetranslucent","matte","glossy_lossy","glossy","roughglass","glass","glass2","carpaint","velvet"]
         
         if level == 0: materials = ["portal", "light", "boundvolume"]+materials
         if gui:
@@ -6994,6 +6994,15 @@ def luxMaterialBlock(name, luxname, key, mat, gui=None, level=0, str_opt=""):
             luxCollapse("orennayar", orennayar, "Oren-Nayar", "Enable Oren-Nayar BRDF", gui, 2.0)
             if orennayar.get() == "true":
                 (str,link) = c((str,link), luxFloatTexture("sigma", keyname, 0.0, 0.0, 90.0, "sigma", "sigma value for Oren-Nayar BRDF", mat, gui, level+1))
+            has_volume_options = 1
+            has_bump_options = 1
+            has_object_options = 1
+            has_emission_options = 1
+            has_compositing_options = 1
+			
+        if mattype.get() == "scatter":
+            (str,link) = c((str,link), luxSpectrumTexture("Kd", keyname, "1.0 1.0 1.0", 1.0, "diffuse", "", mat, gui, level+1))
+            (str,link) = c((str,link), luxFloatTexture("g", keyname, 0.0, -1.0, 1.0, "Asymmetry", "Scattering asymmetry", mat, gui, level+1))
             has_volume_options = 1
             has_bump_options = 1
             has_object_options = 1
