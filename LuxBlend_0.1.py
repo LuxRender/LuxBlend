@@ -3927,7 +3927,7 @@ def luxRenderer(scn, gui=None):
     str = ''
     if scn:
         renderer = luxProp(scn, 'renderer.type', 'classic')
-        str = luxIdentifier('Renderer', renderer, ['classic', 'hybrid'], 'ENGINE', 'select rendering engine', gui)
+        str = luxIdentifier('Renderer', renderer, ['classic', 'hybrid', 'sppm'], 'ENGINE', 'select rendering engine', gui)
         showadvanced = luxProp(scn, 'renderer.showadvanced', 'false')
         luxBool('advanced', showadvanced, 'Advanced', 'Show advanced options', gui, 0.6)
         showhelp = luxProp(scn, 'renderer.showhelp', 'false')
@@ -3954,6 +3954,12 @@ def luxRenderer(scn, gui=None):
                 if gui: gui.newline('  Description:', 8, 0, icon_help, [0.4,0.5,0.56])
                 r = gui.getRect(2,1); BGL.glRasterPos2i(r[0],r[1]+5)
                 Draw.Text('LuxRender hybrid CPU+GPU rendering engine', 'small')
+                
+        if renderer.get() == 'sppm':
+            if showhelp.get() == 'true':
+                if gui: gui.newline('  Description:', 8, 0, icon_help, [0.4,0.5,0.56])
+                r = gui.getRect(2,1); BGL.glRasterPos2i(r[0],r[1]+5)
+                Draw.Text('LuxRender SPPM rendering engine', 'small')
     return str
 
 def luxSampler(scn, gui=None):
@@ -4018,7 +4024,7 @@ def luxSurfaceIntegrator(scn, gui=None):
     if scn:
         integratortype = luxProp(scn, "sintegrator.type", "bidirectional")
         
-        str = luxIdentifier("SurfaceIntegrator", integratortype, ["directlighting", "path", "bidirectional", "exphotonmap", "distributedpath", "igi" ], "INTEGRATOR", "select surface integrator type", gui, icon_c_integrator)
+        str = luxIdentifier("SurfaceIntegrator", integratortype, ["directlighting", "path", "bidirectional", "exphotonmap", "distributedpath", "igi", "sppm" ], "INTEGRATOR", "select surface integrator type", gui, icon_c_integrator)
 
         # Advanced toggle
         parammodeadvanced = luxProp(scn, "parammodeadvanced", "false")
@@ -4081,6 +4087,21 @@ def luxSurfaceIntegrator(scn, gui=None):
                 
                 str += luxFloat('eyerrthreshold', luxProp(scn, "sintegrator.bidir.eyerrthreshold", 0), 0, 1, "eyerrthreshold", "The minimum probability for russian roulette eye subpath termination ", gui)
                 str += luxFloat('lightrrthreshold', luxProp(scn, "sintegrator.bidir.lightrrthreshold", 0), 0, 1, "lightrrthreshold", "The minimum probability for russian roulette light subpath termination ", gui)
+        
+        if integratortype.get() == "sppm":
+            if showadvanced.get()=="false":
+                str += luxInt("photonperpass", luxProp(scn, "sintegrator.sppm.photonperpass", 1000000), 0, 10000000, "photons per pass", "The number of photons to gather per pass", gui, 2.0)
+                str += luxInt("maxeyedepth", luxProp(scn, "sintegrator.sppm.maxeyedepth", 16), 0, 2048, "max eye depth", "The maximum recursion depth for eye photon casting", gui, 2.0)
+                str += luxInt("maxphotondepth", luxProp(scn, "sintegrator.sppm.maxphotondepth", 16), 0, 2048, "max photon depth", "The maximum recursion depth for light photon casting", gui, 2.0)
+            if showadvanced.get()=="true":
+                str += luxInt("photonperpass", luxProp(scn, "sintegrator.sppm.photonperpass", 1000000), 0, 10000000, "photons per pass", "The number of photons to gather per pass", gui, 2.0)
+                str += luxInt("maxeyedepth", luxProp(scn, "sintegrator.sppm.maxeyedepth", 16), 0, 2048, "max eye depth", "The maximum recursion depth for eye photon casting", gui, 2.0)
+                str += luxInt("maxphotondepth", luxProp(scn, "sintegrator.sppm.maxphotondepth", 16), 0, 2048, "max photon depth", "The maximum recursion depth for light photon casting", gui, 2.0)
+                if gui: gui.newline("  Advanced:")
+                str += luxFloat("alpha", luxProp(scn, "sintegrator.sppm.alpha", 0.7), 0.0, 1.0, "alpha", "Alpha", gui)
+                str += luxFloat("startradius", luxProp(scn, "sintegrator.sppm.startradius", 2.0), 0.0, 100.0, "startradius", "Start radius", gui)
+                str += luxOption("lookupaccel", luxProp(scn, "sampler.sppm.lookupaccel", "hybridhashgrid"), ["hybridhashgrid", "kdtree", "hashgrid"], "lookupaccel", "Lookup Accellerator", gui)
+                str += luxBool("includeenvironment", luxProp(scn, "sintegrator.sppm.includeenvironment", "true"), "Include Environment", "Enable/Disable rendering of environment lightsources", gui)
 
         if integratortype.get() == "exphotonmap":
             if gui: gui.newline("  Render:")
