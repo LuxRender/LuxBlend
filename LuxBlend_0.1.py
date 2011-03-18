@@ -111,7 +111,8 @@ def newFName(ext):
 
 # some helpers
 def luxstr(str):
-    return str.replace("\\", "\\\\")
+    # export os independent paths
+    return str.replace("\\\\", "\\").replace("\\", "/")
 
 
 ### relpath ##########################
