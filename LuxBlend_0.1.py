@@ -4244,7 +4244,8 @@ def luxEnvironment(scn, gui=None):
             
             if envtype.get() in ("infinite", "infinitesample"):
                 str += componentRotation('env', 'environment map', scn, gui)
-                str +="Scale -1 1 1 # correct worldmap orientation"
+                str +="TransformBegin"
+                str +="\nScale -1 1 1 # correct worldmap orientation"
                 env_lg = luxProp(scn, "env.lightgroup", "default")
                 luxString("env.lightgroup", env_lg, "lightgroup", "Environment light group", gui)
                 if luxProp(scn, "nolg", "false").get()!="true":
@@ -4265,6 +4266,7 @@ def luxEnvironment(scn, gui=None):
                         worldcolor = Blender.World.Get('World').getHor()
                         str += "\n   \"color L\" [%g %g %g]" %(worldcolor[0], worldcolor[1], worldcolor[2])
                     except: pass
+                str +="\nTransformEnd"
 
             if envtype.get() == "sunsky":
                 str += componentRotation('sunsky', 'sunsky', scn, gui)
