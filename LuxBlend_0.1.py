@@ -2,14 +2,14 @@
 # -*- coding: utf-8 -*-
 # coding=utf-8
 """Registration info for Blender menus:
-Name: 'LuxBlend v0.8RC1 Exporter'
+Name: 'LuxBlend v0.8RC2 Exporter'
 Blender: 248
 Group: 'Render'
-Tooltip: 'Export/Render to LuxRender v0.8RC1 scene format (.lxs)'
+Tooltip: 'Export/Render to LuxRender v0.8RC2 scene format (.lxs)'
 """
 
 __author__ = "radiance, zuegs, ideasman42, luxblender, dougal2, SATtva, BinaryCortex, LordCrc, jensverwiebe"
-__version__ = "0.8RC1"
+__version__ = "0.8RC2"
 __url__ = [
     "http://www.luxrender.net/",
     "http://www.luxrender.net/forum/viewforum.php?f=11",
@@ -34,12 +34,12 @@ Please check the lux tutorials & forums for more information.
 # ***** BEGIN GPL LICENSE BLOCK *****
 #
 # --------------------------------------------------------------------------
-# LuxBlend v0.8RC1 exporter
+# LuxBlend v0.8RC2 exporter
 # --------------------------------------------------------------------------
 #
 # Authors and contributors:
 # radiance, zuegs, ideasman42, luxblender, dougal2, SATtva, BinaryCortex,
-#  zukazuka, Qantorisc, zsouthboy, jensverwiebe
+#  zukazuka, Qantorisc, zsouthboy, jensverwiebe, LordCrc
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
