@@ -2,14 +2,14 @@
 # -*- coding: utf-8 -*-
 # coding=utf-8
 """Registration info for Blender menus:
-Name: 'LuxBlend v0.8RC1 Exporter'
+Name: 'LuxBlend v0.8RC2 Exporter'
 Blender: 248
 Group: 'Render'
-Tooltip: 'Export/Render to LuxRender v0.8RC1 scene format (.lxs)'
+Tooltip: 'Export/Render to LuxRender v0.8RC2 scene format (.lxs)'
 """
 
 __author__ = "radiance, zuegs, ideasman42, luxblender, dougal2, SATtva, BinaryCortex, LordCrc, jensverwiebe"
-__version__ = "0.8RC1"
+__version__ = "0.8RC2"
 __url__ = [
     "http://www.luxrender.net/",
     "http://www.luxrender.net/forum/viewforum.php?f=11",
@@ -34,12 +34,12 @@ Please check the lux tutorials & forums for more information.
 # ***** BEGIN GPL LICENSE BLOCK *****
 #
 # --------------------------------------------------------------------------
-# LuxBlend v0.8RC1 exporter
+# LuxBlend v0.8RC2 exporter
 # --------------------------------------------------------------------------
 #
 # Authors and contributors:
 # radiance, zuegs, ideasman42, luxblender, dougal2, SATtva, BinaryCortex,
-#  zukazuka, Qantorisc, zsouthboy, jensverwiebe
+#  zukazuka, Qantorisc, zsouthboy, jensverwiebe, LordCrc
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -111,7 +111,8 @@ def newFName(ext):
 
 # some helpers
 def luxstr(str):
-    return str.replace("\\", "\\\\")
+    # export os independent paths
+    return str.replace("\\\\", "\\").replace("\\", "/")
 
 
 ### relpath ##########################
@@ -4264,7 +4265,8 @@ def luxEnvironment(scn, gui=None):
             
             if envtype.get() in ("infinite", "infinitesample"):
                 str += componentRotation('env', 'environment map', scn, gui)
-                str +="Scale -1 1 1 # correct worldmap orientation"
+                str +="TransformBegin"
+                str +="\nScale -1 1 1 # correct worldmap orientation"
                 env_lg = luxProp(scn, "env.lightgroup", "default")
                 luxString("env.lightgroup", env_lg, "lightgroup", "Environment light group", gui)
                 if luxProp(scn, "nolg", "false").get()!="true":
@@ -4285,6 +4287,7 @@ def luxEnvironment(scn, gui=None):
                         worldcolor = Blender.World.Get('World').getHor()
                         str += "\n   \"color L\" [%g %g %g]" %(worldcolor[0], worldcolor[1], worldcolor[2])
                     except: pass
+                str +="\nTransformEnd"
 
             if envtype.get() == "sunsky":
                 str += componentRotation('sunsky', 'sunsky', scn, gui)
@@ -7075,16 +7078,30 @@ def luxMaterialBlock(name, luxname, key, mat, gui=None, level=0, str_opt=""):
             if not metalname.get() in metalnames:
                 link = link.replace('"string name"', '"string filename"')
             anisotropic = luxProp(mat, kn+"metal.anisotropic", "false")
-            if gui:
-                gui.newline("")
-                Draw.Toggle("A", evtLuxGui, gui.x-gui.h, gui.y-gui.h, gui.h, gui.h, anisotropic.get()=="true", "anisotropic roughness", lambda e,v:anisotropic.set(["false","true"][bool(v)]))
-            if anisotropic.get()=="true":
-                (str,link) = c((str,link), luxExponentTexture("uroughness", keyname, 0.002, 0.0, 1.0, "u-exponent", "", mat, gui, level+1))
-                (str,link) = c((str,link), luxExponentTexture("vroughness", keyname, 0.002, 0.0, 1.0, "v-exponent", "", mat, gui, level+1))
+            useroughness = luxProp(mat, kn+"metal.useroughness", "false")
+            luxBool('useroughness', useroughness, 'Use Roughness', 'Use Roughness instead of exponent.', gui, 2.0)
+            if useroughness.get()=="true":
+                if gui:
+                    gui.newline("")
+                    Draw.Toggle("A", evtLuxGui, gui.x-gui.h, gui.y-gui.h, gui.h, gui.h, anisotropic.get()=="true", "anisotropic roughness", lambda e,v:anisotropic.set(["false","true"][bool(v)]))
+                if anisotropic.get()=="true":
+                    (str,link) = c((str,link), luxDispFloatTexture("uroughness", keyname, 0.002, 0.0, 1.0, "u-roughness", "", mat, gui, level+1))
+                    (str,link) = c((str,link), luxDispFloatTexture("vroughness", keyname, 0.002, 0.0, 1.0, "v-roughness", "", mat, gui, level+1))
+                else:
+                    (s, l) = luxDispFloatTexture("uroughness", keyname, 0.002, 0.0, 1.0, "roughness", "", mat, gui, level+1)
+                    (str,link) = c((str,link), (s, l))
+                    link += l.replace("uroughness", "vroughness", 1)
             else:
-                (s, l) = luxExponentTexture("uroughness", keyname, 0.002, 0.0, 1.0, "exponent", "", mat, gui, level+1)
-                (str,link) = c((str,link), (s, l))
-                link += l.replace("uroughness", "vroughness", 1)
+                if gui:
+                    gui.newline("")
+                    Draw.Toggle("A", evtLuxGui, gui.x-gui.h, gui.y-gui.h, gui.h, gui.h, anisotropic.get()=="true", "anisotropic roughness", lambda e,v:anisotropic.set(["false","true"][bool(v)]))
+                if anisotropic.get()=="true":
+                    (str,link) = c((str,link), luxExponentTexture("uroughness", keyname, 0.002, 0.0, 1.0, "u-exponent", "", mat, gui, level+1))
+                    (str,link) = c((str,link), luxExponentTexture("vroughness", keyname, 0.002, 0.0, 1.0, "v-exponent", "", mat, gui, level+1))
+                else:
+                    (s, l) = luxExponentTexture("uroughness", keyname, 0.002, 0.0, 1.0, "exponent", "", mat, gui, level+1)
+                    (str,link) = c((str,link), (s, l))
+                    link += l.replace("uroughness", "vroughness", 1)
             has_volume_options = 1
             has_bump_options = 1
             has_object_options = 1
@@ -7108,16 +7125,30 @@ def luxMaterialBlock(name, luxname, key, mat, gui=None, level=0, str_opt=""):
             (str,link) = c((str,link), luxSpectrumTexture("Kr", keyname, "1.0 1.0 1.0", 1.0, "reflection", "", mat, gui, level+1))
             (str,link) = c((str,link), luxSpectrumTexture("Kt", keyname, "1.0 1.0 1.0", 1.0, "transmission", "", mat, gui, level+1))
             anisotropic = luxProp(mat, kn+"roughglass.anisotropic", "false")
-            if gui:
-                gui.newline("")
-                Draw.Toggle("A", evtLuxGui, gui.x-gui.h, gui.y-gui.h, gui.h, gui.h, anisotropic.get()=="true", "anisotropic roughness", lambda e,v:anisotropic.set(["false","true"][bool(v)]))
-            if anisotropic.get()=="true":
-                (str,link) = c((str,link), luxExponentTexture("uroughness", keyname, 0.002, 0.0, 1.0, "u-exponent", "", mat, gui, level+1))
-                (str,link) = c((str,link), luxExponentTexture("vroughness", keyname, 0.002, 0.0, 1.0, "v-exponent", "", mat, gui, level+1))
+            useroughness = luxProp(mat, kn+"roughglass.useroughness", "false")
+            luxBool('useroughness', useroughness, 'Use Roughness', 'Use Roughness instead of exponent.', gui, 2.0)
+            if useroughness.get()=="true":
+                if gui:
+                    gui.newline("")
+                    Draw.Toggle("A", evtLuxGui, gui.x-gui.h, gui.y-gui.h, gui.h, gui.h, anisotropic.get()=="true", "anisotropic roughness", lambda e,v:anisotropic.set(["false","true"][bool(v)]))
+                if anisotropic.get()=="true":
+                    (str,link) = c((str,link), luxDispFloatTexture("uroughness", keyname, 0.002, 0.0, 1.0, "u-roughness", "", mat, gui, level+1))
+                    (str,link) = c((str,link), luxDispFloatTexture("vroughness", keyname, 0.002, 0.0, 1.0, "v-roughness", "", mat, gui, level+1))
+                else:
+                    (s, l) = luxDispFloatTexture("uroughness", keyname, 0.002, 0.0, 1.0, "roughness", "", mat, gui, level+1)
+                    (str,link) = c((str,link), (s, l))
+                    link += l.replace("uroughness", "vroughness", 1)
             else:
-                (s, l) = luxExponentTexture("uroughness", keyname, 0.002, 0.0, 1.0, "exponent", "", mat, gui, level+1)
-                (str,link) = c((str,link), (s, l))
-                link += l.replace("uroughness", "vroughness", 1)
+                if gui:
+                    gui.newline("")
+                    Draw.Toggle("A", evtLuxGui, gui.x-gui.h, gui.y-gui.h, gui.h, gui.h, anisotropic.get()=="true", "anisotropic roughness", lambda e,v:anisotropic.set(["false","true"][bool(v)]))
+                if anisotropic.get()=="true":
+                    (str,link) = c((str,link), luxExponentTexture("uroughness", keyname, 0.002, 0.0, 1.0, "u-exponent", "", mat, gui, level+1))
+                    (str,link) = c((str,link), luxExponentTexture("vroughness", keyname, 0.002, 0.0, 1.0, "v-exponent", "", mat, gui, level+1))
+                else:
+                    (s, l) = luxExponentTexture("uroughness", keyname, 0.002, 0.0, 1.0, "exponent", "", mat, gui, level+1)
+                    (str,link) = c((str,link), (s, l))
+                    link += l.replace("uroughness", "vroughness", 1)
             (str,link) = c((str,link), luxIORFloatTexture("index", keyname, 1.5, 1.0, 6.0, "IOR", "", mat, gui, level+1))
             chromadisp = luxProp(mat, keyname+".chromadisp", "false")
             luxCollapse("chromadisp", chromadisp, "Dispersive Refraction", "Enable Chromatic Dispersion", gui, 2.0)
@@ -7133,17 +7164,30 @@ def luxMaterialBlock(name, luxname, key, mat, gui=None, level=0, str_opt=""):
             (str,link) = c((str,link), luxSpectrumTexture("Kr", keyname, "1.0 1.0 1.0", 1.0, "reflection", "", mat, gui, level+1))
             (str,link) = c((str,link), luxSpectrumTexture("Ks", keyname, "1.0 1.0 1.0", 1.0, "specular", "", mat, gui, level+1))
             anisotropic = luxProp(mat, kn+"shinymetal.anisotropic", "false")
-            if gui:
-                gui.newline("")
-                Draw.Toggle("A", evtLuxGui, gui.x-gui.h, gui.y-gui.h, gui.h, gui.h, anisotropic.get()=="true", "anisotropic roughness", lambda e,v:anisotropic.set(["false","true"][bool(v)]))
-            if anisotropic.get()=="true":
-                (str,link) = c((str,link), luxExponentTexture("uroughness", keyname, 0.002, 0.0, 1.0, "u-exponent", "", mat, gui, level+1))
-                (str,link) = c((str,link), luxExponentTexture("vroughness", keyname, 0.002, 0.0, 1.0, "v-exponent", "", mat, gui, level+1))
+            useroughness = luxProp(mat, kn+"shinymetal.useroughness", "false")
+            luxBool('useroughness', useroughness, 'Use Roughness', 'Use Roughness instead of exponent.', gui, 2.0)
+            if useroughness.get()=="true":
+                if gui:
+                    gui.newline("")
+                    Draw.Toggle("A", evtLuxGui, gui.x-gui.h, gui.y-gui.h, gui.h, gui.h, anisotropic.get()=="true", "anisotropic roughness", lambda e,v:anisotropic.set(["false","true"][bool(v)]))
+                if anisotropic.get()=="true":
+                    (str,link) = c((str,link), luxDispFloatTexture("uroughness", keyname, 0.002, 0.0, 1.0, "u-roughness", "", mat, gui, level+1))
+                    (str,link) = c((str,link), luxDispFloatTexture("vroughness", keyname, 0.002, 0.0, 1.0, "v-roughness", "", mat, gui, level+1))
+                else:
+                    (s, l) = luxDispFloatTexture("uroughness", keyname, 0.002, 0.0, 1.0, "roughness", "", mat, gui, level+1)
+                    (str,link) = c((str,link), (s, l))
+                    link += l.replace("uroughness", "vroughness", 1)
             else:
-                (s, l) = luxExponentTexture("uroughness", keyname, 0.002, 0.0, 1.0, "exponent", "", mat, gui, level+1)
-                (str,link) = c((str,link), (s, l))
-                link += l.replace("uroughness", "vroughness", 1)
-
+                if gui:
+                    gui.newline("")
+                    Draw.Toggle("A", evtLuxGui, gui.x-gui.h, gui.y-gui.h, gui.h, gui.h, anisotropic.get()=="true", "anisotropic roughness", lambda e,v:anisotropic.set(["false","true"][bool(v)]))
+                if anisotropic.get()=="true":
+                    (str,link) = c((str,link), luxExponentTexture("uroughness", keyname, 0.002, 0.0, 1.0, "u-exponent", "", mat, gui, level+1))
+                    (str,link) = c((str,link), luxExponentTexture("vroughness", keyname, 0.002, 0.0, 1.0, "v-exponent", "", mat, gui, level+1))
+                else:
+                    (s, l) = luxExponentTexture("uroughness", keyname, 0.002, 0.0, 1.0, "exponent", "", mat, gui, level+1)
+                    (str,link) = c((str,link), (s, l))
+                    link += l.replace("uroughness", "vroughness", 1)
             thinfilm = luxProp(mat, keyname+".thinfilm", "false")
             luxCollapse("thinfilm", thinfilm, "Thin Film Coating", "Enable Thin Film Coating", gui, 2.0)
             if thinfilm.get() == "true":
@@ -7168,16 +7212,30 @@ def luxMaterialBlock(name, luxname, key, mat, gui=None, level=0, str_opt=""):
                 (str,link) = c((str,link), luxSpectrumTexture("Ks", keyname, "1.0 1.0 1.0", 1.0, "specular", "", mat, gui, level+1))
                 link += " \"float index\" [0.0]"    
             anisotropic = luxProp(mat, kn+"glossy.anisotropic", "false")
-            if gui:
-                gui.newline("")
-                Draw.Toggle("A", evtLuxGui, gui.x-gui.h, gui.y-gui.h, gui.h, gui.h, anisotropic.get()=="true", "anisotropic roughness", lambda e,v:anisotropic.set(["false","true"][bool(v)]))
-            if anisotropic.get()=="true":
-                (str,link) = c((str,link), luxExponentTexture("uroughness", keyname, 0.002, 0.0, 1.0, "u-exponent", "", mat, gui, level+1))
-                (str,link) = c((str,link), luxExponentTexture("vroughness", keyname, 0.002, 0.0, 1.0, "v-exponent", "", mat, gui, level+1))
+            useroughness = luxProp(mat, kn+"glossy.useroughness", "false")
+            luxBool('useroughness', useroughness, 'Use Roughness', 'Use Roughness instead of exponent.', gui, 2.0)
+            if useroughness.get()=="true":
+                if gui:
+                    gui.newline("")
+                    Draw.Toggle("A", evtLuxGui, gui.x-gui.h, gui.y-gui.h, gui.h, gui.h, anisotropic.get()=="true", "anisotropic roughness", lambda e,v:anisotropic.set(["false","true"][bool(v)]))
+                if anisotropic.get()=="true":
+                    (str,link) = c((str,link), luxDispFloatTexture("uroughness", keyname, 0.002, 0.0, 1.0, "u-roughness", "", mat, gui, level+1))
+                    (str,link) = c((str,link), luxDispFloatTexture("vroughness", keyname, 0.002, 0.0, 1.0, "v-roughness", "", mat, gui, level+1))
+                else:
+                    (s, l) = luxDispFloatTexture("uroughness", keyname, 0.002, 0.0, 1.0, "roughness", "", mat, gui, level+1)
+                    (str,link) = c((str,link), (s, l))
+                    link += l.replace("uroughness", "vroughness", 1)
             else:
-                (s, l) = luxExponentTexture("uroughness", keyname, 0.002, 0.0, 1.0, "exponent", "", mat, gui, level+1)
-                (str,link) = c((str,link), (s, l))
-                link += l.replace("uroughness", "vroughness", 1)
+                if gui:
+                    gui.newline("")
+                    Draw.Toggle("A", evtLuxGui, gui.x-gui.h, gui.y-gui.h, gui.h, gui.h, anisotropic.get()=="true", "anisotropic roughness", lambda e,v:anisotropic.set(["false","true"][bool(v)]))
+                if anisotropic.get()=="true":
+                    (str,link) = c((str,link), luxExponentTexture("uroughness", keyname, 0.002, 0.0, 1.0, "u-exponent", "", mat, gui, level+1))
+                    (str,link) = c((str,link), luxExponentTexture("vroughness", keyname, 0.002, 0.0, 1.0, "v-exponent", "", mat, gui, level+1))
+                else:
+                    (s, l) = luxExponentTexture("uroughness", keyname, 0.002, 0.0, 1.0, "exponent", "", mat, gui, level+1)
+                    (str,link) = c((str,link), (s, l))
+                    link += l.replace("uroughness", "vroughness", 1)
 
             if mattype.get() == 'glossy':
                 link += luxBool('multibounce', luxProp(mat, keyname+'multibounce', 'false'), 'Surface Asperity', 'Simulate surface asperity with light multibouncing in specular coating', gui, 2.0)
@@ -7207,16 +7265,30 @@ def luxMaterialBlock(name, luxname, key, mat, gui=None, level=0, str_opt=""):
                 (str,link) = c((str,link), luxSpectrumTexture("Ks", keyname, "1.0 1.0 1.0", 1.0, "specular", "", mat, gui, level+1))
                 link += " \"float index\" [0.0]"    
             anisotropic = luxProp(mat, kn+"glossytranslucent.anisotropic", "false")
-            if gui:
-                gui.newline("")
-                Draw.Toggle("A", evtLuxGui, gui.x-gui.h, gui.y-gui.h, gui.h, gui.h, anisotropic.get()=="true", "anisotropic roughness", lambda e,v:anisotropic.set(["false","true"][bool(v)]))
-            if anisotropic.get()=="true":
-                (str,link) = c((str,link), luxExponentTexture("uroughness", keyname, 0.002, 0.0, 1.0, "u-exponent", "", mat, gui, level+1))
-                (str,link) = c((str,link), luxExponentTexture("vroughness", keyname, 0.002, 0.0, 1.0, "v-exponent", "", mat, gui, level+1))
+            useroughness = luxProp(mat, kn+"glossytranslucent.useroughness", "false")
+            luxBool('useroughness', useroughness, 'Use Roughness', 'Use Roughness instead of exponent.', gui, 2.0)
+            if useroughness.get()=="true":
+                if gui:
+                    gui.newline("")
+                    Draw.Toggle("A", evtLuxGui, gui.x-gui.h, gui.y-gui.h, gui.h, gui.h, anisotropic.get()=="true", "anisotropic roughness", lambda e,v:anisotropic.set(["false","true"][bool(v)]))
+                if anisotropic.get()=="true":
+                    (str,link) = c((str,link), luxDispFloatTexture("uroughness", keyname, 0.002, 0.0, 1.0, "u-roughness", "", mat, gui, level+1))
+                    (str,link) = c((str,link), luxDispFloatTexture("vroughness", keyname, 0.002, 0.0, 1.0, "v-roughness", "", mat, gui, level+1))
+                else:
+                    (s, l) = luxDispFloatTexture("uroughness", keyname, 0.002, 0.0, 1.0, "roughness", "", mat, gui, level+1)
+                    (str,link) = c((str,link), (s, l))
+                    link += l.replace("uroughness", "vroughness", 1)
             else:
-                (s, l) = luxExponentTexture("uroughness", keyname, 0.002, 0.0, 1.0, "exponent", "", mat, gui, level+1)
-                (str,link) = c((str,link), (s, l))
-                link += l.replace("uroughness", "vroughness", 1)
+                if gui:
+                    gui.newline("")
+                    Draw.Toggle("A", evtLuxGui, gui.x-gui.h, gui.y-gui.h, gui.h, gui.h, anisotropic.get()=="true", "anisotropic roughness", lambda e,v:anisotropic.set(["false","true"][bool(v)]))
+                if anisotropic.get()=="true":
+                    (str,link) = c((str,link), luxExponentTexture("uroughness", keyname, 0.002, 0.0, 1.0, "u-exponent", "", mat, gui, level+1))
+                    (str,link) = c((str,link), luxExponentTexture("vroughness", keyname, 0.002, 0.0, 1.0, "v-exponent", "", mat, gui, level+1))
+                else:
+                    (s, l) = luxExponentTexture("uroughness", keyname, 0.002, 0.0, 1.0, "exponent", "", mat, gui, level+1)
+                    (str,link) = c((str,link), (s, l))
+                    link += l.replace("uroughness", "vroughness", 1)
                 
             if mattype.get() == 'glossytranslucent':
                 link += luxBool('multibounce', luxProp(mat, keyname+'multibounce', 'false'), 'Surface Asperity', 'Simulate surface asperity with light multibouncing in specular coating', gui, 2.0)
@@ -7241,16 +7313,31 @@ def luxMaterialBlock(name, luxname, key, mat, gui=None, level=0, str_opt=""):
                     (str,link) = c((str,link), luxSpectrumTexture("backface_Ks", keyname, "1.0 1.0 1.0", 1.0, "specular", "", mat, gui, level+1))
                     link += " \"float backface_index\" [0.0]"
                 backface_anisotropic = luxProp(mat, kn+"glossytranslucent.backface_anisotropic", "false")
-                if gui:
-                    gui.newline("")
-                    Draw.Toggle("A", evtLuxGui, gui.x-gui.h, gui.y-gui.h, gui.h, gui.h, backface_anisotropic.get()=="true", "backface anisotropic roughness", lambda e,v:backface_anisotropic.set(["false","true"][bool(v)]))
-                if backface_anisotropic.get()=="true":
-                    (str,link) = c((str,link), luxExponentTexture("backface_uroughness", keyname, 0.002, 0.0, 1.0, "u-exponent", "", mat, gui, level+1))
-                    (str,link) = c((str,link), luxExponentTexture("backface_vroughness", keyname, 0.002, 0.0, 1.0, "v-exponent", "", mat, gui, level+1))
+                backface_useroughness = luxProp(mat, kn+"backface_glossytranslucent.useroughness", "false")
+                luxBool('useroughness', useroughness, 'Use Roughness', 'Use Roughness instead of exponent.', gui, 2.0)
+                if useroughness.get()=="true":
+                    if gui:
+                        gui.newline("")
+                        Draw.Toggle("A", evtLuxGui, gui.x-gui.h, gui.y-gui.h, gui.h, gui.h, backface_anisotropic.get()=="true", "backface anisotropic roughness", lambda e,v:backface_anisotropic.set(["false","true"][bool(v)]))
+                    if anisotropic.get()=="true":
+                        (str,link) = c((str,link), luxDispFloatTexture("backface_uroughness", keyname, 0.002, 0.0, 1.0, "u-roughness", "", mat, gui, level+1))
+                        (str,link) = c((str,link), luxDispFloatTexture("backface_vroughness", keyname, 0.002, 0.0, 1.0, "v-roughness", "", mat, gui, level+1))
+                    else:
+                        (s, l) = luxDispFloatTexture("backface_roughness", keyname, 0.002, 0.0, 1.0, "roughness", "", mat, gui, level+1)
+                        (str,link) = c((str,link), (s, l))
+                        link += l.replace("backface_uroughness", "backface_vroughness", 1)
                 else:
-                    (s, l) = luxExponentTexture("backface_uroughness", keyname, 0.002, 0.0, 1.0, "exponent", "", mat, gui, level+1)
-                    (str,link) = c((str,link), (s, l))
-                    link += l.replace("backface_uroughness", "backface_vroughness", 1)
+                    if gui:
+                        gui.newline("")
+                        Draw.Toggle("A", evtLuxGui, gui.x-gui.h, gui.y-gui.h, gui.h, gui.h, backface_anisotropic.get()=="true", "backface anisotropic roughness", lambda e,v:backface_anisotropic.set(["false","true"][bool(v)]))
+                    if backface_anisotropic.get()=="true":
+                        (str,link) = c((str,link), luxExponentTexture("backface_uroughness", keyname, 0.002, 0.0, 1.0, "u-exponent", "", mat, gui, level+1))
+                        (str,link) = c((str,link), luxExponentTexture("backface_vroughness", keyname, 0.002, 0.0, 1.0, "v-exponent", "", mat, gui, level+1))
+                    else:
+                        (s, l) = luxExponentTexture("backface_uroughness", keyname, 0.002, 0.0, 1.0, "exponent", "", mat, gui, level+1)
+                        (str,link) = c((str,link), (s, l))
+                        link += l.replace("backface_uroughness", "backface_vroughness", 1)
+                    
                 backface_absorption = luxProp(mat, keyname+".backface_useabsorption", "false")
                 luxCollapse("absorption", backface_absorption, "Absorption", "Enable Coating Absorption", gui, 2.0)
                 if backface_absorption.get() == "true":
