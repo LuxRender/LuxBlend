@@ -5719,8 +5719,8 @@ def luxTexture(name, parentkey, type, default, min, max, caption, hint, mat, gui
         
     if texture.get() == "blender_stucci":
         if gui: gui.newline("noise:", -2, level+1, icon_texparam)
-        mtype = luxProp(mat, keyname+".mtype", "Plastic")
-        mtypes = ["Plastic","Wall In","Wall Out"]
+        mtype = luxProp(mat, keyname+".mtype", "plastic")
+        mtypes = ["plastic","wall_in","wall_out"]
         str += luxOption("type", mtype, mtypes, "type", "", gui, 0.5)
 
         noisetype = luxProp(mat, keyname+".noisetype", "soft_noise")
