@@ -1738,7 +1738,7 @@ def get_lux_exec(scn, type="luxrender"):
     
     if osys.platform == "win32": ic = ic + ".exe"
     
-    if type=="luxrender" and osys.platform == "darwin": ic = ic + ".app/Contents/MacOS/luxrender"
+    if osys.platform == "darwin": ic =  Blender.sys.dirname(ic) + os.sep + "LuxRender.app/Contents/MacOS/" + type
     
     return ic
     
