@@ -4945,7 +4945,7 @@ def luxMapping(key, mat, gui, level=0):
     if gui: gui.newline("2Dmap:", -2, level, icon_map2d)
     mapping = luxProp(mat, key+".mapping", "uv")
     mappings = ["uv","spherical","cylindrical","planar"]
-    str = luxOption("mapping", mapping, mappings, "mapping", "", gui, 0.5)
+    str = luxOption("mapping", mapping, mappings, "mapping", "", gui, 0.5 if mapping.get() == 'planar' else 1.0)
     if mapping.get() == "uv":
         if gui: gui.newline()
         str += luxFloat("uscale", luxProp(mat, key+".uscale", 1.0), -100.0, 100.0, "Us", "u-scale", gui, 0.5)
@@ -4982,6 +4982,13 @@ def lux3DMapping(key, mat, gui, level=0):
     str += luxVector("translate", luxProp(mat, key+".3dtranslate", "0 0 0"), -1000.0, 1000.0, "move", "translate-vector", gui, 2.0)
     return str
     
+def luxTexSpace(key, mat, gui, level=0):
+    global icon_map2d
+    if gui: gui.newline('space:', -2, level, icon_map2d)
+    coords = ['local', 'global', 'localnormal', 'globalnormal', 'uv']
+    str = luxOption('coordinates', luxProp(mat, key+'.texspace', 'local'), coords, 'tex. space', 'Texture space', gui, 1.0)
+    return str+'\n'
+
 def getTreeNameById(tree, i): # helper function to retrive name of the selected treemenu-item
     for t in tree:
         if type(t)==types.TupleType:
@@ -5382,11 +5389,12 @@ def luxTexture(name, parentkey, type, default, min, max, caption, hint, mat, gui
             if gui: gui.newline("          v11:", -2)
             str += luxRGB("v11", luxProp(mat, keyname+".v11", "1.0 1.0 1.0"), max, "v11", "", gui, 2.0)
         str += luxMapping(keyname, mat, gui, level+1)
+        str += luxTexSpace(keyname, mat, gui, level+1)
 
     if texture.get() == "windy":
         str += lux3DMapping(keyname, mat, gui, level+1)
+        str += luxTexSpace(keyname, mat, gui, level+1)
         # this texture has no options 
-
         if type!="float":
             str += "Texture \"%s\" \"%s\" \"mix\" \"texture amount\" [\"%s::amount\"]"%(texname, type, texname)
             (s, l) = c(("", ""), luxTexture("tex1", keyname, type, default, min, max, "tex1", "", mat, gui, matlevel, texlevel+1, lightsource))
@@ -5400,6 +5408,7 @@ def luxTexture(name, parentkey, type, default, min, max, caption, hint, mat, gui
         if gui: gui.newline("", -2)
         if dim.get() == 2: str += luxMapping(keyname, mat, gui, level+1) 
         if dim.get() == 3: str += lux3DMapping(keyname, mat, gui, level+1)
+        str += luxTexSpace(keyname, mat, gui, level+1)
 
         if type!="float":
             str += "Texture \"%s\" \"%s\" \"mix\" \"texture amount\" [\"%s::amount\"]"%(texname, type, texname)
@@ -5410,7 +5419,7 @@ def luxTexture(name, parentkey, type, default, min, max, caption, hint, mat, gui
 
     if texture.get() == "dots":
         str += luxMapping(keyname, mat, gui, level+1)
-
+        str += luxTexSpace(keyname, mat, gui, level+1)
         if type!="float":
             str += "Texture \"%s\" \"%s\" \"mix\" \"texture amount\" [\"%s::amount\"]"%(texname, type, texname)
 
@@ -5424,6 +5433,7 @@ def luxTexture(name, parentkey, type, default, min, max, caption, hint, mat, gui
         str += luxFloat("roughness", luxProp(mat, keyname+".roughness", 0.5), 0.0, 1.0, "roughness", "", gui, 1, 1)
         if gui: gui.newline("", -2)
         str += lux3DMapping(keyname, mat, gui, level+1)
+        str += luxTexSpace(keyname, mat, gui, level+1)
 
         if type!="float":
             str += "Texture \"%s\" \"%s\" \"mix\" \"texture amount\" [\"%s::amount\"]"%(texname, type, texname)
@@ -5440,6 +5450,7 @@ def luxTexture(name, parentkey, type, default, min, max, caption, hint, mat, gui
         str += luxFloat("variation", luxProp(mat, keyname+".variation", 0.2), 0.0, 100.0, "variation", "A scaling factor for the noise input function", gui, 1.0)
         if gui: gui.newline("", -2)
         str += lux3DMapping(keyname, mat, gui, level+1)
+        str += luxTexSpace(keyname, mat, gui, level+1)
 
     if texture.get() == "wrinkled":
         str += luxInt("octaves", luxProp(mat, keyname+".octaves", 8), 1, 100, "octaves", "", gui, 1)
@@ -5447,6 +5458,7 @@ def luxTexture(name, parentkey, type, default, min, max, caption, hint, mat, gui
         str += luxFloat("roughness", luxProp(mat, keyname+".roughness", 0.5), 0.0, 1.0, "roughness", "", gui, 1, 1)
         if gui: gui.newline("", -2)
         str += lux3DMapping(keyname, mat, gui, level+1)
+        str += luxTexSpace(keyname, mat, gui, level+1)
 
         if type!="float":
             str += "Texture \"%s\" \"%s\" \"mix\" \"texture amount\" [\"%s::amount\"]"%(texname, type, texname)
@@ -5484,6 +5496,7 @@ def luxTexture(name, parentkey, type, default, min, max, caption, hint, mat, gui
         str = s + str + l
 
         str += lux3DMapping(keyname, mat, gui, level+1)
+        str += luxTexSpace(keyname, mat, gui, level+1)
 
     if texture.get() == "blender_marble":
         if gui: gui.newline("noise:", -2, level+1, icon_texparam)
@@ -5515,6 +5528,7 @@ def luxTexture(name, parentkey, type, default, min, max, caption, hint, mat, gui
         str += luxFloat("contrast", luxProp(mat, keyname+".contrast", 1.0), 0.0, 10.0, "contrast", "", gui, 1.0)
 
         str += lux3DMapping(keyname, mat, gui, level+1)
+        str += luxTexSpace(keyname, mat, gui, level+1)
 
         if type!="float":
             str += "Texture \"%s\" \"%s\" \"mix\" \"texture amount\" [\"%s::amount\"]"%(texname, type, texname)
@@ -5555,6 +5569,7 @@ def luxTexture(name, parentkey, type, default, min, max, caption, hint, mat, gui
         str += luxFloat("contrast", luxProp(mat, keyname+".contrast", 1.0), 0.0, 10.0, "contrast", "", gui, 1.0)
 
         str += lux3DMapping(keyname, mat, gui, level+1)
+        str += luxTexSpace(keyname, mat, gui, level+1)
 
         if type!="float":
             str += "Texture \"%s\" \"%s\" \"mix\" \"texture amount\" [\"%s::amount\"]"%(texname, type, texname)
@@ -5591,6 +5606,7 @@ def luxTexture(name, parentkey, type, default, min, max, caption, hint, mat, gui
         str += luxFloat("contrast", luxProp(mat, keyname+".contrast", 1.0), 0.0, 10.0, "contrast", "", gui, 1.0)
     
         str += lux3DMapping(keyname, mat, gui, level+1)
+        str += luxTexSpace(keyname, mat, gui, level+1)
 
         if type!="float":
             str += "Texture \"%s\" \"%s\" \"mix\" \"texture amount\" [\"%s::amount\"]"%(texname, type, texname)
@@ -5623,6 +5639,7 @@ def luxTexture(name, parentkey, type, default, min, max, caption, hint, mat, gui
         str += luxFloat("contrast", luxProp(mat, keyname+".contrast", 1.0), 0.0, 10.0, "contrast", "", gui, 1.0)
     
         str += lux3DMapping(keyname, mat, gui, level+1)
+        str += luxTexSpace(keyname, mat, gui, level+1)
 
         if type!="float":
             str += "Texture \"%s\" \"%s\" \"mix\" \"texture amount\" [\"%s::amount\"]"%(texname, type, texname)
@@ -5646,6 +5663,7 @@ def luxTexture(name, parentkey, type, default, min, max, caption, hint, mat, gui
         str += luxFloat("contrast", luxProp(mat, keyname+".contrast", 1.0), 0.0, 10.0, "contrast", "", gui, 1.0)
         
         str += lux3DMapping(keyname, mat, gui, level+1)
+        str += luxTexSpace(keyname, mat, gui, level+1)
 
         if type!="float":
             str += "Texture \"%s\" \"%s\" \"mix\" \"texture amount\" [\"%s::amount\"]"%(texname, type, texname)
@@ -5676,6 +5694,7 @@ def luxTexture(name, parentkey, type, default, min, max, caption, hint, mat, gui
         str += luxFloat("contrast", luxProp(mat, keyname+".contrast", 1.0), 0.0, 10.0, "contrast", "", gui, 1.0)
         
         str += lux3DMapping(keyname, mat, gui, level+1)
+        str += luxTexSpace(keyname, mat, gui, level+1)
 
         if type!="float":
             str += "Texture \"%s\" \"%s\" \"mix\" \"texture amount\" [\"%s::amount\"]"%(texname, type, texname)
@@ -5690,6 +5709,7 @@ def luxTexture(name, parentkey, type, default, min, max, caption, hint, mat, gui
         str += luxFloat("contrast", luxProp(mat, keyname+".contrast", 1.0), 0.0, 10.0, "contrast", "", gui, 1.0)
         
         str += lux3DMapping(keyname, mat, gui, level+1)
+        str += luxTexSpace(keyname, mat, gui, level+1)
 
         if type!="float":
             str += "Texture \"%s\" \"%s\" \"mix\" \"texture amount\" [\"%s::amount\"]"%(texname, type, texname)
@@ -5709,6 +5729,7 @@ def luxTexture(name, parentkey, type, default, min, max, caption, hint, mat, gui
         str += luxFloat("contrast", luxProp(mat, keyname+".contrast", 1.0), 0.0, 10.0, "contrast", "", gui, 1.0)
         
         str += lux3DMapping(keyname, mat, gui, level+1)
+        str += luxTexSpace(keyname, mat, gui, level+1)
 
         if type!="float":
             str += "Texture \"%s\" \"%s\" \"mix\" \"texture amount\" [\"%s::amount\"]"%(texname, type, texname)
@@ -5739,6 +5760,7 @@ def luxTexture(name, parentkey, type, default, min, max, caption, hint, mat, gui
         str += luxFloat("contrast", luxProp(mat, keyname+".contrast", 1.0), 0.0, 10.0, "contrast", "", gui, 1.0)
 
         str += lux3DMapping(keyname, mat, gui, level+1)
+        str += luxTexSpace(keyname, mat, gui, level+1)
 
         if type!="float":
             str += "Texture \"%s\" \"%s\" \"mix\" \"texture amount\" [\"%s::amount\"]"%(texname, type, texname)
@@ -5769,6 +5791,7 @@ def luxTexture(name, parentkey, type, default, min, max, caption, hint, mat, gui
         str += luxFloat("contrast", luxProp(mat, keyname+".contrast", 1.0), 0.0, 10.0, "contrast", "", gui, 1.0)
 
         str += lux3DMapping(keyname, mat, gui, level+1)
+        str += luxTexSpace(keyname, mat, gui, level+1)
 
         if type!="float":
             str += "Texture \"%s\" \"%s\" \"mix\" \"texture amount\" [\"%s::amount\"]"%(texname, type, texname)
