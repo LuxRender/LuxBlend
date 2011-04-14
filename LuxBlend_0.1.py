@@ -4821,9 +4821,11 @@ def luxSystem(scn, gui=None):
         luxBool("ColClamp", luxProp(scn, "colorclamp", "false"), "ColClamp", "clamp all colors to 0.0-0.9", gui)
         if gui: gui.newline("MESH:", 10)
         luxBool("mesh_optimizing", luxProp(scn, "mesh_optimizing", "false"), "Optimize meshes", "Optimize meshes during export", gui, 2.0)
-        luxBool("export_ply", luxProp(scn, "export_ply", "true"), "Export Ply", "Exports ply meshes during export", gui, 0.66)
-        luxBool("binary_ply", luxProp(scn, "binary_ply", "true"), "Export binary", "Exports binary ply meshes during export", gui, 0.66)
-        luxBool("skip_ply", luxProp(scn, "skip_ply", "false"), "Partial export", "Only exports mesh scale, location, rotation data.", gui, 0.67)
+        exply = luxProp(scn, "export_ply", "true")
+        luxBool("export_ply", exply, "Export Ply", "Exports ply meshes during export", gui, 0.66 if exply.get() == 'true' else 2.0)
+        if exply.get() == 'true':
+            luxBool("binary_ply", luxProp(scn, "binary_ply", "true"), "Export binary", "Exports binary ply meshes during export", gui, 0.66)
+            luxBool("skip_ply", luxProp(scn, "skip_ply", "false"), "Partial export", "Only exports mesh scale, location, rotation data.", gui, 0.67)
         if luxProp(scn, "export_ply", "true").get() == "true":
             luxProp(scn, "mesh_optimizing", "true").set("false")
         #luxInt("trianglemesh thr", luxProp(scn, "trianglemesh_thr", 0), 0, 10000000, "trianglemesh threshold", "Vertex threshold for exporting (wald) trianglemesh object(s)", gui, 2.0)
@@ -7471,6 +7473,9 @@ def luxMaterialBlock(name, luxname, key, mat, gui=None, level=0, str_opt=""):
             if export_ply == "false":
                 luxFloat('hair_thickness',  luxProp(mat, 'hair_thickness', 0.5), 0.001, 100.0, 'hair thickness', 'Hair strand diameter', gui, 1.5)
                 luxScaleUnits('hair_thickness', 'mm', mat, 0.5, gui)
+            else:
+                r = gui.getRect(2,1); BGL.glRasterPos2i(r[0],r[1]+5) 
+                Draw.Text('disable Export Ply in System tab to support hair')
 
         if mattype.get() == "light":
             return (str, link)
