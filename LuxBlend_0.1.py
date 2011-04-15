@@ -6173,9 +6173,9 @@ def luxNamedVolumeTexture(volId, gui=None):
             luxFloat('depth', depth, 0.001, 1000.0, 'depth', 'Depth of the fixed point inside the medium', gui, 0.5)
             scale = luxScaleUnits(keyname+'scale', 'm', scn, 0.5, gui)
             if usecolor.get() == 'true':
-                factor = lambda rgb: [ (-math.log(max([rg(float(i)),1e-30]))/(depth.get()*scale)) * (rg(float(i))==1.0 and -1 or 1) for i in rgb ]
+                factor = lambda rgb: [ (-math.log(max([float(i),1e-30]))/(depth.get()*scale)) * (float(i)==1.0 and -1 or 1) for i in rgb ]
             else:
-                factor = lambda rgb: [ rg(float(i)) * (1/(depth.get()*scale)) for i in rgb ]
+                factor = lambda rgb: [ float(i) * (1/(depth.get()*scale)) for i in rgb ]
             if l1[l1.find('"')+1:].startswith('color'):
                 rgb = factor(l1[l1.find('[')+1:l1.rfind(']')].split(' '))
                 l1 = l1[:l1.find('[')] + '[%s %s %s]' % (rgb[0], rgb[1], rgb[2])
@@ -6211,9 +6211,9 @@ def luxNamedVolumeTexture(volId, gui=None):
             luxFloat('depth', depth, 0.001, 1000.0, 'depth', 'Depth of the fixed point inside the medium', gui, 0.5)
             scale = luxScaleUnits(keyname+'scale', 'm', scn, 0.5, gui)
             if usecolor.get() == 'true':
-                factor = lambda rgb: [ (-math.log(max([rg(float(i)),1e-30]))/(depth.get()*scale)) * (rg(float(i))==1.0 and -1 or 1) for i in rgb ]
+                factor = lambda rgb: [ (-math.log(max([float(i),1e-30]))/(depth.get()*scale)) * (float(i)==1.0 and -1 or 1) for i in rgb ]
             else:
-                factor = lambda rgb: [ rg(float(i)) * (1/(depth.get()*scale)) for i in rgb ]
+                factor = lambda rgb: [ float(i) * (1/(depth.get()*scale)) for i in rgb ]
             if l1[l1.find('"')+1:].startswith('color'):
                 rgb = factor(l1[l1.find('[')+1:l1.rfind(']')].split(' '))
                 l1 = l1[:l1.find('[')] + '[%s %s %s]' % (rgb[0], rgb[1], rgb[2])
@@ -7495,8 +7495,9 @@ def luxMaterialBlock(name, luxname, key, mat, gui=None, level=0, str_opt=""):
                 luxFloat('hair_thickness',  luxProp(mat, 'hair_thickness', 0.5), 0.001, 100.0, 'hair thickness', 'Hair strand diameter', gui, 1.5)
                 luxScaleUnits('hair_thickness', 'mm', mat, 0.5, gui)
             else:
-                r = gui.getRect(2,1); BGL.glRasterPos2i(r[0],r[1]+5) 
-                Draw.Text('disable Export Ply in System tab to support hair')
+                if gui:
+                    r = gui.getRect(2,1) ; BGL.glRasterPos2i(r[0],r[1]+5) 
+                    Draw.Text('disable Export Ply in System tab to support hair')
 
         if mattype.get() == "light":
             return (str, link)
