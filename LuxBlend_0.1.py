@@ -7474,8 +7474,9 @@ def luxMaterialBlock(name, luxname, key, mat, gui=None, level=0, str_opt=""):
                 luxFloat('hair_thickness',  luxProp(mat, 'hair_thickness', 0.5), 0.001, 100.0, 'hair thickness', 'Hair strand diameter', gui, 1.5)
                 luxScaleUnits('hair_thickness', 'mm', mat, 0.5, gui)
             else:
-                r = gui.getRect(2,1); BGL.glRasterPos2i(r[0],r[1]+5) 
-                Draw.Text('disable Export Ply in System tab to support hair')
+                if gui:
+                    r = gui.getRect(2,1) ; BGL.glRasterPos2i(r[0],r[1]+5) 
+                    Draw.Text('disable Export Ply in System tab to support hair')
 
         if mattype.get() == "light":
             return (str, link)
