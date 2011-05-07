@@ -4094,13 +4094,14 @@ def luxSurfaceIntegrator(scn, gui=None):
                 str += luxInt("photonperpass", luxProp(scn, "sintegrator.sppm.photonperpass", 1000000), 0, 10000000, "photons per pass", "The number of photons to gather per pass", gui, 2.0)
                 str += luxInt("maxeyedepth", luxProp(scn, "sintegrator.sppm.maxeyedepth", 16), 0, 2048, "max eye depth", "The maximum recursion depth for eye photon casting", gui, 2.0)
                 str += luxInt("maxphotondepth", luxProp(scn, "sintegrator.sppm.maxphotondepth", 16), 0, 2048, "max photon depth", "The maximum recursion depth for light photon casting", gui, 2.0)
+                str += luxFloat("startradius", luxProp(scn, "sintegrator.sppm.startradius", 2.0), 0.0, 100.0, "startradius", "Start radius", gui)
             if showadvanced.get()=="true":
                 str += luxInt("photonperpass", luxProp(scn, "sintegrator.sppm.photonperpass", 1000000), 0, 10000000, "photons per pass", "The number of photons to gather per pass", gui, 2.0)
                 str += luxInt("maxeyedepth", luxProp(scn, "sintegrator.sppm.maxeyedepth", 16), 0, 2048, "max eye depth", "The maximum recursion depth for eye photon casting", gui, 2.0)
                 str += luxInt("maxphotondepth", luxProp(scn, "sintegrator.sppm.maxphotondepth", 16), 0, 2048, "max photon depth", "The maximum recursion depth for light photon casting", gui, 2.0)
+                str += luxFloat("startradius", luxProp(scn, "sintegrator.sppm.startradius", 2.0), 0.0, 100.0, "startradius", "Start radius", gui)
                 if gui: gui.newline("  Advanced:")
                 str += luxFloat("alpha", luxProp(scn, "sintegrator.sppm.alpha", 0.7), 0.0, 1.0, "alpha", "Alpha", gui)
-                str += luxFloat("startradius", luxProp(scn, "sintegrator.sppm.startradius", 2.0), 0.0, 100.0, "startradius", "Start radius", gui)
                 str += luxOption("lookupaccel", luxProp(scn, "sampler.sppm.lookupaccel", "hybridhashgrid"), ["hybridhashgrid", "kdtree", "hashgrid"], "lookupaccel", "Lookup Accellerator", gui)
                 str += luxBool("includeenvironment", luxProp(scn, "sintegrator.sppm.includeenvironment", "true"), "Include Environment", "Enable/Disable rendering of environment lightsources", gui)
 
