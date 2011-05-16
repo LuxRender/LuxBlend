@@ -4091,12 +4091,12 @@ def luxSurfaceIntegrator(scn, gui=None):
         
         if integratortype.get() == "sppm":
             if showadvanced.get()=="false":
-                str += luxInt("photonperpass", luxProp(scn, "sintegrator.sppm.photonperpass", 1000000), 0, 10000000, "photons per pass", "The number of photons to gather per pass", gui, 2.0)
+                str += luxInt("photonperpass", luxProp(scn, "sintegrator.sppm.photonperpass", 1000000), 0, 1000000000, "photons per pass", "The number of photons to gather per pass", gui, 2.0)
                 str += luxInt("maxeyedepth", luxProp(scn, "sintegrator.sppm.maxeyedepth", 16), 0, 2048, "max eye depth", "The maximum recursion depth for eye photon casting", gui, 2.0)
                 str += luxInt("maxphotondepth", luxProp(scn, "sintegrator.sppm.maxphotondepth", 16), 0, 2048, "max photon depth", "The maximum recursion depth for light photon casting", gui, 2.0)
                 str += luxFloat("startradius", luxProp(scn, "sintegrator.sppm.startradius", 2.0), 0.0, 100.0, "startradius", "Start radius", gui, 2.0)
             if showadvanced.get()=="true":
-                str += luxInt("photonperpass", luxProp(scn, "sintegrator.sppm.photonperpass", 1000000), 0, 10000000, "photons per pass", "The number of photons to gather per pass", gui, 2.0)
+                str += luxInt("photonperpass", luxProp(scn, "sintegrator.sppm.photonperpass", 1000000), 0, 1000000000, "photons per pass", "The number of photons to gather per pass", gui, 2.0)
                 str += luxInt("maxeyedepth", luxProp(scn, "sintegrator.sppm.maxeyedepth", 16), 0, 2048, "max eye depth", "The maximum recursion depth for eye photon casting", gui, 2.0)
                 str += luxInt("maxphotondepth", luxProp(scn, "sintegrator.sppm.maxphotondepth", 16), 0, 2048, "max photon depth", "The maximum recursion depth for light photon casting", gui, 2.0)
                 str += luxFloat("startradius", luxProp(scn, "sintegrator.sppm.startradius", 2.0), 0.0, 100.0, "startradius", "Start radius", gui, 2.0)
