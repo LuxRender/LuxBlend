@@ -4101,7 +4101,7 @@ def luxSurfaceIntegrator(scn, gui=None):
                 str += luxInt("maxphotondepth", luxProp(scn, "sintegrator.sppm.maxphotondepth", 16), 0, 2048, "max photon depth", "The maximum recursion depth for light photon casting", gui, 2.0)
                 str += luxFloat("startradius", luxProp(scn, "sintegrator.sppm.startradius", 2.0), 0.0, 100.0, "startradius", "Start radius", gui, 2.0)
                 if gui: gui.newline("  Advanced:")
-                str += luxFloat("alpha", luxProp(scn, "sintegrator.sppm.alpha", 0.7), 0.0, 1.0, "alpha", "Alpha", gui)
+                str += luxFloat("alpha", luxProp(scn, "sintegrator.sppm.alpha", 0.7), 0.01, 0.99, "alpha", "Alpha", gui)
                 str += luxOption("lookupaccel", luxProp(scn, "sampler.sppm.lookupaccel", "hybridhashgrid"), ["hybridhashgrid", "kdtree", "hashgrid"], "lookupaccel", "Lookup Accellerator", gui)
                 str += luxOption("pixelsampler", luxProp(scn, "sintegrator.sppm.pixelsampler", "vegas"), ["vegas", "linear", "hilbert", "tile"], "pixelsampler", "Select the pixel sampler for sppm", gui)
                 str += luxBool("includeenvironment", luxProp(scn, "sintegrator.sppm.includeenvironment", "true"), "Include Environment", "Enable/Disable rendering of environment lightsources", gui)
