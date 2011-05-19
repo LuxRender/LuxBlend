@@ -7922,7 +7922,7 @@ try:
         if id.isalnum():
             DrawProgressBar(0.0,'Getting Material #'+id)
             try:
-                HOST = 'webserver' #'www.luxrender.net'
+                HOST = 'www.luxrender.net'
                 GET = '/lrmdb/en/material/download/'+id+'/'+LBX_VERSION
                 PORT = 80
                 sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -8057,7 +8057,7 @@ try:
     # LRMDB Integration
     #===========================================================================
     class lrmdb:
-        host              = 'http://webserver/lrmdb/ixr' #'http://www.luxrender.net/lrmdb/ixr'
+        host              = 'http://www.luxrender.net/lrmdb/ixr'
         
         username          = ""
         password          = ""
