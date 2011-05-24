@@ -4104,6 +4104,7 @@ def luxSurfaceIntegrator(scn, gui=None):
                 str += luxFloat("alpha", luxProp(scn, "sintegrator.sppm.alpha", 0.7), 0.01, 0.99, "alpha", "Alpha", gui)
                 str += luxOption("lookupaccel", luxProp(scn, "sampler.sppm.lookupaccel", "hybridhashgrid"), ["hybridhashgrid", "kdtree", "hashgrid"], "lookupaccel", "Lookup Accellerator", gui)
                 str += luxOption("pixelsampler", luxProp(scn, "sintegrator.sppm.pixelsampler", "vegas"), ["vegas", "linear", "hilbert", "tile"], "pixelsampler", "Select the pixel sampler for sppm", gui)
+                str += luxOption("photonsampler", luxProp(scn, "sintegrator.sppm.photonsampler", "halton"), ["halton", "amc"], "photonsampler", "Select the photon sampler for sppm", gui)
                 str += luxBool("includeenvironment", luxProp(scn, "sintegrator.sppm.includeenvironment", "true"), "Include Environment", "Enable/Disable rendering of environment lightsources", gui)
 
         if integratortype.get() == "exphotonmap":
