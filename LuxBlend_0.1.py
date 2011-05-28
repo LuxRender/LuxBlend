@@ -3977,17 +3977,18 @@ def luxSampler(scn, gui=None):
                 # Default parameters
                 if gui: gui.newline("  Mutation:", 8, 0, None, [0.4,0.4,0.4])
                 strength = luxProp(scn, "sampler.metro.strength", 0.6)
-                luxFloat("strength", strength, 0.0, 1.0, "strength", "Mutation Strength (lmprob = 1.0-strength)", gui, 2.0, 1)
+                luxFloat("strength", strength, 0.0, 1.0, "Strength", "Mutation Strength (lmprob = 1.0-strength)", gui, 2.0, 1)
                 v = 1.0 - strength.get()
                 str += "\n   \"float largemutationprob\" [%f]"%v
             if showadvanced.get()=="true":
                 # Advanced parameters
                 if gui: gui.newline("  Mutation:")
-                str += luxFloat("largemutationprob", luxProp(scn, "sampler.metro.lmprob", 0.4), 0.0, 1.0, "LM.prob.", "Probability of generating a large sample (mutation)", gui)
-                str += luxInt("maxconsecrejects", luxProp(scn, "sampler.metro.maxrejects", 512), 0, 32768, "max.rejects", "number of consecutive rejects before a new mutation is forced", gui)
+                str += luxFloat("largemutationprob", luxProp(scn, "sampler.metro.lmprob", 0.4), 0.0, 1.0, "Large Mutation Probability", "Probability of generating a large sample (mutation)", gui, 2.0)
+                str += luxInt("maxconsecrejects", luxProp(scn, "sampler.metro.maxrejects", 512), 0, 32768, "Maximum Consecutive Rejects", "number of consecutive rejects before a new mutation is forced", gui, 2.0)
+                str += luxFloat("mutationrange", luxProp(scn, "sampler.metro.mutationrange", 32.0), 1.0, 100.0, "Mutation range", "Maximum distance in pixels for a small mutation", gui, 2.0)
                 if gui: gui.newline("  Screen:")
                 #str += luxInt("initsamples", luxProp(scn, "sampler.metro.initsamples", 262144), 1, 1000000, "initsamples", "", gui)
-                str += luxBool("usevariance",luxProp(scn, "sampler.metro.usevariance", "false"), "usevariance", "Accept based on variance", gui, 1.0)
+                str += luxBool("usevariance",luxProp(scn, "sampler.metro.usevariance", "false"), "Use Variance", "Accept based on variance", gui, 1.0)
 
             if showhelp.get()=="true":
                 if gui: gui.newline("  Description:", 8, 0, icon_help, [0.4,0.5,0.56])
@@ -3997,20 +3998,30 @@ def luxSampler(scn, gui=None):
         if samplertype.get() == "erpt":
             #str += luxInt("initsamples", luxProp(scn, "sampler.erpt.initsamples", 100000), 1, 1000000, "initsamples", "", gui)
             if gui: gui.newline("  Mutation:")
-            str += luxInt("chainlength", luxProp(scn, "sampler.erpt.chainlength", 512), 1, 32768, "chainlength", "The number of mutations from a given seed", gui)
+            str += luxInt("chainlength", luxProp(scn, "sampler.erpt.chainlength", 512), 1, 32768, "Chain Length", "The number of mutations from a given seed", gui)
+            if gui: gui.newline("  Basesampler:")
+            basesampler = luxProp(scn, "sampler.erpt.basesampler", "metropolis")
+            str += luxOption("basesampler", basesampler, ["metropolis", "lowdiscrepancy", "random"], "Base Sampler", "select sampler type", gui)
             if gui: gui.newline()
-            str += luxInt("stratawidth", luxProp(scn, "sampler.erpt.stratawidth", 256), 1, 32768, "stratawidth", "The number of x/y strata for stratified sampling of seeds", gui)
+            if basesampler.get() == "metropolis":
+                str += luxFloat("largemutationprob", luxProp(scn, "sampler.erpt.lmprob", 0.4), 0.0, 1.0, "Large Mutation Probability", "Probability of generating a large sample (mutation)", gui, 2.0)
+                str += luxInt("maxconsecrejects", luxProp(scn, "sampler.erpt.maxrejects", 512), 0, 32768, "Maximum Consecutive Rejects", "number of consecutive rejects before a new mutation is forced", gui, 2.0)
+                str += luxFloat("mutationrange", luxProp(scn, "sampler.erpt.mutationrange", 32.0), 1.0, 100.0, "Mutation range", "Maximum distance in pixels for a small mutation", gui, 2.0)
+            else:
+                str += luxOption("pixelsampler", luxProp(scn, "sampler.erpt.pixelsampler", "lowdiscrepancy"), ["linear", "tile", "random", "vegas","lowdiscrepancy","hilbert"], "Pixel Sampler", "select pixel-sampler", gui)
+                str += luxInt("pixelsamples", luxProp(scn, "sampler.erpt.pixelsamples", 4), 1, 2048, "Pixel Samples", "Average number of samples taken per pixel. More samples create a higher quality image at the cost of render time", gui)
 
         if samplertype.get() == "lowdiscrepancy":
-            if gui: gui.newline("  PixelSampler:")
-            str += luxOption("pixelsampler", luxProp(scn, "sampler.lowdisc.pixelsampler", "lowdiscrepancy"), ["linear", "tile", "random", "vegas","lowdiscrepancy","hilbert"], "pixel-sampler", "select pixel-sampler", gui)
-            str += luxInt("pixelsamples", luxProp(scn, "sampler.lowdisc.pixelsamples", 4), 1, 2048, "samples", "Average number of samples taken per pixel. More samples create a higher quality image at the cost of render time", gui)
+            if gui: gui.newline("  Pixel Sampler:")
+            str += luxOption("pixelsampler", luxProp(scn, "sampler.lowdisc.pixelsampler", "lowdiscrepancy"), ["linear", "tile", "random", "vegas","lowdiscrepancy","hilbert"], "Pixel Sampler", "select pixel-sampler", gui)
+            if gui: gui.newline()
+            str += luxInt("pixelsamples", luxProp(scn, "sampler.lowdisc.pixelsamples", 4), 1, 2048, "Pixel Samples", "Average number of samples taken per pixel. More samples create a higher quality image at the cost of render time", gui)
 
         if samplertype.get() == "random":
-            if gui: gui.newline("  PixelSampler:")
-            str += luxOption("pixelsampler", luxProp(scn, "sampler.random.pixelsampler", "vegas"), ["linear", "tile", "random", "vegas","lowdiscrepancy","hilbert"], "pixel-sampler", "select pixel-sampler", gui)
+            if gui: gui.newline("  Pixel Sampler:")
+            str += luxOption("pixelsampler", luxProp(scn, "sampler.random.pixelsampler", "vegas"), ["linear", "tile", "random", "vegas","lowdiscrepancy","hilbert"], "Pixel Sampler", "select pixel-sampler", gui)
             if gui: gui.newline()
-            str += luxInt("pixelsamples", luxProp(scn, "sampler.random.pixelsamples", 4), 1, 512, "pixelsamples", "Allows you to specify how many samples per pixel are computed", gui)
+            str += luxInt("pixelsamples", luxProp(scn, "sampler.random.pixelsamples", 4), 1, 512, "Pixel Samples", "Allows you to specify how many samples per pixel are computed", gui)
     return str            
 
 def luxSurfaceIntegrator(scn, gui=None):
@@ -4033,36 +4044,36 @@ def luxSurfaceIntegrator(scn, gui=None):
             if showadvanced.get()=="false":
                 # Default parameters
                 if gui: gui.newline("  Depth:", 8, 0, None, [0.4,0.4,0.4])
-                str += luxInt("maxdepth", luxProp(scn, "sintegrator.dlighting.maxdepth", 8), 0, 2048, "bounces", "The maximum recursion depth for ray casting", gui, 2.0)
+                str += luxInt("maxdepth", luxProp(scn, "sintegrator.dlighting.maxdepth", 8), 0, 2048, "Max Depth", "The maximum recursion depth for ray casting", gui, 2.0)
 
             if showadvanced.get()=="true":
                 # Advanced parameters
                 if gui: gui.newline("  Depth:")
-                str += luxInt("maxdepth", luxProp(scn, "sintegrator.dlighting.maxdepth", 8), 0, 2048, "max-depth", "The maximum recursion depth for ray casting", gui)
-                str += luxOption("lightstrategy", luxProp(scn, "sintegrator.dlighting.lightstrategy", "auto"), ["one", "all", "auto", "importance", "powerimp", "allpowerimp", "logpowerimp"], "light strategy", "select directlighting strategy", gui)
-                str += luxInt("shadowraycount", luxProp(scn, "sintegrator.dlighting.shadowraycount", 1), 1, 512, "shadow ray count", "Number of shadow rays traced per sample", gui, 2.0)
+                str += luxInt("maxdepth", luxProp(scn, "sintegrator.dlighting.maxdepth", 8), 0, 2048, "Max Depth", "The maximum recursion depth for ray casting", gui)
+                str += luxOption("lightstrategy", luxProp(scn, "sintegrator.dlighting.lightstrategy", "auto"), ["one", "all", "auto", "importance", "powerimp", "allpowerimp", "logpowerimp"], "Light Strategy", "select directlighting strategy", gui)
+                str += luxInt("shadowraycount", luxProp(scn, "sintegrator.dlighting.shadowraycount", 1), 1, 512, "Shadow Ray Count", "Number of shadow rays traced per sample", gui, 2.0)
 
         if integratortype.get() == "path":
             if showadvanced.get()=="false":
                 # Default parameters
                 if gui: gui.newline("  Depth:", 8, 0, None, [0.4,0.4,0.4])
-                str += luxInt("maxdepth", luxProp(scn, "sintegrator.path.maxdepth", 10), 0, 2048, "bounces", "The maximum recursion depth for ray casting", gui, 1.0)
+                str += luxInt("maxdepth", luxProp(scn, "sintegrator.path.maxdepth", 10), 0, 2048, "Max Depth", "The maximum recursion depth for ray casting", gui, 1.0)
                 ienv = luxProp(scn, "sintegrator.path.ienvironment", "true")
                 str += luxBool("includeenvironment", ienv, "Include Environment", "Enable/Disable rendering of environment lightsources", gui)
 
             if showadvanced.get()=="true":
                 # Advanced parameters
                 if gui: gui.newline("  Depth:")
-                str += luxInt("maxdepth", luxProp(scn, "sintegrator.path.maxdepth", 10), 0, 2048, "maxdepth", "The maximum recursion depth for ray casting", gui)
-                str += luxOption("lightstrategy", luxProp(scn, "sintegrator.path.lightstrategy", "auto"), ["one", "all", "auto", "importance", "powerimp", "allpowerimp", "logpowerimp"], "light strategy", "select directlighting strategy", gui)
+                str += luxInt("maxdepth", luxProp(scn, "sintegrator.path.maxdepth", 10), 0, 2048, "Max Depth", "The maximum recursion depth for ray casting", gui)
+                str += luxOption("lightstrategy", luxProp(scn, "sintegrator.path.lightstrategy", "auto"), ["one", "all", "auto", "importance", "powerimp", "allpowerimp", "logpowerimp"], "Light Strategy", "select directlighting strategy", gui)
                 if gui: gui.newline("  RR:")
                 rrstrat = luxProp(scn, "sintegrator.path.rrstrategy", "efficiency")
-                str += luxOption("rrstrategy", rrstrat, ["efficiency", "probability", "none"], "RR strategy", "select Russian Roulette path termination strategy", gui)
+                str += luxOption("rrstrategy", rrstrat, ["efficiency", "probability", "none"], "RR Strategy", "select Russian Roulette path termination strategy", gui)
                 if rrstrat.get() == "probability":
-                    str += luxFloat("rrcontinueprob", luxProp(scn, "sintegrator.path.rrcontinueprob", 0.65), 0.0, 1.0, "rrprob", "Russian roulette continue probability", gui)
+                    str += luxFloat("rrcontinueprob", luxProp(scn, "sintegrator.path.rrcontinueprob", 0.65), 0.0, 1.0, "RR Prob", "Russian roulette continue probability", gui)
                 ienv = luxProp(scn, "sintegrator.path.ienvironment", "true")
                 str += luxBool("includeenvironment", ienv, "Include Environment", "Enable/Disable rendering of environment lightsources", gui)
-                str += luxInt("shadowraycount", luxProp(scn, "sintegrator.dlighting.shadowraycount", 1), 1, 512, "shadow ray count", "Number of shadow rays traced per sample", gui, 2.0)
+                str += luxInt("shadowraycount", luxProp(scn, "sintegrator.dlighting.shadowraycount", 1), 1, 512, "Shadow Ray Count", "Number of shadow rays traced per sample", gui, 2.0)
 
         if integratortype.get() == "bidirectional":
             if showadvanced.get()=="false":
@@ -4076,47 +4087,46 @@ def luxSurfaceIntegrator(scn, gui=None):
             if showadvanced.get()=="true":
                 # Advanced parameters
                 if gui: gui.newline("  Depth:")
-                str += luxInt("eyedepth", luxProp(scn, "sintegrator.bidir.eyedepth", 16), 0, 2048, "eyedepth", "The maximum recursion depth for ray casting", gui)
-                str += luxInt("lightdepth", luxProp(scn, "sintegrator.bidir.lightdepth", 16), 0, 2048, "lightdepth", "The maximum recursion depth for light ray casting", gui)
-                str += luxOption("strategy", luxProp(scn, "sintegrator.bidir.strategy", "auto"), ["one", "all", "auto"], "strategy", "select directlighting strategy", gui)
-                
-                str += luxFloat('eyerrthreshold', luxProp(scn, "sintegrator.bidir.eyerrthreshold", 0), 0, 1, "eyerrthreshold", "The minimum probability for russian roulette eye subpath termination ", gui)
-                str += luxFloat('lightrrthreshold', luxProp(scn, "sintegrator.bidir.lightrrthreshold", 0), 0, 1, "lightrrthreshold", "The minimum probability for russian roulette light subpath termination ", gui)
+                str += luxInt("eyedepth", luxProp(scn, "sintegrator.bidir.eyedepth", 16), 0, 2048, "Eye Depth", "The maximum recursion depth for ray casting", gui)
+                str += luxInt("lightdepth", luxProp(scn, "sintegrator.bidir.lightdepth", 16), 0, 2048, "Light Depth", "The maximum recursion depth for light ray casting", gui)
+                str += luxFloat('eyerrthreshold', luxProp(scn, "sintegrator.bidir.eyerrthreshold", 0), 0, 1, "Eye RR Threshold", "The minimum probability for russian roulette eye subpath termination ", gui, 2.0)
+                str += luxFloat('lightrrthreshold', luxProp(scn, "sintegrator.bidir.lightrrthreshold", 0), 0, 1, "Light RR Threshold", "The minimum probability for russian roulette light subpath termination ", gui, 2.0)
+                str += luxOption("strategy", luxProp(scn, "sintegrator.bidir.strategy", "auto"), ["one", "all", "auto"], "Strategy", "select directlighting strategy", gui)
 
         if integratortype.get() == "exphotonmap":
             if gui: gui.newline("  Render:")
-            str += luxOption("renderingmode", luxProp(scn, "sintegrator.photonmap.renderingmode", "directlighting"), ["directlighting", "path"], "renderingmode", "select rendering mode", gui)
-            str += luxOption("lightstrategy", luxProp(scn, "sintegrator.photonmap.lightstrategy", "auto"), ["one", "all", "auto", "importance", "powerimp", "allpowerimp", "logpowerimp"], "light strategy", "select directlighting strategy", gui)
-            str += luxInt("shadowraycount", luxProp(scn, "sintegrator.dlighting.shadowraycount", 1), 1, 512, "shadow ray count", "Number of shadow rays traced per sample", gui, 2.0)
-            str += luxInt("maxphotondepth", luxProp(scn, "sintegrator.photonmap.maxphotondepth", 10), 1, 1024, "maxphotondepth", "The maximum recursion depth of photon tracing", gui)
-            str += luxInt("maxdepth", luxProp(scn, "sintegrator.photonmap.maxdepth", 6), 1, 1024, "maxdepth", "The maximum recursion depth of specular reflection and refraction", gui)
-            str += luxFloat("maxphotondist", luxProp(scn, "sintegrator.photonmap.maxphotondist", 0.1), 0.0, 10.0, "maxphotondist", "The maximum distance between a point being shaded and a photon that can contribute to that point", gui)
-            str += luxInt("nphotonsused", luxProp(scn, "sintegrator.photonmap.nphotonsused", 50), 0, 1000000, "nphotonsused", "The number of photons to use in density estimation", gui)
+            str += luxOption("renderingmode", luxProp(scn, "sintegrator.photonmap.renderingmode", "directlighting"), ["directlighting", "path"], "Rendering Mode", "select rendering mode", gui)
+            str += luxOption("lightstrategy", luxProp(scn, "sintegrator.photonmap.lightstrategy", "auto"), ["one", "all", "auto", "importance", "powerimp", "allpowerimp", "logpowerimp"], "Light Strategy", "select directlighting strategy", gui)
+            str += luxInt("shadowraycount", luxProp(scn, "sintegrator.dlighting.shadowraycount", 1), 1, 512, "Shadow Ray Count", "Number of shadow rays traced per sample", gui, 2.0)
+            str += luxInt("maxphotondepth", luxProp(scn, "sintegrator.photonmap.maxphotondepth", 10), 1, 1024, "Max Photon Depth", "The maximum recursion depth of photon tracing", gui, 2.0)
+            str += luxInt("maxdepth", luxProp(scn, "sintegrator.photonmap.maxdepth", 6), 1, 1024, "Max Recursion Depth", "The maximum recursion depth of specular reflection and refraction", gui, 2.0)
+            str += luxFloat("maxphotondist", luxProp(scn, "sintegrator.photonmap.maxphotondist", 0.1), 0.0, 10.0, "Max Photon Dist", "The maximum distance between a point being shaded and a photon that can contribute to that point", gui, 2.0)
+            str += luxInt("nphotonsused", luxProp(scn, "sintegrator.photonmap.nphotonsused", 50), 0, 1000000, "Num Photons Used", "The number of photons to use in density estimation", gui, 2.0)
 
             if gui: gui.newline("  Photons:")
-            str += luxInt("indirectphotons", luxProp(scn, "sintegrator.photonmap.idphotons", 200000), 0, 10000000, "indirect", "The number of photons to shoot for indirect lighting during preprocessing of the photon map", gui)
-            str += luxInt("directphotons", luxProp(scn, "sintegrator.photonmap.dphotons", 1000000), 0, 10000000, "direct", "The number of photons to shoot for direct lighting during preprocessing of the photon map", gui)
-            str += luxInt("causticphotons", luxProp(scn, "sintegrator.photonmap.cphotons", 20000), 0, 10000000, "caustic", "The number of photons to shoot for caustics during preprocessing of the photon map", gui)
-            str += luxInt("radiancephotons", luxProp(scn, "sintegrator.photonmap.rphotons", 200000), 0, 10000000, "radiance", "The number of photons to shoot for radiance during preprocessing of the photon map", gui)
+            str += luxInt("indirectphotons", luxProp(scn, "sintegrator.photonmap.idphotons", 200000), 0, 10000000, "Indirect", "The number of photons to shoot for indirect lighting during preprocessing of the photon map", gui)
+            str += luxInt("directphotons", luxProp(scn, "sintegrator.photonmap.dphotons", 1000000), 0, 10000000, "Direct", "The number of photons to shoot for direct lighting during preprocessing of the photon map", gui)
+            str += luxInt("causticphotons", luxProp(scn, "sintegrator.photonmap.cphotons", 20000), 0, 10000000, "Caustic", "The number of photons to shoot for caustics during preprocessing of the photon map", gui)
+            str += luxInt("radiancephotons", luxProp(scn, "sintegrator.photonmap.rphotons", 200000), 0, 10000000, "Radiance", "The number of photons to shoot for radiance during preprocessing of the photon map", gui)
             if gui: gui.newline("  FinalGather:")
             fg = luxProp(scn, "sintegrator.photonmap.fgather", "true")
-            str += luxBool("finalgather", fg, "finalgather", "Enable use of final gather during rendering", gui)
+            str += luxBool("finalgather", fg, "Final Gather", "Enable use of final gather during rendering", gui)
             if fg.get() == "true":
                 rrstrat = luxProp(scn, "sintegrator.photonmap.rrstrategy", "efficiency")
-                str += luxOption("rrstrategy", rrstrat, ["efficiency", "probability", "none"], "RR strategy", "select Russian Roulette gather termination strategy", gui)
-                str += luxInt("finalgathersamples", luxProp(scn, "sintegrator.photonmap.fgathers", 32), 1, 1024, "samples", "The number of finalgather samples to take per pixel during rendering", gui)
-                str += luxFloat("gatherangle", luxProp(scn, "sintegrator.photonmap.gangle", 10.0), 0.0, 360.0, "gatherangle", "Angle for final gather", gui)
+                str += luxOption("rrstrategy", rrstrat, ["efficiency", "probability", "none"], "RR Strategy", "select Russian Roulette gather termination strategy", gui)
+                str += luxInt("finalgathersamples", luxProp(scn, "sintegrator.photonmap.fgathers", 32), 1, 1024, "Samples", "The number of finalgather samples to take per pixel during rendering", gui)
+                str += luxFloat("gatherangle", luxProp(scn, "sintegrator.photonmap.gangle", 10.0), 0.0, 360.0, "Gather Angle", "Angle for final gather", gui)
                 if rrstrat.get() == "probability":
-                    str += luxFloat("rrcontinueprob", luxProp(scn, "sintegrator.photonmap.rrcontinueprob", 0.65), 0.0, 1.0, "rrcontinueprob", "Probability for russian roulette particle tracing termination", gui)
+                    str += luxFloat("rrcontinueprob", luxProp(scn, "sintegrator.photonmap.rrcontinueprob", 0.65), 0.0, 1.0, "RR Continue Prob", "Probability for russian roulette particle tracing termination", gui)
                 photonmapsfile = luxProp(scn, "sintegrator.photonmap.photonmapsfile", "")
                 photonmap = luxProp(scn, 'photonmap.enabled', 'false')
-                luxBool('photonmap', photonmap, 'Photon maps file', 'Loads photon maps from the defined file or writes maps to the file if it not exists', gui, 2.0)
+                luxBool('photonmap', photonmap, 'Photon Maps File', 'Loads photon maps from the defined file or writes maps to the file if it not exists', gui, 2.0)
                 if photonmap.get() == 'true':
-                    str += luxFile("photonmapsfile", photonmapsfile, "file", "Photon maps file to read from / write to", gui, 2.0)
+                    str += luxFile("photonmapsfile", photonmapsfile, "File", "Photon maps file to read from / write to", gui, 2.0)
 
             if showadvanced.get()=="true":
                 expm_dbg = luxProp(scn, 'sintegrator.photonmap.dbg', 'false')
-                luxBool('expm_dbg', expm_dbg, 'Photon map debugging', 'Visual inspection of photon maps during rendering', gui, 2.0)
+                luxBool('expm_dbg', expm_dbg, 'Photon Map Debugging', 'Visual inspection of photon maps during rendering', gui, 2.0)
                 if expm_dbg.get() == 'true':
                     dbg_enabledirect = luxProp(scn, "sintegrator.photonmap.dbg_enabledirect", "false")
                     dbg_enableradiancemap = luxProp(scn, "sintegrator.photonmap.dbg_enableradiancemap", "false")
@@ -4124,10 +4134,10 @@ def luxSurfaceIntegrator(scn, gui=None):
                     dbg_enableindirdiffuse = luxProp(scn, "sintegrator.photonmap.dbg_enableindirdiffuse", "false")
                     dbg_enableindirspecular = luxProp(scn, "sintegrator.photonmap.dbg_enableindirspecular", "false")
                     str += luxBool("dbg_enabledirect", dbg_enabledirect, "Direct lighing", "Enable visual inspection of direct ligting", gui)
-                    str += luxBool("dbg_enableradiancemap", dbg_enableradiancemap, "Radiancemap", "Enable visual inspection of radiance map", gui)
-                    str += luxBool("dbg_enableindircaustic", dbg_enableindircaustic, "Indirect caustics", "Enable visual inspection of indirect caustic map", gui)
-                    str += luxBool("dbg_enableindirdiffuse", dbg_enableindirdiffuse, "Indirect diffuse", "Enable visual inspection of indirect diffuse map", gui)
-                    str += luxBool("dbg_enableindirspecular", dbg_enableindirspecular, "Indirect specular", "Enable visual inspection of indirect specular map", gui)
+                    str += luxBool("dbg_enableradiancemap", dbg_enableradiancemap, "Radiance Map", "Enable visual inspection of radiance map", gui)
+                    str += luxBool("dbg_enableindircaustic", dbg_enableindircaustic, "Indirect Caustics", "Enable visual inspection of indirect caustic map", gui)
+                    str += luxBool("dbg_enableindirdiffuse", dbg_enableindirdiffuse, "Indirect Diffuse", "Enable visual inspection of indirect diffuse map", gui)
+                    str += luxBool("dbg_enableindirspecular", dbg_enableindirspecular, "Indirect Specular", "Enable visual inspection of indirect specular map", gui)
 
         if integratortype.get() == "distributedpath":
             str += luxOption("strategy", luxProp(scn, "sintegrator.distributedpath.strategy", "auto"), ["one", "all", "auto"], "strategy", "select directlighting strategy", gui)
@@ -4188,13 +4198,13 @@ def luxSurfaceIntegrator(scn, gui=None):
         if integratortype.get() == "igi":
             if gui: gui.newline("  Depth:", 8, 0, None, [0.4,0.4,0.4])
             depth = luxProp(scn, "sintegrator.igi.maxdepth", 5)
-            luxInt("maxdepth", depth, 1, 32, "maxdepth", "The maximum recursion depth for ray casting", gui, 2.0)
+            luxInt("maxdepth", depth, 1, 32, "Max Depth", "The maximum recursion depth for ray casting", gui, 2.0)
             if showadvanced.get()=="true":
                 # Advanced parameters
                 if gui: gui.newline("  VLights:")
-                str += luxInt("nsets", luxProp(scn, "sintegrator.igi.nsets", 4), 1, 100, "nsets", "The number of virtual lights sets", gui)
-                str += luxInt("nlights", luxProp(scn, "sintegrator.igi.nlights", 64), 1, 1000, "nlights", "The number of light paths per light set", gui)
-                str += luxFloat("strategy", luxProp(scn, "sintegrator.igi.mindist", 0.1), 0.01, 10.0, "mindist", "The minimal distance to a virtual light to take it into account", gui)
+                str += luxInt("nsets", luxProp(scn, "sintegrator.igi.nsets", 4), 1, 100, "Num Sets", "The number of virtual lights sets", gui)
+                str += luxInt("nlights", luxProp(scn, "sintegrator.igi.nlights", 64), 1, 1000, "Num Lights", "The number of light paths per light set", gui)
+                str += luxFloat("strategy", luxProp(scn, "sintegrator.igi.mindist", 0.1), 0.01, 10.0, "Minimum Dist", "The minimal distance to a virtual light to take it into account", gui)
 
     
     return str
