@@ -400,12 +400,12 @@ class luxExport:
 						if not psys.getName() in self.hair['obj'][obj]: self.hair['obj'][obj].append(psys.getName())
 					except AttributeError:
 						print 'ERROR: Installed version of Blender does not properly supports hair particles'
-						print '	   export. Please use this version of LuxBlend with Blender 2.49b only.'
+						print '	  export. Please use this version of LuxBlend with Blender 2.49b only.'
 						if osys.platform == 'win32':
-							print '	   Important note for users of Blender 2.49b on Windows systems: if you'
-							print '	   received this message, then you\'re using an inappropriate build of'
-							print '	   Blender program. You can find the correct version build in blender.org'
-							print '	   download section in a *zip archive* (not in an installer!).'
+							print '	  Important note for users of Blender 2.49b on Windows systems: if you'
+							print '	  received this message, then you\'re using an inappropriate build of'
+							print '	  Blender program. You can find the correct version build in blender.org'
+							print '	  download section in a *zip archive* (not in an installer!).'
 						print
 						Draw.PupMenu('ERROR: Blender version does not properly supports hair export (see console for details)%t|OK%x1')
 						break
@@ -455,7 +455,7 @@ class luxExport:
 										if volumeId not in self.namedVolumes:
 											self.namedVolumes.append(volumeId)
 							if (mat!=None) and ((luxProp(mat, "type", "").get()=="light") or (luxProp(mat, "emission", "false").get()=="true")) \
-							 and luxProp(Scene.GetCurrent(), "lightgroup.disable."+luxProp(mat, "light.lightgroup", "default").get(), "false").get() != "true":
+							and luxProp(Scene.GetCurrent(), "lightgroup.disable."+luxProp(mat, "light.lightgroup", "default").get(), "false").get() != "true":
 								light = True
 						if len(psystems) == 0 or export_emitter:
 							mesh_name = obj.getData(name_only=True)
@@ -580,8 +580,8 @@ class luxExport:
 				legname = '%s:%s:luxHairPrimitive:leg' % (obj.name, psysname)
 				jointname = '%s:%s:luxHairPrimitive:joint' % (obj.name, psysname)
 				primitives = {
-				  legname: "\tShape \"cylinder\" \"float radius\" %f \"float zmin\" 0.0 \"float zmax\" 1.0\n" % (0.5*size),
-				  jointname: "\tShape \"sphere\" \"float radius\" %f\n" % (0.5*size)
+				 legname: "\tShape \"cylinder\" \"float radius\" %f \"float zmin\" 0.0 \"float zmax\" 1.0\n" % (0.5*size),
+				 jointname: "\tShape \"sphere\" \"float radius\" %f\n" % (0.5*size)
 				}
 				# exporting primitive objects
 				for name, shape in primitives.items():
@@ -742,19 +742,19 @@ class luxExport:
 			if not(portal):
 				mat = mats[matIndex]
 				if not mat:
-				   mat = dummyMat
+				  mat = dummyMat
 				if instancedMats:
 					file.write("ObjectBegin \"%s\"\n" % self.exportInstanceObjName(instancedMats, i, instancedShapes))
 				self.exportMaterialLink(file, mat)
 
 			mesh_str = self.getMeshParams(mats[matIndex], instancedMats)
 			if (export_ply == "true") and not(portal):
-				 file.write("\tShape \"plymesh\" %s \n"% mesh_str)
+				file.write("\tShape \"plymesh\" %s \n"% mesh_str)
 			else:
-				 if not(portal):
-					 file.write("\tShape \"mesh\" %s \"integer triindices\" [\n"% mesh_str)
-				 else:
-					 file.write("\tPortalShape \"mesh\" %s \"integer triindices\" [\n"% mesh_str)
+				if not(portal):
+					file.write("\tShape \"mesh\" %s \"integer triindices\" [\n"% mesh_str)
+				else:
+					file.write("\tPortalShape \"mesh\" %s \"integer triindices\" [\n"% mesh_str)
 
 			if (export_ply == "true") and not(portal):
 				sceneName = luxProp(scn, "sceneName", "").get()
@@ -830,7 +830,7 @@ class luxExport:
 			if not(portal):
 				mat = mats[matIndex]
 				if not mat:
-				   mat = dummyMat
+				  mat = dummyMat
 				if instancedMats:
 					file.write("ObjectBegin \"%s\"\n" % self.exportInstanceObjName(instancedMats, i, instancedShapes))
 				self.exportMaterialLink(file, mat)
@@ -1095,8 +1095,8 @@ class luxExport:
 			file.write("TransformBegin\n")
 			file.write("\tTransform [%s %s %s %s  %s %s %s %s  %s %s %s %s  %s %s %s %s]\n"\
 				%(matrix[0][0], matrix[0][1], matrix[0][2], matrix[0][3],\
-				  matrix[1][0], matrix[1][1], matrix[1][2], matrix[1][3],\
-				  matrix[2][0], matrix[2][1], matrix[2][2], matrix[2][3],\
+				 matrix[1][0], matrix[1][1], matrix[1][2], matrix[1][3],\
+				 matrix[2][0], matrix[2][1], matrix[2][2], matrix[2][3],\
 					matrix[3][0], matrix[3][1], matrix[3][2], matrix[3][3]))
 			mesh_name = obj.getData(name_only=True)
 			mesh.getFromObject(obj, 0, 1)
@@ -1129,8 +1129,8 @@ class luxExport:
 				file.write("AttributeBegin # %s\n"%obj.getName())
 				file.write("\tTransform [%s %s %s %s  %s %s %s %s  %s %s %s %s  %s %s %s %s]\n"\
 					%(matrix[0][0], matrix[0][1], matrix[0][2], matrix[0][3],\
-					  matrix[1][0], matrix[1][1], matrix[1][2], matrix[1][3],\
-					  matrix[2][0], matrix[2][1], matrix[2][2], matrix[2][3],\
+					 matrix[1][0], matrix[1][1], matrix[1][2], matrix[1][3],\
+					 matrix[2][0], matrix[2][1], matrix[2][2], matrix[2][3],\
 						matrix[3][0], matrix[3][1], matrix[3][2], matrix[3][3]))
 				col = obj.getData(mesh=1).col # data
 				energy = obj.getData(mesh=1).energy # data
@@ -1199,8 +1199,8 @@ class luxExport:
 
 			file.write("Transform [%s %s %s %s  %s %s %s %s  %s %s %s %s  %s %s %s %s]\n"\
 				%(matrix[0][0], matrix[0][1], matrix[0][2], matrix[0][3],\
-				  matrix[1][0], matrix[1][1], matrix[1][2], matrix[1][3],\
-				  matrix[2][0], matrix[2][1], matrix[2][2], matrix[2][3],\
+				 matrix[1][0], matrix[1][1], matrix[1][2], matrix[1][3],\
+				 matrix[2][0], matrix[2][1], matrix[2][2], matrix[2][3],\
 					matrix[3][0], matrix[3][1], matrix[3][2], matrix[3][3]))
 
 			str_opt = (" \"point p0\" [%f %f %f] \"point p1\" [%f %f %f]"%(minx, miny, minz, maxx, maxy, maxz))
@@ -1227,10 +1227,10 @@ def luxFlashBlock(camObj):
 	return str
 
 class exportProgressBar(object):
-	totalSteps	= None
-	realSteps   = None
-	currentStep	= None
-	subMode	 = False
+	totalSteps = None
+	realSteps = None
+	currentStep = None
+	subMode = False
 	counterStep = None
 	
 	def __init__(self, ts, other=None):
@@ -1339,8 +1339,8 @@ def save_lux(filename, unindexedname, anim_progress=None):
 				if obj.getData(mesh=1).getType() == 1: # sun object # data
 					sun = obj
 	if not(export.analyseScene()) and not(envtype == "infinite") and not(envtype == "infinitesample") \
-	 and not (envtype == "sunsky" and sun != None and suncomponent == "true") \
-	 and not (envtype == "sunsky" and skycomponent == "true"):
+	and not (envtype == "sunsky" and sun != None and suncomponent == "true") \
+	and not (envtype == "sunsky" and skycomponent == "true"):
 		print("ERROR: No light source found")
 		Draw.PupMenu("ERROR: No light source found%t|OK%x1")
 		render_status_text = ''
@@ -1399,7 +1399,7 @@ def save_lux(filename, unindexedname, anim_progress=None):
 				self.load_result = True
 			else:
 				bintype = "luxrender"
-			   
+			  
 			print("pipe: using %s" % bintype)
 				
 			self.p = get_lux_pipe(scn, 1, bintype)
@@ -1424,7 +1424,7 @@ def save_lux(filename, unindexedname, anim_progress=None):
 			i = Blender.Image.Load(self.filename)
 			i.makeCurrent()
 			i.reload()
-		   
+		  
 		def load_data(self):
 			print("processing %i image bytes" % len(self.data))
 			i = Blender.Image.New('luxrender', self.xr, self.yr, 32)
@@ -1501,8 +1501,8 @@ def save_lux(filename, unindexedname, anim_progress=None):
 					target = pos + forwards
 					up = m1[1]
 					file.write("TransformBegin\n")
-					file.write("   LookAt %f %f %f \n	   %f %f %f \n	   %f %f %f\n" % ( pos[0], pos[1], pos[2], target[0], target[1], target[2], up[0], up[1], up[2] ))
-					file.write("   CoordinateSystem \"CameraEndTransform\"\n")
+					file.write("	LookAt %f %f %f \n	%f %f %f \n	%f %f %f\n" % ( pos[0], pos[1], pos[2], target[0], target[1], target[2], up[0], up[1], up[2] ))
+					file.write("	CoordinateSystem \"CameraEndTransform\"\n")
 					file.write("TransformEnd\n\n")
 
 			# Write original lookat transform
@@ -1510,10 +1510,10 @@ def save_lux(filename, unindexedname, anim_progress=None):
 			forwards = -matrix[2]
 			target = pos + forwards
 			up = matrix[1]
-			file.write("LookAt %f %f %f \n	   %f %f %f \n	   %f %f %f\n\n" % ( pos[0], pos[1], pos[2], target[0], target[1], target[2], up[0], up[1], up[2] ))
+			file.write("LookAt %f %f %f \n	%f %f %f \n	%f %f %f\n\n" % ( pos[0], pos[1], pos[2], target[0], target[1], target[2], up[0], up[1], up[2] ))
 			file.write(luxCamera(camObj.data, scn.getRenderingContext()))			
 			if motion:
-				file.write("\n   \"string endtransform\" [\"CameraEndTransform\"]")							   
+				file.write("\n	\"string endtransform\" [\"CameraEndTransform\"]")							  
 			file.write("\n")
 			
 			# export camera medium
@@ -1718,13 +1718,13 @@ def networkstring(scn):
 			except:
 				print "There was an error encountered while reading a file", where_to_look
 		elif luxProp(scn,"network_servers","").get():
-				 for server in luxProp(scn,"network_servers","").get().split(","):
+				for server in luxProp(scn,"network_servers","").get().split(","):
 					servers_string=servers_string+" -u "+ server
 	return servers_string
 
 
 #########################################################################
-###	 LAUNCH LuxRender AND RENDER CURRENT SCENE
+###	LAUNCH LuxRender AND RENDER CURRENT SCENE
 #########################################################################
 
 def get_lux_exec(scn, type="luxrender"):
@@ -2884,7 +2884,7 @@ def luxHelp(name, lux, caption, hint, gui, width=1.0):
 		Draw.Toggle(caption, evtLuxGui, r[0], r[1], r[2], r[3], lux.get()=="true", hint, lambda e,v: lux.set(["false","true"][bool(v)]))
 		drawIcon(icon_help, r[0], r[1])
 
-	return "\n   \"bool %s\" [\"%s\"]"%(name, lux.get())
+	return "\n	\"bool %s\" [\"%s\"]"%(name, lux.get())
 
 # lux parameter types
 def luxOption(name, lux, options, caption, hint, gui, width=1.0):
@@ -2902,7 +2902,7 @@ def luxOption(name, lux, options, caption, hint, gui, width=1.0):
 				i = 0
 		r = gui.getRect(width, 1)
 		Draw.Menu(menustr, evtLuxGui, r[0], r[1], r[2], r[3], i, hint, lambda e,v: lux.set(options[v]))
-	return "\n   \"string %s\" [\"%s\"]"%(name, lux.get())
+	return "\n	\"string %s\" [\"%s\"]"%(name, lux.get())
 
 def luxOptionRect(name, lux, options, caption, hint, gui, x, y, xx, yy):
 	if gui:
@@ -2918,7 +2918,7 @@ def luxOptionRect(name, lux, options, caption, hint, gui, x, y, xx, yy):
 				print ("value %s not found in options list"%(lux.get()))
 				i = 0
 		Draw.Menu(menustr, evtLuxGui, x, y, xx, yy, i, hint, lambda e,v: lux.set(options[v]))
-	return "\n   \"string %s\" [\"%s\"]"%(name, lux.get())
+	return "\n	\"string %s\" [\"%s\"]"%(name, lux.get())
 
 def luxIdentifier(name, lux, options, caption, hint, gui, icon=None, width=1.0):
 	if gui: gui.newline(caption+":", 8, 0, icon, [0.75,0.5,0.25])
@@ -3028,7 +3028,7 @@ def luxFloat(name, lux, min, max, caption, hint, gui, width=1.0, useslider=0):
 					sval = (icu_value - fmin.getFloat()) / (fmax.getFloat() - fmin.getFloat())
 					lux.set(tmin.getFloat() + (sval * (tmax.getFloat() - tmin.getFloat())))
 
-	return "\n   \"float %s\" [%f]"%(name, lux.getFloat())
+	return "\n	\"float %s\" [%f]"%(name, lux.getFloat())
 
 def luxFloatNoIPO(name, lux, min, max, caption, hint, gui, width=1.0, useslider=0):
 	if gui:
@@ -3037,7 +3037,7 @@ def luxFloatNoIPO(name, lux, min, max, caption, hint, gui, width=1.0, useslider=
 			Draw.Slider(caption+": ", evtLuxGui, r[0], r[1], r[2], r[3], lux.getFloat(), min, max, 0, hint, lambda e,v: lux.set(v))
 		else:
 			Draw.Number(caption+": ", evtLuxGui, r[0], r[1], r[2], r[3], lux.getFloat(), min, max, hint, lambda e,v: lux.set(v))
-	return "\n   \"float %s\" [%f]"%(name, lux.getFloat())
+	return "\n	\"float %s\" [%f]"%(name, lux.getFloat())
 
 
 
@@ -3045,13 +3045,13 @@ def luxInt(name, lux, min, max, caption, hint, gui, width=1.0):
 	if gui:
 		r = gui.getRect(width, 1)
 		Draw.Number(caption+": ", evtLuxGui, r[0], r[1], r[2], r[3], lux.getInt(), min, max, hint, lambda e,v: lux.set(v))
-	return "\n   \"integer %s\" [%d]"%(name, lux.getInt())
+	return "\n	\"integer %s\" [%d]"%(name, lux.getInt())
 
 def luxBool(name, lux, caption, hint, gui, width=1.0):
 	if gui:
 		r = gui.getRect(width, 1)
 		Draw.Toggle(caption, evtLuxGui, r[0], r[1], r[2], r[3], lux.get()=="true", hint, lambda e,v: lux.set(["false","true"][bool(v)]))
-	return "\n   \"bool %s\" [\"%s\"]"%(name, lux.get())
+	return "\n	\"bool %s\" [\"%s\"]"%(name, lux.get())
 
 def luxLabel(caption, gui):
 	if gui:
@@ -3066,28 +3066,28 @@ def luxCollapse(name, lux, caption, hint, gui, width=1.0):
 		else:
 			drawArrow(arrow_right, r[0]-22, r[1]-2)
 		Draw.Toggle(caption, evtLuxGui, r[0], r[1], r[2], r[3], lux.get()=="true", hint, lambda e,v: lux.set(["false","true"][bool(v)]))
-	return "\n   \"bool %s\" [\"%s\"]"%(name, lux.get())
+	return "\n	\"bool %s\" [\"%s\"]"%(name, lux.get())
 
 def luxString(name, lux, caption, hint, gui, width=1.0):
 	if gui:
 		r = gui.getRect(width, 1)
 		Draw.String(caption+": ", evtLuxGui, r[0], r[1], r[2], r[3], lux.get(), 250, hint, lambda e,v: lux.set(v))
 	if lux.get()==lux.default: return ""
-	else: return "\n   \"string %s\" [\"%s\"]"%(name, luxstr(lux.get()))
+	else: return "\n	\"string %s\" [\"%s\"]"%(name, luxstr(lux.get()))
 
 def luxFile(name, lux, caption, hint, gui, width=1.0):
 	if gui:
 		r = gui.getRect(width, 1)
 		Draw.String(caption+": ", evtLuxGui, r[0], r[1], r[2]-r[3]-2, r[3], lux.get(), 250, hint, lambda e,v: lux.set(v))
 		Draw.Button("...", 0, r[0]+r[2]-r[3], r[1], r[3], r[3], "click to open file selector", lambda e,v:Window.FileSelector(lambda s:lux.set(s), "Select %s"%(caption), lux.get()))
-	return "\n   \"string %s\" [\"%s\"]"%(name, luxstr(luxFilePath(lux.get())))
+	return "\n	\"string %s\" [\"%s\"]"%(name, luxstr(luxFilePath(lux.get())))
 
 def luxPath(name, lux, caption, hint, gui, width=1.0):
 	if gui:
 		r = gui.getRect(width, 1)
 		Draw.String(caption+": ", evtLuxGui, r[0], r[1], r[2]-r[3]-2, r[3], lux.get(), 250, hint, lambda e,v: lux.set(Blender.sys.dirname(v)+os.sep))
 		Draw.Button("...", 0, r[0]+r[2]-r[3], r[1], r[3], r[3], "click to open file selector", lambda e,v:Window.FileSelector(lambda s:lux.set(s), "Select %s"%(caption), lux.get()))
-	return "\n   \"string %s\" [\"%s\"]"%(name, luxstr(lux.get()))
+	return "\n	\"string %s\" [\"%s\"]"%(name, luxstr(lux.get()))
 
 def luxRGB(name, lux, max, caption, hint, gui, width=2.0):
 	if gui:
@@ -3109,8 +3109,8 @@ def luxRGB(name, lux, max, caption, hint, gui, width=2.0):
 		if max > 1.0:
 			Draw.Number("s:", evtLuxGui, r[0]+r[3]+3*w, r[1], w, r[3], drawS.val, 0.0, max, "color scale", lambda e,v: lux.setRGB((drawR.val*v,drawG.val*v,drawB.val*v)))
 	if max <= 1.0:
-		return "\n   \"color %s\" [%s]"%(name, lux.getRGC())
-	return "\n   \"color %s\" [%s]"%(name, lux.get())
+		return "\n	\"color %s\" [%s]"%(name, lux.getRGC())
+	return "\n	\"color %s\" [%s]"%(name, lux.get())
 
 def luxRGBNeg(name, lux, min, max, caption, hint, gui, width=2.0):
 	if gui:
@@ -3121,7 +3121,7 @@ def luxRGBNeg(name, lux, min, max, caption, hint, gui, width=2.0):
 		drawX = Draw.Number("R:", evtLuxGui, r[0], r[1], w, r[3], drawX.val, min, max, "red", lambda e,v: lux.setVector((v,drawY.val,drawZ.val)))
 		drawY = Draw.Number("G:", evtLuxGui, r[0]+w, r[1], w, r[3], drawY.val, min, max, "green", lambda e,v: lux.setVector((drawX.val,v,drawZ.val)))
 		drawZ = Draw.Number("B:", evtLuxGui, r[0]+2*w, r[1], w, r[3], drawZ.val, min, max, "blue", lambda e,v: lux.setVector((drawX.val,drawY.val,v)))
-	return "\n   \"color %s\" [%s]"%(name, lux.get())
+	return "\n	\"color %s\" [%s]"%(name, lux.get())
 
 def luxVector(name, lux, min, max, caption, hint, gui, width=2.0):
 	if gui:
@@ -3132,7 +3132,7 @@ def luxVector(name, lux, min, max, caption, hint, gui, width=2.0):
 		drawX = Draw.Number("x:", evtLuxGui, r[0], r[1], w, r[3], drawX.val, min, max, "", lambda e,v: lux.setVector((v,drawY.val,drawZ.val)))
 		drawY = Draw.Number("y:", evtLuxGui, r[0]+w, r[1], w, r[3], drawY.val, min, max, "", lambda e,v: lux.setVector((drawX.val,v,drawZ.val)))
 		drawZ = Draw.Number("z:", evtLuxGui, r[0]+2*w, r[1], w, r[3], drawZ.val, min, max, "", lambda e,v: lux.setVector((drawX.val,drawY.val,v)))
-	return "\n   \"vector %s\" [%s]"%(name, lux.get())
+	return "\n	\"vector %s\" [%s]"%(name, lux.get())
 
 def luxVectorUniform(name, lux, min, max, caption, hint, gui, width=2.0):
 	def setUniform(lux, value):
@@ -3150,7 +3150,7 @@ def luxVectorUniform(name, lux, min, max, caption, hint, gui, width=2.0):
 			drawX = Draw.Number("x:", evtLuxGui, r[0]+gui.h, r[1], w, r[3], drawX.val, min, max, "", lambda e,v: lux.setVector((v,drawY.val,drawZ.val)))
 			drawY = Draw.Number("y:", evtLuxGui, r[0]+w+gui.h, r[1], w, r[3], drawY.val, min, max, "", lambda e,v: lux.setVector((drawX.val,v,drawZ.val)))
 			drawZ = Draw.Number("z:", evtLuxGui, r[0]+2*w+gui.h, r[1], w, r[3], drawZ.val, min, max, "", lambda e,v: lux.setVector((drawX.val,drawY.val,v)))
-	return "\n   \"vector %s\" [%s]"%(name, lux.getVectorStr())
+	return "\n	\"vector %s\" [%s]"%(name, lux.getVectorStr())
 
 # property translator for lux<->blender camera types
 class luxCameraLinker:
@@ -3226,10 +3226,10 @@ def luxCamera(cam, context, gui=None):
 			print("calculated focal length: %f mm"%(focal * 1000.0))
 			aperture_diameter = focal / fstop.get()
 			print("calculated aperture diameter: %f mm"%(aperture_diameter * 1000.0))
-			str += "\n   \"float aperture_diameter\" [%f]"%(aperture_diameter*1000.0)
+			str += "\n	\"float aperture_diameter\" [%f]"%(aperture_diameter*1000.0)
 			filmdistance = dofdist.get() * focal / (dofdist.get() - focal)
 			print("calculated film distance: %f mm"%(filmdistance * 1000.0))
-			str += "\n   \"float filmdistance\" [%f]"%(filmdistance*1000.0)
+			str += "\n	\"float filmdistance\" [%f]"%(filmdistance*1000.0)
 
 		# Clipping
 		useclip = luxProp(cam, "useclip", "false")
@@ -3258,8 +3258,8 @@ def luxCamera(cam, context, gui=None):
 					usefstop = luxProp(cam, "usefstop", "true")
 					luxBool("usefstop", usefstop, "Use f/stop", "Use f/stop to define DOF effect", gui, 1.0)
 					
-					LR_SCALE = 1000.0	   # lr in metres -> mm
-					FL_SCALE = 1.0		  # fl in mm -> mm
+					LR_SCALE = 1000.0	  # lr in metres -> mm
+					FL_SCALE = 1.0		 # fl in mm -> mm
 					
 					def lr_2_fs(fl, lr):
 						lr += 0.00000001
@@ -3299,7 +3299,7 @@ def luxCamera(cam, context, gui=None):
 							luxProp(cam, "camera.objectfocus", "").set("")
 							Draw.PupMenu("WARNING: focus-object does not match existing object-name")
 							if LuxIsGUI: Draw.Redraw()
-																  
+																 
 				if focustype.get() == "manual":
 					dofdist = luxAttr(cam, "dofDist")
 					str += luxFloat("focaldistance", dofdist, 0.0, 100.0, "distance", "Distance from the camera at which objects will be in focus. Has no effect if Lens Radius is 0", gui)
@@ -3340,7 +3340,7 @@ def luxCamera(cam, context, gui=None):
 					(x1,y1,x2,y2) = context.border
 					screenwindow = [screenwindow[0]*(1-x1)+screenwindow[1]*x1, screenwindow[0]*(1-x2)+screenwindow[1]*x2,\
 							screenwindow[2]*(1-y1)+screenwindow[3]*y1, screenwindow[2]*(1-y2)+screenwindow[3]*y2]
-				str += "\n   \"float screenwindow\" [%f %f %f %f]"%(screenwindow[0], screenwindow[1], screenwindow[2], screenwindow[3])
+				str += "\n	\"float screenwindow\" [%f %f %f %f]"%(screenwindow[0], screenwindow[1], screenwindow[2], screenwindow[3])
 
 		# Note - radiance - this is a work in progress
 		# Flash lamp option for perspective and ortho cams
@@ -3366,7 +3366,7 @@ def luxCamera(cam, context, gui=None):
 				if mblurpresetstype.get() == 'cinema':
 					luxOption("shutfps", shutfps, luxFPSPresets(), "@", "Choose the number of frames per second as the time base", gui, 0.5)
 
-				str += "\n   \"float shutteropen\" [%f]\n   \"float shutterclose\" [%f] " % (0, luxFilmExposure(mblurpresetstype.get(), shutterpreset.get(), shutfps.get()))
+				str += "\n	\"float shutteropen\" [%f]\n	\"float shutterclose\" [%f] " % (0, luxFilmExposure(mblurpresetstype.get(), shutterpreset.get(), shutfps.get()))
 
 			else:
 				str += luxFloat("shutteropen", luxProp(cam, "camera.shutteropen", 0.0), 0.0, 100.0, "open", "time in seconds when shutter opens", gui, 0.75)
@@ -3399,15 +3399,15 @@ def luxISOPresets():
 
 def luxShutterSpeedPresets(type):
 	speeds = {
-	  'photo': ['1', '1/2', '1/4', '1/8', '1/15', '1/30', '1/60', '1/125', '1/250', '1/500', '1/1000'],
-	  'cinema': ['45-degree', '90-degree', '180-degree', '270-degree']
+	 'photo': ['1', '1/2', '1/4', '1/8', '1/15', '1/30', '1/60', '1/125', '1/250', '1/500', '1/1000'],
+	 'cinema': ['45-degree', '90-degree', '180-degree', '270-degree']
 	}
 	return speeds[type]
 
 def luxFstopPresets(type):
 	fstops = {
-	  'full': [0.5, 0.7, 1, 1.4, 2, 2.8, 4, 5.6, 8, 11, 16, 22, 32, 45, 64, 90, 128],
-	  'half': [1.2, 1.7, 2.4, 3.3, 4.8, 6.7, 9.5, 13, 19, 27, 38, 54, 77, 109]
+	 'full': [0.5, 0.7, 1, 1.4, 2, 2.8, 4, 5.6, 8, 11, 16, 22, 32, 45, 64, 90, 128],
+	 'half': [1.2, 1.7, 2.4, 3.3, 4.8, 6.7, 9.5, 13, 19, 27, 38, 54, 77, 109]
 	}
 	return fstops[type]
 
@@ -3535,16 +3535,16 @@ def luxFilm(scn, gui=None):
 					if borderzoom.get() != "true":
 						w = xr*(x2-x1)
 						h = yr*(y2-y1)
-						str += "\n   \"integer xresolution\" [%d] \n   \"integer yresolution\" [%d]"%(w, h)
+						str += "\n	\"integer xresolution\" [%d] \n	\"integer yresolution\" [%d]"%(w, h)
 					else:
 						w = xr*(x2-x1)
 						h = yr*(y2-y1)
 						aspect = float(xr>yr and xr or yr) / float(w>h and w or h)
 						w = w*aspect
 						h = h*aspect
-						str += "\n   \"integer xresolution\" [%d] \n   \"integer yresolution\" [%d]"%(w, h)
+						str += "\n	\"integer xresolution\" [%d] \n	\"integer yresolution\" [%d]"%(w, h)
 				else:
-					str += "\n   \"integer xresolution\" [%d] \n   \"integer yresolution\" [%d]"%(xr, yr)
+					str += "\n	\"integer xresolution\" [%d] \n	\"integer yresolution\" [%d]"%(xr, yr)
 					luxProp(scn, "film.border.T", 0).delete()
 					luxProp(scn, "film.border.L", 0).delete()
 					luxProp(scn, "film.border.B", yr).delete()
@@ -3695,10 +3695,10 @@ def luxFilm(scn, gui=None):
 		if overrideop.get() != "":
 			filebase = os.path.splitext(os.path.basename(Blender.Get('filename')))[0]
 			filename = overrideop.get() + "/" + filebase + "-%05d" %  (Blender.Get('curframe'))
-			str += "\n   \"string filename\" [\"%s\"]"%(filename)
+			str += "\n	\"string filename\" [\"%s\"]"%(filename)
 		else:
 			fn = luxProp(scn, "filename", "default-%05d" %  (Blender.Get('curframe')))
-			str += "\n   \"string filename\" [\"%s\"]" % luxstr(luxFilePath(fn.get()))
+			str += "\n	\"string filename\" [\"%s\"]" % luxstr(luxFilePath(fn.get()))
 	
 		if gui: gui.newline("  Resume:")
 		resumeflm = luxProp(scn, "film.write_resume_flm", "false")
@@ -3827,11 +3827,11 @@ def luxFilm(scn, gui=None):
 			if gui: gui.newline("  Gamma:")
 			luxFloat("gamma", gamma, 0.1, 6.0, "gamma", "Output and RGC Gamma", gui, 2.0)
 			
-		str += "\n   \"float colorspace_white\" [%f %f]"%(cspacewhiteX.get(), cspacewhiteY.get())
-		str += "\n   \"float colorspace_red\" [%f %f]"%(cspaceredX.get(), cspaceredY.get())
-		str += "\n   \"float colorspace_green\" [%f %f]"%(cspacegreenX.get(), cspacegreenY.get())
-		str += "\n   \"float colorspace_blue\" [%f %f]"%(cspaceblueX.get(), cspaceblueY.get())
-		str += "\n   \"float gamma\" [%f]"%(gamma.get())
+		str += "\n	\"float colorspace_white\" [%f %f]"%(cspacewhiteX.get(), cspacewhiteY.get())
+		str += "\n	\"float colorspace_red\" [%f %f]"%(cspaceredX.get(), cspaceredY.get())
+		str += "\n	\"float colorspace_green\" [%f %f]"%(cspacegreenX.get(), cspacegreenY.get())
+		str += "\n	\"float colorspace_blue\" [%f %f]"%(cspaceblueX.get(), cspaceblueY.get())
+		str += "\n	\"float gamma\" [%f]"%(gamma.get())
 
 	return str
 
@@ -3873,11 +3873,11 @@ def luxPixelFilter(scn, gui=None):
 				luxFloat("sharpness", slidval, 0.0, 1.0, "sharpness", "Specify amount between blurred (left) and sharp/ringed (right)", gui, 2.0, 1)
 				sharp = slidval.getFloat()
 				width = 1.5
-				str += "\n   \"float xwidth\" [%f]" % (width)
-				str += "\n   \"float ywidth\" [%f]" % (width)
-				str += "\n   \"float B\" [%f]" % (sharp)
-				str += "\n   \"float C\" [%f]" % (sharp)
-				str += "\n   \"bool supersample\" [\"true\"]"
+				str += "\n	\"float xwidth\" [%f]" % (width)
+				str += "\n	\"float ywidth\" [%f]" % (width)
+				str += "\n	\"float B\" [%f]" % (sharp)
+				str += "\n	\"float C\" [%f]" % (sharp)
+				str += "\n	\"bool supersample\" [\"true\"]"
 
 			if showadvanced.get()=="true":
 				# Advanced parameters
@@ -3899,8 +3899,8 @@ def luxPixelFilter(scn, gui=None):
 						B = 1.0 - slidval.getFloat()
 					else:
 						B = C = slidval.getFloat()
-					str += "\n   \"float B\" [%f]"%(B)
-					str += "\n   \"float C\" [%f]"%(C)
+					str += "\n	\"float B\" [%f]"%(B)
+					str += "\n	\"float C\" [%f]"%(C)
 				elif(optmode.get() == "preset"):
 					print("not implemented")
 				else:
@@ -3935,7 +3935,7 @@ def luxRenderer(scn, gui=None):
 		luxHelp('help', showhelp, 'Help', 'Show help information', gui, 0.4)
 		
 		if renderer.get() == 'classic':
-			str = ''   # XXX: lux 0.7.x compatibility workaround
+			str = ''	# XXX: lux 0.7.x compatibility workaround
 			if showadvanced.get() == 'true':
 				if gui: gui.newline('  Threads:')
 				autothreads = luxProp(scn, 'autothreads', 'true')
@@ -3985,7 +3985,7 @@ def luxSampler(scn, gui=None):
 				strength = luxProp(scn, "sampler.metro.strength", 0.6)
 				luxFloat("strength", strength, 0.0, 1.0, "Strength", "Mutation Strength (lmprob = 1.0-strength)", gui, 2.0, 1)
 				v = 1.0 - strength.get()
-				str += "\n   \"float largemutationprob\" [%f]"%v
+				str += "\n	\"float largemutationprob\" [%f]"%v
 			if showadvanced.get()=="true":
 				# Advanced parameters
 				if gui: gui.newline("  Mutation:")
@@ -4087,8 +4087,8 @@ def luxSurfaceIntegrator(scn, gui=None):
 				if gui: gui.newline("  Depth:", 8, 0, None, [0.4,0.4,0.4])
 				bounces = luxProp(scn, "sintegrator.bidir.bounces", 16)
 				luxInt("bounces", bounces, 5, 32, "bounces", "The maximum recursion depth for ray casting (in both directions)", gui, 2.0)
-				str += "\n   \"integer eyedepth\" [%i]\n"%bounces.get()
-				str += "   \"integer lightdepth\" [%i]"%bounces.get()
+				str += "\n	\"integer eyedepth\" [%i]\n"%bounces.get()
+				str += "	\"integer lightdepth\" [%i]"%bounces.get()
 
 			if showadvanced.get()=="true":
 				# Advanced parameters
@@ -4300,7 +4300,7 @@ def luxEnvironment(scn, gui=None):
 				else:
 					try:
 						worldcolor = Blender.World.Get('World').getHor()
-						str += "\n   \"color L\" [%g %g %g]" %(worldcolor[0], worldcolor[1], worldcolor[2])
+						str += "\n	\"color L\" [%g %g %g]" %(worldcolor[0], worldcolor[1], worldcolor[2])
 					except: pass
 				str +="\nTransformEnd"
 
@@ -4353,12 +4353,12 @@ def luxEnvironment(scn, gui=None):
 					sunstr += luxFloat("gain", luxProp(scn, "env.sunsky.sun_gain", 1.0), 0.0001, 100.0, "gain", "Sun light gain", gui)
 					
 					invmatrix = Mathutils.Matrix(sun.getInverseMatrix())
-					sunstr += "\n   \"vector sundir\" [%f %f %f]" %(invmatrix[0][2], invmatrix[1][2], invmatrix[2][2])
+					sunstr += "\n	\"vector sundir\" [%f %f %f]" %(invmatrix[0][2], invmatrix[1][2], invmatrix[2][2])
 					sunstr += luxFloat("relsize", luxProp(scn, "env.sunsky.sun_relsize", 1.0), 0.0, 100.0, "rel.size", "Relative sun disk size", gui)
 					sunstr += luxFloat("turbidity", luxProp(scn, "env.sunsky.sun_turbidity", 2.2), 2.0, 50.0, "turbidity", "Atmospheric turbidity", gui)
 					
 					if sunhalo == 1 and skystr != "":
-						skystr += "\n   \"vector sundir\" [%f %f %f]" %(invmatrix[0][2], invmatrix[1][2], invmatrix[2][2])
+						skystr += "\n	\"vector sundir\" [%f %f %f]" %(invmatrix[0][2], invmatrix[1][2], invmatrix[2][2])
 					
 					showGeo = luxProp(sun, 'sc.show', 'false')
 					if gui: luxCollapse("sc.show", showGeo, "Geographic Sun", "Set sun position by world location, date and time", gui, 2.0)
@@ -4447,112 +4447,112 @@ class sun_calculator:
 	
 	location_list = [
 		("EUROPE",[
-			("Antwerp, Belgium",		  67),
+			("Antwerp, Belgium",		 67),
 			("Berlin, Germany",			1),
 			("Bratislava, Slovak Republic", 70),
-			("Brno, Czech Republic",	  72),
-			("Brussles, Belgium",		 68),
-			("Geneva, Switzerland",	   65),
-			("Helsinki, Finland",		  7),
+			("Brno, Czech Republic",	 72),
+			("Brussles, Belgium",		68),
+			("Geneva, Switzerland",	  65),
+			("Helsinki, Finland",		 7),
 			("Innsbruck, Austria",		62),
-			("Kyiv, Ukraine",			 64),
-			("London, England",		   10),
-			("Lyon, France",			  66),
+			("Kyiv, Ukraine",			64),
+			("London, England",		  10),
+			("Lyon, France",			 66),
 			("Nitra, Slovak Republic",	69),
-			("Oslo, Norway",			  58),
-			("Paris, France",			 15),
-			("Praha, Czech Republic",	 71),
-			("Rome, Italy",			   18),
+			("Oslo, Norway",			 58),
+			("Paris, France",			15),
+			("Praha, Czech Republic",	71),
+			("Rome, Italy",			  18),
 			("Telfs, Austria",			63),
 			("Warsaw, Poland",			74),
-			("Wroclaw, Poland",		   73),
-			("Zurich, Switzerland",	   21),
+			("Wroclaw, Poland",		  73),
+			("Zurich, Switzerland",	  21),
 		]),
 	
 		("WORLD CITIES", [
-			("Beijing, China",			 0),
-			("Bombay, India",			  2),
+			("Beijing, China",			0),
+			("Bombay, India",			 2),
 			("Buenos Aires, Argentina",	3),
-			("Cairo, Egypt",			   4),
+			("Cairo, Egypt",			  4),
 			("Cape Town, South Africa",	5),
-			("Caracas, Venezuela",		 6),
-			("Curitiba, Brazil",		  60),
-			("Hong Kong, China",		   8),
-			("Jerusalem, Israel",		  9),
-			("Joinville, Brazil",		 61),
-			("Mexico City, Mexico",	   11),
+			("Caracas, Venezuela",		6),
+			("Curitiba, Brazil",		 60),
+			("Hong Kong, China",		  8),
+			("Jerusalem, Israel",		 9),
+			("Joinville, Brazil",		61),
+			("Mexico City, Mexico",	  11),
 			("Moscow, Russia",			12),
-			("New Delhi, India",		  13),
+			("New Delhi, India",		 13),
 			("Ottawa, Canada",			14),
 			("Rio de Janeiro, Brazil",	16),
-			("Riyadh, Saudi Arabia",	  17),
-			("Sao Paulo, Brazil",		 59),
-			("Sydney, Australia",		 19),
-			("Tokyo, Japan",			  20), 
+			("Riyadh, Saudi Arabia",	 17),
+			("Sao Paulo, Brazil",		59),
+			("Sydney, Australia",		19),
+			("Tokyo, Japan",			 20), 
 		]),
 		
 		("US CITIES", [
-			("Albuquerque, NM",		   22),
-			("Anchorage, AK",			 23),
-			("Atlanta, GA",			   24),
+			("Albuquerque, NM",		  22),
+			("Anchorage, AK",			23),
+			("Atlanta, GA",			  24),
 			("Austin, TX",				25),
 			("Birmingham, AL",			26),
-			("Bismarck, ND",			  27),
+			("Bismarck, ND",			 27),
 			("Boston, MA",				28),
-			("Boulder, CO",			   29),
-			("Chicago, IL",			   30),
+			("Boulder, CO",			  29),
+			("Chicago, IL",			  30),
 			("Dallas, TX",				31),
 			("Denver, CO",				32),
-			("Detroit, MI",			   33),
-			("Honolulu, HI",			  34),
-			("Houston, TX",			   35),
-			("Indianapolis, IN",		  36),
-			("Jackson, MS",			   37),
-			("Kansas City, MO",		   38),
-			("Los Angeles, CA",		   39),
-			("Menomonee Falls, WI",	   40),
-			("Miami, FL",				 41),
-			("Minneapolis, MN",		   42),
-			("New Orleans, LA",		   43),
-			("New York City, NY",		 44),
-			("Oklahoma City, OK",		 45),
-			("Philadelphia, PA",		  46),
-			("Phoenix, AZ",			   47),
+			("Detroit, MI",			  33),
+			("Honolulu, HI",			 34),
+			("Houston, TX",			  35),
+			("Indianapolis, IN",		 36),
+			("Jackson, MS",			  37),
+			("Kansas City, MO",		  38),
+			("Los Angeles, CA",		  39),
+			("Menomonee Falls, WI",	  40),
+			("Miami, FL",				41),
+			("Minneapolis, MN",		  42),
+			("New Orleans, LA",		  43),
+			("New York City, NY",		44),
+			("Oklahoma City, OK",		45),
+			("Philadelphia, PA",		 46),
+			("Phoenix, AZ",			  47),
 			("Pittsburgh, PA",			48),
-			("Portland, ME",			  49),
-			("Portland, OR",			  50),
-			("Raleigh, NC",			   51),
-			("Richmond, VA",			  52),
-			("Saint Louis, MO",		   53),
-			("San Diego, CA",			 54),
-			("San Francisco, CA",		 55),
-			("Seattle, WA",			   56),
-			("Washington DC",			 57),
+			("Portland, ME",			 49),
+			("Portland, OR",			 50),
+			("Raleigh, NC",			  51),
+			("Richmond, VA",			 52),
+			("Saint Louis, MO",		  53),
+			("San Diego, CA",			54),
+			("San Francisco, CA",		55),
+			("Seattle, WA",			  56),
+			("Washington DC",			57),
 		])
 	]
 
 	location_data = {
 		# Europe
-		67:   ( 51.2167, -4.4, 1),
+		67:	( 51.2167, -4.4, 1),
 		1:	( 52.33, -13.30, 1),
-		70:   ( 48.17, -17.17, 1),
-		72:   ( 49.2, -16.63, 1),
-		68:   ( 58.8467, -4.3525, 1),
-		65:   ( 46.217, -6.150, 1),
+		70:	( 48.17, -17.17, 1),
+		72:	( 49.2, -16.63, 1),
+		68:	( 58.8467, -4.3525, 1),
+		65:	( 46.217, -6.150, 1),
 		7:	( 60.1667, -24.9667,2),
-		62:   ( 47.2672, -11.3928, 1),
-		64:   ( 50.75, -30.0833, 2),
-		10:   ( 51.50, 0.0, 0),
-		66:   ( 45.767, -4.833, 1),
-		69:   ( 48.32, -18.07, 1),
-		58:   ( 59.56, -10.41, 1),
-		15:   ( 48.8667, -2.667, 1),
-		71:   ( 50.08, -14.46, 1),
-		18:   ( 41.90, -12.4833, 1),
-		63:   ( 47.3, -11.0667, 1),
-		74:   ( 52.232, -21.008, 1),
-		73:   ( 51.108, -17.038, 1),
-		21:   ( 47.3833, -8.5333, 1),
+		62:	( 47.2672, -11.3928, 1),
+		64:	( 50.75, -30.0833, 2),
+		10:	( 51.50, 0.0, 0),
+		66:	( 45.767, -4.833, 1),
+		69:	( 48.32, -18.07, 1),
+		58:	( 59.56, -10.41, 1),
+		15:	( 48.8667, -2.667, 1),
+		71:	( 50.08, -14.46, 1),
+		18:	( 41.90, -12.4833, 1),
+		63:	( 47.3, -11.0667, 1),
+		74:	( 52.232, -21.008, 1),
+		73:	( 51.108, -17.038, 1),
+		21:	( 47.3833, -8.5333, 1),
 	
 		# World Cities
 		0:	( 39.9167, -116.4167, 8),
@@ -4561,57 +4561,57 @@ class sun_calculator:
 		4:	( 30.10, -31.3667, 2),
 		5:	(-33.9167, -18.3667, 2),
 		6:	( 10.50, 66.9333, -4),
-		60:   (-25.4278, 49.2731, -3),
+		60:	(-25.4278, 49.2731, -3),
 		8:	( 22.25, -114.1667, 8),
 		9:	( 31.7833, -35.2333, 2),
-		61:   (-29.3044, 48.8456, -3),
-		11:   ( 19.4, 99.15, -6),
-		12:   ( 55.75, -37.5833, 3),
-		13:   ( 28.6, -77.2, 5.5),
-		14:   ( 45.41667, 75.7, -5),
-		16:   (-22.90, 43.2333, -3),
-		17:   ( 24.633, -46.71667, 3),
-		59:   ( -23.5475, 46.6361, -3),
-		19:   (-33.8667, -151.2167,10),
-		20:   ( 35.70, -139.7667, 9), 
+		61:	(-29.3044, 48.8456, -3),
+		11:	( 19.4, 99.15, -6),
+		12:	( 55.75, -37.5833, 3),
+		13:	( 28.6, -77.2, 5.5),
+		14:	( 45.41667, 75.7, -5),
+		16:	(-22.90, 43.2333, -3),
+		17:	( 24.633, -46.71667, 3),
+		59:	( -23.5475, 46.6361, -3),
+		19:	(-33.8667, -151.2167,10),
+		20:	( 35.70, -139.7667, 9), 
 	
 		# US Cities
-		22:   ( 35.0833, 106.65, -7),
-		23:   ( 61.217, 149.90, -9),
-		24:   ( 33.733, 84.383, -5),
-		25:   ( 30.283, 97.733, -6),
-		26:   ( 33.521, 86.8025, -6),
-		27:   ( 46.817, 100.783, -6),
-		28:   ( 42.35, 71.05, -5),
-		29:   ( 40.125, 105.237, -7),
-		30:   ( 41.85, 87.65, -6),
-		31:   ( 32.46, 96.47, -6),
-		32:   ( 39.733, 104.983, -7),
-		33:   ( 42.333, 83.05, -5),
-		34:   ( 21.30, 157.85, -10),
-		35:   ( 29.75, 95.35, -6),
-		36:   ( 39.767, 86.15, -5),
-		37:   ( 32.283, 90.183, -6),
-		38:   ( 39.083, 94.567, -6),
-		39:   ( 34.05, 118.233, -8),
-		40:   ( 43.11, 88.10, -6),
-		41:   ( 25.767, 80.183, -5),
-		42:   ( 44.967, 93.25, -6),
-		43:   ( 29.95, 90.067, -6),
-		44:   ( 40.7167, 74.0167, -5),
-		45:   ( 35.483, 97.533, -6),
-		46:   ( 39.95, 75.15, -5),
-		47:   ( 33.433, 112.067,-7),
-		48:   ( 40.433, 79.9833, -5),
-		49:   ( 43.666, 70.283, -5),
-		50:   ( 45.517, 122.65, -8),
-		51:   ( 35.783, 78.65, -5),
-		52:   ( 37.5667, 77.450, -5),
-		53:   ( 38.6167, 90.1833, -6),
-		54:   ( 32.7667, 117.2167, -8),
-		55:   ( 37.7667, 122.4167, -8),
-		56:   ( 47.60, 122.3167, -8),
-		57:   ( 38.8833, 77.0333, -5),
+		22:	( 35.0833, 106.65, -7),
+		23:	( 61.217, 149.90, -9),
+		24:	( 33.733, 84.383, -5),
+		25:	( 30.283, 97.733, -6),
+		26:	( 33.521, 86.8025, -6),
+		27:	( 46.817, 100.783, -6),
+		28:	( 42.35, 71.05, -5),
+		29:	( 40.125, 105.237, -7),
+		30:	( 41.85, 87.65, -6),
+		31:	( 32.46, 96.47, -6),
+		32:	( 39.733, 104.983, -7),
+		33:	( 42.333, 83.05, -5),
+		34:	( 21.30, 157.85, -10),
+		35:	( 29.75, 95.35, -6),
+		36:	( 39.767, 86.15, -5),
+		37:	( 32.283, 90.183, -6),
+		38:	( 39.083, 94.567, -6),
+		39:	( 34.05, 118.233, -8),
+		40:	( 43.11, 88.10, -6),
+		41:	( 25.767, 80.183, -5),
+		42:	( 44.967, 93.25, -6),
+		43:	( 29.95, 90.067, -6),
+		44:	( 40.7167, 74.0167, -5),
+		45:	( 35.483, 97.533, -6),
+		46:	( 39.95, 75.15, -5),
+		47:	( 33.433, 112.067,-7),
+		48:	( 40.433, 79.9833, -5),
+		49:	( 43.666, 70.283, -5),
+		50:	( 45.517, 122.65, -8),
+		51:	( 35.783, 78.65, -5),
+		52:	( 37.5667, 77.450, -5),
+		53:	( 38.6167, 90.1833, -6),
+		54:	( 32.7667, 117.2167, -8),
+		55:	( 37.7667, 122.4167, -8),
+		56:	( 47.60, 122.3167, -8),
+		57:	( 38.8833, 77.0333, -5),
 	}
 
 	def __init__(self, sun):
@@ -4883,7 +4883,7 @@ def luxSystem(scn, gui=None):
 				network_use_file=luxProp(scn,"network_use_file","false")
 				luxBool ("use file",network_use_file,"use file", "load servers list from a file (one server per line)",gui,2.0)
 				if (network_use_file.get() == "true"):
-					luxFile("file", luxProp(scn, "network_file_path", ""), "file", "file with servers list (one server per line)", gui, 1.0)		 
+					luxFile("file", luxProp(scn, "network_file_path", ""), "file", "file with servers list (one server per line)", gui, 1.0)		
 				else:
 					luxString("servers",luxProp(scn,"network_servers",""),"servers","comma-separated list of servers",gui,1.0)
 				luxInt("network_interval",luxProp(scn,"network_interval",180),15,86400,"update interval","interval between network refresh (in seconds)",gui)
@@ -5108,7 +5108,7 @@ def luxTexture(name, parentkey, type, default, min, max, caption, hint, mat, gui
 				iordict = {1:1.36, 2:1.36, 3:1.329, 4:1.345, 5:1.501, 6:1.000132, 7:1.00045, 8:1.34, 9:1.385, 10:1.351, 11:1.473, 12:1.504, 13:1.494, 14:1.484, 15:1.309, 16:1.35, 17:1.535, 18:1.481, 19:1.482, 20:1.473, 21:1.466, 22:1.47, 23:1.536, 24:1.361, 25:1.362, 26:1.38, 27:1.49, 28:1.472, 29:1.363, 30:1.33346, 31:1.31766, 32:1.33283, 33:1.356, 101:1.0, 102:1.0002926, 103:1.000293, 104:1.000036, 105:1.000132, 106:1.00045, 201:1.33, 202:1.38, 203:1.41, 204:1.34, 205:2.04, 206:1.52, 207:1.569, 208:1.669, 209:1.805, 210:1.459, 211:1.474, 212:1.495, 213:1.53, 214:1.50, 215:1.460, 216:1.488, 217:1.516, 301:1.544, 302:1.746, 303:1.75, 304:1.539, 305:1.532, 306:1.52, 307:1.629, 308:1.632, 309:1.567, 310:1.674, 311:1.57, 312:1.570, 313:1.544, 314:1.61, 315:1.532, 316:1.625, 317:1.486, 318:2.000, 319:1.746, 320:1.627, 321:2.417, 322:1.560, 323:1.560, 324:1.434, 325:1.72, 326:1.88, 327:1.880, 328:1.790, 329:1.73, 330:1.740, 331:1.739, 332:1.74, 333:1.490, 334:1.522, 335:1.64, 336:1.600, 337:1.660, 338:1.660, 339:1.560, 340:1.50, 341:1.518, 342:1.585, 343:1.50, 344:1.440, 345:1.430, 346:1.440, 347:1.560, 348:1.760, 349:1.53, 350:1.635, 351:1.544, 352:1.757, 353:1.757, 354:1.760, 355:1.79, 356:1.712, 357:1.712, 358:1.708, 359:1.76, 360:1.690, 361:1.607, 362:1.605, 363:1.603, 364:1.61, 365:1.61, 366:1.61, 367:1.61, 368:1.61, 369:1.777, 370:2.173, 401:1.47, 402:1.76, 403:1.31, 404:1.388, 405:1.36, 406:1.36, 407:1.35, 408:1.4729, 409:1.49, 410:1.516, 411:1.5, 412:1.544, 413:1.584, 414:1.4893, 415:1.57, 416:1.575, 417:1.6, 418:1.485, 419:1.46, 420:1.661, 421:1.523, 422:2.15, 423:2.419, 424:2.65, 425:3.02, 426:3.5, 427:3.927}
 				iorpreset = luxProp(mat, keyname+".iorpreset", "Glass, Fused Silica" if parentkey != 'named_volumes:0.tex' else "Air @ STP")
 				if gui:
-					def setIor(i, value, preset, tree, dict): # callback function to set ior value after selection			  
+					def setIor(i, value, preset, tree, dict): # callback function to set ior value after selection			 
 						if i >= 0:
 							value.set(dict[i])
 							preset.set(getTreeNameById(tree, i))
@@ -5220,8 +5220,8 @@ def luxTexture(name, parentkey, type, default, min, max, caption, hint, mat, gui
 		(listb, listc) = sellmeierStrToFloats(sellmeierb.get(), sellmeierc.get(), 0, 10000.0)
 		sellmeierb.set(' '.join(map(lambda x: types.StringType(x), listb)))
 		sellmeierc.set(' '.join(map(lambda x: types.StringType(x), listc)))
-		str += "\n   \"float B\" [%s]" % sellmeierb.get()
-		str += "\n   \"float C\" [%s]" % sellmeierc.get()
+		str += "\n	\"float B\" [%s]" % sellmeierb.get()
+		str += "\n	\"float C\" [%s]" % sellmeierc.get()
 		return str, ' "texture %s" ["%s"]' % (type, texname)
 
 	if texture.get() == 'preset':
@@ -5247,7 +5247,7 @@ def luxTexture(name, parentkey, type, default, min, max, caption, hint, mat, gui
 					value.set(dict[i])
 					preset.set(getTreeNameById(tree, i))
 
-			measuredtree = [	 ("Natural Daylight",	 [ ("Natural Daylight", 1) ] ), ("Incandescent",	 [ ("Paraffin Candle Flame", 2), ("Generic 7W Incandescent Lamp", 3), ("PHILIPS [Argenta] 200W Incandescent Lamp", 4), ("Welsbach Gas Mantle (modern, without Thorium)", 5), ("Incandescent Anti-Insect Lamp", 6) ] ), ("Fluorescent/Compact Fluorescent",	[ ("PHILIPS [TL-D 30W/55] Regular Daylight Fluorescent", 7), ("Sylvania [F4T5 4W] Regular Warm White Fluorescent", 8), ("OSRAM [DULUXSTAR 21W/827] Regular Compact Triphosphor Fluorescent", 9), ("Cold Cathode Warm White CFL Triphosphor Fluorescent.", 10), ("NARVA [COLOURLUX plus daylight 20W/860] Daylight CFL Triphosphor Fluorescent", 11), ("Sylvania [GroLux] Fluorescent Aquarium/Plant Lamp", 12), ("Laptop LCD Screen", 13), ("PHILIPS [ActiViva] \"Natural\" Triphosphor Fluorescent", 14), ("PHILIPS [ActiViva] \"Active\" Triphosphor Fluorescent", 16) ] ), ("High Pressure Mercury",		[ ("OSRAM [HQA 80W] Clear HPM Lamp", 17), ("PHILIPS [HPL 125W] HPM Lamp with improved color", 18), ("OSRAM [HQL 80W] HPM Lamp with improved warm deluxe color", 19), ("PHILIPS [ML 160W] Self-Ballasted HPM Vapor Lamp", 20), ("NARVA [160W] Self-ballasted HPM Vapor Lamp", 21) ] ), ("Low/High Pressure Sodium",		[ ("Regular High Pressure Sodium Lamp, warmup after 5-7 sec", 22), ("Regular High Pressure Sodium Lamp, warmup after 10-12 sec", 23), ("SOX Low Pressure Sodium Discharge Lamp", 24), ("Medium Pressure Sodium Discharge Lamp, warmup after ~35 sec", 25), ("GE [Lucalox 35W] High Pressure Sodium Lamp", 26), ("PHILIPS [SDW-T 100W] Super High Pressure White Sodium Lamp", 27) ] ), ("Metal Halide",		[ ("PHILIPS [HPI-T 400W] MH Lamp with Mercury, Sodium, Thallium and Indium iodides", 28), ("OSRAM [HQI-TS 75W/WDL] Metal Halide lamp with Mercury, sodium, thallium, indium and tin iodides, from ", 29), ("GE [MVR325IUWM 325 Watt I-Line Multi-Vapor® Metal Halide - Clear Watt Miser®] MH Lamp with Mercury, Sodium and Scandium iodides", 30), ("OSRAM [HQI-T 400W/D] MH Lamp with Mercury, Thallium, Dysprosium, Holmium, Thulium and Caesium iodides", 31), ("PHILIPS Diazo MH Lamp with Mercury, iron and cobalt iodides", 32), ("Sylvania Diazo MH Lamp with Mercury, gallium and lead iodides", 33), ("OSRAM [HQI-T 400W/Blau] Blue colored MH Lamp with Mercury and indium iodides", 34), ("RADIUM [HRI-T 400W/Planta] Plant growing MH Lamp with Mercury, indium and sodium iodides", 35), ("OSRAM [HQI-T 400W/Grun] Green colored MH Lamp with Mercury and thallium iodides", 36) ] ), ("Diode",		[ ("Regular High Brightness Blue LED", 37), ("Monochromatic emission from a Red Laser diode", 38), ("Monochromatic emission from a Green Laser diode.", 39) ] ), ("Spectral",		[ ("PHILIPS Spectral Xenon Lamp - Continuous Xenon low pressure thermionic discharge", 40), ("PHILIPS spectral Rubidium Lamp - Continuous Rubidium low pressure thermionic discharge", 41), ("PHILIPS spectral Cadmium Lamp - Continuous Cadmium low pressure thermionic discharge", 42), ("PHILIPS spectral zinc Lamp - Continuous Zinc low pressure thermionic discharge", 43) ] ), ("Glow Discharge",		[ ("Neon glow discharge", 44), ("Neon and Krypton glow discharge and green phosphor (night-lights/indicators)", 45), ("Neon and Xenon glow discharge and green phosphor (night-lights/indicators)", 46), ("Neon and Xenon glow discharge and blue phosphor (night-lights/indicators)", 48), ("Argon glow discharge", 49), ("Self-ballasted High Pressure Mercury Vapor Lamp, with yttrium vanadate phosphate fluorescent phosphors, in glow discharge mode", 50) ] ), ("Molecular",		[ ("Butane Gas Flame", 51), ("Alcohol Flame", 52) ] ), ("General Fluorescence",		[ ("Print quality A4 Xerox paper wrapped around a blacklight Lamp", 53), ("Neon green dye, bombarded with black light", 54), ("Regular Modern Color TV CRT", 55) ] ), ("Various",		[ ("Stroboscopic flash. Xenon I, likely II and perhaps III", 56), ("Carbon Arc Spectrum", 57), ("OSRAM [XBO 75W/2] Short Arc Xenon Lamp", 58) ] ), ("Blacklight/Ultraviolet",		[ ("Sylvania [G8T5 8W] Germicidal lamp", 59), ("Sylvania [F6T5/BLB 8W] Black light blue fluorescent", 60), ("PHILIPS [HPW 125W] High Pressure Mercury Black Light", 61), ("Sylvania [Blacklite 350 F8W/BL350] Black Light fluorescent", 62) ] ), ("Mercury UV Spectrum",		[ ("The near visible UVA emissions from a high pressure Mercury clear lamp", 63) ] ), ("Absorption/Mixed Spectra",		[ ("High Pressure Mercury Warm Deluxe light ([1.4.3]) absorbed through blue Cobalt glass", 64), ("Incandescent light ([1.2.3]) absorbed through blue Cobalt glass", 65), ("High Pressure Mercury Warm Deluxe light ([1.4.3]) absorbed through ciel dye #42053", 66), ("Incandescent light ([1.2.3]) absorbed through ciel dye #42053", 67), ("High Pressure Mercury Warm Deluxe light ([1.4.3]) absorbed through red glass", 68), ("Incandescent light ([1.2.3]) absorbed through red glass.m", 69), ("Incandescent light ([1.2.3]) absorbed through olive oil. ", 70) ] ) ] 
+			measuredtree = [	("Natural Daylight",	[ ("Natural Daylight", 1) ] ), ("Incandescent",	[ ("Paraffin Candle Flame", 2), ("Generic 7W Incandescent Lamp", 3), ("PHILIPS [Argenta] 200W Incandescent Lamp", 4), ("Welsbach Gas Mantle (modern, without Thorium)", 5), ("Incandescent Anti-Insect Lamp", 6) ] ), ("Fluorescent/Compact Fluorescent",	[ ("PHILIPS [TL-D 30W/55] Regular Daylight Fluorescent", 7), ("Sylvania [F4T5 4W] Regular Warm White Fluorescent", 8), ("OSRAM [DULUXSTAR 21W/827] Regular Compact Triphosphor Fluorescent", 9), ("Cold Cathode Warm White CFL Triphosphor Fluorescent.", 10), ("NARVA [COLOURLUX plus daylight 20W/860] Daylight CFL Triphosphor Fluorescent", 11), ("Sylvania [GroLux] Fluorescent Aquarium/Plant Lamp", 12), ("Laptop LCD Screen", 13), ("PHILIPS [ActiViva] \"Natural\" Triphosphor Fluorescent", 14), ("PHILIPS [ActiViva] \"Active\" Triphosphor Fluorescent", 16) ] ), ("High Pressure Mercury",		[ ("OSRAM [HQA 80W] Clear HPM Lamp", 17), ("PHILIPS [HPL 125W] HPM Lamp with improved color", 18), ("OSRAM [HQL 80W] HPM Lamp with improved warm deluxe color", 19), ("PHILIPS [ML 160W] Self-Ballasted HPM Vapor Lamp", 20), ("NARVA [160W] Self-ballasted HPM Vapor Lamp", 21) ] ), ("Low/High Pressure Sodium",		[ ("Regular High Pressure Sodium Lamp, warmup after 5-7 sec", 22), ("Regular High Pressure Sodium Lamp, warmup after 10-12 sec", 23), ("SOX Low Pressure Sodium Discharge Lamp", 24), ("Medium Pressure Sodium Discharge Lamp, warmup after ~35 sec", 25), ("GE [Lucalox 35W] High Pressure Sodium Lamp", 26), ("PHILIPS [SDW-T 100W] Super High Pressure White Sodium Lamp", 27) ] ), ("Metal Halide",		[ ("PHILIPS [HPI-T 400W] MH Lamp with Mercury, Sodium, Thallium and Indium iodides", 28), ("OSRAM [HQI-TS 75W/WDL] Metal Halide lamp with Mercury, sodium, thallium, indium and tin iodides, from ", 29), ("GE [MVR325IUWM 325 Watt I-Line Multi-Vapor® Metal Halide - Clear Watt Miser®] MH Lamp with Mercury, Sodium and Scandium iodides", 30), ("OSRAM [HQI-T 400W/D] MH Lamp with Mercury, Thallium, Dysprosium, Holmium, Thulium and Caesium iodides", 31), ("PHILIPS Diazo MH Lamp with Mercury, iron and cobalt iodides", 32), ("Sylvania Diazo MH Lamp with Mercury, gallium and lead iodides", 33), ("OSRAM [HQI-T 400W/Blau] Blue colored MH Lamp with Mercury and indium iodides", 34), ("RADIUM [HRI-T 400W/Planta] Plant growing MH Lamp with Mercury, indium and sodium iodides", 35), ("OSRAM [HQI-T 400W/Grun] Green colored MH Lamp with Mercury and thallium iodides", 36) ] ), ("Diode",		[ ("Regular High Brightness Blue LED", 37), ("Monochromatic emission from a Red Laser diode", 38), ("Monochromatic emission from a Green Laser diode.", 39) ] ), ("Spectral",		[ ("PHILIPS Spectral Xenon Lamp - Continuous Xenon low pressure thermionic discharge", 40), ("PHILIPS spectral Rubidium Lamp - Continuous Rubidium low pressure thermionic discharge", 41), ("PHILIPS spectral Cadmium Lamp - Continuous Cadmium low pressure thermionic discharge", 42), ("PHILIPS spectral zinc Lamp - Continuous Zinc low pressure thermionic discharge", 43) ] ), ("Glow Discharge",		[ ("Neon glow discharge", 44), ("Neon and Krypton glow discharge and green phosphor (night-lights/indicators)", 45), ("Neon and Xenon glow discharge and green phosphor (night-lights/indicators)", 46), ("Neon and Xenon glow discharge and blue phosphor (night-lights/indicators)", 48), ("Argon glow discharge", 49), ("Self-ballasted High Pressure Mercury Vapor Lamp, with yttrium vanadate phosphate fluorescent phosphors, in glow discharge mode", 50) ] ), ("Molecular",		[ ("Butane Gas Flame", 51), ("Alcohol Flame", 52) ] ), ("General Fluorescence",		[ ("Print quality A4 Xerox paper wrapped around a blacklight Lamp", 53), ("Neon green dye, bombarded with black light", 54), ("Regular Modern Color TV CRT", 55) ] ), ("Various",		[ ("Stroboscopic flash. Xenon I, likely II and perhaps III", 56), ("Carbon Arc Spectrum", 57), ("OSRAM [XBO 75W/2] Short Arc Xenon Lamp", 58) ] ), ("Blacklight/Ultraviolet",		[ ("Sylvania [G8T5 8W] Germicidal lamp", 59), ("Sylvania [F6T5/BLB 8W] Black light blue fluorescent", 60), ("PHILIPS [HPW 125W] High Pressure Mercury Black Light", 61), ("Sylvania [Blacklite 350 F8W/BL350] Black Light fluorescent", 62) ] ), ("Mercury UV Spectrum",		[ ("The near visible UVA emissions from a high pressure Mercury clear lamp", 63) ] ), ("Absorption/Mixed Spectra",		[ ("High Pressure Mercury Warm Deluxe light ([1.4.3]) absorbed through blue Cobalt glass", 64), ("Incandescent light ([1.2.3]) absorbed through blue Cobalt glass", 65), ("High Pressure Mercury Warm Deluxe light ([1.4.3]) absorbed through ciel dye #42053", 66), ("Incandescent light ([1.2.3]) absorbed through ciel dye #42053", 67), ("High Pressure Mercury Warm Deluxe light ([1.4.3]) absorbed through red glass", 68), ("Incandescent light ([1.2.3]) absorbed through red glass.m", 69), ("Incandescent light ([1.2.3]) absorbed through olive oil. ", 70) ] ) ] 
 
 			measureddict  = {1:"Daylight", 2:"Candle", 3:"Incandescent1", 4:"Incandescent2", 5:"Welsbach", 6:"AntiInsect", 7:"FLD2", 8:"FL37K", 9:"CFL27K", 10:"CFL4K", 11:"CFL6K", 12:"GroLux", 13:"LCDS", 14:"FLAV8K", 15:"none", 16:"FLAV17K", 17:"HPM2", 18:"HPMFL1", 19:"HPMFL2", 20:"HPMSB", 21:"HPMSBFL", 22:"SS1", 23:"SS2", 24:"LPS", 25:"MPS", 26:"HPS", 27:"SHPS", 28:"MHN", 29:"MHWWD", 30:"MHSc", 31:"MHD", 32:"FeCo", 33:"GaPb", 34:"BLAU", 35:"PLANTA", 36:"GRUN", 37:"LEDB", 38:"RedLaser", 39:"GreenLaser", 40:"XeI", 41:"Rb", 42:"Cd", 43:"Zn", 44:"Ne", 45:"NeKrFL", 46:"NeXeFL1", 47:"none", 48:"NeXeFL2", 49:"Ar", 50:"HPMFL2Glow", 51:"Butane", 52:"Alcohol", 53:"BLP", 54:"BLNG", 55:"TV", 56:"Xe", 57:"CarbonArc", 58:"HPX", 59:"LPM2", 60:"FLBLB", 61:"HPMBL", 62:"FLBL", 63:"UVA", 64:"HPMFLCobaltGlass", 65:"CobaltGlass", 66:"HPMFLCL42053", 67:"CL42053", 68:"HPMFLRedGlass", 69:"RedGlass", 70:"OliveOil" }
 
@@ -5327,7 +5327,7 @@ def luxTexture(name, parentkey, type, default, min, max, caption, hint, mat, gui
 					d = ''
 				return base64.b64encode(zlib.compress(d))
 			imdata = get_image_data(texturefilename.get())
-			str += '\r\n   "string imagedata" ["%s"]' % imdata
+			str += '\r\n	"string imagedata" ["%s"]' % imdata
 		
 		useseq = luxProp(mat, keyname+".useseq", "false")
 		luxCollapse("usesew", useseq, "Sequence", "", gui, 2.0)
@@ -5368,9 +5368,9 @@ def luxTexture(name, parentkey, type, default, min, max, caption, hint, mat, gui
 	
 				nstr = "%i" %number
 				new_seq_number = nstr.zfill(seq_length)
-	 
+	
 				return filename.replace(rightmost_number, new_seq_number)
-	 
+	
 			texturefilename.set(get_seq_filename(fnumber, texturefilename.get()))
 			if gui: gui.newline()
 	
@@ -5418,13 +5418,13 @@ def luxTexture(name, parentkey, type, default, min, max, caption, hint, mat, gui
 			str += luxFloat("v10", luxProp(mat, keyname+".v10", 0.0), min, max, "v10", "", gui, 1.0)
 			str += luxFloat("v11", luxProp(mat, keyname+".v11", 1.0), min, max, "v11", "", gui, 1.0)
 		elif type == "color":
-			if gui: gui.newline("		  v00:", -2)
+			if gui: gui.newline("		 v00:", -2)
 			str += luxRGB("v00", luxProp(mat, keyname+".v00", "0.0 0.0 0.0"), max, "v00", "", gui, 2.0)
-			if gui: gui.newline("		  v01:", -2)
+			if gui: gui.newline("		 v01:", -2)
 			str += luxRGB("v01", luxProp(mat, keyname+".v01", "1.0 1.0 1.0"), max, "v01", "", gui, 2.0)
-			if gui: gui.newline("		  v10:", -2)
+			if gui: gui.newline("		 v10:", -2)
 			str += luxRGB("v10", luxProp(mat, keyname+".v10", "0.0 0.0 0.0"), max, "v10", "", gui, 2.0)
-			if gui: gui.newline("		  v11:", -2)
+			if gui: gui.newline("		 v11:", -2)
 			str += luxRGB("v11", luxProp(mat, keyname+".v11", "1.0 1.0 1.0"), max, "v11", "", gui, 2.0)
 		str += luxMapping(keyname, mat, gui, level+1)
 		str += luxTexSpace(keyname, mat, gui, level+1)
@@ -6157,7 +6157,7 @@ def luxNamedVolume(mat, volume_prop, gui=None):
 
 def luxNamedVolumeTexture(volId, gui=None):
 	def c(t1, t2):
-	   return (t1[0]+t2[0], t1[1]+t2[1])
+	  return (t1[0]+t2[0], t1[1]+t2[1])
 	scn = Scene.GetCurrent()
 	keyname = 'named_volumes:%s.' % volId
 	s = l = ''
@@ -6272,11 +6272,11 @@ def importNamedVolume(volumeId, volumeName, volumeUID):
 		imported = False
 		linkedUID = luxProp(linkedScn, 'UID', '')
 		if volumeUID.get() == linkedUID.get():
-			print '		 scene UID matched, loading mediums data'
+			print '		scene UID matched, loading mediums data'
 			linkedVolumeData = getNamedVolume(volumeId.get(), linkedScn)
 			currentVolumeData = getNamedVolume(volumeId.get(), scn)
 			linkedDataFiltered = getNamedVolume(volumeId.get(), linkedScn, filter=['id', 'name'])
-			print '		  - target medium found: ID %s, name "%s"' % (linkedVolumeData['id'], linkedVolumeData['name'])
+			print '		 - target medium found: ID %s, name "%s"' % (linkedVolumeData['id'], linkedVolumeData['name'])
 			if linkedVolumeData != currentVolumeData and linkedVolumeData is not None:
 				volumes = listNamedVolumes()
 				newId = max(volumes.values())+1
@@ -6305,7 +6305,7 @@ def importNamedVolume(volumeId, volumeName, volumeUID):
 				print '			properties are the same or empty, skipping import'
 				imported = None
 		else:
-			print '		 scene UID mismatch, skipping'
+			print '		scene UID mismatch, skipping'
 		return imported
 	
 	imported = False
@@ -6322,10 +6322,10 @@ def importNamedVolume(volumeId, volumeName, volumeUID):
 		try:
 			Library.Open(sys.expandpath(lib))
 		except IOError:
-			print '	  error opening library file, skipping'
+			print '	 error opening library file, skipping'
 			continue
 		for scnName in Library.Datablocks('Scene'):
-			print '	   - loading library scene "%s"' % scnName
+			print '	  - loading library scene "%s"' % scnName
 			Library.Load(scnName, 'Scene', 0)
 			# we aren't getting a scene obj explicitly by name because after linking we'll
 			# likely end up with two or more scenes with the same name, thus Blender will
@@ -6336,7 +6336,7 @@ def importNamedVolume(volumeId, volumeName, volumeUID):
 				if not True in [ s == a for a in allscenes ]:
 					linkedScn = Scene.Get()[i] ; break
 			imported = importFromScene(scn, linkedScn, volumeId, volumeName, volumeUID)
-			print '	   - unlinking library scene "%s"' % scnName
+			print '	  - unlinking library scene "%s"' % scnName
 			for obj in linkedScn.objects: linkedScn.objects.unlink(obj)
 			Scene.Unlink(linkedScn)
 			if imported: break
@@ -6347,7 +6347,7 @@ def importNamedVolume(volumeId, volumeName, volumeUID):
 		print ' - searching in the current blend-file scenes'
 		for linkedScn in allscenes:
 			if linkedScn != scn:
-				print '	   - looking in scene "%s"' % linkedScn.name
+				print '	  - looking in scene "%s"' % linkedScn.name
 				imported = importFromScene(scn, linkedScn, volumeId, volumeName, volumeUID)
 				if imported: break
 	volumeUID.set(luxUID)  # material property
@@ -6886,7 +6886,7 @@ def luxMaterialBlock(name, luxname, key, mat, gui=None, level=0, str_opt=""):
 		if gui: gui.newline()
 		has_object_options   = 0 # disable object options by default
 		has_volume_options   = 0 # disable named volume options by default
-		has_bump_options	 = 0 # disable bump mapping options by default
+		has_bump_options	= 0 # disable bump mapping options by default
 		has_emission_options = 0 # disable emission options by default
 		has_compositing_options = 0 # disable compositing options by default
 
@@ -6972,15 +6972,15 @@ def luxMaterialBlock(name, luxname, key, mat, gui=None, level=0, str_opt=""):
 			return (str, link)
 
 		if mattype.get() == "carpaint":
-			carpaintData = {		#		Kd RGB					Ks1 RGB				   Ks2 RGB				   Ks3 RGB			R1	  R2	  R3	  M1	  M2	  M3
+			carpaintData = {		#		Kd RGB					Ks1 RGB				  Ks2 RGB				  Ks3 RGB			R1	 R2	 R3	 M1	 M2	 M3
 				"ford f8":		[ [0.0012, 0.0015, 0.0018], [0.0049, 0.0076, 0.0120], [0.0100, 0.0130, 0.0180], [0.0070, 0.0065, 0.0077], 0.1500, 0.0870, 0.9000, 0.3200, 0.1100, 0.0130 ],
 				"polaris silber": [ [0.0550, 0.0630, 0.0710], [0.0650, 0.0820, 0.0880], [0.1100, 0.1100, 0.1300], [0.0080, 0.0130, 0.0150], 1.0000, 0.9200, 0.9000, 0.3800, 0.1700, 0.0130 ],
-				"opel titan":	 [ [0.0110, 0.0130, 0.0150], [0.0570, 0.0660, 0.0780], [0.1100, 0.1200, 0.1300], [0.0095, 0.0140, 0.0160], 0.8500, 0.8600, 0.9000, 0.3800, 0.1700, 0.0140 ],
-				"bmw339":		 [ [0.0120, 0.0150, 0.0160], [0.0620, 0.0760, 0.0800], [0.1100, 0.1200, 0.1200], [0.0083, 0.0150, 0.0160], 0.9200, 0.8700, 0.9000, 0.3900, 0.1700, 0.0130 ],
+				"opel titan":	[ [0.0110, 0.0130, 0.0150], [0.0570, 0.0660, 0.0780], [0.1100, 0.1200, 0.1300], [0.0095, 0.0140, 0.0160], 0.8500, 0.8600, 0.9000, 0.3800, 0.1700, 0.0140 ],
+				"bmw339":		[ [0.0120, 0.0150, 0.0160], [0.0620, 0.0760, 0.0800], [0.1100, 0.1200, 0.1200], [0.0083, 0.0150, 0.0160], 0.9200, 0.8700, 0.9000, 0.3900, 0.1700, 0.0130 ],
 				"2k acrylack":	[ [0.4200, 0.3200, 0.1000], [0.0000, 0.0000, 0.0000], [0.0280, 0.0260, 0.0060], [0.0170, 0.0075, 0.0041], 1.0000, 0.9000, 0.1700, 0.8800, 0.8000, 0.0150 ],
-				"white":		  [ [0.6100, 0.6300, 0.5500], [2.6e-6, 3.1e-4, 3.1e-8], [0.0130, 0.0110, 0.0083], [0.0490, 0.0420, 0.0370], 0.0490, 0.4500, 0.1700, 1.0000, 0.1500, 0.0150 ],
-				"blue":		   [ [0.0079, 0.0230, 0.1000], [0.0011, 0.0015, 0.0019], [0.0250, 0.0300, 0.0430], [0.0590, 0.0740, 0.0820], 1.0000, 0.0940, 0.1700, 0.1500, 0.0430, 0.0200 ],
-				"blue matte":	 [ [0.0099, 0.0360, 0.1200], [0.0032, 0.0045, 0.0059], [0.1800, 0.2300, 0.2800], [0.0400, 0.0490, 0.0510], 1.0000, 0.0460, 0.1700, 0.1600, 0.0750, 0.0340 ]
+				"white":		 [ [0.6100, 0.6300, 0.5500], [2.6e-6, 3.1e-4, 3.1e-8], [0.0130, 0.0110, 0.0083], [0.0490, 0.0420, 0.0370], 0.0490, 0.4500, 0.1700, 1.0000, 0.1500, 0.0150 ],
+				"blue":		  [ [0.0079, 0.0230, 0.1000], [0.0011, 0.0015, 0.0019], [0.0250, 0.0300, 0.0430], [0.0590, 0.0740, 0.0820], 1.0000, 0.0940, 0.1700, 0.1500, 0.0430, 0.0200 ],
+				"blue matte":	[ [0.0099, 0.0360, 0.1200], [0.0032, 0.0045, 0.0059], [0.1800, 0.2300, 0.2800], [0.0400, 0.0490, 0.0510], 1.0000, 0.0460, 0.1700, 0.1600, 0.0750, 0.0340 ]
 				}
 			if gui: gui.newline("Preset:", 0, level+1)
 			carname = luxProp(mat, kn+"carpaint.name", "Custom")
@@ -8068,11 +8068,11 @@ try:
 	# LRMDB Integration
 	#===========================================================================
 	class lrmdb:
-		host			  = 'http://www.luxrender.net/lrmdb/ixr'
+		host			 = 'http://www.luxrender.net/lrmdb/ixr'
 		
-		username		  = ""
-		password		  = ""
-		logged_in		 = False
+		username		 = ""
+		password		 = ""
+		logged_in		= False
 		
 		SERVER			= None
 		
@@ -8356,8 +8356,8 @@ def str2MatTex(s, tex = None):	# todo: this is not absolutely save from attacks!
 				else:
 					test_str = 'MATERIAL'
 					
-				if   ('LUX_DATA' in d.keys() and d['LUX_DATA'] == test_str) \
-				and  ('LUX_VERSION' in d.keys() and (d['LUX_VERSION'] == '0.6' or d['LUX_VERSION'] == 0.6)):
+				if ('LUX_DATA' in d.keys() and d['LUX_DATA'] == test_str) \
+				and ('LUX_VERSION' in d.keys() and (d['LUX_VERSION'] == '0.6' or d['LUX_VERSION'] == 0.6)):
 					return d
 				else:
 					reason = 'Missing/incorrect metadata'
@@ -8517,7 +8517,7 @@ def batchRenamePaths(scn):
 					if k[:7] == '__hash:':
 						kn, v = v.split(' = ')
 					if type(v) is str and kn.endswith(('.filename', '.name')) and not (kn.endswith('.name') and v in metals) \
-					 and not (kn.endswith('.name') and kn.startswith('named_volumes:')):
+					and not (kn.endswith('.name') and kn.startswith('named_volumes:')):
 						if v.find(search) < 0: misses.append([item, kn])
 						else: collection.append([item, kn])
 	
@@ -8746,7 +8746,7 @@ class scrollbar:
 		self.calcRects()
 		coord, buttons = Window.GetMouseCoords(), Window.GetMouseButtons()
 		over = (coord[0]>=self.winrect[0]+self.rect[0]) and (coord[0]<=self.winrect[0]+self.rect[2]) and \
-			   (coord[1]>=self.winrect[1]+self.rect[1]) and (coord[1]<=self.winrect[1]+self.rect[3])
+			  (coord[1]>=self.winrect[1]+self.rect[1]) and (coord[1]<=self.winrect[1]+self.rect[3])
 		if Window.MButs.L and buttons > 0:
 			if self.scrolling:
 				if self.factor > 0: self.scroll((self.lastcoord[1]-coord[1])/self.factor)
@@ -8964,8 +8964,8 @@ activeObject = None
 activeEvent = None
 lastEventTime = 0
 key_tabs = {
-	Draw.ONEKEY:	 0,
-	Draw.TWOKEY:	 1,
+	Draw.ONEKEY:	0,
+	Draw.TWOKEY:	1,
 	Draw.THREEKEY:   2,
 	Draw.FOURKEY:	3,
 	Draw.FIVEKEY:	4,
@@ -9021,12 +9021,12 @@ def luxEvent(evt, val):  # function that handles keyboard and mouse events
 		luxProp(scn, "page", 0).set(key_tabs[evt])		
 		luxDraw()
 		Window.QRedrawAll()
-		  
+		 
 
 	# Handle icon button events - note - radiance - this is a work in progress! :)
 #	if evt == Draw.LEFTMOUSE and not val: 
-#		   size=BGL.Buffer(BGL.GL_FLOAT, 4) 
-#		   BGL.glGetFloatv(BGL.GL_SCISSOR_BOX, size) 
+#		  size=BGL.Buffer(BGL.GL_FLOAT, 4) 
+#		  BGL.glGetFloatv(BGL.GL_SCISSOR_BOX, size) 
 #			size= [int(s) for s in size] 
 #		mx, my = Window.GetMouseCoords()
 #		mousex = mx - size[0]
@@ -9144,7 +9144,7 @@ def plyExport(filepath, filename, mesh, matIndex):
 	if not filename.lower().endswith('.ply'):
 		filename += '.ply'
 	if not filepath.endswith(os.sep):
-	   filepath += os.sep
+	  filepath += os.sep
 
 	binary_ply = luxProp(scn, "binary_ply", "true")
 	if binary_ply and binary_ply.get() == "false":
