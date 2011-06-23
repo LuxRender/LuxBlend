@@ -3951,6 +3951,12 @@ def luxRenderer(scn, gui=None):
 				Draw.Text('LuxRender classic CPU-only rendering engine', 'small')
 
 		if renderer.get() == 'hybrid':
+			if showadvanced.get() == 'true':
+				str += luxInt("opencl.platform.index", luxProp(scn, "renderer.hybrid.openclplatformindex", -1), 0, 65535, "OpenCL Platform Index", "OpenCL Platform Index", gui, 2.0)
+				str += luxString("opencl.devices.select", luxProp(scn, "renderer.hybrid.opencldevidesselect", ""), "OpenCL Devices Select", "Select OpenCL Devices", gui, 2.0)
+				str += luxInt("statebuffercount", luxProp(scn, "renderer.hybrid.statebuffercount", 1), 1, 1024, "State Buffer Count", "State Buffer Count.", gui, 2.0)
+				str += luxInt("raybuffersize", luxProp(scn, "renderer.hybrid.raybuffersize", 8192), 0, 65535, "Ray Buffer Size", "Size of the ray buffer in kilobytes.", gui, 2.0)
+			
 			if showhelp.get() == 'true':
 				if gui: gui.newline('  Description:', 8, 0, icon_help, [0.4,0.5,0.56])
 				r = gui.getRect(2,1); BGL.glRasterPos2i(r[0],r[1]+5)
