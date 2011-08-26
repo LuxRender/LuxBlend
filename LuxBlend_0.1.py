@@ -5567,7 +5567,7 @@ def luxTexture(name, parentkey, type, default, min, max, caption, hint, mat, gui
 		str += luxOption("noisebasis2", noisebasis2, noisebasises2, "noisebasis2", "", gui, 0.7)
 
 		noisebasis = luxProp(mat, keyname+".noisebasis", "blender_original")
-		noisebasises = ["blender_original","original_perlin", "improved_perlin", "voronoi_f1", "voronoi_f2", "voronoi_f3", "voronoi_f4", "voronoi_f2f1", "voronoi_crackle", "cell_noise"]
+		noisebasises = ["blender_original","original_perlin", "improved_perlin", "voronoi_f1", "voronoi_f2", "voronoi_f3", "voronoi_f4", "voronoi_f2_f1", "voronoi_crackle", "cell_noise"]
 		str += luxOption("noisebasis", noisebasis, noisebasises, "noisebasis", "", gui, 1.3)
 
 		if gui: gui.newline("level:", -2, level+1, icon_texparam)
@@ -5608,7 +5608,7 @@ def luxTexture(name, parentkey, type, default, min, max, caption, hint, mat, gui
 
 		if gui: gui.newline("basis:", -2, level+1, icon_texparam)
 		noisebasis = luxProp(mat, keyname+".noisebasis", "blender_original")
-		noisebasises = ["blender_original","original_perlin", "improved_perlin", "voronoi_f1", "voronoi_f2", "voronoi_f3", "voronoi_f4", "voronoi_f2f1", "voronoi_crackle", "cell_noise"]
+		noisebasises = ["blender_original","original_perlin", "improved_perlin", "voronoi_f1", "voronoi_f2", "voronoi_f3", "voronoi_f4", "voronoi_f2_f1", "voronoi_crackle", "cell_noise"]
 		str += luxOption("noisebasis", noisebasis, noisebasises, "noisebasis", "", gui, 2.0)
 
 		if gui: gui.newline("level:", -2, level+1, icon_texparam)
@@ -5645,7 +5645,7 @@ def luxTexture(name, parentkey, type, default, min, max, caption, hint, mat, gui
 		str += luxOption("noisebasis2", noisebasis2, noisebasises2, "noisebasis2", "", gui, 0.7)
 
 		noisebasis = luxProp(mat, keyname+".noisebasis", "blender_original")
-		noisebasises = ["blender_original","original_perlin", "improved_perlin", "voronoi_f1", "voronoi_f2", "voronoi_f3", "voronoi_f4", "voronoi_f2f1", "voronoi_crackle", "cell_noise"]
+		noisebasises = ["blender_original","original_perlin", "improved_perlin", "voronoi_f1", "voronoi_f2", "voronoi_f3", "voronoi_f4", "voronoi_f2_f1", "voronoi_crackle", "cell_noise"]
 		str += luxOption("noisebasis", noisebasis, noisebasises, "noisebasis", "", gui, 1.3)
 
 		if gui: gui.newline("level:", -2, level+1, icon_texparam)
@@ -5678,7 +5678,7 @@ def luxTexture(name, parentkey, type, default, min, max, caption, hint, mat, gui
 
 		if gui: gui.newline("basis:", -2, level+1, icon_texparam)
 		noisebasis = luxProp(mat, keyname+".noisebasis", "blender_original")
-		noisebasises = ["blender_original","original_perlin", "improved_perlin", "voronoi_f1", "voronoi_f2", "voronoi_f3", "voronoi_f4", "voronoi_f2f1", "voronoi_crackle", "cell_noise"]
+		noisebasises = ["blender_original","original_perlin", "improved_perlin", "voronoi_f1", "voronoi_f2", "voronoi_f3", "voronoi_f4", "voronoi_f2_f1", "voronoi_crackle", "cell_noise"]
 		str += luxOption("noisebasis", noisebasis, noisebasises, "noisebasis", "", gui, 1.3)
 
 		if gui: gui.newline("level:", -2, level+1, icon_texparam)
@@ -5728,12 +5728,12 @@ def luxTexture(name, parentkey, type, default, min, max, caption, hint, mat, gui
 		
 		if gui: gui.newline("distortion:", -2, level+1, icon_texparam)
 		ntype = luxProp(mat, keyname+".type", "blender_original")
-		ntypes = ["blender_original","original_perlin", "improved_perlin", "voronoi_f1", "voronoi_f2", "voronoi_f3", "voronoi_f4", "voronoi_f2f1", "voronoi_crackle", "cell_noise"]
+		ntypes = ["blender_original","original_perlin", "improved_perlin", "voronoi_f1", "voronoi_f2", "voronoi_f3", "voronoi_f4", "voronoi_f2_f1", "voronoi_crackle", "cell_noise"]
 		str += luxOption("type", ntype, ntypes, "type", "", gui, 1.3)
 		
 		if gui: gui.newline("basis:", -2, level+1, icon_texparam)
 		noisebasis = luxProp(mat, keyname+".noisebasis", "blender_original")
-		noisebasises = ["blender_original","original_perlin", "improved_perlin", "voronoi_f1", "voronoi_f2", "voronoi_f3", "voronoi_f4", "voronoi_f2f1", "voronoi_crackle", "cell_noise"]
+		noisebasises = ["blender_original","original_perlin", "improved_perlin", "voronoi_f1", "voronoi_f2", "voronoi_f3", "voronoi_f4", "voronoi_f2_f1", "voronoi_crackle", "cell_noise"]
 		str += luxOption("noisebasis", noisebasis, noisebasises, "noisebasis", "", gui, 1.3)
 
 		if gui: gui.newline("level:", -2, level+1, icon_texparam)
@@ -5799,7 +5799,7 @@ def luxTexture(name, parentkey, type, default, min, max, caption, hint, mat, gui
 		str += luxFloat("turbulence", luxProp(mat, keyname+".turbulence", 5.0), 0.0, 200.0, "turbulence", "", gui, 1.0)
 
 		noisebasis = luxProp(mat, keyname+".noisebasis", "blender_original")
-		noisebasises = ["blender_original","original_perlin", "improved_perlin", "voronoi_f1", "voronoi_f2", "voronoi_f3", "voronoi_f4", "voronoi_f2f1", "voronoi_crackle", "cell_noise"]
+		noisebasises = ["blender_original","original_perlin", "improved_perlin", "voronoi_f1", "voronoi_f2", "voronoi_f3", "voronoi_f4", "voronoi_f2_f1", "voronoi_crackle", "cell_noise"]
 		str += luxOption("noisebasis", noisebasis, noisebasises, "noisebasis", "", gui, 1.3)
 
 		if gui: gui.newline("level:", -2, level+1, icon_texparam)
@@ -7683,7 +7683,7 @@ def convertMaterial(mat):
 		else:
 			if tex.texco != Texture.TexCo["GLOB"]:
 				print("Material Conversion Warning: procedural textures supports global mapping only\n")
-			noiseDict = {"BLENDER":"blender_original", "CELLNOISE":"cell_noise", "IMPROVEDPERLIN":"improved_perlin", "PERLIN":"original_perlin", "VORONOICRACKLE":"voronoi_crackle", "VORONOIF1":"voronoi_f1", "VORONOIF2":"voronoi_f2", "VORONOIF2F1":"voronoi_f2f1", "VORONOIF3":"voronoi_f3", "VORONOIF4":"voronoi_f4"}
+			noiseDict = {"BLENDER":"blender_original", "CELLNOISE":"cell_noise", "IMPROVEDPERLIN":"improved_perlin", "PERLIN":"original_perlin", "VORONOICRACKLE":"voronoi_crackle", "VORONOIF1":"voronoi_f1", "VORONOIF2":"voronoi_f2", "VORONOIF2_F1":"voronoi_f2_f1", "VORONOIF3":"voronoi_f3", "VORONOIF4":"voronoi_f4"}
 			luxProp(mat, dot(name)+"bright", 1.0).set(texture.brightness)
 			luxProp(mat, dot(name)+"contrast", 1.0).set(texture.contrast)
 			if texture.type == Texture.Types["CLOUDS"]:
