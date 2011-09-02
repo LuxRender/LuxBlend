@@ -5870,6 +5870,20 @@ def luxSpectrumTexture(name, key, default, max, caption, hint, mat, gui, level=0
 			link = " \"texture %s\" [\"%s\"]"%(name, texname+".scale")
 	return (str, link)
 
+def luxFresnelColorTexture(name, key, default, max, caption, hint, mat, gui, level=0):
+	global icon_col
+	if gui: gui.newline(caption, 4, level, icon_col, scalelist([0.5,0.6,0.5],2.0/(level+2)))
+	str = ""
+	keyname = "%s:%s"%(key, name)
+	texname = "%s:%s"%(mat.getName(), keyname)
+	value = luxProp(mat, keyname, default)
+	link = luxRGB(name, value, max, "", hint, gui, 2.0)
+	tex = luxProp(mat, keyname+".textured", False)
+	if value.getRGB() != (1.0, 1.0, 1.0):
+		str += "Texture \"%s\" \"fresnel\" \"fresnelcolor\" \"color color\" [%s]\n"%(texname+".scale", value.get())
+		link = " \"texture fresnel\" [\"%s\"]"%(texname+".scale")
+	return (str, link)
+
 def luxLightSpectrumTexture(name, key, default, max, caption, hint, mat, gui, level=0):
 	#if gui: gui.newline(caption, 4, level, icon_emission, scalelist([0.6,0.5,0.5],2.0/(level+2)))
 	str = ""
@@ -6866,7 +6880,7 @@ def luxMaterialBlock(name, luxname, key, mat, gui=None, level=0, str_opt=""):
 			mattype.set("glossy")
 
 		# this is reverse order than in shown in the dropdown list
-		materials = ["null","mix","mirror","shinymetal","metal","scatter","glossytranslucent","mattetranslucent","matte","glossy_lossy","glossy","roughglass","glass","glass2","carpaint","velvet"]
+		materials = ["null","mix","mirror","shinymetal","metal2","metal","scatter","glossytranslucent","mattetranslucent","matte","glossy_lossy","glossy","roughglass","glass","glass2","carpaint","velvet"]
 		
 		if level == 0: materials = ["portal", "light", "boundvolume"]+materials
 		if gui:
@@ -7107,6 +7121,40 @@ def luxMaterialBlock(name, luxname, key, mat, gui=None, level=0, str_opt=""):
 			luxCollapse("orennayar", orennayar, "Oren-Nayar", "Enable Oren-Nayar BRDF", gui, 2.0)
 			if orennayar.get() == "true":
 				(str,link) = c((str,link), luxFloatTexture("sigma", keyname, 0.0, 0.0, 100.0, "sigma", "", mat, gui, level+1))
+			has_volume_options = 1
+			has_bump_options = 1
+			has_object_options = 1
+			has_emission_options = 1
+			has_compositing_options = 1
+		
+		if mattype.get() == "metal2":
+			if gui: gui.newline("name:", 0, level+1)
+			(str,link) = c((str,link), luxFresnelColorTexture("color", keyname, "1.0 1.0 1.0", 1.0, "color", "", mat, gui, level+1))
+			anisotropic = luxProp(mat, kn+"metal.anisotropic", "false")
+			useroughness = luxProp(mat, kn+"metal.useroughness", "false")
+			luxBool('useroughness', useroughness, 'Use Roughness', 'Use Roughness instead of exponent.', gui, 2.0)
+			if useroughness.get()=="true":
+				if gui:
+					gui.newline("")
+					Draw.Toggle("A", evtLuxGui, gui.x-gui.h, gui.y-gui.h, gui.h, gui.h, anisotropic.get()=="true", "anisotropic roughness", lambda e,v:anisotropic.set(["false","true"][bool(v)]))
+				if anisotropic.get()=="true":
+					(str,link) = c((str,link), luxDispFloatTexture("uroughness", keyname, 0.002, 0.0, 1.0, "u-roughness", "", mat, gui, level+1))
+					(str,link) = c((str,link), luxDispFloatTexture("vroughness", keyname, 0.002, 0.0, 1.0, "v-roughness", "", mat, gui, level+1))
+				else:
+					(s, l) = luxDispFloatTexture("uroughness", keyname, 0.002, 0.0, 1.0, "roughness", "", mat, gui, level+1)
+					(str,link) = c((str,link), (s, l))
+					link += l.replace("uroughness", "vroughness", 1)
+			else:
+				if gui:
+					gui.newline("")
+					Draw.Toggle("A", evtLuxGui, gui.x-gui.h, gui.y-gui.h, gui.h, gui.h, anisotropic.get()=="true", "anisotropic roughness", lambda e,v:anisotropic.set(["false","true"][bool(v)]))
+				if anisotropic.get()=="true":
+					(str,link) = c((str,link), luxExponentTexture("uroughness", keyname, 0.002, 0.0, 1.0, "u-exponent", "", mat, gui, level+1))
+					(str,link) = c((str,link), luxExponentTexture("vroughness", keyname, 0.002, 0.0, 1.0, "v-exponent", "", mat, gui, level+1))
+				else:
+					(s, l) = luxExponentTexture("uroughness", keyname, 0.002, 0.0, 1.0, "exponent", "", mat, gui, level+1)
+					(str,link) = c((str,link), (s, l))
+					link += l.replace("uroughness", "vroughness", 1)
 			has_volume_options = 1
 			has_bump_options = 1
 			has_object_options = 1
