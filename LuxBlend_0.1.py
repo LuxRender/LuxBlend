@@ -5879,9 +5879,15 @@ def luxFresnelColorTexture(name, key, default, max, caption, hint, mat, gui, lev
 	value = luxProp(mat, keyname, default)
 	link = luxRGB(name, value, max, "", hint, gui, 2.0)
 	tex = luxProp(mat, keyname+".textured", False)
+	if gui: Draw.Toggle("T", evtLuxGui, gui.x, gui.y-gui.h, gui.h, gui.h, tex.get()=="true", "use texture", lambda e,v:tex.set(["false","true"][bool(v)]))
+	if tex.get()=="true":
+		if gui: gui.newline("", -2)
+		(str, link) = luxTexture(name, key, "color", default, 0, max, caption, hint, mat, gui, level+1)
 	if value.getRGB() != (1.0, 1.0, 1.0):
-		str += "Texture \"%s\" \"fresnel\" \"fresnelcolor\" \"color color\" [%s]\n"%(texname+".scale", value.get())
-		link = " \"texture fresnel\" [\"%s\"]"%(texname+".scale")
+		if str == "": # handle special case if texture is a just a constant
+			str += "Texture \"%s\" \"fresnel\" \"fresnelcolor\" \"color color\" [%s]\n"%(texname, value.get())
+		else: str += "Texture \"%s\" \"fresnel\" \"fresnelcolor\" \"texture color\" [\"%s\"]\n"%(texname, texname)
+		link = " \"texture fresnel\" [\"%s\"]"%(texname)
 	return (str, link)
 
 def luxLightSpectrumTexture(name, key, default, max, caption, hint, mat, gui, level=0):
