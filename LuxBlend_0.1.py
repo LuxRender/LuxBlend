@@ -5072,7 +5072,6 @@ def luxTexture(name, parentkey, type, default, min, max, caption, hint, mat, gui
 	textures.extend(tex_float)
 	if type == 'fresnel':
 		textures = tex_fresnel
-
 	if gui:
 		if(overrideicon != ""):
 			icon = overrideicon
@@ -5874,6 +5873,7 @@ def luxFresnelColorTexture(name, key, default, max, caption, hint, mat, gui, lev
 	global icon_col
 	if gui: gui.newline(caption, 4, level, icon_col, scalelist([0.5,0.6,0.5],2.0/(level+2)))
 	str = ""
+	usefresnelname = luxProp(scn, "usefresnelname", "false").get()
 	keyname = "%s:%s"%(key, name)
 	texname = "%s:%s"%(mat.getName(), keyname)
 	value = luxProp(mat, keyname, default)
@@ -5882,11 +5882,21 @@ def luxFresnelColorTexture(name, key, default, max, caption, hint, mat, gui, lev
 	if gui: Draw.Toggle("T", evtLuxGui, gui.x, gui.y-gui.h, gui.h, gui.h, tex.get()=="true", "use texture", lambda e,v:tex.set(["false","true"][bool(v)]))
 	if tex.get()=="true":
 		if gui: gui.newline("", -2)
-		(str, link) = luxTexture(name, key, "color", default, 0, max, caption, hint, mat, gui, level+1)
+		if usefresnelname=="true":
+			(str, link) = luxTexture(name, key, "fresnel", default, 0, max, caption, hint, mat, gui, level+1)
+		else:
+			(str, link) = luxTexture(name, key, "color", default, 0, max, caption, hint, mat, gui, level+1)
 	if value.getRGB() != (1.0, 1.0, 1.0):
-		if str == "": # handle special case if texture is a just a constant
-			str += "Texture \"%s\" \"fresnel\" \"fresnelcolor\" \"color color\" [%s]\n"%(texname, value.get())
-		else: str += "Texture \"%s\" \"fresnel\" \"fresnelcolor\" \"texture color\" [\"%s\"]\n"%(texname, texname)
+		if usefresnelname=="true":
+			if str == "": # handle special case if texture is a just a constant
+				str += "Texture \"%s\" \"fresnel\" \"fresnelname\" \"color Kr\" [%s]\n"%(texname, value.get())
+			else:
+				str += "\n"
+		else:
+			if str == "": # handle special case if texture is a just a constant
+				str += "Texture \"%s\" \"fresnel\" \"fresnelcolor\" \"color Kr\" [%s]\n"%(texname, value.get())
+			else:
+				str += "Texture \"%s\" \"fresnel\" \"fresnelcolor\" \"texture Kr\" [\"%s\"]\n"%(texname, texname)
 		link = " \"texture fresnel\" [\"%s\"]"%(texname)
 	return (str, link)
 
@@ -7135,6 +7145,8 @@ def luxMaterialBlock(name, luxname, key, mat, gui=None, level=0, str_opt=""):
 		
 		if mattype.get() == "metal2":
 			if gui: gui.newline("name:", 0, level+1)
+			usefresnelname = luxProp(scn, "usefresnelname", "false")
+			luxBool("usefresnelname", usefresnelname, "Use Fresnel Textures", "Switch to Fresnel textures", gui, 2.0 if usefresnelname.get() == 'false' else 2.0)
 			(str,link) = c((str,link), luxFresnelColorTexture("color", keyname, "1.0 1.0 1.0", 1.0, "color", "", mat, gui, level+1))
 			anisotropic = luxProp(mat, kn+"metal.anisotropic", "false")
 			useroughness = luxProp(mat, kn+"metal.useroughness", "false")
