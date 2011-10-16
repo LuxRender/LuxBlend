@@ -6896,7 +6896,7 @@ def luxMaterialBlock(name, luxname, key, mat, gui=None, level=0, str_opt=""):
 			mattype.set("glossy")
 
 		# this is reverse order than in shown in the dropdown list
-		materials = ["null","mix","mirror","shinymetal","metal2","metal","scatter","glossytranslucent","mattetranslucent","matte","glossy_lossy","glossy","roughglass","glass","glass2","carpaint","velvet"]
+		materials = ["null","mix","mirror","shinymetal","metal2","metal","scatter","glossytranslucent","mattetranslucent","matte","glossy_lossy","glossy","glossycoating","roughglass","glass","glass2","carpaint","velvet"]
 		
 		if level == 0: materials = ["portal", "light", "boundvolume"]+materials
 		if gui:
@@ -7365,7 +7365,58 @@ def luxMaterialBlock(name, luxname, key, mat, gui=None, level=0, str_opt=""):
 			has_object_options = 1
 			has_emission_options = 1
 			has_compositing_options = 1
+			
+		if mattype.get() == ("glossycoating"):
+			(str,link) = c((str,link), luxMaterialBlock("basematerial", "basematerial", keyname, mat, gui, level+1))
+			useior = luxProp(mat, keyname+".useior", "false")
+			if gui:
+				gui.newline("")
+				Draw.Toggle("I", evtLuxGui, gui.x-gui.h, gui.y-gui.h, gui.h, gui.h, useior.get()=="true", "Use IOR/Reflective index input", lambda e,v:useior.set(["false","true"][bool(v)]))
+			if useior.get() == "true":
+				(str,link) = c((str,link), luxIORFloatTexture("index", keyname, 1.5, 1.0, 50.0, "IOR", "", mat, gui, level+1))
+				link += " \"color Ks\" [1.0 1.0 1.0]"	
+			else:
+				(str,link) = c((str,link), luxSpectrumTexture("Ks", keyname, "1.0 1.0 1.0", 1.0, "specular", "", mat, gui, level+1))
+				link += " \"float index\" [0.0]"	
+			anisotropic = luxProp(mat, kn+"glossy.anisotropic", "false")
+			useroughness = luxProp(mat, kn+"glossy.useroughness", "false")
+			luxBool('useroughness', useroughness, 'Use Roughness', 'Use Roughness instead of exponent.', gui, 2.0)
+			if useroughness.get()=="true":
+				if gui:
+					gui.newline("")
+					Draw.Toggle("A", evtLuxGui, gui.x-gui.h, gui.y-gui.h, gui.h, gui.h, anisotropic.get()=="true", "anisotropic roughness", lambda e,v:anisotropic.set(["false","true"][bool(v)]))
+				if anisotropic.get()=="true":
+					(str,link) = c((str,link), luxDispFloatTexture("uroughness", keyname, 0.002, 0.0, 1.0, "u-roughness", "", mat, gui, level+1))
+					(str,link) = c((str,link), luxDispFloatTexture("vroughness", keyname, 0.002, 0.0, 1.0, "v-roughness", "", mat, gui, level+1))
+				else:
+					(s, l) = luxDispFloatTexture("uroughness", keyname, 0.002, 0.0, 1.0, "roughness", "", mat, gui, level+1)
+					(str,link) = c((str,link), (s, l))
+					link += l.replace("uroughness", "vroughness", 1)
+			else:
+				if gui:
+					gui.newline("")
+					Draw.Toggle("A", evtLuxGui, gui.x-gui.h, gui.y-gui.h, gui.h, gui.h, anisotropic.get()=="true", "anisotropic roughness", lambda e,v:anisotropic.set(["false","true"][bool(v)]))
+				if anisotropic.get()=="true":
+					(str,link) = c((str,link), luxExponentTexture("uroughness", keyname, 0.002, 0.0, 1.0, "u-exponent", "", mat, gui, level+1))
+					(str,link) = c((str,link), luxExponentTexture("vroughness", keyname, 0.002, 0.0, 1.0, "v-exponent", "", mat, gui, level+1))
+				else:
+					(s, l) = luxExponentTexture("uroughness", keyname, 0.002, 0.0, 1.0, "exponent", "", mat, gui, level+1)
+					(str,link) = c((str,link), (s, l))
+					link += l.replace("uroughness", "vroughness", 1)
 
+			link += luxBool('multibounce', luxProp(mat, keyname+'multibounce', 'false'), 'Surface Asperity', 'Simulate surface asperity with light multibouncing in specular coating', gui, 2.0)
+
+			absorption = luxProp(mat, keyname+".useabsorption", "false")
+			luxCollapse("absorption", absorption, "Absorption", "Enable Coating Absorption", gui, 2.0)
+			if absorption.get() == "true":
+				(str,link) = c((str,link), luxSpectrumTexture("Ka", keyname, "0.2 0.2 0.2", 1.0, "absorption", "", mat, gui, level+1))
+				(str,link) = c((str,link), luxFloatTexture("d", keyname, 0.15, 0.0, 15.0, "depth", "", mat, gui, level+1))
+			has_volume_options = 1
+			has_bump_options = 1
+			has_object_options = 1
+			has_emission_options = 1
+			has_compositing_options = 1
+			
 		if mattype.get() == "glossytranslucent":
 			(str,link) = c((str,link), luxSpectrumTexture("Kd", keyname, "1.0 1.0 1.0", 1.0, "diffuse", "", mat, gui, level+1))
 			(str,link) = c((str,link), luxSpectrumTexture("Kt", keyname, "0.0 0.0 0.0", 1.0, "transmission", "amount of transmitted light", mat, gui, level+1))
