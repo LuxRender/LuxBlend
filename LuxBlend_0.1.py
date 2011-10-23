@@ -6896,7 +6896,7 @@ def luxMaterialBlock(name, luxname, key, mat, gui=None, level=0, str_opt=""):
 			mattype.set("glossy")
 
 		# this is reverse order than in shown in the dropdown list
-		materials = ["null","mix","mirror","shinymetal","metal2","metal","scatter","glossytranslucent","mattetranslucent","matte","glossy_lossy","glossy","glossycoating","roughglass","glass","glass2","carpaint","velvet"]
+		materials = ["null","mix","layered","mirror","shinymetal","metal2","metal","scatter","glossytranslucent","mattetranslucent","matte","glossy_lossy","glossy","glossycoating","roughglass","glass","glass2","carpaint","velvet"]
 		
 		if level == 0: materials = ["portal", "light", "boundvolume"]+materials
 		if gui:
@@ -6936,6 +6936,23 @@ def luxMaterialBlock(name, luxname, key, mat, gui=None, level=0, str_opt=""):
 				Draw.Button("Flip material slots", evtLuxGui, r[0], r[1], r[2], r[3], "Flip mat1 and mat2 contents", lambda e,v: flipMixMat(mat,keyname))
 			(str,link) = c((str,link), luxMaterialBlock("mat1", "namedmaterial1", keyname, mat, gui, level+1))
 			(str,link) = c((str,link), luxMaterialBlock("mat2", "namedmaterial2", keyname, mat, gui, level+1))
+			has_volume_options = 1
+			has_bump_options = 0
+			has_object_options = 1
+			has_emission_options = 1
+			has_compositing_options = 0
+
+		if mattype.get() == "layered":
+			(str,link) = c((str,link), luxMaterialBlock("layer1 (top)", "namedmaterial1", keyname, mat, gui, level+1))
+			(str,link) = c((str,link), luxMaterialBlock("layer2", "namedmaterial2", keyname, mat, gui, level+1))
+			(str,link) = c((str,link), luxMaterialBlock("layer3", "namedmaterial3", keyname, mat, gui, level+1))
+			(str,link) = c((str,link), luxMaterialBlock("layer4", "namedmaterial4", keyname, mat, gui, level+1))
+			if gui:
+				gui.newline
+			(str,link) = c((str,link), luxFloatTexture("opacity1", keyname, 1.0, 0.0, 1.0, "opacity1", "The amount of opacity for Layer 1", mat, gui, level+1))
+			(str,link) = c((str,link), luxFloatTexture("opacity2", keyname, 1.0, 0.0, 1.0, "opacity2", "The amount of opacity for Layer 2", mat, gui, level+1))
+			(str,link) = c((str,link), luxFloatTexture("opacity3", keyname, 1.0, 0.0, 1.0, "opacity3", "The amount of opacity for Layer 3", mat, gui, level+1))
+			(str,link) = c((str,link), luxFloatTexture("opacity4", keyname, 1.0s, 0.0, 1.0, "opacity4", "The amount of opacity for Layer 4", mat, gui, level+1))
 			has_volume_options = 1
 			has_bump_options = 0
 			has_object_options = 1
