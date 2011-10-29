@@ -6952,7 +6952,7 @@ def luxMaterialBlock(name, luxname, key, mat, gui=None, level=0, str_opt=""):
 			(str,link) = c((str,link), luxFloatTexture("opacity1", keyname, 1.0, 0.0, 1.0, "opacity1", "The amount of opacity for Layer 1", mat, gui, level+1))
 			(str,link) = c((str,link), luxFloatTexture("opacity2", keyname, 1.0, 0.0, 1.0, "opacity2", "The amount of opacity for Layer 2", mat, gui, level+1))
 			(str,link) = c((str,link), luxFloatTexture("opacity3", keyname, 1.0, 0.0, 1.0, "opacity3", "The amount of opacity for Layer 3", mat, gui, level+1))
-			(str,link) = c((str,link), luxFloatTexture("opacity4", keyname, 1.0s, 0.0, 1.0, "opacity4", "The amount of opacity for Layer 4", mat, gui, level+1))
+			(str,link) = c((str,link), luxFloatTexture("opacity4", keyname, 1.0, 0.0, 1.0, "opacity4", "The amount of opacity for Layer 4", mat, gui, level+1))
 			has_volume_options = 1
 			has_bump_options = 0
 			has_object_options = 1
