@@ -5062,7 +5062,7 @@ def luxTexture(name, parentkey, type, default, min, max, caption, hint, mat, gui
 	else:
 		texture = luxProp(mat, keyname+".texture", "blackbody")
 
-	tex_all = ["constant", "imagemap", "mix", "band", "scale", "bilerp", "brick"]
+	tex_all = ["constant", "imagemap", "normalmap", "mix", "band", "scale", "bilerp", "brick"]
 	tex_color = ["blackbody", "lampspectrum", "equalenergy", "frequency", "gaussian", "regulardata", "irregulardata", "tabulateddata", "uv", "harlequin", "marble"]
 	tex_float = ["blender_marble", "blender_musgrave", "blender_wood", "blender_clouds", "blender_blend", "blender_distortednoise", "blender_noise", "blender_magic", "blender_stucci", "blender_voronoi", "checkerboard", "dots", "fbm", "windy", "wrinkled"]
 	tex_fresnel = ['constant', 'cauchy', 'sellmeier', 'sopra', 'luxpop', 'preset']
@@ -5293,6 +5293,108 @@ def luxTexture(name, parentkey, type, default, min, max, caption, hint, mat, gui
 			return str, ' "texture %s" ["%s"]' % (type, texname)
 
 	if texture.get() == "imagemap":
+		if gui: gui.newline("IM-clip:", -2, level)
+		str += luxOption("wrap", luxProp(mat, keyname+".wrap", "repeat"), ["repeat","black","clamp"], "repeat", "", gui, 1.0)
+		if type=="float":
+			str += luxOption("channel", luxProp(mat, keyname+".channel", "mean"), ["red", "green", "blue", "alpha", "mean", "colored_mean"], "channel", "Image channel", gui, 1.0)
+
+		if gui: gui.newline("IM-source:", -2, level)
+
+		# ZANQDO
+		texturefilename = luxProp(mat, keyname+".filename", "")
+		extimage = luxProp(mat, keyname+'.externalimage', "true")
+		luxBool("External Image", extimage, "External Image", "External Image", gui, 1.0)
+		if gui: gui.newline("IM-path:", -2, level)
+		if extimage.get() == "true":
+			luxFile("filename", texturefilename, "file", "texture file path", gui, 2.0)
+		else:
+			bil = [i.filename for i in Image.Get() if '.' in i.filename]
+			try:
+				uti = [i.filename for i in Image.Get() if '.' not in i.filename]
+				if len(uti) > 0:
+					luxLabel("INFO: Images not listed here must be saved first", gui)
+			except: pass	
+			if len(bil) > 0:
+				luxOption("Image", texturefilename, bil, "Blender Images", "Blender Image", gui, 2.0)
+			else:
+				luxLabel("No Blender Images - Load Image in the Image Editor", gui)
+		# dougal2 image file packing
+		impack = luxProp(Scene.GetCurrent(), 'packtextures', 'false')
+		
+		if impack.get() == 'false':
+			str += luxFile("filename", texturefilename, "file", "texture file path", None, 2.0)
+		else:
+			import zlib, base64
+			def get_image_data(filename):
+				try:
+					f=open(filename,'rb')
+					d=f.read()
+					f.close()
+				except:
+					print('Error reading image data from %s' % filename)
+					d = ''
+				return base64.b64encode(zlib.compress(d))
+			imdata = get_image_data(texturefilename.get())
+			str += '\r\n	"string imagedata" ["%s"]' % imdata
+		
+		useseq = luxProp(mat, keyname+".useseq", "false")
+		luxCollapse("usesew", useseq, "Sequence", "", gui, 2.0)
+	
+		if useseq.get() == "true":
+			seqframes = luxProp(mat, keyname+".seqframes", 100)
+			luxInt("frames", seqframes, 1, 100000, "Frames", "", gui, 0.5)
+			seqoffset = luxProp(mat, keyname+".seqoffset", 0)
+			luxInt("offset", seqoffset, 0, 100000, "Offset", "", gui, 0.5)
+			seqstartframe = luxProp(mat, keyname+".seqsframe", 1)
+			luxInt("startframe", seqstartframe, 1, 100000, "StartFr", "", gui, 0.5)
+			seqcyclic = luxProp(mat, keyname+".seqcycl", "false")
+			luxBool("cyclic", seqcyclic, "Cyclic", "", gui, 0.5)
+	
+			
+			totalframes = seqframes.get()
+			currentframe = Blender.Get('curframe')
+	
+			if(currentframe < seqstartframe.get()):
+				fnumber = 1 + seqoffset.get()
+			else:
+				fnumber = (currentframe - (seqstartframe.get()-1)) + seqoffset.get()
+	
+			if(fnumber > seqframes.get()):
+				if(seqcyclic.get() == "false"):
+					fnumber = seqframes.get()
+				else:
+					fnumber = currentframe % seqframes.get()
+	
+			import re
+			def get_seq_filename(number, filename):
+				m = re.findall(r'(\d+)', filename)
+				if len(m) == 0:
+					return "ERR: Can't find pattern"
+	
+				rightmost_number = m[len(m)-1]
+				seq_length = len(rightmost_number)
+	
+				nstr = "%i" %number
+				new_seq_number = nstr.zfill(seq_length)
+	
+				return filename.replace(rightmost_number, new_seq_number)
+	
+			texturefilename.set(get_seq_filename(fnumber, texturefilename.get()))
+			if gui: gui.newline()
+	
+		str += luxFloat("gamma", luxProp(mat, keyname+".gamma", texturegamma()), 0.0, 6.0, "gamma", "", gui, 0.75)
+		str += luxFloat("gain", luxProp(mat, keyname+".gain", 1.0), 0.0, 10.0, "gain", "", gui, 0.5)
+		filttype = luxProp(mat, keyname+".filtertype", "bilinear")
+		filttypes = ["mipmap_ewa","mipmap_trilinear","bilinear","nearest"]
+		str += luxOption("filtertype", filttype, filttypes, "filtertype", "Choose the filtering method to use for the image texture", gui, 0.75)
+		
+		if filttype.get() == "mipmap_ewa" or filttype.get() == "mipmap_trilinear":	
+			str += luxFloat("maxanisotropy", luxProp(mat, keyname+".maxanisotropy", 8.0), 1.0, 512.0, "maxaniso", "", gui, 1.0)
+			str += luxInt("discardmipmaps", luxProp(mat, keyname+".discardmipmaps", 0), 0, 1, "discardmips", "", gui, 1.0)
+	
+		str += luxMapping(keyname, mat, gui, level+1)
+
+	if texture.get() == "normalmap":
 		if gui: gui.newline("IM-clip:", -2, level)
 		str += luxOption("wrap", luxProp(mat, keyname+".wrap", "repeat"), ["repeat","black","clamp"], "repeat", "", gui, 1.0)
 		if type=="float":
@@ -5749,7 +5851,7 @@ def luxTexture(name, parentkey, type, default, min, max, caption, hint, mat, gui
 		(s, l) = c((s, l), luxTexture("tex2", keyname, type, alternativedefault(type, default), min, max, "tex2", "", mat, gui, matlevel, texlevel+1, lightsource))
 		str = s + str + l
 
-	if texture.get() == "blender_noise":		
+	if texture.get() == "blender_noise":
 		if gui: gui.newline("level:", -2, level+1, icon_texparam)
 		str += luxFloat("bright", luxProp(mat, keyname+".bright", 1.0), 0.0, 2.0, "bright", "", gui, 1.0)
 		str += luxFloat("contrast", luxProp(mat, keyname+".contrast", 1.0), 0.0, 10.0, "contrast", "", gui, 1.0)
@@ -5925,7 +6027,13 @@ def luxFloatTexture(name, key, default, min, max, caption, hint, mat, gui, level
 			if str == "": # handle special case if texture is a just a constant
 				str += "Texture \"%s\" \"float\" \"scale\" \"float tex1\" [%s] \"float tex2\" [%s]\n"%(texname+".scale", (link.rpartition("[")[2])[0:-1], value.get())
 			else: str += "Texture \"%s\" \"float\" \"scale\" \"texture tex1\" [\"%s\"] \"float tex2\" [%s]\n"%(texname+".scale", texname, value.get())
-			link = " \"texture %s\" [\"%s\"]"%(name, texname+".scale")
+			if name=="normalmap":
+				link = " \"texture bumpmap\" [\"%s\"]"%(texname+".scale")
+			else:
+				link = " \"texture %s\" [\"%s\"]"%(name, texname+".scale")
+		else:
+			if name=="normalmap":
+				link = " \"texture bumpmap\" [\"%s\"]"%(texname)
 	return (str, link)
 
 def luxFloatSliderTexture(name, key, default, min, max, caption, hint, mat, gui, level=0):
@@ -6925,7 +7033,8 @@ def luxMaterialBlock(name, luxname, key, mat, gui=None, level=0, str_opt=""):
 		if gui: gui.newline()
 		has_object_options   = 0 # disable object options by default
 		has_volume_options   = 0 # disable named volume options by default
-		has_bump_options	= 0 # disable bump mapping options by default
+		has_bump_options = 0 # disable bump mapping options by default
+		has_normal_options = 0 # disable normal mapping options by default
 		has_emission_options = 0 # disable emission options by default
 		has_compositing_options = 0 # disable compositing options by default
 
@@ -6938,6 +7047,7 @@ def luxMaterialBlock(name, luxname, key, mat, gui=None, level=0, str_opt=""):
 			(str,link) = c((str,link), luxMaterialBlock("mat2", "namedmaterial2", keyname, mat, gui, level+1))
 			has_volume_options = 1
 			has_bump_options = 0
+			has_normal_options = 0
 			has_object_options = 1
 			has_emission_options = 1
 			has_compositing_options = 0
@@ -6955,6 +7065,7 @@ def luxMaterialBlock(name, luxname, key, mat, gui=None, level=0, str_opt=""):
 			(str,link) = c((str,link), luxFloatTexture("opacity4", keyname, 1.0, 0.0, 1.0, "opacity4", "The amount of opacity for Layer 4", mat, gui, level+1))
 			has_volume_options = 1
 			has_bump_options = 0
+			has_normal_options = 0
 			has_object_options = 1
 			has_emission_options = 1
 			has_compositing_options = 0
@@ -6973,6 +7084,7 @@ def luxMaterialBlock(name, luxname, key, mat, gui=None, level=0, str_opt=""):
 			(str,link) = c((str,link), luxLight("", kn, mat, gui, level))
 			has_volume_options = 1
 			has_bump_options = 0
+			has_normal_options = 0
 			has_object_options = 1
 			has_emission_options = 0
 			has_compositing_options = 1
@@ -7022,6 +7134,7 @@ def luxMaterialBlock(name, luxname, key, mat, gui=None, level=0, str_opt=""):
 			link += str_opt
 
 			has_bump_options = 0
+			has_normal_options = 0
 			has_object_options = 0
 			has_emission_options = 0
 
@@ -7072,6 +7185,7 @@ def luxMaterialBlock(name, luxname, key, mat, gui=None, level=0, str_opt=""):
 				(str,link) = c((str,link), luxFloatTexture("d", keyname, 5.0, 0.0, 15.0, "depth", "", mat, gui, level+1))
 			has_volume_options = 1
 			has_bump_options = 1
+			has_normal_options = 1
 			has_object_options = 1
 			has_emission_options = 1
 			has_compositing_options = 1
@@ -7094,6 +7208,7 @@ def luxMaterialBlock(name, luxname, key, mat, gui=None, level=0, str_opt=""):
 					(str,link) = c((str,link), luxIORFloatTexture("filmindex", keyname, 1.5, 1.0, 6.0, "film IOR", "film coating index of refraction", mat, gui, level+1))
 			has_volume_options = 1
 			has_bump_options = 1
+			has_normal_options = 1
 			has_object_options = 1
 			has_emission_options = 1
 			has_compositing_options = 1
@@ -7106,6 +7221,7 @@ def luxMaterialBlock(name, luxname, key, mat, gui=None, level=0, str_opt=""):
 				link += luxBool("dispersion", chromadisp, "Dispersive Refraction", "Enable Chromatic Dispersion", gui, 2.0)
 			has_volume_options = 1
 			has_bump_options = 1
+			has_normal_options = 1
 			has_object_options = 1
 			has_emission_options = 1
 			has_compositing_options = 1
@@ -7118,6 +7234,7 @@ def luxMaterialBlock(name, luxname, key, mat, gui=None, level=0, str_opt=""):
 				(str,link) = c((str,link), luxFloatTexture("sigma", keyname, 0.0, 0.0, 90.0, "sigma", "sigma value for Oren-Nayar BRDF", mat, gui, level+1))
 			has_volume_options = 1
 			has_bump_options = 1
+			has_normal_options = 1
 			has_object_options = 1
 			has_emission_options = 1
 			has_compositing_options = 1
@@ -7127,6 +7244,7 @@ def luxMaterialBlock(name, luxname, key, mat, gui=None, level=0, str_opt=""):
 			(str,link) = c((str,link), luxFloatTexture("g", keyname, 0.0, -1.0, 1.0, "Asymmetry", "Scattering asymmetry", mat, gui, level+1))
 			has_volume_options = 1
 			has_bump_options = 1
+			has_normal_options = 1
 			has_object_options = 1
 			has_emission_options = 1
 			has_compositing_options = 1
@@ -7142,6 +7260,7 @@ def luxMaterialBlock(name, luxname, key, mat, gui=None, level=0, str_opt=""):
 				(str,link) = c((str,link), luxFloatTexture("thickness", keyname, 0.1, 0.0, 1.0, "thickness", "Thickness of scattering layer for asperity BRDF", mat, gui, level+1))
 			has_volume_options = 1
 			has_bump_options = 1
+			has_normal_options = 1
 			has_object_options = 1
 			has_emission_options = 1
 			has_compositing_options = 1			
@@ -7156,6 +7275,7 @@ def luxMaterialBlock(name, luxname, key, mat, gui=None, level=0, str_opt=""):
 				(str,link) = c((str,link), luxFloatTexture("sigma", keyname, 0.0, 0.0, 100.0, "sigma", "", mat, gui, level+1))
 			has_volume_options = 1
 			has_bump_options = 1
+			has_normal_options = 1
 			has_object_options = 1
 			has_emission_options = 1
 			has_compositing_options = 1
@@ -7192,6 +7312,7 @@ def luxMaterialBlock(name, luxname, key, mat, gui=None, level=0, str_opt=""):
 					link += l.replace("uroughness", "vroughness", 1)
 			has_volume_options = 1
 			has_bump_options = 1
+			has_normal_options = 1
 			has_object_options = 1
 			has_emission_options = 1
 			has_compositing_options = 1
@@ -7236,6 +7357,7 @@ def luxMaterialBlock(name, luxname, key, mat, gui=None, level=0, str_opt=""):
 					link += l.replace("uroughness", "vroughness", 1)
 			has_volume_options = 1
 			has_bump_options = 1
+			has_normal_options = 1
 			has_object_options = 1
 			has_emission_options = 1
 			has_compositing_options = 1
@@ -7249,6 +7371,7 @@ def luxMaterialBlock(name, luxname, key, mat, gui=None, level=0, str_opt=""):
 				(str,link) = c((str,link), luxIORFloatTexture("filmindex", keyname, 1.5, 1.0, 6.0, "film IOR", "film coating index of refraction", mat, gui, level+1))
 			has_volume_options = 1
 			has_bump_options = 1
+			has_normal_options = 1
 			has_object_options = 1
 			has_emission_options = 1
 			has_compositing_options = 1
@@ -7288,6 +7411,7 @@ def luxMaterialBlock(name, luxname, key, mat, gui=None, level=0, str_opt=""):
 				(str,link) = c((str,link), luxCauchyBFloatTexture("cauchyb", keyname, 0.0, 0.0, 1.0, "cauchyb", "", mat, gui, level+1))
 			has_volume_options = 1
 			has_bump_options = 1
+			has_normal_options = 1
 			has_object_options = 1
 			has_emission_options = 1
 			has_compositing_options = 1
@@ -7327,6 +7451,7 @@ def luxMaterialBlock(name, luxname, key, mat, gui=None, level=0, str_opt=""):
 				(str,link) = c((str,link), luxIORFloatTexture("filmindex", keyname, 1.5, 1.0, 6.0, "film IOR", "film coating index of refraction", mat, gui, level+1))
 			has_volume_options = 1
 			has_bump_options = 1
+			has_normal_options = 1
 			has_object_options = 1
 			has_emission_options = 1
 			has_compositing_options = 1
@@ -7379,6 +7504,7 @@ def luxMaterialBlock(name, luxname, key, mat, gui=None, level=0, str_opt=""):
 				(str,link) = c((str,link), luxFloatTexture("d", keyname, 0.15, 0.0, 15.0, "depth", "", mat, gui, level+1))
 			has_volume_options = 1
 			has_bump_options = 1
+			has_normal_options = 1
 			has_object_options = 1
 			has_emission_options = 1
 			has_compositing_options = 1
@@ -7430,6 +7556,7 @@ def luxMaterialBlock(name, luxname, key, mat, gui=None, level=0, str_opt=""):
 				(str,link) = c((str,link), luxFloatTexture("d", keyname, 0.15, 0.0, 15.0, "depth", "", mat, gui, level+1))
 			has_volume_options = 1
 			has_bump_options = 1
+			has_normal_options = 1
 			has_object_options = 1
 			has_emission_options = 1
 			has_compositing_options = 1
@@ -7529,6 +7656,7 @@ def luxMaterialBlock(name, luxname, key, mat, gui=None, level=0, str_opt=""):
 
 			has_volume_options = 1
 			has_bump_options = 1
+			has_normal_options = 1
 			has_object_options = 1
 			has_emission_options = 1
 			has_compositing_options = 1
@@ -7544,6 +7672,13 @@ def luxMaterialBlock(name, luxname, key, mat, gui=None, level=0, str_opt=""):
 			luxCollapse("usebump", usebump, "Bump Map", "Enable Bump Mapping options", gui, 2.0)
 			if usebump.get() == "true":
 				(str,link) = c((str,link), luxFloatTexture("bumpmap", keyname, 0.0, -1.0, 1.0, "bumpmap", "bumpmap scale in meters - i.e. 0.01 = 1 cm", mat, gui, level+1))
+
+		# Normal mapping options (common)
+		if (has_normal_options == 1):
+			usenormal = luxProp(mat, keyname+".usenormal", "false")
+			luxCollapse("usenormal", usenormal, "Normal Map", "Enable Normal Mapping options", gui, 2.0)
+			if usenormal.get() == "true":
+				(str,link) = c((str,link), luxFloatTexture("normalmap", keyname, 0.0, -1.0, 1.0, "normalmap", "normalmap scale in meters - i.e. 0.01 = 1 cm", mat, gui, level+1))
 
 		# volume options (common)
 		if has_volume_options == 1 and level == 0:
